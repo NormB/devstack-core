@@ -94,21 +94,9 @@ NC='\033[0m'
 echo -e "${BLUE}[Vector Init]${NC} Initializing Vector with Vault credentials..."
 
 ################################################################################
-# Install required packages if not present
-# Checks for curl and redis-cli availability and installs them using apt-get
-# if missing. Installation output is suppressed for cleaner logs.
+# Packages (curl, redis-tools) are pre-installed via Dockerfile
+# No runtime installation needed
 ################################################################################
-if ! command -v curl &> /dev/null || ! command -v redis-cli &> /dev/null; then
-    echo -e "${BLUE}[Vector Init]${NC} Installing required packages..."
-    apt-get update -qq > /dev/null 2>&1
-    if ! command -v curl &> /dev/null; then
-        apt-get install -y curl -qq > /dev/null 2>&1
-    fi
-    if ! command -v redis-cli &> /dev/null; then
-        apt-get install -y redis-tools -qq > /dev/null 2>&1
-    fi
-    echo -e "${GREEN}[Vector Init]${NC} Required packages installed successfully"
-fi
 
 # Vault configuration
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"

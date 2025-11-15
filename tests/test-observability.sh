@@ -283,7 +283,7 @@ test_redis_exporters() {
     info "Test 8: Redis exporter metrics availability"
 
     # Check if Redis exporters are running
-    local exporter_count=$(docker ps | grep -c "dev-redis-exporter" || echo "0")
+    local exporter_count=$(docker ps | grep -c "dev-redis-exporter" || true)
 
     if [ "$exporter_count" -eq 0 ]; then
         fail "No Redis exporters running" "Redis exporters"

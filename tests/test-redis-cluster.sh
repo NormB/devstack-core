@@ -587,7 +587,7 @@ test_vault_password_integration() {
 #   1 - Health check failed
 #
 # NOTES:
-#   Uses internal IP 172.20.0.13 (redis-1 internal address)
+#   Uses internal IP 172.20.2.13 (redis-1 data-network address)
 #   Checks all 16384 slots are properly covered
 ################################################################################
 test_cluster_health_check() {
@@ -595,7 +595,7 @@ test_cluster_health_check() {
     info "Test 11: Cluster health check comprehensive test"
 
     local check_output=$(docker exec dev-redis-1 redis-cli --cluster check \
-        172.20.0.13:6379 -a "$REDIS_PASSWORD" 2>&1)
+        172.20.2.13:6379 -a "$REDIS_PASSWORD" 2>&1)
 
     if echo "$check_output" | grep -q "\[OK\] All 16384 slots covered"; then
         success "Comprehensive cluster health check passed"

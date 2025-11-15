@@ -480,7 +480,7 @@ test_vault_issue_certificate() {
     local cert_response=$(curl -sf -X POST \
         -H "X-Vault-Token: $VAULT_TOKEN" \
         -H "Content-Type: application/json" \
-        -d '{"common_name":"postgres","ttl":"1h"}' \
+        -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
         "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>/dev/null)
 
     local certificate=$(echo "$cert_response" | jq -r '.data.certificate // empty')
@@ -567,13 +567,13 @@ test_management_commands() {
     info "Test 10: Management script Vault commands work"
 
     # Test vault-status
-    if "$PROJECT_ROOT/manage-devstack.sh" vault-status &>/dev/null; then
+    if "$PROJECT_ROOT/manage-devstack" vault-status &>/dev/null; then
         # Test vault-token
-        local token=$("$PROJECT_ROOT/manage-devstack.sh" vault-token 2>/dev/null)
+        local token=$("$PROJECT_ROOT/manage-devstack" vault-token 2>/dev/null)
 
         if [ -n "$token" ]; then
             # Test vault-show-password
-            local password=$("$PROJECT_ROOT/manage-devstack.sh" vault-show-password postgres 2>/dev/null)
+            local password=$("$PROJECT_ROOT/manage-devstack" vault-show-password postgres 2>/dev/null)
 
             if [ -n "$password" ]; then
                 success "Management commands work correctly"

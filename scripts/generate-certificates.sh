@@ -93,15 +93,15 @@ CERT_TTL="8760h"  # 1 year
 
 # Service configuration (service:ip pairs)
 SERVICES=(
-    "postgres:172.20.0.10"
-    "mysql:172.20.0.12"
-    "redis-1:172.20.0.13"
-    "redis-2:172.20.0.16"
-    "redis-3:172.20.0.17"
-    "rabbitmq:172.20.0.14"
-    "mongodb:172.20.0.15"
-    "forgejo:172.20.0.20"
-    "reference-api:172.20.0.100"
+    "postgres:172.20.2.10"
+    "mysql:172.20.2.12"
+    "redis-1:172.20.2.13"
+    "redis-2:172.20.2.16"
+    "redis-3:172.20.2.17"
+    "rabbitmq:172.20.2.14"
+    "mongodb:172.20.2.15"
+    "forgejo:172.20.3.20"
+    "reference-api:172.20.3.100"
 )
 
 # Helper functions

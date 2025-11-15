@@ -20,11 +20,48 @@ x-platform: &default-platform
   platform: linux/arm64
 
 networks:
-  dev-services:
+  # Segmented Network Architecture for Security Hardening
+  # Each tier has its own network for logical isolation
+
+  # Infrastructure tier - Vault secrets management (all services connect here)
+  vault-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.20.1.0/24
+          gateway: 172.20.1.1
+    driver_opts:
+      com.docker.network.bridge.name: br-vault
+
+  # Data tier - Databases, cache, message queue
+  data-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.2.0/24
+          gateway: 172.20.2.1
+    driver_opts:
+      com.docker.network.bridge.name: br-data
+
+  # Application tier - Forgejo, reference APIs, proxy services
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.3.0/24
+          gateway: 172.20.3.1
+    driver_opts:
+      com.docker.network.bridge.name: br-app
+
+  # Observability tier - Metrics, logs, visualization
+  observability-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.4.0/24
+          gateway: 172.20.4.1
+    driver_opts:
+      com.docker.network.bridge.name: br-obs
 
 volumes:
   postgres_data:
@@ -66,12 +103,12 @@ services:
     # Core database for Forgejo (Git server) and local development
     profiles: ["minimal", "standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/postgres
       POSTGRES_ENABLE_TLS: ${POSTGRES_ENABLE_TLS:-false}
       POSTGRES_IP: ${POSTGRES_IP:-172.20.0.10}
 
@@ -82,7 +119,7 @@ services:
       # PostgreSQL initdb arguments (required for database initialization)
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
 
-      # NOTE: POSTGRES_PASSWORD is fetched from Vault by the wrapper script
+      # NOTE: POSTGRES_PASSWORD is fetched from Vault via AppRole authentication
 
     ports:
       - "${POSTGRES_HOST_PORT:-5432}:5432"
@@ -90,12 +127,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./configs/postgres:/docker-entrypoint-initdb.d:ro
-      - ./configs/postgres/scripts/init.sh:/init/init.sh:ro
+      - ./configs/postgres/scripts/init-approle.sh:/init/init-approle.sh:ro
       - ${HOME}/.config/vault/certs/postgres:/var/lib/postgresql/certs:ro
+      - ${HOME}/.config/vault/approles/postgres:/vault-approles/postgres:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${POSTGRES_IP:-172.20.0.10}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.10
 
     depends_on:
       vault:
@@ -166,8 +205,10 @@ services:
       - "${PGBOUNCER_HOST_PORT:-6432}:5432"
 
     networks:
-      dev-services:
-        ipv4_address: ${PGBOUNCER_IP:-172.20.0.11}
+      vault-network:   # Connect to Vault for AppRole auth
+      data-network:    # Connect to PostgreSQL
+        ipv4_address: 172.20.2.11
+      app-network:     # Accept connections from apps
     
     depends_on:
       postgres:
@@ -210,12 +251,12 @@ services:
     # Legacy database support for multi-database applications
     profiles: ["standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/mysql
       MYSQL_ENABLE_TLS: ${MYSQL_ENABLE_TLS:-false}
       MYSQL_IP: ${MYSQL_IP:-172.20.0.12}
 
@@ -223,7 +264,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-dev_admin}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-dev_database}
 
-      # NOTE: MYSQL_ROOT_PASSWORD and MYSQL_PASSWORD are fetched from Vault
+      # NOTE: MYSQL_ROOT_PASSWORD and MYSQL_PASSWORD are fetched from Vault via AppRole
 
     ports:
       - "${MYSQL_HOST_PORT:-3306}:3306"
@@ -231,12 +272,14 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./configs/mysql:/docker-entrypoint-initdb.d:ro
-      - ./configs/mysql/scripts/init.sh:/init/init.sh:ro
+      - ./configs/mysql/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/mysql:/vault-approles/mysql:ro
       - ${HOME}/.config/vault/certs/mysql:/var/lib/mysql-certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${MYSQL_IP:-172.20.0.12}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.12
 
     depends_on:
       vault:
@@ -291,12 +334,12 @@ services:
     # In minimal: runs standalone mode (no cluster). In standard/full: cluster node 1 (slots 0-5460)
     profiles: ["minimal", "standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/redis
       REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
       REDIS_NODE: redis-1
       REDIS_IP: ${REDIS_1_IP:-172.20.0.13}
@@ -309,12 +352,14 @@ services:
     volumes:
       - redis_1_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./configs/redis/scripts/init.sh:/init/init.sh:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-1:/etc/redis/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${REDIS_1_IP:-172.20.0.13}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.13
 
     depends_on:
       vault:
@@ -369,12 +414,12 @@ services:
     # Redis cluster node 2 (slots 5461-10922) - NOT included in minimal profile
     profiles: ["standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/redis
       REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
       REDIS_NODE: redis-2
       REDIS_IP: ${REDIS_2_IP:-172.20.0.16}
@@ -387,12 +432,14 @@ services:
     volumes:
       - redis_2_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./configs/redis/scripts/init.sh:/init/init.sh:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-2:/etc/redis/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${REDIS_2_IP:-172.20.0.16}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.16
 
     depends_on:
       vault:
@@ -447,12 +494,12 @@ services:
     # Redis cluster node 3 (slots 10923-16383) - NOT included in minimal profile
     profiles: ["standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/redis
       REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
       REDIS_NODE: redis-3
       REDIS_IP: ${REDIS_3_IP:-172.20.0.17}
@@ -465,12 +512,14 @@ services:
     volumes:
       - redis_3_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./configs/redis/scripts/init.sh:/init/init.sh:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-3:/etc/redis/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${REDIS_3_IP:-172.20.0.17}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.17
 
     depends_on:
       vault:
@@ -534,19 +583,19 @@ services:
     # Message queue for asynchronous communication between services
     profiles: ["standard", "full"]
 
-    entrypoint: ["/init/init.sh"]
+    entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/rabbitmq
       RABBITMQ_ENABLE_TLS: ${RABBITMQ_ENABLE_TLS:-false}
       RABBITMQ_IP: ${RABBITMQ_IP:-172.20.0.14}
 
       # RabbitMQ vhost (user/password from Vault)
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-dev_vhost}
 
-      # NOTE: RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS are fetched from Vault
+      # NOTE: RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS are fetched from Vault via AppRole
 
     ports:
       - "${RABBITMQ_AMQP_PORT:-5672}:5672"   # AMQP
@@ -555,12 +604,14 @@ services:
 
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./configs/rabbitmq/scripts/init.sh:/init/init.sh:ro
+      - ./configs/rabbitmq/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/rabbitmq:/vault-approles/rabbitmq:ro
       - ${HOME}/.config/vault/certs/rabbitmq:/etc/rabbitmq/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${RABBITMQ_IP:-172.20.0.14}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.14
 
     depends_on:
       vault:
@@ -600,29 +651,31 @@ services:
     # NoSQL document database for unstructured data
     profiles: ["standard", "full"]
 
-    # Vault Integration: Credentials are fetched from Vault at startup
-    entrypoint: ["/init/init.sh"]
+    # Vault Integration: Credentials are fetched from Vault via AppRole at startup
+    entrypoint: ["/init/init-approle.sh"]
     command: ["mongod"]
 
     environment:
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/mongodb
       MONGODB_IP: ${MONGODB_IP:-172.20.0.15}
       MONGODB_ENABLE_TLS: ${MONGODB_ENABLE_TLS:-false}
       # NOTE: MONGO_INITDB_ROOT_USERNAME, MONGO_INITDB_ROOT_PASSWORD, and
-      # MONGO_INITDB_DATABASE are fetched from Vault by the init script
+      # MONGO_INITDB_DATABASE are fetched from Vault via AppRole by the init script
 
     ports:
       - "27017:27017"
 
     volumes:
       - mongodb_data:/data/db
-      - ./configs/mongodb/scripts/init.sh:/init/init.sh:ro
+      - ./configs/mongodb/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/mongodb:/vault-approles/mongodb:ro
       - ${HOME}/.config/vault/certs/mongodb:/etc/mongodb/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: ${MONGODB_IP:-172.20.0.15}
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.15
 
     depends_on:
       vault:
@@ -663,8 +716,9 @@ services:
     profiles: ["minimal", "standard", "full"]
 
     environment:
+      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_APPROLE_DIR: /vault-approles/forgejo
       USER_UID: 1000
       USER_GID: 1000
       FORGEJO__database__DB_TYPE: postgres
@@ -679,15 +733,18 @@ services:
     ports:
       - "3000:3000"   # HTTP
       - "2222:22"     # SSH
-    
+
     volumes:
       - forgejo_data:/data
+      - ${HOME}/.config/vault/approles/forgejo:/vault-approles/forgejo:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.20
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Connect to PostgreSQL database
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.20
     
     depends_on:
       postgres:
@@ -746,8 +803,8 @@ services:
       - ${HOME}/.config/vault:/vault-keys:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.21
+      vault-network:  # Primary network - all services connect here
+        ipv4_address: 172.20.1.5
 
     cap_add:
       - IPC_LOCK
@@ -819,8 +876,10 @@ services:
       - ${HOME}/.config/vault/certs:/app/vault-certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.100
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.100
 
     depends_on:
       vault:
@@ -888,8 +947,10 @@ services:
       - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.104
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.104
 
     depends_on:
       vault:
@@ -961,8 +1022,10 @@ services:
       - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.105
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.105
 
     depends_on:
       vault:
@@ -1032,8 +1095,10 @@ services:
       - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.106
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.106
 
     depends_on:
       vault:
@@ -1088,8 +1153,9 @@ services:
       - "${RUST_HTTPS_PORT:-8447}:8447"
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.107
+      vault-network:  # Connect to Vault for secrets
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.107
 
     depends_on:
       vault:
@@ -1147,8 +1213,10 @@ services:
       - prometheus_data:/prometheus
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.101
+      data-network:          # Scrape database exporters
+      app-network:           # Scrape application metrics
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.10
 
     healthcheck:
       test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9090/-/healthy"]
@@ -1203,8 +1271,8 @@ services:
       - ./configs/grafana/dashboards:/etc/grafana/dashboards:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.102
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.20
 
     depends_on:
       - prometheus
@@ -1255,8 +1323,8 @@ services:
       - loki_data:/loki
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.103
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.30
 
     healthcheck:
       test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:3100/ready"]
@@ -1317,8 +1385,10 @@ services:
       - ./configs/exporters/redis/init.sh:/init/init.sh:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.112
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-1
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.40
 
     depends_on:
       vault:
@@ -1380,8 +1450,10 @@ services:
       - ./configs/exporters/redis/init.sh:/init/init.sh:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.113
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-2
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.41
 
     depends_on:
       vault:
@@ -1443,8 +1515,10 @@ services:
       - ./configs/exporters/redis/init.sh:/init/init.sh:ro
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.114
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-3
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.42
 
     depends_on:
       vault:
@@ -1504,8 +1578,8 @@ services:
       - /dev/kmsg
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.117
+      observability-network: # Export container metrics
+        ipv4_address: 172.20.4.50
 
     healthcheck:
       test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:8080/healthz"]
@@ -1536,7 +1610,7 @@ services:
 
   vector:
     <<: *default-platform
-    image: timberio/vector:0.50.0-debian
+    build: ./configs/vector
     container_name: dev-vector
     restart: unless-stopped
 
@@ -1568,8 +1642,10 @@ services:
       MONGO_PASSWORD: ""
 
     networks:
-      dev-services:
-        ipv4_address: 172.20.0.118
+      vault-network:         # Connect to Vault for AppRole auth
+      data-network:          # Connect to databases for metrics collection
+      observability-network: # Send logs to Loki
+        ipv4_address: 172.20.4.60
 
     depends_on:
       vault:

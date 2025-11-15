@@ -194,7 +194,7 @@ run_test_suite() {
 #   PASSED_SUITES - Number of suites that passed
 #   FAILED_SUITES - Number of suites that failed
 #   TEST_RESULTS - Array of suite results
-#   GREEN, RED, CYAN, NC - Color codes
+#   GREEN, RED, YELLOW, CYAN, NC - Color codes
 # Arguments:
 #   None
 # Returns:
@@ -203,15 +203,25 @@ run_test_suite() {
 # Outputs:
 #   Writes formatted summary to stdout with:
 #   - Total suite counts
-#   - Pass/fail breakdown
-#   - Per-suite status with checkmarks/crosses
+#   - Pass/fail/skipped breakdown
+#   - Per-suite status with checkmarks/crosses/skipped indicator
 #   - Overall pass/fail verdict
 # Notes:
 #   Should be called after all test suites complete
 #   Return code suitable for script exit code
+#   Skipped tests don't count as failures
 #######################################
 print_summary() {
     header "Test Summary"
+
+    # Count skipped tests
+    local skipped_suites=0
+    for result_pair in "${TEST_RESULTS[@]}"; do
+        local status="${result_pair##*:}"
+        if [ "$status" = "SKIPPED" ]; then
+            skipped_suites=$((skipped_suites + 1))
+        fi
+    done
 
     echo
     echo "Test Suites Run: $TOTAL_SUITES"
@@ -219,6 +229,10 @@ print_summary() {
 
     if [ $FAILED_SUITES -gt 0 ]; then
         echo -e "${RED}Failed: $FAILED_SUITES${NC}"
+    fi
+
+    if [ $skipped_suites -gt 0 ]; then
+        echo -e "${YELLOW}Skipped: $skipped_suites${NC}"
     fi
 
     echo
@@ -229,6 +243,8 @@ print_summary() {
 
         if [ "$status" = "PASSED" ]; then
             echo -e "  ${GREEN}✓${NC} $suite"
+        elif [ "$status" = "SKIPPED" ]; then
+            echo -e "  ${YELLOW}⊘${NC} $suite (skipped)"
         else
             echo -e "  ${RED}✗${NC} $suite"
         fi
@@ -239,6 +255,9 @@ print_summary() {
 
     if [ $FAILED_SUITES -eq 0 ]; then
         echo -e "${GREEN}✓ ALL TESTS PASSED!${NC}"
+        if [ $skipped_suites -gt 0 ]; then
+            echo -e "${YELLOW}  ($skipped_suites suite(s) skipped)${NC}"
+        fi
         echo -e "${CYAN}=========================================${NC}"
         return 0
     else
@@ -287,8 +306,16 @@ main() {
     # Messaging Tests
     run_test_suite "$SCRIPT_DIR/test-rabbitmq.sh" "RabbitMQ Integration" || true
 
-    # Application Tests (bash)
-    run_test_suite "$SCRIPT_DIR/test-fastapi.sh" "FastAPI Reference App" || true
+    # Application Tests (bash) - Only run if reference API services are available
+    if docker ps --format '{{.Names}}' | grep -q "reference-api\|api-first\|golang-api\|nodejs-api\|rust-api"; then
+        info "Reference API services detected - running FastAPI tests..."
+        run_test_suite "$SCRIPT_DIR/test-fastapi.sh" "FastAPI Reference App" || true
+    else
+        warn "Reference API services not running - skipping FastAPI tests"
+        info "To run FastAPI tests, start with: ./manage-devstack start --profile reference"
+        TEST_RESULTS+=("FastAPI Reference App:SKIPPED")
+        TOTAL_SUITES=$((TOTAL_SUITES + 1))
+    fi
 
     # Performance Tests
     run_test_suite "$SCRIPT_DIR/test-performance.sh" "Performance & Load Testing" || true
@@ -303,7 +330,17 @@ main() {
     run_test_suite "$SCRIPT_DIR/test-vault-extended.sh" "Vault Extended Tests" || true
     run_test_suite "$SCRIPT_DIR/test-postgres-extended.sh" "PostgreSQL Extended Tests" || true
     run_test_suite "$SCRIPT_DIR/test-pgbouncer.sh" "PgBouncer Tests" || true
-    run_test_suite "$SCRIPT_DIR/test-observability.sh" "Observability Stack Tests" || true
+
+    # Observability Stack Tests - Only run if services are available
+    if docker ps --format '{{.Names}}' | grep -q "prometheus\|grafana\|loki"; then
+        info "Observability services detected - running observability tests..."
+        run_test_suite "$SCRIPT_DIR/test-observability.sh" "Observability Stack Tests" || true
+    else
+        warn "Observability services not running - skipping observability tests"
+        info "To run observability tests, start with: ./manage-devstack start --profile full"
+        TEST_RESULTS+=("Observability Stack Tests:SKIPPED")
+        TOTAL_SUITES=$((TOTAL_SUITES + 1))
+    fi
 
     # Python Unit Tests (pytest) - Run in Docker container (BEST APPROACH)
     # This avoids Python version compatibility issues and uses the production environment
