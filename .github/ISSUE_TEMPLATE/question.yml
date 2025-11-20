@@ -1,0 +1,141 @@
+name: Question / Support
+description: Ask a question or request help
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using DevStack Core? We're here to help!
+
+        **Before asking**, please check:
+        - README.md documentation
+        - Existing issues (open and closed)
+        - FAQ section in README.md
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Ask your question here. Be as specific as possible.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What is your question about?
+      options:
+        - Installation / Setup
+        - Configuration
+        - Service Usage
+        - Troubleshooting
+        - Performance
+        - Security
+        - Vault / PKI
+        - Networking
+        - Backup / Restore
+        - Best Practices
+        - Integration with Applications
+        - Migration / Upgrading
+        - Docker / Colima Concepts
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: Related Service (if applicable)
+      description: Which service is your question about?
+      options:
+        - PostgreSQL
+        - PgBouncer
+        - MySQL
+        - Redis Cluster
+        - RabbitMQ
+        - MongoDB
+        - Forgejo (Git Server)
+        - HashiCorp Vault
+        - Prometheus
+        - Grafana
+        - Loki
+        - Reference API (FastAPI)
+        - Colima VM
+        - Management Script
+        - General / Multiple Services
+        - Not Service-Specific
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context / What You've Tried
+      description: |
+        Provide context about what you're trying to accomplish and what you've already tried.
+        This helps us give you better, more relevant answers.
+      placeholder: |
+        What I'm trying to do:
+        - ...
+
+        What I've tried:
+        - Checked the README section on...
+        - Ran command X and got result Y
+        - Looked at logs and saw...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: If relevant to your question, provide environment details
+      placeholder: |
+        OS: macOS (Apple Silicon - M Series Processors)
+        Colima version: 0.8.0
+        Docker version: 27.0.3
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs or Error Messages
+      description: If you're troubleshooting, include relevant logs or error messages
+      placeholder: Paste logs or error messages here (sanitize sensitive data)
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected Outcome
+      description: What are you hoping to achieve or learn?
+      placeholder: What would a successful answer/solution look like for you?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: documentation-check
+    attributes:
+      label: Documentation Review
+      description: Have you reviewed the available documentation?
+      options:
+        - label: I have read the relevant sections of README.md
+          required: true
+        - label: I have searched existing issues (open and closed)
+          required: true
+        - label: I have checked the FAQ section
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: Screenshots, configuration files, etc.
+    validations:
+      required: false

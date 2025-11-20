@@ -1,0 +1,82 @@
+# Promtail Configuration for Loki Log Collection
+#
+# Collects logs from Docker containers and forwards to Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker Container Logs
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.voip.platform=colima"]
+
+    relabel_configs:
+      # Container name as job
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+
+      # Service label
+      - source_labels: ['__meta_docker_container_label_com_voip_service']
+        target_label: 'service'
+
+      # Container ID (short)
+      - source_labels: ['__meta_docker_container_id']
+        regex: '(.{12})'
+        target_label: 'container_id'
+
+      # Image name
+      - source_labels: ['__meta_docker_container_label_image']
+        target_label: 'image'
+
+    pipeline_stages:
+      # Parse JSON logs
+      - json:
+          expressions:
+            level: level
+            msg: msg
+            timestamp: timestamp
+
+      # Extract log level
+      - labels:
+          level:
+
+      # Parse timestamps if available
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - "2006-01-02T15:04:05Z07:00"
+            - "2006-01-02 15:04:05"
+
+      # Add static labels
+      - static_labels:
+          platform: colima
+          environment: development
+
+  # System logs (if needed)
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          __path__: /var/log/*.log
+
+limits_config:
+  # Prevent overwhelming Loki
+  readline_rate_enabled: true
+  readline_rate: 10000  # 10k lines/sec max
+  readline_burst: 20000  # 20k burst

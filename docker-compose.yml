@@ -1,0 +1,1762 @@
+# VoIP Development Services - Colima (Apple Silicon)
+# Git server, local dev databases, caching, message queue
+#
+# ARCHITECTURE:
+#   - PostgreSQL: For Forgejo (Git) and local development ONLY
+#   - Other services: Redis, RabbitMQ, MongoDB for local dev/testing
+#   - libvirt VMs have their own PostgreSQL for VoIP services
+#
+# Run on Apple Silicon Mac with Colima:
+#   colima start --cpu 4 --memory 8 --disk 60 --network-address
+#   docker compose up -d
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-platform: &default-platform
+  platform: linux/arm64
+
+networks:
+  # Segmented Network Architecture for Security Hardening
+  # Each tier has its own network for logical isolation
+
+  # Infrastructure tier - Vault secrets management (all services connect here)
+  vault-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.1.0/24
+          gateway: 172.20.1.1
+    driver_opts:
+      com.docker.network.bridge.name: br-vault
+
+  # Data tier - Databases, cache, message queue
+  data-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.2.0/24
+          gateway: 172.20.2.1
+    driver_opts:
+      com.docker.network.bridge.name: br-data
+
+  # Application tier - Forgejo, reference APIs, proxy services
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.3.0/24
+          gateway: 172.20.3.1
+    driver_opts:
+      com.docker.network.bridge.name: br-app
+
+  # Observability tier - Metrics, logs, visualization
+  observability-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.4.0/24
+          gateway: 172.20.4.1
+    driver_opts:
+      com.docker.network.bridge.name: br-obs
+
+volumes:
+  postgres_data:
+  mysql_data:
+  redis_1_data:
+  redis_2_data:
+  redis_3_data:
+  rabbitmq_data:
+  mongodb_data:
+  forgejo_data:
+  vault_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+services:
+  # ===========================================================================
+  # POSTGRESQL - Git Storage & Local Development ONLY
+  # ===========================================================================
+  # This PostgreSQL instance is for:
+  #   1. Forgejo (Git server) - primary use case
+  #   2. Local development and testing
+  #
+  # NOT for production VoIP services - they use libvirt VM PostgreSQL
+  #
+  # VAULT INTEGRATION:
+  #   - Credentials fetched from Vault at startup
+  #   - Optional TLS with Vault-issued certificates (POSTGRES_ENABLE_TLS=true)
+  #   - Wrapper script handles Vault authentication and cert management
+  # ===========================================================================
+
+  postgres:
+    <<: *default-platform
+    image: postgres:18
+    container_name: dev-postgres
+    restart: unless-stopped
+
+    # PROFILE: Available in minimal, standard, and full profiles
+    # Core database for Forgejo (Git server) and local development
+    profiles: ["minimal", "standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/postgres
+      POSTGRES_ENABLE_TLS: ${POSTGRES_ENABLE_TLS:-false}
+      POSTGRES_IP: ${POSTGRES_IP:-172.20.0.10}
+
+      # PostgreSQL user/db (used for healthchecks, actual credentials from Vault)
+      POSTGRES_USER: ${POSTGRES_USER:-dev_admin}
+      POSTGRES_DB: ${POSTGRES_DB:-dev_database}
+
+      # PostgreSQL initdb arguments (required for database initialization)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+
+      # NOTE: POSTGRES_PASSWORD is fetched from Vault via AppRole authentication
+
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./configs/postgres:/docker-entrypoint-initdb.d:ro
+      - ./configs/postgres/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/certs/postgres:/var/lib/postgresql/certs:ro
+      - ${HOME}/.config/vault/approles/postgres:/vault-approles/postgres:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.10
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}"
+      - "-c"
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}"
+      - "-c"
+      - "effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}"
+      - "-c"
+      - "work_mem=${POSTGRES_WORK_MEM:-8MB}"
+      - "-c"
+      - "maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}"
+      - "-c"
+      - "synchronous_commit=${POSTGRES_SYNCHRONOUS_COMMIT:-on}"
+      - "-c"
+      - "wal_buffers=${POSTGRES_WAL_BUFFERS:-4MB}"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev_admin}"]
+      interval: ${POSTGRES_HEALTH_INTERVAL:-60s}
+      timeout: ${POSTGRES_HEALTH_TIMEOUT:-5s}
+      retries: ${POSTGRES_HEALTH_RETRIES:-5}
+      start_period: ${POSTGRES_HEALTH_START_PERIOD:-30s}
+    
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.voip.service=dev-database"
+      - "com.voip.platform=colima"
+      - "com.voip.purpose=git-and-local-dev"
+
+  # ===========================================================================
+  # PGBOUNCER - Connection Pooling for Git/Dev
+  # ===========================================================================
+  
+  pgbouncer:
+    <<: *default-platform
+    build: ./configs/pgbouncer
+    container_name: dev-pgbouncer
+    restart: unless-stopped
+
+    # PROFILE: Available in minimal, standard, and full profiles
+    # Connection pooling for PostgreSQL (recommended for all scenarios)
+    profiles: ["minimal", "standard", "full"]
+
+    entrypoint: ["/usr/local/bin/init.sh"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/pgbouncer
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-dev_database}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 10
+
+    volumes:
+      - ${HOME}/.config/vault/approles/pgbouncer:/vault-approles/pgbouncer:ro
+    
+    ports:
+      - "${PGBOUNCER_HOST_PORT:-6432}:5432"
+
+    networks:
+      vault-network:   # Connect to Vault for AppRole auth
+      data-network:    # Connect to PostgreSQL
+        ipv4_address: 172.20.2.11
+      app-network:     # Accept connections from apps
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSFILE=/var/lib/postgresql/.pgpass psql -h localhost -U devuser -d devdb -c 'SELECT 1' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # ===========================================================================
+  # MYSQL - Legacy Database for Local Development
+  # ===========================================================================
+  # VAULT INTEGRATION:
+  #   - Credentials fetched from Vault at startup
+  #   - Optional TLS with Vault-issued certificates (MYSQL_ENABLE_TLS=true)
+  #   - Wrapper script handles Vault authentication and cert management
+  # ===========================================================================
+
+  mysql:
+    <<: *default-platform
+    image: mysql:8.0.40
+    container_name: dev-mysql
+    restart: unless-stopped
+
+    # PROFILE: Available in standard and full profiles only
+    # Legacy database support for multi-database applications
+    profiles: ["standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/mysql
+      MYSQL_ENABLE_TLS: ${MYSQL_ENABLE_TLS:-false}
+      MYSQL_IP: ${MYSQL_IP:-172.20.0.12}
+
+      # MySQL user/db (used for healthchecks, actual credentials from Vault)
+      MYSQL_USER: ${MYSQL_USER:-dev_admin}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dev_database}
+
+      # NOTE: MYSQL_ROOT_PASSWORD and MYSQL_PASSWORD are fetched from Vault via AppRole
+
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./configs/mysql:/docker-entrypoint-initdb.d:ro
+      - ./configs/mysql/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/mysql:/vault-approles/mysql:ro
+      - ${HOME}/.config/vault/certs/mysql:/var/lib/mysql-certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.12
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command:
+      - "mysqld"
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--max-connections=${MYSQL_MAX_CONNECTIONS:-100}"
+      - "--innodb-buffer-pool-size=${MYSQL_INNODB_BUFFER_POOL:-256M}"
+      - "--innodb-log-file-size=${MYSQL_INNODB_LOG_FILE_SIZE:-48M}"
+      - "--innodb-flush-log-at-trx-commit=${MYSQL_INNODB_FLUSH_LOG_AT_TRX_COMMIT:-1}"
+      - "--innodb-flush-method=${MYSQL_INNODB_FLUSH_METHOD:-fsync}"
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: ${MYSQL_HEALTH_INTERVAL:-60s}
+      timeout: ${MYSQL_HEALTH_TIMEOUT:-5s}
+      retries: ${MYSQL_HEALTH_RETRIES:-5}
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.voip.purpose=local-dev-mysql"
+
+  # ===========================================================================
+  # REDIS CLUSTER - Cache & Session Storage (Local Dev)
+  # ===========================================================================
+  # 3-node Redis cluster for high availability and horizontal scaling
+  # All nodes are masters (no replicas in dev environment)
+  #
+  # VAULT INTEGRATION:
+  #   - Password fetched from Vault at startup (shared across all nodes)
+  #   - Optional TLS with Vault-issued certificates (REDIS_ENABLE_TLS=true)
+  #   - Wrapper script handles Vault authentication and cert management
+  # ===========================================================================
+
+  redis-1:
+    <<: *default-platform
+    image: redis:7.4-alpine3.21
+    container_name: dev-redis-1
+    restart: unless-stopped
+
+    # PROFILE: Available in minimal (standalone), standard (cluster node 1), and full profiles
+    # In minimal: runs standalone mode (no cluster). In standard/full: cluster node 1 (slots 0-5460)
+    profiles: ["minimal", "standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis
+      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      REDIS_NODE: redis-1
+      REDIS_IP: ${REDIS_1_IP:-172.20.0.13}
+
+    ports:
+      - "${REDIS_1_HOST_PORT:-6379}:6379"
+      - "${REDIS_1_TLS_PORT:-6390}:6380"           # TLS port
+      - "${REDIS_1_CLUSTER_PORT:-16379}:16379"
+
+    volumes:
+      - redis_1_data:/data
+      - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
+      - ${HOME}/.config/vault/certs/redis-1:/etc/redis/certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.13
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command:
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "6379"
+      - "--cluster-enabled"
+      - "yes"
+      - "--cluster-config-file"
+      - "nodes.conf"
+      - "--cluster-node-timeout"
+      - "5000"
+      - "--appendonly"
+      - "${REDIS_APPENDONLY:-yes}"
+      # --save disabled for dev performance (Phase 3 - Task 3.2)
+      # - "--save"
+      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
+      - "--maxmemory"
+      - "${REDIS_MAXMEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
+
+    healthcheck:
+      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
+      interval: ${REDIS_HEALTH_INTERVAL:-60s}
+      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
+      retries: ${REDIS_HEALTH_RETRIES:-5}
+      start_period: 10s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=redis-cluster"
+      - "com.voip.cluster.node=1"
+
+  redis-2:
+    <<: *default-platform
+    image: redis:7.4-alpine3.21
+    container_name: dev-redis-2
+    restart: unless-stopped
+
+    # PROFILE: Available in standard and full profiles only
+    # Redis cluster node 2 (slots 5461-10922) - NOT included in minimal profile
+    profiles: ["standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis
+      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      REDIS_NODE: redis-2
+      REDIS_IP: ${REDIS_2_IP:-172.20.0.16}
+
+    ports:
+      - "${REDIS_2_HOST_PORT:-6380}:6379"
+      - "${REDIS_2_TLS_PORT:-6391}:6380"           # TLS port
+      - "${REDIS_2_CLUSTER_PORT:-16380}:16379"
+
+    volumes:
+      - redis_2_data:/data
+      - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
+      - ${HOME}/.config/vault/certs/redis-2:/etc/redis/certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.16
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command:
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "6379"
+      - "--cluster-enabled"
+      - "yes"
+      - "--cluster-config-file"
+      - "nodes.conf"
+      - "--cluster-node-timeout"
+      - "5000"
+      - "--appendonly"
+      - "${REDIS_APPENDONLY:-yes}"
+      # --save disabled for dev performance (Phase 3 - Task 3.2)
+      # - "--save"
+      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
+      - "--maxmemory"
+      - "${REDIS_MAXMEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
+
+    healthcheck:
+      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
+      interval: ${REDIS_HEALTH_INTERVAL:-60s}
+      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
+      retries: ${REDIS_HEALTH_RETRIES:-5}
+      start_period: 10s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=redis-cluster"
+      - "com.voip.cluster.node=2"
+
+  redis-3:
+    <<: *default-platform
+    image: redis:7.4-alpine3.21
+    container_name: dev-redis-3
+    restart: unless-stopped
+
+    # PROFILE: Available in standard and full profiles only
+    # Redis cluster node 3 (slots 10923-16383) - NOT included in minimal profile
+    profiles: ["standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis
+      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      REDIS_NODE: redis-3
+      REDIS_IP: ${REDIS_3_IP:-172.20.0.17}
+
+    ports:
+      - "${REDIS_3_HOST_PORT:-6381}:6379"
+      - "${REDIS_3_TLS_PORT:-6392}:6380"           # TLS port
+      - "${REDIS_3_CLUSTER_PORT:-16381}:16379"
+
+    volumes:
+      - redis_3_data:/data
+      - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
+      - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
+      - ${HOME}/.config/vault/certs/redis-3:/etc/redis/certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.17
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command:
+      - "/usr/local/etc/redis/redis.conf"
+      - "--port"
+      - "6379"
+      - "--cluster-enabled"
+      - "yes"
+      - "--cluster-config-file"
+      - "nodes.conf"
+      - "--cluster-node-timeout"
+      - "5000"
+      - "--appendonly"
+      - "${REDIS_APPENDONLY:-yes}"
+      # --save disabled for dev performance (Phase 3 - Task 3.2)
+      # - "--save"
+      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
+      - "--maxmemory"
+      - "${REDIS_MAXMEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
+
+    healthcheck:
+      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
+      interval: ${REDIS_HEALTH_INTERVAL:-60s}
+      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
+      retries: ${REDIS_HEALTH_RETRIES:-5}
+      start_period: 10s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=redis-cluster"
+      - "com.voip.cluster.node=3"
+
+  # ===========================================================================
+  # RABBITMQ - Message Queue (Local Dev)
+  # ===========================================================================
+  # VAULT INTEGRATION:
+  #   - Credentials fetched from Vault at startup
+  #   - Optional TLS with Vault-issued certificates (RABBITMQ_ENABLE_TLS=true)
+  #   - Wrapper script handles Vault authentication and cert management
+  # ===========================================================================
+
+  rabbitmq:
+    <<: *default-platform
+    image: rabbitmq:3.13-management-alpine
+    container_name: dev-rabbitmq
+    restart: unless-stopped
+
+    # PROFILE: Available in standard and full profiles only
+    # Message queue for asynchronous communication between services
+    profiles: ["standard", "full"]
+
+    entrypoint: ["/init/init-approle.sh"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/rabbitmq
+      RABBITMQ_ENABLE_TLS: ${RABBITMQ_ENABLE_TLS:-false}
+      RABBITMQ_IP: ${RABBITMQ_IP:-172.20.0.14}
+
+      # RabbitMQ vhost (user/password from Vault)
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-dev_vhost}
+
+      # NOTE: RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS are fetched from Vault via AppRole
+
+    ports:
+      - "${RABBITMQ_AMQP_PORT:-5672}:5672"   # AMQP
+      - "${RABBITMQ_AMQPS_PORT:-5671}:5671"  # AMQPS (TLS)
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672" # Management UI
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./configs/rabbitmq/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/rabbitmq:/vault-approles/rabbitmq:ro
+      - ${HOME}/.config/vault/certs/rabbitmq:/etc/rabbitmq/certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.14
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    command: ["rabbitmq-server"]
+
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: ${RABBITMQ_HEALTH_INTERVAL:-60s}
+      timeout: ${RABBITMQ_HEALTH_TIMEOUT:-10s}
+      retries: ${RABBITMQ_HEALTH_RETRIES:-5}
+      start_period: 30s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===========================================================================
+  # MONGODB - NoSQL Database (Local Dev)
+  # ===========================================================================
+  
+  mongodb:
+    <<: *default-platform
+    image: mongo:7.0
+    container_name: dev-mongodb
+    restart: unless-stopped
+
+    # PROFILE: Available in standard and full profiles only
+    # NoSQL document database for unstructured data
+    profiles: ["standard", "full"]
+
+    # Vault Integration: Credentials are fetched from Vault via AppRole at startup
+    entrypoint: ["/init/init-approle.sh"]
+    command:
+      - "mongod"
+      - "--wiredTigerCacheSizeGB=${MONGODB_WIRED_TIGER_CACHE_SIZE:-0.5}"
+      - "--wiredTigerJournalCompressor=zstd"
+      - "--journalCommitInterval=${MONGODB_JOURNAL_COMMIT_INTERVAL:-100}"
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/mongodb
+      MONGODB_IP: ${MONGODB_IP:-172.20.0.15}
+      MONGODB_ENABLE_TLS: ${MONGODB_ENABLE_TLS:-false}
+      # NOTE: MONGO_INITDB_ROOT_USERNAME, MONGO_INITDB_ROOT_PASSWORD, and
+      # MONGO_INITDB_DATABASE are fetched from Vault via AppRole by the init script
+
+    ports:
+      - "27017:27017"
+
+    volumes:
+      - mongodb_data:/data/db
+      - ./configs/mongodb/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - ${HOME}/.config/vault/approles/mongodb:/vault-approles/mongodb:ro
+      - ${HOME}/.config/vault/certs/mongodb:/etc/mongodb/certs:ro
+
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Primary network for data tier
+        ipv4_address: 172.20.2.15
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')", "--quiet"]
+      interval: ${MONGODB_HEALTH_INTERVAL:-60s}
+      timeout: ${MONGODB_HEALTH_TIMEOUT:-5s}
+      retries: ${MONGODB_HEALTH_RETRIES:-5}
+      start_period: 30s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ===========================================================================
+  # FORGEJO - Self-Hosted Git Server
+  # ===========================================================================
+  # Forgejo uses the local PostgreSQL instance for git repository storage
+  # ===========================================================================
+  
+  forgejo:
+    <<: *default-platform
+    build: ./configs/forgejo
+    container_name: dev-forgejo
+    restart: unless-stopped
+
+    # PROFILE: Available in minimal, standard, and full profiles
+    # Self-hosted Git server with Forgejo
+    profiles: ["minimal", "standard", "full"]
+
+    environment:
+      # Vault configuration (AppRole authentication)
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/forgejo
+      USER_UID: 1000
+      USER_GID: 1000
+      FORGEJO__database__DB_TYPE: postgres
+      FORGEJO__database__HOST: postgres:5432
+      FORGEJO__database__NAME: forgejo
+      FORGEJO__server__DOMAIN: ${FORGEJO_DOMAIN:-localhost}
+      FORGEJO__server__ROOT_URL: http://${FORGEJO_DOMAIN:-localhost}:3000/
+      FORGEJO__metrics__ENABLED: true
+      FORGEJO__metrics__ENABLED_ISSUE_BY_LABEL: false
+      FORGEJO__metrics__ENABLED_ISSUE_BY_REPOSITORY: false
+
+    ports:
+      - "3000:3000"   # HTTP
+      - "2222:22"     # SSH
+
+    volumes:
+      - forgejo_data:/data
+      - ${HOME}/.config/vault/approles/forgejo:/vault-approles/forgejo:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    
+    networks:
+      vault-network:  # Connect to Vault for AppRole auth
+      data-network:   # Connect to PostgreSQL database
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.20
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+    
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.voip.service=git-server"
+      - "com.voip.platform=colima"
+
+  # ===========================================================================
+  # HASHICORP VAULT - Secrets Management
+  # ===========================================================================
+  # Vault uses file storage backend for persistence
+  # Unseal keys stored in ~/.config/vault/
+  # ===========================================================================
+
+  vault:
+    <<: *default-platform
+    image: hashicorp/vault:1.18
+    container_name: dev-vault
+    restart: unless-stopped
+
+    # PROFILE: NO PROFILE - Always starts (required for all profiles)
+    # Secrets management and PKI infrastructure
+
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_API_ADDR: http://127.0.0.1:8200
+      VAULT_KEYS_FILE: /vault-keys/keys.json
+      SKIP_CHOWN: "true"
+
+    ports:
+      - "8200:8200"
+
+    volumes:
+      - vault_data:/vault/data
+      - ./configs/vault:/vault/config:ro
+      - ./configs/vault/scripts/vault-auto-unseal.sh:/usr/local/bin/vault-auto-unseal.sh:ro
+      - ${HOME}/.config/vault:/vault-keys:ro
+
+    networks:
+      vault-network:  # Primary network - all services connect here
+        ipv4_address: 172.20.1.5
+
+    # IPC_LOCK capability allows Vault to lock memory pages, preventing sensitive data
+    # (encryption keys, secrets) from being swapped to disk. This is critical for security
+    # as it ensures secrets remain in RAM and cannot be recovered from swap files.
+    # Reference: https://developer.hashicorp.com/vault/docs/configuration#disable_mlock
+    cap_add:
+      - IPC_LOCK
+
+    entrypoint: >
+      sh -c "
+      chown -R vault:vault /vault/data &&
+      docker-entrypoint.sh server &
+      /usr/local/bin/vault-auto-unseal.sh &
+      wait -n
+      "
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=secrets-manager"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Reference Application - FastAPI
+  # ---------------------------------------------------------------------------
+
+  reference-api:
+    <<: *default-platform
+    build: ./reference-apps/fastapi
+    container_name: dev-reference-api
+    restart: unless-stopped
+
+    # PROFILE: Available in reference profile
+    # Python FastAPI code-first implementation (port 8000/8443)
+    profiles: ["reference"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis-1
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      REFERENCE_API_ENABLE_TLS: ${REFERENCE_API_ENABLE_TLS:-false}
+
+    ports:
+      - "${REFERENCE_API_HTTP_PORT:-8000}:8000"
+      - "${REFERENCE_API_HTTPS_PORT:-8443}:8443"
+
+    volumes:
+      - ${HOME}/.config/vault/certs:/app/vault-certs:ro
+      - ${HOME}/.config/vault/approles/reference-api:/vault-approles/reference-api:ro
+
+    networks:
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.100
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=reference-api"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Reference Application - FastAPI API-First Implementation
+  # ---------------------------------------------------------------------------
+
+  api-first:
+    <<: *default-platform
+    build: ./reference-apps/fastapi-api-first
+    container_name: dev-api-first
+    restart: unless-stopped
+
+    # PROFILE: Available in reference profile
+    # Python FastAPI API-first implementation (port 8001/8444)
+    profiles: ["reference"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/api-first
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis-1
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      API_FIRST_ENABLE_TLS: ${API_FIRST_ENABLE_TLS:-false}
+
+    ports:
+      - "${API_FIRST_HTTP_PORT:-8001}:8001"
+      - "${API_FIRST_HTTPS_PORT:-8444}:8444"
+
+    volumes:
+      - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
+      - ${HOME}/.config/vault/approles/api-first:/vault-approles/api-first:ro
+
+    networks:
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.104
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=api-first"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Reference Application - Golang
+  # ---------------------------------------------------------------------------
+
+  golang-api:
+    <<: *default-platform
+    build: ./reference-apps/golang
+    container_name: dev-golang-api
+    restart: unless-stopped
+
+    # PROFILE: Available in reference profile
+    # Go with Gin framework (port 8002/8445)
+    profiles: ["reference"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/golang-api
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis-1
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      GOLANG_API_ENABLE_TLS: ${GOLANG_API_ENABLE_TLS:-false}
+      HTTP_PORT: 8002
+      HTTPS_PORT: 8445
+      DEBUG: ${DEBUG:-true}
+      ENVIRONMENT: development
+
+    ports:
+      - "${GOLANG_HTTP_PORT:-8002}:8002"
+      - "${GOLANG_HTTPS_PORT:-8445}:8445"
+
+    volumes:
+      - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
+      - ${HOME}/.config/vault/approles/golang-api:/vault-approles/golang-api:ro
+
+    networks:
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.105
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8002/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=golang-api"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Reference Applications - Node.js API
+  # ---------------------------------------------------------------------------
+
+  nodejs-api:
+    <<: *default-platform
+    build: ./reference-apps/nodejs
+    container_name: dev-nodejs-api
+    restart: unless-stopped
+
+    # PROFILE: Available in reference profile
+    # Node.js with Express (port 8003/8446)
+    profiles: ["reference"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/nodejs-api
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: redis-1
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      NODEJS_API_ENABLE_TLS: ${NODEJS_API_ENABLE_TLS:-false}
+      HTTP_PORT: 8003
+      HTTPS_PORT: 8446
+      DEBUG: ${DEBUG:-true}
+      NODE_ENV: development
+
+    ports:
+      - "${NODEJS_HTTP_PORT:-8003}:8003"
+      - "${NODEJS_HTTPS_PORT:-8446}:8446"
+
+    volumes:
+      - ${HOME}/.config/vault/certs:/root/.config/vault/certs:ro
+      - ${HOME}/.config/vault/approles/nodejs-api:/vault-approles/nodejs-api:ro
+
+    networks:
+      vault-network:  # Connect to Vault for secrets
+      data-network:   # Connect to databases/cache/queue
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.106
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8003/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=nodejs-api"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Reference Applications - Rust API
+  # ---------------------------------------------------------------------------
+
+  rust-api:
+    <<: *default-platform
+    build: ./reference-apps/rust
+    container_name: dev-rust-api
+    restart: unless-stopped
+
+    # PROFILE: Available in reference profile
+    # Rust with Actix-web (port 8004/8447, ~40% complete)
+    profiles: ["reference"]
+
+    environment:
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/rust-api
+      HTTP_PORT: 8004
+      HTTPS_PORT: 8447
+      RUST_LOG: info
+
+    ports:
+      - "${RUST_HTTP_PORT:-8004}:8004"
+      - "${RUST_HTTPS_PORT:-8447}:8447"
+
+    volumes:
+      - ${HOME}/.config/vault/approles/rust-api:/vault-approles/rust-api:ro
+
+    networks:
+      vault-network:  # Connect to Vault for secrets
+      app-network:    # Primary network for app tier
+        ipv4_address: 172.20.3.107
+
+    depends_on:
+      vault:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8004/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=rust-api"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Observability Stack - Prometheus
+  # ---------------------------------------------------------------------------
+
+  prometheus:
+    <<: *default-platform
+    image: prom/prometheus:v2.48.0
+    container_name: dev-prometheus
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Metrics collection and time-series database
+    profiles: ["full"]
+
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=5GB'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.min-block-duration=2h'
+      - '--storage.tsdb.max-block-duration=2h'
+
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+
+    networks:
+      data-network:          # Scrape database exporters
+      app-network:           # Scrape application metrics
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.10
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.voip.service=prometheus"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Observability Stack - Grafana
+  # ---------------------------------------------------------------------------
+
+  grafana:
+    <<: *default-platform
+    image: grafana/grafana:10.2.2
+    container_name: dev-grafana
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Visualization dashboards (http://localhost:3001)
+    profiles: ["full"]
+
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ""
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./configs/grafana/dashboards:/etc/grafana/dashboards:ro
+
+    networks:
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.20
+
+    depends_on:
+      - prometheus
+      - loki
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=grafana"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Observability Stack - Loki (Log Aggregation)
+  # ---------------------------------------------------------------------------
+
+  loki:
+    <<: *default-platform
+    image: grafana/loki:2.9.3
+    container_name: dev-loki
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Log aggregation system
+    profiles: ["full"]
+
+    command: -config.file=/etc/loki/loki-config.yml
+
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+
+    volumes:
+      - ./configs/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+
+    networks:
+      observability-network: # Primary observability network
+        ipv4_address: 172.20.4.30
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    labels:
+      - "com.voip.service=loki"
+      - "com.voip.platform=colima"
+
+  # ===========================================================================
+  # METRICS EXPORTERS - Prometheus Integration
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Redis Exporter - Node 1
+  # ---------------------------------------------------------------------------
+
+  redis-exporter-1:
+    <<: *default-platform
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: dev-redis-exporter-1
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Redis metrics exporter for node 1
+    profiles: ["full"]
+
+    entrypoint: ["/init/init.sh"]
+
+    environment:
+      # Vault configuration
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      REDIS_NODE: redis-1
+
+      # Exporter configuration (REDIS_PASSWORD will be set by init script)
+      REDIS_ADDR: "redis-1:6379"
+      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
+      # Note: Cluster mode disabled - scraping individual nodes instead
+      # REDIS_EXPORTER_CHECK_KEYS: "user:*,session:*"
+      # REDIS_EXPORTER_CHECK_SINGLE_KEYS: "cache:stats"
+      # REDIS_EXPORTER_IS_CLUSTER: "true"
+
+    volumes:
+      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
+      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
+
+    networks:
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-1
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.40
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      redis-1:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+    labels:
+      - "com.voip.service=redis-exporter"
+      - "com.voip.platform=colima"
+      - "com.voip.redis.node=1"
+
+  # ---------------------------------------------------------------------------
+  # Redis Exporter - Node 2
+  # ---------------------------------------------------------------------------
+
+  redis-exporter-2:
+    <<: *default-platform
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: dev-redis-exporter-2
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Redis metrics exporter for node 2
+    profiles: ["full"]
+
+    entrypoint: ["/init/init.sh"]
+
+    environment:
+      # Vault configuration
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      REDIS_NODE: redis-2
+
+      # Exporter configuration (REDIS_PASSWORD will be set by init script)
+      REDIS_ADDR: "redis-2:6379"
+      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
+      # Note: Cluster mode disabled - scraping individual nodes instead
+      # REDIS_EXPORTER_IS_CLUSTER: "true"
+
+    volumes:
+      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
+      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
+
+    networks:
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-2
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.41
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      redis-2:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+    labels:
+      - "com.voip.service=redis-exporter"
+      - "com.voip.platform=colima"
+      - "com.voip.redis.node=2"
+
+  # ---------------------------------------------------------------------------
+  # Redis Exporter - Node 3
+  # ---------------------------------------------------------------------------
+
+  redis-exporter-3:
+    <<: *default-platform
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: dev-redis-exporter-3
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Redis metrics exporter for node 3
+    profiles: ["full"]
+
+    entrypoint: ["/init/init.sh"]
+
+    environment:
+      # Vault configuration
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      REDIS_NODE: redis-3
+
+      # Exporter configuration (REDIS_PASSWORD will be set by init script)
+      REDIS_ADDR: "redis-3:6379"
+      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
+      # Note: Cluster mode disabled - scraping individual nodes instead
+      # REDIS_EXPORTER_IS_CLUSTER: "true"
+
+    volumes:
+      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
+      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
+
+    networks:
+      vault-network:         # Connect to Vault for Redis password
+      data-network:          # Connect to redis-3
+      observability-network: # Export metrics to Prometheus
+        ipv4_address: 172.20.4.42
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      redis-3:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+    labels:
+      - "com.voip.service=redis-exporter"
+      - "com.voip.platform=colima"
+      - "com.voip.redis.node=3"
+
+  # ---------------------------------------------------------------------------
+  # cAdvisor - Container Metrics
+  # ---------------------------------------------------------------------------
+
+  cadvisor:
+    <<: *default-platform
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: dev-cadvisor
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Container resource monitoring
+    profiles: ["full"]
+
+    # Use specific capabilities instead of privileged mode for security
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+    devices:
+      - /dev/kmsg
+
+    networks:
+      observability-network: # Export container metrics
+        ipv4_address: 172.20.4.50
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+    labels:
+      - "com.voip.service=cadvisor"
+      - "com.voip.platform=colima"
+
+  # ---------------------------------------------------------------------------
+  # Vector - Unified Observability Pipeline
+  # Replaces: Alloy, PostgreSQL Exporter, MongoDB Exporter, Node Exporter
+  # Scrapes: MySQL Exporter, Redis Exporters (3), cAdvisor
+  # ---------------------------------------------------------------------------
+
+  vector:
+    <<: *default-platform
+    build: ./configs/vector
+    container_name: dev-vector
+    restart: unless-stopped
+
+    # PROFILE: Available in full profile only
+    # Unified observability data pipeline
+    profiles: ["full"]
+
+    entrypoint: ["/init/init.sh"]
+    command: ["--config", "/etc/vector/vector.yaml"]
+
+    volumes:
+      - ./configs/vector/init.sh:/init/init.sh:ro
+      - ./configs/vector/vector.yaml:/etc/vector/vector.yaml:ro
+      - ./configs/vector/redis-metrics.sh:/scripts/redis-metrics.sh:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${HOME}/.config/vault/approles/vector:/vault-approles/vector:ro
+
+    environment:
+      VECTOR_CONFIG: /etc/vector/vector.yaml
+      # Vault configuration
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_APPROLE_DIR: /vault-approles/vector
+      # Database credentials (populated by init script from Vault)
+      POSTGRES_USER: ""
+      POSTGRES_PASSWORD: ""
+      POSTGRES_DB: ""
+      MONGO_USER: ""
+      MONGO_PASSWORD: ""
+
+    networks:
+      vault-network:         # Connect to Vault for AppRole auth
+      data-network:          # Connect to databases for metrics collection
+      observability-network: # Send logs to Loki
+        ipv4_address: 172.20.4.60
+
+    depends_on:
+      vault:
+        condition: service_healthy
+      loki:
+        condition: service_started
+      prometheus:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8686/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    logging: *default-logging
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    labels:
+      - "com.voip.service=vector"
+      - "com.voip.platform=colima"
+
+# ===========================================================================
+# ARCHITECTURE NOTES
+# ===========================================================================
+#
+# SEPARATION OF CONCERNS:
+#   - This Colima instance: Git storage (Forgejo) + local development
+#   - libvirt VMs: Production VoIP services (OpenSIPS, Asterisk, RTPEngine)
+#
+# DATABASE USAGE:
+#   - PostgreSQL here is for Forgejo and local dev/testing ONLY
+#   - VoIP services use separate PostgreSQL in libvirt VMs
+#   - No cross-network database calls for production VoIP traffic
+#
+# BENEFITS:
+#   - Reduced network latency for VoIP database operations
+#   - Self-contained libvirt VMs for VoIP services
+#   - Clear separation between dev/git and production environments
+#   - Each environment can be backed up/restored independently
+#   - Full kernel access in libvirt VMs (required for RTPEngine kernel module)
+#   - Infrastructure as code via Ansible/Terraform
+#
+# CONNECTION INFO:
+#   1. Get Colima IP:
+#      colima list | grep default | awk '{print $NF}'
+#
+#   2. From Mac:
+#      PostgreSQL: localhost:5432
+#      Forgejo: http://localhost:3000
+#
+#   3. From libvirt VMs (if needed for dev):
+#      PostgreSQL: <COLIMA_IP>:5432
+#      Forgejo: http://<COLIMA_IP>:3000
+#
+# MANAGEMENT:
+#   - Start: docker compose up -d
+#   - Stop: docker compose down
+#   - Logs: docker compose logs -f [service]
+#   - Backup: ./scripts/backup-colima.sh

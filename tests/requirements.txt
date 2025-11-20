@@ -1,0 +1,19 @@
+# Test dependencies for DevStack Core test suite
+#
+# Install with: pip3 install -r tests/requirements.txt
+#
+
+# PostgreSQL client library
+psycopg2-binary>=2.9.0
+
+# System dependencies (not installed via pip):
+# - jq: JSON processor for bash tests
+#   macOS: brew install jq
+#   Ubuntu: apt-get install jq
+#
+# - curl: HTTP client for API testing (usually pre-installed)
+
+# Note: All other dependencies use Python stdlib:
+# - urllib.request (HTTP client for Vault)
+# - json (JSON parsing)
+# - ssl (SSL/TLS support)

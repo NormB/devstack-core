@@ -1,0 +1,212 @@
+---
+# AlertManager Configuration for DevStack Core
+#
+# Routes alerts based on severity and category
+# Supports email, Slack, PagerDuty, and webhook notifications
+#
+# Configuration Priority:
+#   1. Critical alerts - Immediate notification
+#   2. Warning alerts - Grouped and sent every 5 minutes
+#   3. Info alerts - Grouped and sent daily
+
+global:
+  # Default notification settings
+  resolve_timeout: 5m
+
+  # SMTP settings for email notifications
+  # Uncomment and configure for production
+  # smtp_smarthost: 'smtp.example.com:587'
+  # smtp_from: 'alertmanager@devstack.local'
+  # smtp_auth_username: 'alertmanager'
+  # smtp_auth_password: 'password'
+  # smtp_require_tls: true
+
+  # Slack webhook URL
+  # slack_api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+
+  # PagerDuty integration key
+  # pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree for alert routing
+route:
+  # Default receiver for all alerts
+  receiver: 'devstack-default'
+
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+
+  # How long to wait before sending initial notification
+  group_wait: 30s
+
+  # How long to wait before sending notification about new alerts in a group
+  group_interval: 5m
+
+  # How long to wait before re-sending a notification
+  repeat_interval: 4h
+
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'devstack-critical'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+      continue: true  # Also send to default receiver
+
+    # Vault-specific alerts - high priority
+    - match_re:
+        alertname: 'Vault.*'
+      receiver: 'devstack-vault'
+      group_wait: 15s
+      group_interval: 2m
+      repeat_interval: 1h
+
+    # Database alerts
+    - match:
+        category: database
+      receiver: 'devstack-database'
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 2h
+
+    # Certificate expiration alerts
+    - match:
+        category: security
+      receiver: 'devstack-security'
+      group_wait: 5m
+      group_interval: 1h
+      repeat_interval: 24h
+
+    # Resource utilization alerts
+    - match:
+        category: resources
+      receiver: 'devstack-resources'
+      group_wait: 2m
+      group_interval: 10m
+      repeat_interval: 4h
+
+    # Warning alerts - grouped delivery
+    - match:
+        severity: warning
+      receiver: 'devstack-warning'
+      group_wait: 5m
+      group_interval: 15m
+      repeat_interval: 12h
+
+    # Info alerts - daily summary
+    - match:
+        severity: info
+      receiver: 'devstack-info'
+      group_wait: 1h
+      group_interval: 24h
+      repeat_interval: 168h  # Weekly
+
+# Inhibition rules - suppress alerts when certain conditions are met
+inhibit_rules:
+  # Suppress warnings if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Suppress service-specific alerts if service is down
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['instance']
+
+  # Suppress database connection alerts if database is down
+  - source_match:
+      alertname: 'DatabaseDown'
+    target_match:
+      category: 'database'
+    equal: ['job']
+
+  # Suppress certificate expiration warnings if critical alert is active
+  - source_match:
+      alertname: 'CertificateExpiringCritical'
+    target_match:
+      alertname: 'CertificateExpiringSoon'
+    equal: ['cert_name']
+
+# Notification receivers
+receivers:
+  # Default receiver - logs only (development mode)
+  - name: 'devstack-default'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/alerts'
+        send_resolved: true
+
+  # Critical alerts - multiple notification channels
+  - name: 'devstack-critical'
+    # Webhook for logging/processing
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/critical'
+        send_resolved: true
+
+    # Email notification (uncomment and configure for production)
+    # email_configs:
+    #   - to: 'oncall@example.com'
+    #     headers:
+    #       Subject: '[CRITICAL] {{ .GroupLabels.alertname }} - DevStack'
+    #     html: '{{ template "email.default.html" . }}'
+    #     send_resolved: true
+
+    # Slack notification (uncomment and configure)
+    # slack_configs:
+    #   - channel: '#devstack-critical'
+    #     title: '[CRITICAL] {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+
+    # PagerDuty (uncomment and configure)
+    # pagerduty_configs:
+    #   - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    #     description: '{{ .GroupLabels.alertname }}'
+    #     details:
+    #       firing: '{{ .Alerts.Firing | len }}'
+    #       resolved: '{{ .Alerts.Resolved | len }}'
+
+  # Vault alerts
+  - name: 'devstack-vault'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/vault'
+        send_resolved: true
+
+  # Database alerts
+  - name: 'devstack-database'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/database'
+        send_resolved: true
+
+  # Security/Certificate alerts
+  - name: 'devstack-security'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/security'
+        send_resolved: true
+
+  # Resource utilization alerts
+  - name: 'devstack-resources'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/resources'
+        send_resolved: true
+
+  # Warning alerts
+  - name: 'devstack-warning'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/warning'
+        send_resolved: true
+
+  # Info alerts
+  - name: 'devstack-info'
+    webhook_configs:
+      - url: 'http://vector:8686/webhook/info'
+        send_resolved: true

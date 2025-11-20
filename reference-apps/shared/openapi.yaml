@@ -1,0 +1,841 @@
+openapi: 3.1.0
+info:
+  title: DevStack Core - Reference API
+  description: |
+    Reference implementation demonstrating infrastructure integration patterns
+    for production-grade applications.
+
+    This API showcases:
+    - HashiCorp Vault integration for secrets management
+    - Multi-database connectivity (PostgreSQL, MySQL, MongoDB)
+    - Redis caching and cluster management
+    - RabbitMQ messaging patterns
+    - Comprehensive health checks
+    - Prometheus metrics integration
+
+    **Note:** This is a reference implementation for learning and development.
+    Production deployments should add authentication, rate limiting, and other
+    security controls as documented in SECURITY_ASSESSMENT.md.
+
+  version: 1.0.0
+  contact:
+    name: Development Team
+    url: https://github.com/NormB/devstack-core
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Code-First Implementation (FastAPI with decorators)
+  - url: http://localhost:8001
+    description: API-First Implementation (Generated from OpenAPI spec)
+  - url: https://localhost:8443
+    description: Code-First Implementation (HTTPS/TLS with Vault PKI)
+  - url: https://localhost:8444
+    description: API-First Implementation (HTTPS/TLS with Vault PKI)
+
+tags:
+  - name: Health Checks
+    description: |
+      Health check endpoints for all infrastructure services.
+      Use these to verify connectivity and service availability before
+      performing operations. The `/health/all` endpoint is cached for 30
+      seconds to reduce load on infrastructure.
+
+  - name: Vault Examples
+    description: |
+      Examples of HashiCorp Vault integration patterns for secrets management.
+      Demonstrates fetching credentials securely from Vault KV v2 secret engine.
+      All responses are cached for 5 minutes to reduce Vault API load.
+
+  - name: Database Examples
+    description: |
+      Database connectivity examples for PostgreSQL, MySQL, and MongoDB.
+      Shows connection pooling, query execution, and error handling patterns.
+
+  - name: Cache Examples
+    description: |
+      Redis caching patterns with TTL support. Examples cover get, set, and
+      delete operations with proper error handling.
+
+  - name: Redis Cluster
+    description: |
+      Redis cluster management endpoints showing cluster topology, node information,
+      and slot distribution. Useful for monitoring 3-node Redis cluster health.
+
+  - name: Messaging Examples
+    description: |
+      RabbitMQ messaging patterns including message publishing and queue management.
+      Demonstrates basic producer patterns and queue inspection.
+
+paths:
+  /health/vault:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Vault
+      description: Check Vault health
+      operationId: health_vault_health_vault_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/postgres:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Postgres
+      description: Check PostgreSQL health
+      operationId: health_postgres_health_postgres_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/mysql:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Mysql
+      description: Check MySQL health
+      operationId: health_mysql_health_mysql_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/mongodb:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Mongodb
+      description: Check MongoDB health
+      operationId: health_mongodb_health_mongodb_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/redis:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Redis
+      description: Check Redis health
+      operationId: health_redis_health_redis_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/rabbitmq:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Rabbitmq
+      description: Check RabbitMQ health
+      operationId: health_rabbitmq_health_rabbitmq_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/all:
+    get:
+      tags:
+        - Health Checks
+      summary: Health All
+      description: |-
+        Check all services health
+
+        Response is cached for 30 seconds to reduce load on infrastructure services.
+      operationId: health_all_health_all_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /health/:
+    get:
+      tags:
+        - Health Checks
+      summary: Health Simple
+      description: Simple health check (doesn't test dependencies)
+      operationId: health_simple_health__get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /redis/cluster/nodes:
+    get:
+      tags:
+        - Redis Cluster
+      summary: Get Cluster Nodes
+      description: |-
+        Get detailed information about all Redis cluster nodes
+
+        Returns information including:
+        - Node ID
+        - IP address and port
+        - Flags (master/slave)
+        - Master node ID (for replicas)
+        - Ping/pong timestamps
+        - Config epoch
+        - Link state
+        - Slots assigned to each node
+      operationId: get_cluster_nodes_redis_cluster_nodes_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /redis/cluster/slots:
+    get:
+      tags:
+        - Redis Cluster
+      summary: Get Cluster Slots
+      description: |-
+        Get slot distribution across cluster nodes
+
+        Returns:
+        - Slot ranges assigned to each master
+        - Total slots covered
+        - Slot coverage percentage
+      operationId: get_cluster_slots_redis_cluster_slots_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /redis/cluster/info:
+    get:
+      tags:
+        - Redis Cluster
+      summary: Get Cluster Info
+      description: |-
+        Get detailed Redis cluster information
+
+        Returns comprehensive cluster state including:
+        - Cluster state (ok/fail)
+        - Slots assigned/ok/fail
+        - Known nodes
+        - Cluster size
+        - Epoch information
+        - Stats
+      operationId: get_cluster_info_redis_cluster_info_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /redis/nodes/{node_name}/info:
+    get:
+      tags:
+        - Redis Cluster
+      summary: Get Node Info
+      description: |-
+        Get detailed information about a specific Redis node
+
+        Args:
+            node_name: Name of the node (redis-1, redis-2, redis-3)
+
+        Returns detailed server information for the specified node
+      operationId: get_node_info_redis_nodes__node_name__info_get
+      parameters:
+        - name: node_name
+          in: path
+          required: true
+          schema:
+            type: string
+            title: Node Name
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /examples/vault/secret/{service_name}:
+    get:
+      tags:
+        - Vault Examples
+      summary: Get Secret Example
+      description: |-
+        Example: Fetch a secret from Vault
+
+        This shows how to retrieve credentials for any service stored in Vault.
+        Response is cached for 5 minutes to reduce Vault API calls.
+
+        Raises:
+            VaultUnavailableError: If Vault is unreachable or returns an error
+            ResourceNotFoundError: If the secret doesn't exist
+      operationId: get_secret_example_examples_vault_secret__service_name__get
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+            pattern: ^[a-zA-Z0-9_-]+$
+            description: Service name (alphanumeric, hyphens, underscores only)
+            title: Service Name
+          description: Service name (alphanumeric, hyphens, underscores only)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /examples/vault/secret/{service_name}/{key}:
+    get:
+      tags:
+        - Vault Examples
+      summary: Get Secret Key Example
+      description: |-
+        Example: Fetch a specific key from a secret
+
+        Useful when you only need one field (like just the password).
+        Response is cached for 5 minutes to reduce Vault API calls.
+
+        Raises:
+            VaultUnavailableError: If Vault is unreachable or returns an error
+            ResourceNotFoundError: If the secret or key doesn't exist
+      operationId: get_secret_key_example_examples_vault_secret__service_name___key__get
+      parameters:
+        - name: service_name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+            pattern: ^[a-zA-Z0-9_-]+$
+            description: Service name (alphanumeric, hyphens, underscores only)
+            title: Service Name
+          description: Service name (alphanumeric, hyphens, underscores only)
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            pattern: ^[a-zA-Z0-9_-]+$
+            description: Secret key name (alphanumeric, hyphens, underscores only)
+            title: Key
+          description: Secret key name (alphanumeric, hyphens, underscores only)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecretKeyResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /examples/database/postgres/query:
+    get:
+      tags:
+        - Database Examples
+      summary: Postgres Example
+      description: 'Example: Execute a simple PostgreSQL query'
+      operationId: postgres_example_examples_database_postgres_query_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /examples/database/mysql/query:
+    get:
+      tags:
+        - Database Examples
+      summary: Mysql Example
+      description: 'Example: Execute a simple MySQL query'
+      operationId: mysql_example_examples_database_mysql_query_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /examples/database/mongodb/query:
+    get:
+      tags:
+        - Database Examples
+      summary: Mongodb Example
+      description: 'Example: Query MongoDB'
+      operationId: mongodb_example_examples_database_mongodb_query_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /examples/cache/{key}:
+    get:
+      tags:
+        - Cache Examples
+      summary: Get Cache Value
+      description: 'Example: Get a value from cache'
+      operationId: get_cache_value_examples_cache__key__get
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+            pattern: ^[a-zA-Z0-9_:.-]+$
+            description: 'Cache key (alphanumeric and: - _ : . only)'
+            title: Key
+          description: 'Cache key (alphanumeric and: - _ : . only)'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheGetResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+        - Cache Examples
+      summary: Set Cache Value
+      description: 'Example: Set a value in cache with optional TTL'
+      operationId: set_cache_value_examples_cache__key__post
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+            pattern: ^[a-zA-Z0-9_:.-]+$
+            description: 'Cache key (alphanumeric and: - _ : . only)'
+            title: Key
+          description: 'Cache key (alphanumeric and: - _ : . only)'
+        - name: value
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 10000
+            description: Value to cache (max 10KB)
+            title: Value
+          description: Value to cache (max 10KB)
+        - name: ttl
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 86400
+            minimum: 1
+            description: Time to live in seconds (1s to 24h)
+            title: Ttl
+          description: Time to live in seconds (1s to 24h)
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheSetResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - Cache Examples
+      summary: Delete Cache Value
+      description: 'Example: Delete a value from cache'
+      operationId: delete_cache_value_examples_cache__key__delete
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+            pattern: ^[a-zA-Z0-9_:.-]+$
+            description: 'Cache key (alphanumeric and: - _ : . only)'
+            title: Key
+          description: 'Cache key (alphanumeric and: - _ : . only)'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CacheDeleteResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /examples/messaging/publish:
+    post:
+      tags:
+        - Messaging Examples
+      summary: Publish Message
+      description: 'Example: Publish a message to a queue'
+      operationId: publish_message_examples_messaging_publish_post
+      parameters:
+        - name: queue_name
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            pattern: ^[a-zA-Z0-9_.-]+$
+            description: 'Queue name (alphanumeric and: - _ . only)'
+            title: Queue Name
+          description: 'Queue name (alphanumeric and: - _ . only)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Message payload (JSON object, max 1MB)
+              title: Message
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePublishResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /examples/messaging/queue/{queue_name}/info:
+    get:
+      tags:
+        - Messaging Examples
+      summary: Get Queue Info
+      description: 'Example: Get information about a queue'
+      operationId: get_queue_info_examples_messaging_queue__queue_name__info_get
+      parameters:
+        - name: queue_name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            pattern: ^[a-zA-Z0-9_.-]+$
+            description: 'Queue name (alphanumeric and: - _ . only)'
+            title: Queue Name
+          description: 'Queue name (alphanumeric and: - _ . only)'
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueInfoResponse'
+        "422":
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /metrics:
+    get:
+      summary: Metrics
+      description: Prometheus metrics endpoint
+      operationId: metrics_metrics_get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /:
+    get:
+      summary: Root
+      description: |-
+        Root endpoint with API information
+
+        Rate Limit: 100 requests per minute per IP
+      operationId: root__get
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+components:
+  schemas:
+    CacheDeleteResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+          description: Cache key
+        deleted:
+          type: boolean
+          title: Deleted
+          description: Whether key was deleted
+        action:
+          type: string
+          title: Action
+          description: Action performed
+          default: delete
+      type: object
+      required:
+        - key
+        - deleted
+      title: CacheDeleteResponse
+      description: Response for cache delete operations
+    CacheGetResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+          description: Cache key
+        value:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Value
+          description: Cached value (null if not found)
+        exists:
+          type: boolean
+          title: Exists
+          description: Whether key exists in cache
+        ttl:
+          anyOf:
+            - type: integer
+            - type: string
+            - type: "null"
+          title: Ttl
+          description: Time to live in seconds or 'no expiration'
+      type: object
+      required:
+        - key
+        - exists
+      title: CacheGetResponse
+      description: Response for cache get operations
+    CacheSetResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+          description: Cache key
+        value:
+          type: string
+          title: Value
+          description: Value that was set
+        ttl:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Ttl
+          description: Time to live in seconds (null if no expiration)
+        action:
+          type: string
+          title: Action
+          description: Action performed
+          default: set
+      type: object
+      required:
+        - key
+        - value
+      title: CacheSetResponse
+      description: Response for cache set operations
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    MessagePublishResponse:
+      properties:
+        queue:
+          type: string
+          title: Queue
+          description: Queue name
+        message:
+          additionalProperties: true
+          type: object
+          title: Message
+          description: Message that was published
+        action:
+          type: string
+          title: Action
+          description: Action performed
+          default: published
+      type: object
+      required:
+        - queue
+        - message
+      title: MessagePublishResponse
+      description: Response for message publishing
+    QueueInfoResponse:
+      properties:
+        queue:
+          type: string
+          title: Queue
+          description: Queue name
+        exists:
+          type: boolean
+          title: Exists
+          description: Whether queue exists
+        message_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Message Count
+          description: Number of messages in queue
+        consumer_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Consumer Count
+          description: Number of consumers
+      type: object
+      required:
+        - queue
+        - exists
+      title: QueueInfoResponse
+      description: Response for queue information
+    SecretKeyResponse:
+      properties:
+        service:
+          type: string
+          title: Service
+          description: Service name
+        key:
+          type: string
+          title: Key
+          description: Secret key name
+        value:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Value
+          description: Secret value (sensitive values masked)
+        note:
+          type: string
+          title: Note
+          description: Additional information
+      type: object
+      required:
+        - service
+        - key
+        - note
+      title: SecretKeyResponse
+      description: Response for specific secret key retrieval
+    SecretResponse:
+      properties:
+        service:
+          type: string
+          title: Service
+          description: Service name
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Secret data (passwords masked)
+        note:
+          type: string
+          title: Note
+          description: Additional information
+      type: object
+      required:
+        - service
+        - data
+        - note
+      title: SecretResponse
+      description: Response for secret retrieval
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API Key authentication (not currently implemented in reference app).
+        Production deployments should implement API key validation.
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Bearer token authentication (not currently implemented in reference app).
+        Production deployments should implement JWT validation with proper claims.

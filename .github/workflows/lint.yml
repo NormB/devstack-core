@@ -1,0 +1,408 @@
+name: Linting
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: error
+          format: gcc
+          scandir: '.'
+          ignore_paths: |
+            node_modules
+            .git
+          ignore_names: |
+            .env
+            .env.example
+
+      - name: ShellCheck Summary
+        if: always()
+        run: echo "✓ ShellCheck completed"
+
+  dockerfile-lint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Find Dockerfiles
+        id: find-dockerfiles
+        run: |
+          dockerfiles=$(find . -name "Dockerfile*" -o -name "*.dockerfile" | tr '\n' ' ')
+          echo "dockerfiles=$dockerfiles" >> $GITHUB_OUTPUT
+
+          if [ -z "$dockerfiles" ]; then
+            echo "No Dockerfiles found"
+          else
+            echo "Found Dockerfiles: $dockerfiles"
+          fi
+
+      - name: Lint Dockerfiles
+        if: steps.find-dockerfiles.outputs.dockerfiles != ''
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: ${{ steps.find-dockerfiles.outputs.dockerfiles }}
+          failure-threshold: warning
+        continue-on-error: true
+
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Create yamllint config
+        run: |
+          cat > .yamllint.yml << EOF
+          extends: default
+          rules:
+            line-length:
+              max: 120
+              level: warning
+            indentation:
+              spaces: 2
+              indent-sequences: true
+            comments:
+              min-spaces-from-content: 1
+            document-start: disable
+            truthy:
+              allowed-values: ['true', 'false', 'yes', 'no']
+          ignore: |
+            node_modules/
+            .git/
+          EOF
+
+      - name: Run yamllint
+        run: |
+          yamllint -c .yamllint.yml . || true
+          echo "✓ YAML linting completed"
+
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Markdown Lint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+            !node_modules
+            !.git
+        continue-on-error: true
+
+  python-lint:
+    name: Python Lint (Ruff)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check for Python files
+        id: check-python
+        run: |
+          if find . -name "*.py" -type f | grep -q .; then
+            echo "has_python=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_python=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        if: steps.check-python.outputs.has_python == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Ruff
+        if: steps.check-python.outputs.has_python == 'true'
+        run: pip install ruff
+
+      - name: Run Ruff
+        if: steps.check-python.outputs.has_python == 'true'
+        run: |
+          ruff check . --select=E,F,W,C,N --ignore=E501 || true
+          echo "✓ Python linting completed"
+
+      - name: Skip Python linting
+        if: steps.check-python.outputs.has_python == 'false'
+        run: echo "ℹ No Python files found, skipping Python lint"
+
+  go-lint:
+    name: Go Lint (golangci-lint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check for Go files
+        id: check-go
+        run: |
+          if find . -name "*.go" -type f | grep -q .; then
+            echo "has_go=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_go=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Go
+        if: steps.check-go.outputs.has_go == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - name: Run golangci-lint
+        if: steps.check-go.outputs.has_go == 'true'
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout=5m --exclude-dirs=node_modules
+        continue-on-error: true
+
+      - name: Go lint summary
+        if: steps.check-go.outputs.has_go == 'true'
+        run: echo "✓ Go linting completed"
+
+      - name: Skip Go linting
+        if: steps.check-go.outputs.has_go == 'false'
+        run: echo "ℹ No Go files found, skipping Go lint"
+
+  rust-lint:
+    name: Rust Lint (Clippy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check for Rust files
+        id: check-rust
+        run: |
+          if find . -name "*.rs" -type f | grep -q .; then
+            echo "has_rust=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_rust=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Rust
+        if: steps.check-rust.outputs.has_rust == 'true'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+
+      - name: Run cargo fmt check
+        if: steps.check-rust.outputs.has_rust == 'true'
+        run: cargo fmt --all -- --check
+        working-directory: reference-apps/rust
+        continue-on-error: true
+
+      - name: Run cargo clippy
+        if: steps.check-rust.outputs.has_rust == 'true'
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: reference-apps/rust
+        continue-on-error: true
+
+      - name: Rust lint summary
+        if: steps.check-rust.outputs.has_rust == 'true'
+        run: echo "✓ Rust linting completed"
+
+      - name: Skip Rust linting
+        if: steps.check-rust.outputs.has_rust == 'false'
+        run: echo "ℹ No Rust files found, skipping Rust lint"
+
+  docker-compose-lint:
+    name: Docker Compose Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate docker-compose.yml formatting
+        run: |
+          docker compose config --quiet
+          echo "✓ docker-compose.yml is properly formatted"
+
+      - name: Check for deprecated syntax
+        run: |
+          # Check for version field (deprecated in Compose v2)
+          if grep -q "^version:" docker-compose.yml; then
+            echo "⚠ Warning: 'version' field is deprecated in Docker Compose v2+"
+          fi
+
+          # Check for common issues
+          if grep -q "container_name:.*\${" docker-compose.yml; then
+            echo "⚠ Warning: Using environment variables in container_name may cause conflicts"
+          fi
+
+          echo "✓ Docker Compose syntax check completed"
+
+  env-file-lint:
+    name: Environment File Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check .env.example format
+        run: |
+          # Check for proper format
+          while IFS= read -r line; do
+            # Skip empty lines and comments
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+
+            # Check for valid environment variable format
+            if ! [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+              echo "⚠ Potential issue in .env.example: $line"
+            fi
+          done < .env.example
+
+          echo "✓ .env.example format check completed"
+
+      - name: Check for common secrets in .env.example
+        run: |
+          # Ensure example file doesn't contain real secrets
+          patterns=(
+            "password=.*[^a-z]"
+            "token=.*[a-zA-Z0-9]{20,}"
+            "key=.*[a-zA-Z0-9]{20,}"
+            "secret=.*[a-zA-Z0-9]{20,}"
+          )
+
+          found_potential_secrets=0
+          for pattern in "${patterns[@]}"; do
+            if grep -iE "$pattern" .env.example | grep -v "changeme" | grep -v "your-" | grep -v "example"; then
+              echo "⚠ Potential real secret found in .env.example"
+              found_potential_secrets=1
+            fi
+          done
+
+          if [ $found_potential_secrets -eq 0 ]; then
+            echo "✓ No obvious real secrets in .env.example"
+          fi
+
+  permissions-check:
+    name: File Permissions Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check script permissions
+        run: |
+          # Find all .sh files
+          scripts=$(find . -name "*.sh" -type f)
+
+          non_executable=()
+          for script in $scripts; do
+            if [ ! -x "$script" ]; then
+              non_executable+=("$script")
+            fi
+          done
+
+          if [ ${#non_executable[@]} -gt 0 ]; then
+            echo "⚠ Warning: The following scripts are not executable:"
+            printf '%s\n' "${non_executable[@]}"
+          else
+            echo "✓ All shell scripts are executable"
+          fi
+
+      - name: Check for executable files that shouldn't be
+        run: |
+          # Configuration and data files shouldn't be executable
+          extensions=("yml" "yaml" "json" "md" "txt" "conf" "env")
+
+          found_issues=0
+          for ext in "${extensions[@]}"; do
+            files=$(find . -name "*.$ext" -type f -executable 2>/dev/null || true)
+            if [ -n "$files" ]; then
+              echo "⚠ Warning: Found executable .$ext files:"
+              echo "$files"
+              found_issues=1
+            fi
+          done
+
+          if [ $found_issues -eq 0 ]; then
+            echo "✓ No configuration files with incorrect executable permissions"
+          fi
+
+  lint-summary:
+    name: Linting Summary
+    runs-on: ubuntu-latest
+    needs:
+      - shellcheck
+      - dockerfile-lint
+      - yaml-lint
+      - markdown-lint
+      - python-lint
+      - go-lint
+      - rust-lint
+      - docker-compose-lint
+      - env-file-lint
+      - permissions-check
+    if: always()
+
+    steps:
+      - name: Check linting results
+        run: |
+          failed=0
+
+          if [ "${{ needs.shellcheck.result }}" == "failure" ]; then
+            echo "❌ ShellCheck failed"
+            failed=1
+          fi
+
+          if [ "${{ needs.docker-compose-lint.result }}" == "failure" ]; then
+            echo "❌ Docker Compose lint failed"
+            failed=1
+          fi
+
+          if [ "${{ needs.env-file-lint.result }}" == "failure" ]; then
+            echo "❌ Environment file lint failed"
+            failed=1
+          fi
+
+          if [ $failed -eq 1 ]; then
+            echo ""
+            echo "Some linting checks failed. Please review the errors above."
+            exit 1
+          fi
+
+          echo "✅ All critical linting checks passed!"
+          echo ""
+          echo "Note: Some checks may have warnings - please review them when possible."

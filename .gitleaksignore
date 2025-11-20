@@ -1,0 +1,42 @@
+# Gitleaks Ignore File
+# This file contains fingerprints of false positive secret detections
+
+# Example Vault unseal keys in documentation (docs/INSTALLATION.md lines 374-378)
+# These are fake example keys used to show users what Vault initialization looks like
+68962314936fb8527a280e9fb58e5763ee1a31c5:docs/INSTALLATION.md:generic-api-key:375
+68962314936fb8527a280e9fb58e5763ee1a31c5:docs/INSTALLATION.md:generic-api-key:376
+68962314936fb8527a280e9fb58e5763ee1a31c5:docs/INSTALLATION.md:generic-api-key:377
+68962314936fb8527a280e9fb58e5763ee1a31c5:docs/INSTALLATION.md:generic-api-key:378
+
+# Example password in documentation (docs/INSTALLATION.md line 571)
+# This is a fake example password used to show expected output format
+68962314936fb8527a280e9fb58e5763ee1a31c5:docs/INSTALLATION.md:generic-api-key:571
+
+# Wiki documentation examples - all tokens/passwords below are fake examples for documentation
+# Management-Commands.md - Example Vault root token in documentation
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Management-Commands.md:generic-api-key:269
+
+# CLI-Reference.md - Example Vault tokens in CLI usage documentation
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/CLI-Reference.md:generic-api-key:438
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/CLI-Reference.md:generic-api-key:441
+
+# First-Time-Setup.md - Example initial root token output
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/First-Time-Setup.md:generic-api-key:74
+
+# Vault-Integration.md - Example password and unseal keys in documentation
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:240
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:429
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:430
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:431
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:432
+915b715875c21bd2a34d72548dc06329b2f87ee9:wiki/Vault-Integration.md:generic-api-key:433
+
+# Installation.md - Example Vault unseal keys and passwords (commit fe8d7c8)
+fe8d7c8cc75aea07ad9587a737b5fb3ecbd0db1d:wiki/Installation.md:generic-api-key:585
+fe8d7c8cc75aea07ad9587a737b5fb3ecbd0db1d:wiki/Installation.md:generic-api-key:586
+fe8d7c8cc75aea07ad9587a737b5fb3ecbd0db1d:wiki/Installation.md:generic-api-key:587
+fe8d7c8cc75aea07ad9587a737b5fb3ecbd0db1d:wiki/Installation.md:generic-api-key:588
+fe8d7c8cc75aea07ad9587a737b5fb3ecbd0db1d:wiki/Installation.md:generic-api-key:781
+
+# Vault-Security.md - Example AppRole secret_id in documentation
+4c2ff06c9a41ec98168aee84d71aabd1ea8a3c77:wiki/Vault-Security.md:generic-api-key:216

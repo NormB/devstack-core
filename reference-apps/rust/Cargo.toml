@@ -1,0 +1,22 @@
+[package]
+name = "devstack-core-rust-api"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.4"
+actix-cors = "0.7"
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "=0.12.24", default-features = false, features = ["json", "rustls-tls-native-roots"] }
+chrono = { version = "=0.4.42" }
+log = "0.4"
+env_logger = "=0.11.8"
+tokio-postgres = "0.7"
+mysql_async = "0.35"
+mongodb = "3.1"
+redis = { version = "0.27", features = ["tokio-comp", "cluster-async"] }
+lapin = "2.3"
+prometheus = "0.13"
+lazy_static = "1.4"

@@ -1,0 +1,405 @@
+---
+# DevStack Core Prometheus Alert Rules
+#
+# Comprehensive alerting for:
+# - Service availability
+# - Resource utilization
+# - Certificate expiration
+# - Database health
+# - Application performance
+#
+# Severity levels:
+#   critical  - Immediate action required (service down, data loss risk)
+#   warning   - Attention needed soon (high resource usage, degraded performance)
+#   info      - Informational (certificate expiring in 30 days)
+
+groups:
+  # ==================================================
+  # Service Availability Alerts
+  # ==================================================
+  - name: service_availability
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 2 minutes. Instance: {{ $labels.instance }}"
+          runbook: "Check service status with: docker compose ps {{ $labels.job }}"
+
+      - alert: VaultDown
+        expr: up{job="vault"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Vault service is down"
+          description: "Vault has been unreachable for more than 1 minute. All services may lose access to secrets."
+          runbook: "1. Check Vault container: docker compose ps vault\n2. Check logs: docker compose logs vault\n3. Verify Vault seal status"
+
+      - alert: DatabaseDown
+        expr: up{job=~"postgres|mysql|mongodb"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Database {{ $labels.job }} is down"
+          description: "Database service {{ $labels.job }} has been down for more than 2 minutes."
+          runbook: "Check database logs and restart if necessary"
+
+  # ==================================================
+  # Resource Utilization Alerts
+  # ==================================================
+  - name: resource_utilization
+    interval: 1m
+    rules:
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High CPU usage on {{ $labels.name }}"
+          description: "Container {{ $labels.name }} CPU usage is above 80% for more than 5 minutes. Current: {{ $value | humanizePercentage }}"
+          runbook: "1. Check container processes\n2. Review application logs\n3. Consider scaling resources"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "High memory usage on {{ $labels.name }}"
+          description: "Container {{ $labels.name }} memory usage is above 90% of limit. Current: {{ $value | humanizePercentage }}"
+          runbook: "1. Check for memory leaks\n2. Review memory limit settings\n3. Consider increasing memory allocation"
+
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.2
+        for: 5m
+        labels:
+          severity: warning
+          category: resources
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space is below 20%. Available: {{ $value | humanizePercentage }}"
+          runbook: "1. Clean up old logs and backups\n2. Run: docker system prune\n3. Review disk usage: df -h"
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 2m
+        labels:
+          severity: critical
+          category: resources
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk space is critically low (<10%). Immediate action required. Available: {{ $value | humanizePercentage }}"
+          runbook: "IMMEDIATE: Clean up disk space to prevent service failures"
+
+  # ==================================================
+  # Database Health Alerts
+  # ==================================================
+  - name: database_health
+    interval: 1m
+    rules:
+      - alert: PostgreSQLTooManyConnections
+        expr: sum(pg_stat_activity_count) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "PostgreSQL has too many connections"
+          description: "PostgreSQL connection count is {{ $value }}. May indicate connection leak or need for connection pooling."
+          runbook: "1. Check connection pool settings\n2. Review application connection handling\n3. Consider using PgBouncer"
+
+      - alert: RedisMemoryHigh
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is above 90%. Current: {{ $value | humanizePercentage }}"
+          runbook: "1. Review eviction policy\n2. Check for memory leaks\n3. Consider increasing max memory"
+
+      - alert: RedisClusterSlotsCoverage
+        expr: redis_cluster_slots_ok < 16384
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Redis cluster has incomplete slot coverage"
+          description: "Redis cluster does not cover all 16384 slots. Covered: {{ $value }}"
+          runbook: "1. Check cluster status: redis-cli cluster info\n2. Verify all nodes are healthy\n3. Fix slot assignment"
+
+      - alert: MongoDBReplicationLag
+        expr: mongodb_replset_member_replication_lag > 30
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "MongoDB replication lag is high"
+          description: "MongoDB replication lag is {{ $value }} seconds"
+          runbook: "1. Check network connectivity\n2. Review oplog size\n3. Check secondary node resources"
+
+  # ==================================================
+  # Application Performance Alerts
+  # ==================================================
+  - name: application_performance
+    interval: 1m
+    rules:
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High request latency on {{ $labels.job }}"
+          description: "95th percentile request latency is {{ $value }}s (threshold: 1s)"
+          runbook: "1. Check application logs\n2. Review database query performance\n3. Check for resource constraints"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+          runbook: "1. Check application logs for errors\n2. Review recent deployments\n3. Check dependency health"
+
+      - alert: SlowDatabaseQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is {{ $value }}s"
+          runbook: "1. Review slow query log\n2. Check for missing indexes\n3. Analyze query plans"
+
+  # ==================================================
+  # Certificate Expiration Alerts
+  # ==================================================
+  - name: certificate_expiration
+    interval: 1h
+    rules:
+      - alert: CertificateExpiringSoon
+        expr: (vault_certificate_expiry_timestamp - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Certificate {{ $labels.cert_name }} expires in {{ $value }} days"
+          description: "TLS certificate for {{ $labels.cert_name }} will expire in less than 30 days"
+          runbook: "Run certificate renewal: ./scripts/auto-renew-certificates.sh"
+
+      - alert: CertificateExpiringCritical
+        expr: (vault_certificate_expiry_timestamp - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Certificate {{ $labels.cert_name }} expires in {{ $value }} days - URGENT"
+          description: "TLS certificate for {{ $labels.cert_name }} will expire in less than 7 days. Immediate action required."
+          runbook: "URGENT: Run certificate renewal immediately: ./scripts/auto-renew-certificates.sh {{ $labels.cert_name }}"
+
+      - alert: CertificateExpired
+        expr: (vault_certificate_expiry_timestamp - time()) < 0
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Certificate {{ $labels.cert_name }} has EXPIRED"
+          description: "TLS certificate for {{ $labels.cert_name }} has expired. Service may be unavailable."
+          runbook: "CRITICAL: Certificate expired. Renew immediately and restart affected services."
+
+  # ==================================================
+  # Vault Health Alerts
+  # ==================================================
+  - name: vault_health
+    interval: 30s
+    rules:
+      - alert: VaultSealed
+        expr: vault_core_unsealed == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Vault is sealed"
+          description: "Vault has been sealed for more than 1 minute. All secrets are inaccessible."
+          runbook: "1. Check Vault logs: docker compose logs vault\n2. Unseal Vault if intentional\n3. Investigate cause if unexpected"
+
+      - alert: VaultHighRequestRate
+        expr: rate(vault_core_handle_request_count[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Vault experiencing high request rate"
+          description: "Vault request rate is {{ $value }} req/s. May indicate authentication storm or attack."
+          runbook: "1. Review Vault audit logs\n2. Check for misbehaving services\n3. Implement rate limiting if needed"
+
+      - alert: VaultTokenExpiration
+        expr: vault_token_count_by_ttl{creation_ttl="1h"} > 100
+        for: 10m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High number of short-lived Vault tokens"
+          description: "{{ $value }} tokens with 1-hour TTL exist. May indicate token leak."
+          runbook: "1. Review AppRole usage\n2. Check for token caching issues\n3. Audit token creation patterns"
+
+  # ==================================================
+  # Redis Cluster Health Alerts
+  # ==================================================
+  - name: redis_cluster_health
+    interval: 30s
+    rules:
+      - alert: RedisClusterNodeDown
+        expr: redis_cluster_state == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Redis cluster node {{ $labels.instance }} is down"
+          description: "Redis cluster is in failed state. Data availability may be impacted."
+          runbook: "1. Check cluster status: redis-cli cluster info\n2. Identify failed node\n3. Restart or replace failed node"
+
+      - alert: RedisHighConnectionCount
+        expr: redis_connected_clients > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Redis has {{ $value }} connected clients"
+          description: "High number of Redis connections. May indicate connection leak."
+          runbook: "1. Review application connection pooling\n2. Check for connection leaks\n3. Monitor connection patterns"
+
+      - alert: RedisHighEvictionRate
+        expr: rate(redis_evicted_keys_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Redis evicting keys frequently"
+          description: "Redis eviction rate is {{ $value }} keys/s. May need more memory."
+          runbook: "1. Review maxmemory setting\n2. Check eviction policy\n3. Consider increasing memory or cleaning up old keys"
+
+  # ==================================================
+  # Container Health Alerts
+  # ==================================================
+  - name: container_health
+    interval: 30s
+    rules:
+      - alert: ContainerRestarting
+        expr: rate(container_last_seen[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: stability
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Container has restarted multiple times in the last 5 minutes"
+          runbook: "1. Check container logs: docker logs {{ $labels.name }}\n2. Review health check configuration\n3. Investigate application crashes"
+
+      - alert: ContainerHighRestartCount
+        expr: container_restart_count > 5
+        for: 1m
+        labels:
+          severity: critical
+          category: stability
+        annotations:
+          summary: "Container {{ $labels.name }} has restarted {{ $value }} times"
+          description: "Container restart count is abnormally high. Indicates persistent failure."
+          runbook: "URGENT: Container failing repeatedly. Review logs and fix root cause before restarting."
+
+  # ==================================================
+  # RabbitMQ Health Alerts
+  # ==================================================
+  - name: rabbitmq_health
+    interval: 1m
+    rules:
+      - alert: RabbitMQHighMessageRate
+        expr: rate(rabbitmq_queue_messages_published_total[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          category: messaging
+        annotations:
+          summary: "RabbitMQ high message rate"
+          description: "Message publish rate is {{ $value }} msg/s. May indicate message storm."
+          runbook: "1. Check message producers\n2. Review queue consumers\n3. Implement rate limiting if needed"
+
+      - alert: RabbitMQQueueBacklog
+        expr: rabbitmq_queue_messages_ready > 10000
+        for: 10m
+        labels:
+          severity: warning
+          category: messaging
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} has {{ $value }} unprocessed messages"
+          description: "Message backlog is growing. Consumers may be slow or unavailable."
+          runbook: "1. Check consumer status\n2. Scale consumers if needed\n3. Review message processing time"
+
+      - alert: RabbitMQNoConsumers
+        expr: rabbitmq_queue_consumers == 0
+        for: 5m
+        labels:
+          severity: warning
+          category: messaging
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} has no consumers"
+          description: "Queue is receiving messages but has no active consumers."
+          runbook: "1. Start consumer applications\n2. Check consumer health\n3. Review queue configuration"
+
+  # ==================================================
+  # Backup and Recovery Alerts
+  # ==================================================
+  - name: backup_health
+    interval: 1h
+    rules:
+      - alert: BackupNotRunRecently
+        expr: (time() - backup_last_success_timestamp) > 86400
+        for: 1h
+        labels:
+          severity: warning
+          category: operations
+        annotations:
+          summary: "Backup has not run in {{ $value | humanizeDuration }}"
+          description: "Last successful backup was more than 24 hours ago."
+          runbook: "1. Check backup schedule\n2. Run manual backup: ./devstack backup\n3. Review backup logs"
+
+      - alert: BackupFailed
+        expr: backup_last_status == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: operations
+        annotations:
+          summary: "Last backup failed"
+          description: "Backup system reported failure. Data protection at risk."
+          runbook: "URGENT: Review backup logs and fix issues. Run manual backup after resolving."

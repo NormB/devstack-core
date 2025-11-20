@@ -1,0 +1,218 @@
+# Vector Configuration - Unified Observability Pipeline
+#
+# Replaces: Grafana Alloy, PostgreSQL Exporter, MongoDB Exporter, Node Exporter
+# Scrapes: MySQL Exporter, Redis Exporters (3), cAdvisor
+#
+# Architecture:
+#   Sources → Transforms → Sinks
+#   - Docker logs → Loki
+#   - Database metrics (PostgreSQL, MongoDB) → Prometheus
+#   - System metrics → Prometheus
+#   - Scraped metrics (MySQL, Redis, cAdvisor) → Prometheus
+
+# =============================================================================
+# SOURCES - Data Collection
+# =============================================================================
+
+sources:
+  # ---------------------------------------------------------------------------
+  # Docker Container Logs
+  # ---------------------------------------------------------------------------
+  docker_logs:
+    type: docker_logs
+    docker_host: unix:///var/run/docker.sock
+    include_labels:
+      - "com.voip.platform=colima"
+    auto_partial_merge: true
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Metrics (Native - Replaces postgres-exporter)
+  # Note: Uses compatibility schema (compat.pg_stat_bgwriter) for PostgreSQL 18+
+  # See: configs/postgres/01-pg18-compatibility.sql
+  # ---------------------------------------------------------------------------
+  postgresql_metrics:
+    type: postgresql_metrics
+    endpoints:
+      - "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+    scrape_interval_secs: 15
+    namespace: postgresql
+
+  # ---------------------------------------------------------------------------
+  # MongoDB Metrics (Native - Replaces mongodb-exporter)
+  # ---------------------------------------------------------------------------
+  mongodb_metrics:
+    type: mongodb_metrics
+    endpoints:
+      - "mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/"
+    scrape_interval_secs: 15
+    namespace: mongodb
+
+  # ---------------------------------------------------------------------------
+  # Host/System Metrics (Native - Replaces node-exporter)
+  # ---------------------------------------------------------------------------
+  host_metrics:
+    type: host_metrics
+    scrape_interval_secs: 15
+    namespace: node
+    collectors:
+      - cpu
+      - disk
+      - filesystem
+      - load
+      - host
+      - memory
+      - network
+
+  # ---------------------------------------------------------------------------
+  # MySQL Metrics (DISABLED - exporter has critical bug, see docker-compose.yml)
+  # ---------------------------------------------------------------------------
+  # mysql_exporter_scrape:
+  #   type: prometheus_scrape
+  #   endpoints:
+  #     - http://mysql-exporter:9104/metrics
+  #   scrape_interval_secs: 15
+
+  # ---------------------------------------------------------------------------
+  # Redis Cluster Metrics (Scrape from existing exporters - no native support)
+  # ---------------------------------------------------------------------------
+  redis_exporter_1_scrape:
+    type: prometheus_scrape
+    endpoints:
+      - http://redis-exporter-1:9121/metrics
+    scrape_interval_secs: 15
+    instance_tag: addr
+    endpoint_tag: endpoint
+
+  redis_exporter_2_scrape:
+    type: prometheus_scrape
+    endpoints:
+      - http://redis-exporter-2:9121/metrics
+    scrape_interval_secs: 15
+    instance_tag: addr
+    endpoint_tag: endpoint
+
+  redis_exporter_3_scrape:
+    type: prometheus_scrape
+    endpoints:
+      - http://redis-exporter-3:9121/metrics
+    scrape_interval_secs: 15
+    instance_tag: addr
+    endpoint_tag: endpoint
+
+  # ---------------------------------------------------------------------------
+  # Container Metrics (Scrape from cAdvisor - no native support)
+  # ---------------------------------------------------------------------------
+  cadvisor_scrape:
+    type: prometheus_scrape
+    endpoints:
+      - http://cadvisor:8080/metrics
+    scrape_interval_secs: 15
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ Metrics (Scrape from RabbitMQ management plugin)
+  # ---------------------------------------------------------------------------
+  rabbitmq_scrape:
+    type: prometheus_scrape
+    endpoints:
+      - http://rabbitmq:15692/metrics
+    scrape_interval_secs: 15
+
+# =============================================================================
+# TRANSFORMS - Data Processing
+# =============================================================================
+
+transforms:
+  # ---------------------------------------------------------------------------
+  # Parse JSON logs and extract fields
+  # ---------------------------------------------------------------------------
+  parse_json_logs:
+    type: remap
+    inputs:
+      - docker_logs
+    source: |
+      # Try to parse message as JSON
+      parsed, err = parse_json(.message)
+      if err == null {
+        .level = parsed.level
+        .msg = parsed.msg
+        .timestamp_parsed = parsed.timestamp
+      }
+
+  # ---------------------------------------------------------------------------
+  # Add static labels to logs
+  # ---------------------------------------------------------------------------
+  enrich_logs:
+    type: remap
+    inputs:
+      - parse_json_logs
+    source: |
+      .platform = "colima"
+      .environment = "development"
+
+  # ---------------------------------------------------------------------------
+  # Rate limit logs (10k lines/sec, 20k burst)
+  # ---------------------------------------------------------------------------
+  rate_limit_logs:
+    type: throttle
+    inputs:
+      - enrich_logs
+    threshold: 10000
+    window_secs: 1
+
+# =============================================================================
+# SINKS - Data Destinations
+# =============================================================================
+
+sinks:
+  # ---------------------------------------------------------------------------
+  # Loki - Log Storage
+  # ---------------------------------------------------------------------------
+  loki:
+    type: loki
+    inputs:
+      - rate_limit_logs
+    endpoint: http://loki:3100
+    encoding:
+      codec: json
+    labels:
+      platform: "{{ platform }}"
+      environment: "{{ environment }}"
+      container: "{{ container_name }}"
+      image: "{{ image }}"
+      stream: "{{ stream }}"
+
+  # ---------------------------------------------------------------------------
+  # Prometheus - Metrics Exporter (for Prometheus to scrape)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    type: prometheus_exporter
+    inputs:
+      - postgresql_metrics
+      - mongodb_metrics
+      - host_metrics
+      # - mysql_exporter_scrape  # Disabled - MySQL exporter broken
+      - redis_exporter_1_scrape
+      - redis_exporter_2_scrape
+      - redis_exporter_3_scrape
+      - cadvisor_scrape
+      - rabbitmq_scrape
+    address: 0.0.0.0:9598  # Expose metrics on port 9598 for Prometheus to scrape
+
+  # ---------------------------------------------------------------------------
+  # Console - Debugging output (optional, comment out in production)
+  # ---------------------------------------------------------------------------
+  # console_logs:
+  #   type: console
+  #   inputs:
+  #     - rate_limit_logs
+  #   encoding:
+  #     codec: json
+
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
+# API for health checks and debugging
+api:
+  enabled: true
+  address: 0.0.0.0:8686

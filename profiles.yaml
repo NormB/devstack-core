@@ -1,0 +1,604 @@
+# ==============================================================================
+# DevStack Core - Service Profiles Configuration
+# ==============================================================================
+#
+# This file defines service profiles for flexible container orchestration.
+# Profiles allow developers to run only the services they need, reducing
+# resource consumption and startup time.
+#
+# USAGE:
+#   ./devstack.py start --profile minimal
+#   ./devstack.py start --profile standard
+#   ./devstack.py start --profile full
+#   ./devstack.py start --profile standard --profile reference
+#
+# PROFILE HIERARCHY:
+#   minimal  → Essential services (Git + single DB)
+#   standard → Full development stack (adds multi-DB + Redis cluster)
+#   full     → Complete suite (adds observability)
+#   reference → Reference applications (combinable with any profile)
+#
+# DOCUMENTATION:
+#   See docs/SERVICE_PROFILES.md for detailed usage guide
+#
+# ==============================================================================
+
+# Core Service Profiles
+# ------------------------------------------------------------------------------
+# These are the primary profiles provided by DevStack Core. Each profile
+# includes specific services optimized for different development scenarios.
+
+profiles:
+
+  # ============================================================================
+  # MINIMAL PROFILE - Essential Services Only
+  # ============================================================================
+  # Smallest possible footprint for basic development needs.
+  #
+  # USE CASES:
+  #   - Git repository hosting only
+  #   - Simple CRUD application development
+  #   - Learning the platform
+  #   - Resource-constrained environments (8GB RAM MacBook)
+  #   - CI/CD pipelines that only need basic services
+  #
+  # SERVICES INCLUDED:
+  #   - vault:      Secrets management (required for all profiles)
+  #   - postgres:   Primary relational database + Forgejo storage
+  #   - pgbouncer:  Connection pooling for PostgreSQL
+  #   - forgejo:    Self-hosted Git server
+  #   - redis-1:    Single Redis instance (non-cluster mode)
+  #
+  # RESOURCE REQUIREMENTS:
+  #   - RAM:        ~2GB
+  #   - CPU:        2 cores recommended
+  #   - Disk:       ~5GB for volumes
+  #   - Startup:    ~20 seconds
+  #
+  # REDIS CONFIGURATION:
+  #   In minimal profile, redis-1 runs in standalone mode (not cluster).
+  #   Set REDIS_CLUSTER_ENABLED=false in environment.
+  # ============================================================================
+
+  minimal:
+    description: "Essential services only - Git server + single database"
+
+    # Services to start with this profile
+    services:
+      - vault
+      - postgres
+      - pgbouncer
+      - forgejo
+      - redis-1
+
+    # Estimated resource usage (actual may vary by workload)
+    resources:
+      ram_estimate: "2GB"
+      cpu_estimate: "2 cores"
+      disk_estimate: "5GB"
+      startup_time: "20s"
+
+    # Environment variable overrides for this profile
+    # These are loaded from configs/profiles/minimal.env
+    env_file: "configs/profiles/minimal.env"
+
+    # Key environment overrides (documented)
+    env_overrides:
+      REDIS_CLUSTER_ENABLED: "false"        # Single Redis node
+      REDIS_CLUSTER_INIT_REQUIRED: "false"  # Skip cluster initialization
+      POSTGRES_MAX_CONNECTIONS: "50"        # Reduced for minimal workload
+      VAULT_HEALTH_INTERVAL: "30s"          # Faster health checks
+
+    # Services that are explicitly EXCLUDED from this profile
+    excluded_services:
+      - redis-2
+      - redis-3
+      - mysql
+      - mongodb
+      - rabbitmq
+      - prometheus
+      - grafana
+      - loki
+      - vector
+      - cadvisor
+      - redis-exporter-1
+      - redis-exporter-2
+      - redis-exporter-3
+
+    # Tags for categorization
+    tags:
+      - essential
+      - lightweight
+      - git-focused
+
+  # ============================================================================
+  # STANDARD PROFILE - Full Development Stack
+  # ============================================================================
+  # Complete development environment with all databases and Redis cluster.
+  #
+  # USE CASES:
+  #   - Multi-database application development
+  #   - Microservices development
+  #   - Message queue integration (RabbitMQ)
+  #   - Redis cluster testing and development (YOUR PRIMARY USE CASE!)
+  #   - Full-featured local development environment
+  #
+  # SERVICES INCLUDED:
+  #   All minimal services PLUS:
+  #   - mysql:      MySQL 8.0 for legacy application support
+  #   - mongodb:    MongoDB 7 for NoSQL/document database needs
+  #   - redis-2:    Redis cluster node 2 (slots 5461-10922)
+  #   - redis-3:    Redis cluster node 3 (slots 10923-16383)
+  #   - rabbitmq:   RabbitMQ message broker with management UI
+  #
+  # RESOURCE REQUIREMENTS:
+  #   - RAM:        ~4GB
+  #   - CPU:        4 cores recommended
+  #   - Disk:       ~10GB for volumes
+  #   - Startup:    ~45 seconds
+  #
+  # REDIS CLUSTER CONFIGURATION:
+  #   - 3 master nodes (no replicas in dev mode)
+  #   - 16,384 hash slots distributed across nodes
+  #   - Requires cluster initialization after first start:
+  #     ./devstack.py redis-cluster-init
+  #   - All nodes share same Vault-managed password
+  #
+  # POST-STARTUP STEPS:
+  #   1. Wait for all services to be healthy
+  #   2. Initialize Redis cluster: ./devstack.py redis-cluster-init
+  #   3. Verify cluster: redis-cli -c -h localhost -p 6379 cluster nodes
+  # ============================================================================
+
+  standard:
+    description: "Full development stack - All databases + Redis cluster + Message queue"
+
+    # Services to start with this profile
+    services:
+      - vault
+      - postgres
+      - pgbouncer
+      - mysql
+      - mongodb
+      - redis-1
+      - redis-2
+      - redis-3
+      - rabbitmq
+      - forgejo
+
+    # Estimated resource usage
+    resources:
+      ram_estimate: "4GB"
+      cpu_estimate: "4 cores"
+      disk_estimate: "10GB"
+      startup_time: "45s"
+
+    # Environment variable overrides for this profile
+    env_file: "configs/profiles/standard.env"
+
+    env_overrides:
+      REDIS_CLUSTER_ENABLED: "true"         # Enable Redis cluster mode
+      REDIS_CLUSTER_INIT_REQUIRED: "true"   # Cluster init needed
+      POSTGRES_MAX_CONNECTIONS: "100"       # Standard connection limit
+      MYSQL_MAX_CONNECTIONS: "100"          # MySQL connections
+      MONGODB_MAX_CONNECTIONS: "100"        # MongoDB connections
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: "0.5"  # RabbitMQ memory limit
+
+    # Services excluded from this profile
+    excluded_services:
+      - prometheus
+      - grafana
+      - loki
+      - vector
+      - cadvisor
+      - redis-exporter-1
+      - redis-exporter-2
+      - redis-exporter-3
+
+    # Tags for categorization
+    tags:
+      - full-stack
+      - redis-cluster
+      - multi-database
+      - message-queue
+
+  # ============================================================================
+  # FULL PROFILE - Complete Suite with Observability
+  # ============================================================================
+  # Production-parity environment with comprehensive monitoring and logging.
+  #
+  # USE CASES:
+  #   - Performance testing and optimization
+  #   - Production troubleshooting simulation
+  #   - Understanding system resource usage
+  #   - Learning observability patterns (Prometheus + Grafana + Loki)
+  #   - Load testing with real-time metrics
+  #   - Container resource monitoring
+  #
+  # SERVICES INCLUDED:
+  #   All standard services PLUS:
+  #   - prometheus:        Metrics collection and time-series database
+  #   - grafana:           Visualization dashboards (http://localhost:3001)
+  #   - loki:              Log aggregation system
+  #   - vector:            Unified observability data pipeline
+  #   - cadvisor:          Container resource monitoring
+  #   - redis-exporter-1:  Redis metrics exporter for node 1
+  #   - redis-exporter-2:  Redis metrics exporter for node 2
+  #   - redis-exporter-3:  Redis metrics exporter for node 3
+  #
+  # RESOURCE REQUIREMENTS:
+  #   - RAM:        ~6GB
+  #   - CPU:        4 cores recommended (6+ for heavy load)
+  #   - Disk:       ~15GB for volumes (metrics data retention)
+  #   - Startup:    ~60 seconds
+  #
+  # OBSERVABILITY FEATURES:
+  #   - Prometheus metrics: http://localhost:9090
+  #   - Grafana dashboards: http://localhost:3001 (admin/admin)
+  #   - Loki logs: Queried via Grafana LogQL
+  #   - cAdvisor metrics: http://localhost:8080
+  #   - Pre-configured dashboards for all services
+  #   - 15-day metrics retention (configurable)
+  #
+  # GRAFANA DASHBOARDS:
+  #   - PostgreSQL performance and connections
+  #   - Redis cluster health and operations
+  #   - MySQL query performance
+  #   - RabbitMQ queue depths and rates
+  #   - Container resource usage (CPU, memory, network)
+  #   - System-wide overview dashboard
+  # ============================================================================
+
+  full:
+    description: "Complete suite with observability - All services + Prometheus + Grafana + Loki"
+
+    # This profile extends standard with additional observability services
+    extends: "standard"
+
+    # Services to start with this profile (includes all standard services)
+    services:
+      - vault
+      - postgres
+      - pgbouncer
+      - mysql
+      - mongodb
+      - redis-1
+      - redis-2
+      - redis-3
+      - rabbitmq
+      - forgejo
+      - prometheus
+      - grafana
+      - loki
+      - vector
+      - cadvisor
+      - redis-exporter-1
+      - redis-exporter-2
+      - redis-exporter-3
+
+    # Estimated resource usage
+    resources:
+      ram_estimate: "6GB"
+      cpu_estimate: "4 cores"
+      disk_estimate: "15GB"
+      startup_time: "60s"
+
+    # Environment variable overrides for this profile
+    env_file: "configs/profiles/full.env"
+
+    env_overrides:
+      # Inherit all standard overrides
+      REDIS_CLUSTER_ENABLED: "true"
+      REDIS_CLUSTER_INIT_REQUIRED: "true"
+
+      # Observability-specific settings
+      ENABLE_METRICS: "true"
+      ENABLE_LOGS: "true"
+      PROMETHEUS_SCRAPE_INTERVAL: "15s"      # Metrics collection frequency
+      PROMETHEUS_RETENTION_TIME: "15d"       # Keep 15 days of metrics
+      LOKI_RETENTION_PERIOD: "744h"          # 31 days of logs
+      GRAFANA_INSTALL_PLUGINS: "true"        # Install additional plugins
+      VECTOR_LOG_LEVEL: "info"               # Vector logging verbosity
+
+    # No excluded services - this is the complete suite
+    excluded_services: []
+
+    # Tags for categorization
+    tags:
+      - complete
+      - observability
+      - production-parity
+      - monitoring
+
+  # ============================================================================
+  # REFERENCE PROFILE - Reference Application Examples
+  # ============================================================================
+  # Educational reference implementations in multiple programming languages.
+  #
+  # USE CASES:
+  #   - Learning API design patterns
+  #   - Comparing language implementations
+  #   - Testing shared test suites across implementations
+  #   - API integration examples (Vault, databases, caching, messaging)
+  #   - Performance benchmarking across languages
+  #
+  # SERVICES INCLUDED:
+  #   - reference-api:  Python FastAPI code-first (port 8000/8443)
+  #   - api-first:      Python FastAPI API-first (port 8001/8444)
+  #   - golang-api:     Go with Gin framework (port 8002/8445)
+  #   - nodejs-api:     Node.js with Express (port 8003/8446)
+  #   - rust-api:       Rust with Actix-web (port 8004/8447, ~40% complete)
+  #
+  # RESOURCE REQUIREMENTS:
+  #   - RAM:        +1GB (in addition to base profile)
+  #   - CPU:        +1 core recommended
+  #   - Disk:       +2GB for images
+  #   - Startup:    +15 seconds
+  #
+  # COMBINABLE WITH OTHER PROFILES:
+  #   This profile is designed to be combined with other profiles:
+  #   - minimal + reference:  APIs with essential services
+  #   - standard + reference: APIs with full database stack
+  #   - full + reference:     APIs with complete observability
+  #
+  # FEATURES DEMONSTRATED:
+  #   - Vault integration (dynamic secrets, PKI certificates)
+  #   - Database connections (PostgreSQL, MySQL, MongoDB)
+  #   - Redis cluster operations with connection pooling
+  #   - RabbitMQ messaging patterns
+  #   - Dual HTTP/HTTPS endpoints
+  #   - Prometheus metrics export
+  #   - Structured logging
+  #   - Comprehensive health checks
+  #
+  # TESTING:
+  #   - Unit tests: docker exec dev-reference-api pytest tests/
+  #   - Parity tests: cd reference-apps/shared/test-suite && uv run pytest
+  #   - Performance: ./tests/performance-benchmark.sh
+  #
+  # DOCUMENTATION:
+  #   - Overview: reference-apps/README.md
+  #   - Python FastAPI: reference-apps/fastapi/README.md
+  #   - Go: reference-apps/golang/README.md
+  #   - Node.js: reference-apps/nodejs/README.md
+  #   - Rust: reference-apps/rust/README.md
+  # ============================================================================
+
+  reference:
+    description: "Reference application examples - Multi-language API implementations"
+
+    # Reference apps are standalone - can combine with any base profile
+    combinable: true
+
+    # Services to start with this profile
+    services:
+      - reference-api
+      - api-first
+      - golang-api
+      - nodejs-api
+      - rust-api
+
+    # Estimated ADDITIONAL resource usage (on top of base profile)
+    resources:
+      ram_estimate: "+1GB"
+      cpu_estimate: "+1 core"
+      disk_estimate: "+2GB"
+      startup_time: "+15s"
+
+    # Environment variable overrides for this profile
+    env_file: "configs/profiles/reference.env"
+
+    env_overrides:
+      # Reference app configuration
+      ENABLE_REFERENCE_APPS: "true"
+      REFERENCE_API_LOG_LEVEL: "info"
+      REFERENCE_API_ENABLE_METRICS: "true"
+      REFERENCE_API_ENABLE_TLS: "true"       # Enable HTTPS endpoints
+
+    # No excluded services - reference apps don't exclude infrastructure
+    excluded_services: []
+
+    # Tags for categorization
+    tags:
+      - educational
+      - reference
+      - multi-language
+      - api-examples
+
+# Custom User Profiles
+# ------------------------------------------------------------------------------
+# Users can define custom profiles for specific development scenarios.
+# These are examples that users can modify or extend.
+
+custom_profiles:
+
+  # ============================================================================
+  # REDIS-DEV - Redis Cluster Development Only
+  # ============================================================================
+  # Minimal setup for Redis cluster development and testing.
+  #
+  # USE CASE: Developers working exclusively on Redis cluster features.
+  # ============================================================================
+
+  redis-dev:
+    description: "Redis cluster development only - Vault + 3-node Redis cluster"
+
+    services:
+      - vault
+      - redis-1
+      - redis-2
+      - redis-3
+
+    resources:
+      ram_estimate: "1.5GB"
+      cpu_estimate: "2 cores"
+      disk_estimate: "3GB"
+      startup_time: "15s"
+
+    env_file: "configs/profiles/redis-dev.env"
+
+    env_overrides:
+      REDIS_CLUSTER_ENABLED: "true"
+      REDIS_CLUSTER_INIT_REQUIRED: "true"
+
+    tags:
+      - redis
+      - cluster
+      - development
+
+  # ============================================================================
+  # POSTGRES-DEV - PostgreSQL Development Only
+  # ============================================================================
+  # Minimal setup for PostgreSQL development and testing.
+  #
+  # USE CASE: Backend developers working with PostgreSQL exclusively.
+  # ============================================================================
+
+  postgres-dev:
+    description: "PostgreSQL development only - Vault + PostgreSQL + PgBouncer"
+
+    services:
+      - vault
+      - postgres
+      - pgbouncer
+
+    resources:
+      ram_estimate: "1GB"
+      cpu_estimate: "2 cores"
+      disk_estimate: "3GB"
+      startup_time: "15s"
+
+    env_file: "configs/profiles/postgres-dev.env"
+
+    env_overrides:
+      POSTGRES_MAX_CONNECTIONS: "50"
+      POSTGRES_ENABLE_TLS: "false"
+
+    tags:
+      - postgresql
+      - database
+      - development
+
+  # ============================================================================
+  # GIT-ONLY - Git Server Only
+  # ============================================================================
+  # Absolute minimum for Git repository hosting.
+  #
+  # USE CASE: Using DevStack Core solely as a Git server (Forgejo).
+  # ============================================================================
+
+  git-only:
+    description: "Git server only - Vault + PostgreSQL + Forgejo"
+
+    services:
+      - vault
+      - postgres
+      - forgejo
+
+    resources:
+      ram_estimate: "1.5GB"
+      cpu_estimate: "2 cores"
+      disk_estimate: "5GB"
+      startup_time: "20s"
+
+    env_file: "configs/profiles/git-only.env"
+
+    env_overrides:
+      POSTGRES_MAX_CONNECTIONS: "25"  # Forgejo doesn't need many
+      FORGEJO_RUNNER_ENABLED: "false" # Disable CI/CD runner
+
+    tags:
+      - git
+      - forgejo
+      - minimal
+
+  # ============================================================================
+  # API-DEV - API Development with Databases
+  # ============================================================================
+  # Optimized for API development with all databases but no observability.
+  #
+  # USE CASE: Backend API developers who need full database access.
+  # ============================================================================
+
+  api-dev:
+    description: "API development - All databases + reference apps (no observability)"
+
+    services:
+      - vault
+      - postgres
+      - pgbouncer
+      - mysql
+      - mongodb
+      - redis-1
+      - rabbitmq
+      - reference-api
+      - api-first
+      - golang-api
+      - nodejs-api
+
+    resources:
+      ram_estimate: "4GB"
+      cpu_estimate: "4 cores"
+      disk_estimate: "10GB"
+      startup_time: "50s"
+
+    env_file: "configs/profiles/api-dev.env"
+
+    env_overrides:
+      REDIS_CLUSTER_ENABLED: "false"  # Single Redis for simpler setup
+      ENABLE_METRICS: "false"
+      REFERENCE_API_LOG_LEVEL: "debug"
+
+    tags:
+      - api
+      - development
+      - multi-database
+
+# Profile Metadata
+# ------------------------------------------------------------------------------
+# Additional information about profile system
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2025-11-10"
+  documentation: "docs/SERVICE_PROFILES.md"
+
+  # Profile compatibility matrix
+  compatibility:
+    minimal: ["reference"]
+    standard: ["reference"]
+    full: ["reference"]
+    reference: ["minimal", "standard", "full"]
+
+  # Recommended profiles by use case
+  recommendations:
+    learning: ["minimal"]
+    backend_development: ["standard"]
+    redis_cluster_dev: ["standard", "redis-dev"]
+    full_stack_dev: ["full"]
+    api_development: ["standard", "reference"]
+    git_hosting: ["git-only"]
+    performance_testing: ["full"]
+
+  # Minimum system requirements by profile
+  system_requirements:
+    minimal:
+      ram_min: "4GB"
+      ram_recommended: "8GB"
+      cpu_min: 2
+      cpu_recommended: 4
+      disk_min: "20GB"
+
+    standard:
+      ram_min: "8GB"
+      ram_recommended: "16GB"
+      cpu_min: 4
+      cpu_recommended: 6
+      disk_min: "40GB"
+
+    full:
+      ram_min: "12GB"
+      ram_recommended: "16GB+"
+      cpu_min: 4
+      cpu_recommended: 8
+      disk_min: "60GB"

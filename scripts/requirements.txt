@@ -1,0 +1,15 @@
+# Python dependencies for DevStack Core management CLI
+#
+# Install with uv (recommended - avoids system package conflicts):
+#   uv venv
+#   uv pip install -r scripts/requirements.txt
+#
+# The wrapper script (manage-devstack) automatically uses the venv.
+# No manual activation needed!
+#
+# Dependencies:
+
+click>=8.1.0
+rich>=13.0.0
+PyYAML>=6.0
+python-dotenv>=1.0.0

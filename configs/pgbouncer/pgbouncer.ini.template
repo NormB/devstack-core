@@ -1,0 +1,32 @@
+################## PgBouncer Configuration ##################
+[databases]
+# Main development database
+dev_database = host=POSTGRES_HOST port=POSTGRES_PORT auth_user=POSTGRES_USER
+
+# Alias for devdb (same as dev_database)
+devdb = host=POSTGRES_HOST port=POSTGRES_PORT auth_user=POSTGRES_USER
+
+# Default postgres database (for testing and admin tasks)
+postgres = host=POSTGRES_HOST port=POSTGRES_PORT dbname=postgres auth_user=POSTGRES_USER
+
+[pgbouncer]
+listen_addr = 0.0.0.0
+listen_port = 5432
+unix_socket_dir =
+user = postgres
+auth_file = /etc/pgbouncer/userlist.txt
+auth_type = AUTH_TYPE
+pool_mode = POOL_MODE
+max_client_conn = MAX_CLIENT_CONN
+default_pool_size = DEFAULT_POOL_SIZE
+ignore_startup_parameters = extra_float_digits
+
+# Log settings
+admin_users = postgres,POSTGRES_USER
+
+# Connection sanity checks, timeouts
+
+# TLS settings
+
+# Dangerous timeouts
+################## end file ##################

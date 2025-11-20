@@ -1,0 +1,127 @@
+name: Wiki Sync
+
+# Triggers when PRs are merged to main (merge creates a push event to main)
+# Also allows manual triggering via workflow_dispatch
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '.github/CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync core documentation to wiki
+        run: |
+          # Create wiki directory if it doesn't exist
+          mkdir -p wiki
+
+          # Sync key documentation files from docs/ to wiki/
+          # This ensures wiki stays in sync with main documentation
+
+          echo "Syncing documentation files to wiki..."
+
+          # Core files that should be synced
+          declare -A SYNC_MAP=(
+            ["docs/README.md"]="wiki/Documentation-Index.md"
+            ["docs/ARCHITECTURE.md"]="wiki/Architecture-Overview.md"
+            ["docs/INSTALLATION.md"]="wiki/Installation-Guide.md"
+            ["docs/USAGE.md"]="wiki/Usage-Guide.md"
+            ["docs/TROUBLESHOOTING.md"]="wiki/Troubleshooting-Guide.md"
+            ["docs/PERFORMANCE_TUNING.md"]="wiki/Performance-Tuning.md"
+            ["docs/DISASTER_RECOVERY.md"]="wiki/Disaster-Recovery.md"
+            ["docs/VAULT_SECURITY.md"]="wiki/Vault-Security.md"
+            ["docs/SECURITY_ASSESSMENT.md"]="wiki/Security-Assessment.md"
+            ["docs/TESTING_APPROACH.md"]="wiki/Testing-Approach.md"
+            ["docs/SERVICE_CATALOG.md"]="wiki/Service-Catalog.md"
+            ["docs/SERVICE_PROFILES.md"]="wiki/Service-Profiles.md"
+            ["docs/MIGRATION_GUIDE.md"]="wiki/Migration-Guide.md"
+            ["docs/UPGRADE_GUIDE.md"]="wiki/Upgrade-Guide.md"
+            ["docs/ROLLBACK_PROCEDURES.md"]="wiki/Rollback-Procedures.md"
+            ["README.md"]="wiki/Home.md"
+            [".github/CHANGELOG.md"]="wiki/Changelog.md"
+          )
+
+          SYNCED=0
+          SKIPPED=0
+
+          for src in "${!SYNC_MAP[@]}"; do
+            dest="${SYNC_MAP[$src]}"
+
+            if [ -f "$src" ]; then
+              # Check if files are different
+              if ! cmp -s "$src" "$dest" 2>/dev/null; then
+                echo "  Syncing: $src → $dest"
+                cp "$src" "$dest"
+                ((SYNCED++)) || true
+              else
+                echo "  Unchanged: $dest"
+                ((SKIPPED++)) || true
+              fi
+            else
+              echo "  Warning: $src not found, skipping"
+              ((SKIPPED++)) || true
+            fi
+          done
+
+          echo ""
+          echo "Sync complete:"
+          echo "  - Synced: $SYNCED files"
+          echo "  - Skipped: $SKIPPED files (unchanged or missing)"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if [[ -n $(git status wiki/ --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "Wiki files have changes"
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No wiki changes detected"
+          fi
+
+      - name: Commit wiki changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git add wiki/
+          git commit -m "docs: auto-sync documentation to wiki
+
+          Automated sync from main documentation to wiki directory.
+
+          This ensures wiki stays in sync with the main docs/ directory.
+
+          Files synced:
+          - docs/README.md → wiki/Documentation-Index.md
+          - docs/ARCHITECTURE.md → wiki/Architecture-Overview.md
+          - docs/SERVICE_CATALOG.md → wiki/Service-Catalog.md
+          - And other core documentation files
+          "
+          git push
+
+      - name: Summary
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          echo "✅ Wiki successfully synced with main documentation"
+
+      - name: No changes summary
+        if: steps.check_changes.outputs.changes == 'false'
+        run: |
+          echo "ℹ️ Wiki already in sync with main documentation"

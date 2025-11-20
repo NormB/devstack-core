@@ -1,0 +1,1 @@
+"""Reference FastAPI application package"""

@@ -1,0 +1,69 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Monitor Docker Compose for base image updates
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # Monitor GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Python - FastAPI Code-First implementation
+  - package-ecosystem: "pip"
+    directory: "/reference-apps/fastapi"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Python - FastAPI API-First implementation
+  - package-ecosystem: "pip"
+    directory: "/reference-apps/fastapi-api-first"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Python - Shared test suite
+  - package-ecosystem: "pip"
+    directory: "/reference-apps/shared/test-suite"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Go - Gin implementation
+  - package-ecosystem: "gomod"
+    directory: "/reference-apps/golang"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Node.js - Express implementation
+  - package-ecosystem: "npm"
+    directory: "/reference-apps/nodejs"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Rust - Actix-web implementation
+  - package-ecosystem: "cargo"
+    directory: "/reference-apps/rust"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # TypeScript - API-First implementation
+  - package-ecosystem: "npm"
+    directory: "/reference-apps/typescript-api-first"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

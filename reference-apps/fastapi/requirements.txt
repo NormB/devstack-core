@@ -1,0 +1,35 @@
+fastapi==0.121.1
+uvicorn[standard]==0.38.0
+pydantic-settings==2.1.0
+slowapi==0.1.9  # Rate limiting
+pybreaker==1.0.1  # Circuit breaker
+
+# HTTP client
+httpx==0.28.1
+
+# Database drivers
+asyncpg==0.30.0
+aiomysql==0.3.2
+cryptography>=41.0.0  # Required for MySQL caching_sha2_password auth
+motor==3.7.1
+pymongo==4.15.3
+
+# Redis and Caching
+redis[hiredis]==4.6.0  # fastapi-cache2 0.2.2 requires redis<5.0.0
+fastapi-cache2[redis]==0.2.2  # Response caching
+
+# RabbitMQ
+aio-pika==9.5.7
+
+# Utilities
+python-json-logger==4.0.0
+
+# Observability
+prometheus-client==0.23.1
+
+# Testing
+pytest==8.3.4  # pytest-asyncio 1.2.0 requires pytest<9
+pytest-asyncio==1.2.0
+pytest-cov==7.0.0
+pytest-mock==3.15.1
+httpx==0.28.1  # Already listed above but needed for testing

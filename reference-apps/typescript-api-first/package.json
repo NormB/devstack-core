@@ -1,0 +1,54 @@
+{
+  "name": "devstack-core-typescript-api-first",
+  "version": "1.0.0",
+  "description": "TypeScript API-First reference implementation using OpenAPI code generation",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest",
+    "generate": "openapi-generator-cli generate -i ../shared/openapi.yaml -g typescript-express-server -o ./generated"
+  },
+  "keywords": [
+    "typescript",
+    "openapi",
+    "api-first",
+    "vault",
+    "microservices"
+  ],
+  "author": "DevStack Core Team",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "js-yaml": "^4.1.1",
+    "mongodb": "^7.0.0",
+    "mysql2": "^3.6.5",
+    "node-vault": "^0.10.2",
+    "pg": "^8.11.3",
+    "prom-client": "^15.1.0",
+    "redis": "^5.9.0",
+    "uuid": "^13.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.7.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.5",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.9.2",
+    "@types/uuid": "^11.0.0",
+    "jest": "^30.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "overrides": {
+    "js-yaml": "^4.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

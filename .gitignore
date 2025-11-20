@@ -1,0 +1,121 @@
+# Environment and Secrets
+.env
+*.env.local
+*.env.bak
+*.env.backup
+*.env.orig
+*.env.save
+*.env.tmp
+
+# Vault keys and tokens (CRITICAL - never commit!)
+.vault-keys/
+vault-keys/
+**/keys.json
+**/root-token
+
+# Docker volumes and data
+volumes/
+data/
+*.db
+*.rdb
+dump.rdb
+appendonly.aof
+
+# Backups
+backups/
+*.sql
+*.tar.gz
+*.archive
+*.dump
+*.bak
+*.backup
+
+# Logs
+logs/
+*.log
+
+# Private documentation (WIP files, task tracking, test results)
+docs/.private/
+
+# Work directory (temporary files, scan results, development artifacts)
+work/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# AI Tool Configuration
+.claude/
+.claude.md
+claude.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+.venv
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# Rust
+target/
+Cargo.lock
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+*.pid
+*.seed
+*.pid.lock
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+CLAUDE.md

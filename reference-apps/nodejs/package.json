@@ -1,0 +1,54 @@
+{
+  "name": "devstack-core-nodejs-reference",
+  "version": "1.0.0",
+  "description": "Node.js reference implementation for DevStack Core infrastructure integration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "vault",
+    "hashicorp",
+    "postgresql",
+    "mysql",
+    "mongodb",
+    "redis",
+    "rabbitmq",
+    "microservices",
+    "reference-implementation"
+  ],
+  "author": "DevStack Core Team",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "mongodb": "^7.0.0",
+    "mysql2": "^3.6.5",
+    "node-vault": "^0.10.2",
+    "pg": "^8.11.3",
+    "prom-client": "^15.1.0",
+    "redis": "^5.9.0",
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "jest": "^30.2.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^7.1.4"
+  },
+  "overrides": {
+    "js-yaml": "^4.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,39 @@
+# Gitleaks Configuration
+# Allowlist for test scripts that demonstrate fetching credentials from Vault
+# These scripts do not contain hardcoded secrets - they show proper secret management
+
+title = "DevStack Core Gitleaks Configuration"
+
+[allowlist]
+description = "Allowlist for test scripts and documentation"
+
+# Test scripts that fetch credentials from Vault dynamically
+paths = [
+  '''tests/test-redis-failover\.sh''',
+  '''tests/test-approle-security\.sh''',
+  '''tests/test-tls-connections\.sh''',
+]
+
+# Documentation and examples that reference Vault paths
+regexes = [
+  # Vault path references (not actual secrets)
+  '''vault kv get''',
+  '''secret/redis-1''',
+  '''secret/postgres''',
+  '''secret/mysql''',
+  # Redis CLI password parameter examples (not actual passwords)
+  '''-a \$\{?REDIS_PASSWORD\}?''',
+  '''-a "\$REDIS_PASSWORD"''',
+  # Vault token environment variable references (not actual tokens)
+  '''VAULT_TOKEN=\$\(cat''',
+  '''~/.config/vault/root-token''',
+]
+
+# Example passwords in test documentation (not real credentials)
+stopwords = [
+  "example",
+  "test",
+  "password",
+  "REDIS_PASSWORD",
+  "VAULT_TOKEN",
+]
