@@ -566,34 +566,178 @@ curl http://localhost:8003/health  # Node.js Express
 
 ## Environment Variable Overrides
 
-Each profile can have environment overrides in `configs/profiles/`:
+Each profile has specific environment variable overrides in `configs/profiles/`. These files customize service behavior based on the profile's use case and resource constraints.
 
-**configs/profiles/minimal.env:**
-```bash
-# Redis single-node mode
-REDIS_CLUSTER_ENABLED=false
+### Profile Configuration Files
 
-# Reduced health check intervals (faster startup)
-POSTGRES_HEALTH_INTERVAL=30s
-VAULT_HEALTH_INTERVAL=30s
-```
+- `configs/profiles/minimal.env` - Essential services (5 containers, ~2GB RAM)
+- `configs/profiles/standard.env` - Full dev stack (12 containers, ~4GB RAM)
+- `configs/profiles/full.env` - Complete with observability (18 containers, ~6GB RAM)
+- `configs/profiles/reference.env` - Reference APIs addon (~+1GB RAM)
 
-**configs/profiles/standard.env:**
-```bash
-# Redis cluster mode
-REDIS_CLUSTER_ENABLED=true
+### Redis Configuration Comparison
 
-# Standard health checks
-POSTGRES_HEALTH_INTERVAL=60s
-```
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `REDIS_CLUSTER_ENABLED` | `false` | `true` | `true` | Minimal uses single Redis instance | Cluster provides HA & sharding |
+| `REDIS_CLUSTER_INIT_REQUIRED` | `false` | `true` | `true` | No cluster init needed for single node | Standard/full require cluster setup |
+| `REDIS_MAX_MEMORY` | `128mb` | `256mb` | `256mb` | Lower memory for single instance | Per-node allocation |
+| `REDIS_HEALTH_INTERVAL` | `30s` | `60s` | `60s` | Faster checks for quicker startup | Standard intervals for production-like |
 
-**configs/profiles/full.env:**
-```bash
-# Include all observability features
-ENABLE_METRICS=true
-ENABLE_LOGS=true
-PROMETHEUS_SCRAPE_INTERVAL=15s
-```
+### PostgreSQL Configuration Comparison
+
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `POSTGRES_MAX_CONNECTIONS` | `50` | `100` | `100` | Fewer services in minimal | Standard supports more clients |
+| `POSTGRES_SHARED_BUFFERS` | `128MB` | `256MB` | `256MB` | Reduced memory allocation | Smaller buffer cache |
+| `POSTGRES_EFFECTIVE_CACHE_SIZE` | `512MB` | `1GB` | `1GB` | Conservative estimate | Query planner optimization |
+| `POSTGRES_WORK_MEM` | `4MB` | `8MB` | `8MB` | Smaller per-operation memory | Sort/hash operation capacity |
+| `POSTGRES_ENABLE_TLS` | `false` | `false` | `false` | Local dev simplicity | TLS optional for all |
+| `POSTGRES_HEALTH_INTERVAL` | `30s` | `60s` | `60s` | Faster startup feedback | Standard production-like |
+| `POSTGRES_MEMORY_LIMIT` | `1G` | `2G` | `2G` | Docker resource constraint | Container memory cap |
+| `POSTGRES_MEMORY_RESERVATION` | `256M` | `512M` | `512M` | Guaranteed minimum | Reserved memory |
+| `POSTGRES_CPU_LIMIT` | `1.5` | `2` | `2` | CPU allocation | Max CPU cores |
+
+### Resource Limits Comparison
+
+| Service | Minimal Memory | Standard Memory | Full Memory | Why Different |
+|---------|---------------|-----------------|-------------|---------------|
+| **PostgreSQL** | 1G limit / 256M reserved | 2G limit / 512M reserved | 2G limit / 512M reserved | More connections/workload |
+| **MySQL** | Not included | 1G limit / 256M reserved | 1G limit / 256M reserved | Only in standard+ |
+| **MongoDB** | Not included | 1G limit / 256M reserved | 1G limit / 256M reserved | Only in standard+ |
+| **Redis (per node)** | 256M limit / 128M reserved | 512M limit / 256M reserved | 512M limit / 256M reserved | Cluster needs more memory |
+| **RabbitMQ** | Not included | 512M limit / 256M reserved | 512M limit / 256M reserved | Only in standard+ |
+| **Vault** | 256M limit / 128M reserved | 512M limit / 128M reserved | 512M limit / 128M reserved | Minimal secrets workload |
+| **Forgejo** | 512M limit / 256M reserved | 1G limit / 256M reserved | 1G limit / 256M reserved | Git server needs more |
+| **Prometheus** | Not included | Not included | 1G limit / 512M reserved | Only in full |
+| **Grafana** | Not included | Not included | 512M limit / 256M reserved | Only in full |
+| **Loki** | Not included | Not included | 512M limit / 256M reserved | Only in full |
+
+### Health Check Configuration Comparison
+
+| Service | Minimal Interval | Standard Interval | Full Interval | Why Different | Impact |
+|---------|------------------|-------------------|---------------|---------------|--------|
+| **Vault** | 30s | 60s | 60s | Faster startup validation | More frequent checks |
+| **PostgreSQL** | 30s | 60s | 60s | Quick feedback loop | Faster detection |
+| **Redis** | 30s | 60s | 60s | Lightweight checks | Minimal overhead |
+| **Forgejo** | 30s | 60s | 60s | Faster ready state | Quick startup |
+| **MySQL** | N/A | 60s | 60s | Only in standard+ | Standard interval |
+| **MongoDB** | N/A | 60s | 60s | Only in standard+ | Standard interval |
+| **RabbitMQ** | N/A | 60s | 60s | Only in standard+ | Standard interval |
+| **Prometheus** | N/A | N/A | 30s | Only in full, lighter | Monitoring service |
+| **Grafana** | N/A | N/A | 30s | Only in full, lighter | UI service |
+
+### Logging Configuration Comparison
+
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `LOG_LEVEL` | `info` | `info` | `info` | Consistent logging | Balanced verbosity |
+| `DOCKER_LOG_MAX_SIZE` | `5m` | `10m` | `20m` | Log retention | Disk space usage |
+| `DOCKER_LOG_MAX_FILE` | `2` | `3` | `5` | File rotation | Total log history |
+| `LOG_FORMAT` | Not set | Not set | `json` | Structured for observability | Loki integration |
+| `LOG_TIMESTAMPS` | Not set | Not set | `true` | Timestamp correlation | Log analysis |
+
+### Feature Flags Comparison
+
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `ENABLE_METRICS` | `false` | `false` | `true` | No Prometheus in minimal/standard | Metrics collection |
+| `ENABLE_LOGS` | `false` | `false` | `true` | No Loki in minimal/standard | Log aggregation |
+| `ENABLE_TLS` | `false` | `false` | `false` | Simplified for dev | Local only |
+| `ENABLE_OBSERVABILITY` | `false` | `false` | `true` | No Vector in minimal/standard | Pipeline processing |
+| `ENABLE_CONTAINER_MONITORING` | `false` | `false` | `true` | No cAdvisor in minimal/standard | Container metrics |
+| `ENABLE_REDIS_EXPORTERS` | `false` | `false` | `true` | No exporters in minimal/standard | Redis metrics |
+
+### PgBouncer Configuration Comparison
+
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `PGBOUNCER_DEFAULT_POOL_SIZE` | `5` | `10` | `10` | Fewer connections needed | Pool capacity |
+| `PGBOUNCER_MAX_CLIENT_CONN` | `25` | `100` | `100` | Limited client count | Connection limit |
+| `PGBOUNCER_MAX_DB_CONNECTIONS` | `10` | `20` | `20` | Total backend connections | PostgreSQL load |
+
+### Backup Configuration Comparison
+
+| Variable | Minimal | Standard | Full | Why Different | Impact |
+|----------|---------|----------|------|---------------|--------|
+| `BACKUP_RETENTION_DAYS` | `7` | `14` | `30` | Storage optimization | Disk usage |
+| `BACKUP_SCHEDULE` | `0 2 * * 0` (weekly) | `0 2 * * *` (daily) | `0 2 * * *` (daily) | Less frequent for minimal | Backup frequency |
+| `BACKUP_COMPRESSION` | `true` | `true` | `true` | Save disk space | File size |
+| `BACKUP_POSTGRES` | `true` | `true` | `true` | All profiles | Data safety |
+| `BACKUP_MYSQL` | `false` | `true` | `true` | Not in minimal | Service presence |
+| `BACKUP_MONGODB` | `false` | `true` | `true` | Not in minimal | Service presence |
+| `BACKUP_PROMETHEUS` | `false` | `false` | `true` | Only full has metrics | Metrics retention |
+| `BACKUP_GRAFANA` | `false` | `false` | `true` | Only full has dashboards | Dashboard config |
+
+### Observability Configuration (Full Profile Only)
+
+| Variable | Value | Purpose | Impact |
+|----------|-------|---------|--------|
+| `PROMETHEUS_SCRAPE_INTERVAL` | `15s` | Metrics collection frequency | Data granularity |
+| `PROMETHEUS_EVALUATION_INTERVAL` | `15s` | Alert evaluation frequency | Alert latency |
+| `PROMETHEUS_RETENTION_TIME` | `15d` | Metrics storage duration | Disk usage |
+| `PROMETHEUS_RETENTION_SIZE` | `10GB` | Max storage size | Disk space limit |
+| `LOKI_RETENTION_PERIOD` | `744h` (31 days) | Log storage duration | Disk usage |
+| `LOKI_CHUNK_TARGET_SIZE` | `1572864` | Chunk compression | Storage efficiency |
+| `VECTOR_LOG_LEVEL` | `info` | Pipeline logging | Debug verbosity |
+| `CADVISOR_HOUSEKEEPING_INTERVAL` | `30s` | Container stats collection | CPU overhead |
+| `REDIS_EXPORTER_SCRAPE_INTERVAL` | `15s` | Redis metrics frequency | Network overhead |
+
+### Reference Profile Configuration (Addon)
+
+| Variable | Value | Purpose | Impact |
+|----------|-------|---------|--------|
+| `ENABLE_REFERENCE_APPS` | `true` | Enable APIs | Service startup |
+| `REFERENCE_API_LOG_LEVEL` | `info` | Application logging | Log volume |
+| `REFERENCE_API_ENABLE_METRICS` | `true` | Prometheus metrics | Metrics endpoints |
+| `REFERENCE_API_ENABLE_TLS` | `true` | HTTPS endpoints | Certificate usage |
+| `REFERENCE_API_STRUCTURED_LOGGING` | `true` | JSON logging | Log parsing |
+| `FASTAPI_WORKERS` | `4` | Uvicorn workers | CPU usage |
+| `GOLANG_API_LOG_LEVEL` | `info` | Go service logging | Log verbosity |
+| `NODEJS_API_CLUSTER_ENABLED` | `false` | Node.js clustering | Process count |
+| `RUST_API_WORKERS` | `4` | Actix workers | Thread pool |
+
+### Network Configuration (All Profiles)
+
+| Variable | Value | Purpose | Impact |
+|----------|-------|---------|--------|
+| `COLIMA_NETWORK_ADDRESS` | `true` | Enable host access | External connectivity |
+| `SERVICE_NETWORK_SUBNET` | `172.20.0.0/16` | Network range | IP allocation |
+
+### Security Settings (All Profiles - Development Mode)
+
+| Variable | Value | Purpose | Why This Value |
+|----------|-------|---------|----------------|
+| `ALLOW_WEAK_PASSWORDS` | `true` | Local development | Convenience over security |
+| `ENABLE_RATE_LIMITING` | `false` | Local development | Testing without limits |
+| `SESSION_TIMEOUT` | `86400` (minimal), `28800` (standard/full) | Session duration | Development convenience |
+| `ENABLE_TLS` | `false` | TLS/SSL | Local development simplicity |
+
+### Complete Variable Summary by Profile
+
+**Minimal Profile** (`configs/profiles/minimal.env`):
+- 298 lines of configuration
+- Focus: Resource efficiency, quick startup
+- Key differences: Single Redis, reduced limits, shorter retention
+- Target: Personal projects, learning, CI/CD
+
+**Standard Profile** (`configs/profiles/standard.env`):
+- 460 lines of configuration
+- Focus: Production parity, multi-database
+- Key differences: Redis cluster, all databases, standard limits
+- Target: Multi-service development, integration testing
+
+**Full Profile** (`configs/profiles/full.env`):
+- 486 lines of configuration
+- Focus: Complete observability, monitoring
+- Key differences: All observability stack, enhanced logging, longer retention
+- Target: Performance analysis, troubleshooting, learning observability
+
+**Reference Profile** (`configs/profiles/reference.env`):
+- 455 lines of configuration
+- Focus: API examples, cross-language patterns
+- Combinable: Must be used with minimal, standard, or full
+- Target: API development, pattern learning, performance comparison
 
 ## Advanced: Custom Profiles
 

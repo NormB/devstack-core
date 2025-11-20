@@ -69,6 +69,12 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Performance metrics and security validation
   - Production readiness assessment
 
+- **[NEW_TESTS_SUMMARY.md](./NEW_TESTS_SUMMARY.md)** - Extended test suite summary
+  - New test suites added to the project
+  - Coverage of Vault, PostgreSQL, PgBouncer, Observability
+  - 40+ new test cases across 4 suites
+  - Test statistics and implementation details
+
 ### Architecture & Design
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete architecture deep-dive
@@ -188,7 +194,7 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 ### API Development Patterns
 
-- **[../reference-apps/API_PATTERNS.md](../reference-apps/API_PATTERNS.md)** - API design patterns
+- **[.API-Patterns](.API-Patterns)** - API design patterns
   - Code-first vs API-first development
   - Pattern implementations
   - Synchronization strategies
@@ -206,21 +212,21 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 Located in the project root and `.github/`:
 - [README.md](../README.md) - Main project documentation
-- [CONTRIBUTING.md](../.github/CONTRIBUTING.md) - Contribution guidelines
-- [SECURITY.md](../.github/SECURITY.md) - Security policy and reporting
+- [CONTRIBUTING.md](../Contributing-Guide) - Contribution guidelines
+- [SECURITY.md](../Secrets-Rotation) - Security policy and reporting
 - [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md) - Community standards
-- [CHANGELOG.md](../.github/CHANGELOG.md) - Version history
+- [CHANGELOG.md](../Changelog) - Version history
 
 ### Component Documentation
 
 - **Reference Applications**
-  - [Reference Apps Overview](../reference-apps/README.md)
+  - [Reference Apps Overview](.Development-Workflow)
   - [FastAPI Code-First](../reference-apps/fastapi/README.md)
   - [FastAPI API-First](../reference-apps/fastapi-api-first/README.md)
   - [Go Reference API](../reference-apps/golang/README.md)
   - [Node.js Reference API](../reference-apps/nodejs/README.md)
   - [Rust Reference API](../reference-apps/rust/README.md)
-  - [API Patterns](../reference-apps/API_PATTERNS.md)
+  - [API Patterns](.API-Patterns)
 
 - **Testing Infrastructure**
   - [Tests Overview](../tests/README.md)
@@ -268,14 +274,14 @@ Core documentation files are automatically synced from `docs/` to `wiki/` direct
   - `docs/ARCHITECTURE.md` → `wiki/Architecture-Overview.md`
   - `docs/SERVICE_CATALOG.md` → `wiki/Service-Catalog.md`
   - `README.md` → `wiki/Home.md`
-  - `.github/CHANGELOG.md` → `wiki/Changelog.md`
+  - `Changelog` → `wiki/Changelog.md`
   - And other core documentation files
 
 **Important:** Always update the source file in `docs/`, not the wiki copy. Changes only reach `main` via merged PRs, which trigger the wiki sync workflow.
 
 ## Contributing to Documentation
 
-See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
+See [CONTRIBUTING.md](../Contributing-Guide) for guidelines on:
 - Documentation style guide
 - Review process
 - Testing documentation changes
@@ -341,13 +347,13 @@ See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 
 - **Monthly:** Review for accuracy
 - **Quarterly:** Update test results
-- **Per Release:** Update .github/CHANGELOG.md
+- **Per Release:** Update Changelog
 - **As Needed:** Security documentation
 
 ## Need Help?
 
 - 📖 Start with [README.md](../README.md)
-- 🔒 Security questions? See [SECURITY.md](../.github/SECURITY.md)
+- 🔒 Security questions? See [SECURITY.md](../Secrets-Rotation)
 - 🧪 Testing questions? See [tests/README.md](../tests/README.md)
-- 🚀 API questions? See [reference-apps/README.md](../reference-apps/README.md)
-- 🤝 Want to contribute? See [CONTRIBUTING.md](../.github/CONTRIBUTING.md)
+- 🚀 API questions? See [reference-apps/README.md](.Development-Workflow)
+- 🤝 Want to contribute? See [CONTRIBUTING.md](../Contributing-Guide)
