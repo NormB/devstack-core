@@ -18,5 +18,5 @@ mysql_async = "0.36"
 mongodb = "3.1"
 redis = { version = "0.27", features = ["tokio-comp", "cluster-async"] }
 lapin = "3.7"
-prometheus = "0.13"
+prometheus = "0.14"
 lazy_static = "1.4"
