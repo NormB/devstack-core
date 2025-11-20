@@ -98,28 +98,48 @@ jobs:
             echo "No wiki changes detected"
           fi
 
-      - name: Commit wiki changes
+      - name: Create Pull Request for wiki changes
         if: steps.check_changes.outputs.changes == 'true'
-        run: |
-          git add wiki/
-          git commit -m "docs: auto-sync documentation to wiki
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            docs: auto-sync documentation to wiki
 
-          Automated sync from main documentation to wiki directory.
+            Automated sync from main documentation to wiki directory.
 
-          This ensures wiki stays in sync with the main docs/ directory.
+            This ensures wiki stays in sync with the main docs/ directory.
 
-          Files synced:
-          - docs/README.md → wiki/Documentation-Index.md
-          - docs/ARCHITECTURE.md → wiki/Architecture-Overview.md
-          - docs/SERVICE_CATALOG.md → wiki/Service-Catalog.md
-          - And other core documentation files
-          "
-          git push
+            Files synced:
+            - docs/README.md → wiki/Documentation-Index.md
+            - docs/ARCHITECTURE.md → wiki/Architecture-Overview.md
+            - docs/SERVICE_CATALOG.md → wiki/Service-Catalog.md
+            - And other core documentation files
+          branch: wiki-sync-auto
+          delete-branch: true
+          title: 'docs: auto-sync documentation to wiki'
+          body: |
+            ## Automated Wiki Sync
+
+            This PR automatically syncs changes from the main documentation to the wiki directory.
+
+            ### Changes
+            - Synced updated documentation files from `docs/` to `wiki/`
+            - Ensures wiki stays consistent with main documentation
+
+            ### Files Updated
+            - Documentation Index
+            - Architecture Overview
+            - Service Catalog
+            - Other core documentation files
+
+            **Note**: This is an automated PR created by the Wiki Sync workflow.
+          labels: documentation, automated
 
       - name: Summary
         if: steps.check_changes.outputs.changes == 'true'
         run: |
-          echo "✅ Wiki successfully synced with main documentation"
+          echo "✅ Wiki sync PR created successfully"
 
       - name: No changes summary
         if: steps.check_changes.outputs.changes == 'false'
