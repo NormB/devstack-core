@@ -118,12 +118,12 @@ lazy_static! {
     static ref HTTP_REQUESTS_TOTAL: CounterVec = CounterVec::new(
         Opts::new("http_requests_total", "Total HTTP requests"),
         &["method", "endpoint", "status"]
-    ).unwrap();
+    ).expect("Failed to create HTTP_REQUESTS_TOTAL metric");
 
     static ref HTTP_REQUEST_DURATION: HistogramVec = HistogramVec::new(
         prometheus::HistogramOpts::new("http_request_duration_seconds", "HTTP request latency"),
         &["method", "endpoint"]
-    ).unwrap();
+    ).expect("Failed to create HTTP_REQUEST_DURATION metric");
 }
 
 fn register_metrics() {
@@ -269,7 +269,7 @@ async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
                     Ok(HealthResponse {
                         status: "healthy".to_string(),
                         timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: Some(version.split(',').next().unwrap_or("unknown").to_string()),
+                        version: Some(version.split(',').next().map(|s| s.to_string()).unwrap_or_else(|| "unknown".to_string())),
                         error: None,
                         details: None,
                     })
@@ -543,32 +543,32 @@ async fn health_all() -> impl Responder {
 
     // Check PostgreSQL
     services.insert("postgres".to_string(), match check_postgres_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap(),
-        Err(h) => serde_json::to_value(h).unwrap(),
+        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
+        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
     });
 
     // Check MySQL
     services.insert("mysql".to_string(), match check_mysql_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap(),
-        Err(h) => serde_json::to_value(h).unwrap(),
+        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
+        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
     });
 
     // Check MongoDB
     services.insert("mongodb".to_string(), match check_mongodb_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap(),
-        Err(h) => serde_json::to_value(h).unwrap(),
+        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
+        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
     });
 
     // Check Redis
     services.insert("redis".to_string(), match check_redis_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap(),
-        Err(h) => serde_json::to_value(h).unwrap(),
+        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
+        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
     });
 
     // Check RabbitMQ
     services.insert("rabbitmq".to_string(), match check_rabbitmq_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap(),
-        Err(h) => serde_json::to_value(h).unwrap(),
+        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
+        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
     });
 
     let all_healthy = services.values().all(|v| {
@@ -787,8 +787,8 @@ async fn mongodb_query() -> impl Responder {
                                 status: "success".to_string(),
                                 database: "MongoDB".to_string(),
                                 result: Some(serde_json::json!({
-                                    "message": doc.get_str("message").unwrap_or(""),
-                                    "timestamp": doc.get_str("timestamp").unwrap_or("")
+                                    "message": doc.get_str("message").unwrap_or("Unknown message"),
+                                    "timestamp": doc.get_str("timestamp").unwrap_or("Unknown timestamp")
                                 })),
                                 error: None,
                             })
@@ -1259,11 +1259,14 @@ async fn metrics() -> impl Responder {
     let encoder = TextEncoder::new();
     let metric_families = REGISTRY.gather();
     let mut buffer = vec![];
-    encoder.encode(&metric_families, &mut buffer).unwrap();
 
-    HttpResponse::Ok()
-        .content_type("text/plain; version=0.0.4")
-        .body(buffer)
+    match encoder.encode(&metric_families, &mut buffer) {
+        Ok(_) => HttpResponse::Ok()
+            .content_type("text/plain; version=0.0.4")
+            .body(buffer),
+        Err(e) => HttpResponse::InternalServerError()
+            .body(format!("Failed to encode metrics: {}", e))
+    }
 }
 
 #[actix_web::main]
