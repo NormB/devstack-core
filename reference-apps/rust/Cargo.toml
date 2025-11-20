@@ -14,7 +14,7 @@ chrono = { version = "=0.4.42" }
 log = "0.4"
 env_logger = "=0.11.8"
 tokio-postgres = "0.7"
-mysql_async = "0.35"
+mysql_async = "0.36"
 mongodb = "3.1"
 redis = { version = "0.27", features = ["tokio-comp", "cluster-async"] }
 lapin = "3.7"
