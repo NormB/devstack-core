@@ -104,7 +104,7 @@ wait_for_services() {
     log_step "Waiting for services to be healthy (max ${max_wait}s)..."
 
     while [ $elapsed -lt $max_wait ]; do
-        if../devstack health > /dev/null 2>&1; then
+        if ../devstack health > /dev/null 2>&1; then
             log_success "All services healthy after ${elapsed}s"
             return 0
         fi

@@ -104,7 +104,7 @@ check_prerequisites() {
     local missing=0
 
     # Check if devstack exists
-    if [[ ! -f "${PROJECT_ROO../devstack" ]]; then
+    if [[ ! -f "${PROJECT_ROOT}/devstack" ]]; then
         log_error "devstack script not found"
         missing=1
     fi
