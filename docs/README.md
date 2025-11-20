@@ -63,6 +63,14 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Test execution guidelines
   - Coverage goals and metrics
 
+- **[RUST_API_TESTING_GUIDE.md](./RUST_API_TESTING_GUIDE.md)** - Rust HTTP API testing guide (NEW)
+  - Comprehensive Actix-web testing patterns
+  - Unit tests vs integration tests organization
+  - Testing best practices (positive, negative, edge cases)
+  - Common testing crates and complete examples
+  - Async testing with tokio and actix_rt
+  - Production-ready testing patterns
+
 - **[TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md)** - Phase 0-2 validation results (NEW - Nov 2025)
   - 100% test pass rate confirmation (494+ tests)
   - Issues found and resolved during validation
@@ -293,7 +301,7 @@ See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 |----------|-------|--------|
 | Project Information | 1 | ✅ Complete |
 | Security | 2 | ✅ Complete |
-| Testing | 1 | ✅ Complete |
+| Testing | 4 | ✅ Complete |
 | Architecture | 1 | ✅ Complete |
 | Service Profiles (v1.3) | 3 | ✅ Complete |
 | Operational Guides | 9 | ✅ Complete |
@@ -301,7 +309,7 @@ See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 | API Patterns | 1 | ✅ Complete |
 | Reference Apps | 6 | ✅ Complete |
 | VoIP Infrastructure | 3 | ✅ Complete (voip/ subdirectory) |
-| **Total Core Documentation Files** | **~28** | **✅ 99% Coverage** |
+| **Total Core Documentation Files** | **~31** | **✅ 99% Coverage** |
 
 **Note:** Work-in-progress files (task tracking, test results) are now located in `docs/.private/` (gitignored).
 

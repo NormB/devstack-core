@@ -86,8 +86,8 @@ mod api_tests {
         let req = test::TestRequest::get().uri("/").to_request();
         let resp = test::call_service(&app, req).await;
 
-        let content_type = resp.headers().get("content-type").unwrap();
-        assert!(content_type.to_str().unwrap().contains("application/json"));
+        let content_type = resp.headers().get("content-type").expect("Content-Type header should be present");
+        assert!(content_type.to_str().expect("Content-Type should be valid UTF-8").contains("application/json"));
     }
 
     // ============================================================================
@@ -516,8 +516,8 @@ mod api_tests {
         let req = test::TestRequest::get().uri("/metrics").to_request();
         let resp = test::call_service(&app, req).await;
 
-        let content_type = resp.headers().get("content-type").unwrap();
-        assert!(content_type.to_str().unwrap().contains("text/plain"));
+        let content_type = resp.headers().get("content-type").expect("Content-Type header should be present");
+        assert!(content_type.to_str().expect("Content-Type should be valid UTF-8").contains("text/plain"));
     }
 
     #[actix_web::test]
