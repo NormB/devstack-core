@@ -1340,45 +1340,4 @@ async fn main() -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use actix_web::{test, App};
-
-    #[actix_web::test]
-    async fn test_root_endpoint() {
-        let app = test::init_service(App::new().route("/", web::get().to(root))).await;
-        let req = test::TestRequest::get().uri("/").to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert!(resp.status().is_success());
-
-        let body: ApiInfo = test::read_body_json(resp).await;
-        assert_eq!(body.name, "DevStack Core Reference API");
-        assert_eq!(body.version, "1.0.0");
-        assert_eq!(body.language, "Rust");
-        assert_eq!(body.framework, "Actix-web");
-    }
-
-    #[actix_web::test]
-    async fn test_health_endpoint() {
-        let app = test::init_service(App::new().route("/health/", web::get().to(health_simple))).await;
-        let req = test::TestRequest::get().uri("/health/").to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert!(resp.status().is_success());
-
-        let body: HealthResponse = test::read_body_json(resp).await;
-        assert_eq!(body.status, "healthy");
-        assert!(body.timestamp.is_some());
-    }
-
-    #[actix_web::test]
-    async fn test_metrics_endpoint() {
-        register_metrics();
-        let app = test::init_service(App::new().route("/metrics", web::get().to(metrics))).await;
-        let req = test::TestRequest::get().uri("/metrics").to_request();
-        let resp = test::call_service(&app, req).await;
-
-        assert!(resp.status().is_success());
-    }
-}
+mod tests;  // Comprehensive test suite in tests.rs
