@@ -118,4 +118,6 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+
+# CLAUDE.md - AI assistant guidance (local only, not committed to repo)
 CLAUDE.md

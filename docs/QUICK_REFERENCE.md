@@ -1,6 +1,6 @@
 # QUICK REFERENCE
 
-**Version:** 1.3.0
+**Version:** 1.2.0
 **Last Updated:** 2025-01-18
 
 This is your go-to cheat sheet for DevStack Core. All commands, ports, credentials, and common operations on one page.
@@ -345,8 +345,8 @@ amqps://admin:PASSWORD@localhost:5671/dev_vhost
 
 ```
 ~/devstack-core/
-├── devstack              # Python CLI wrapper
-├── manage_devstack.py           # Python CLI implementation
+├── devstack                     # Bash wrapper script
+├── scripts/manage_devstack.py   # Python CLI implementation
 ├── docker-compose.yml           # Service definitions
 ├── .env                         # Environment configuration
 ├── .venv/                       # Python virtual environment
@@ -695,6 +695,6 @@ cp -r ~/.config/vault ~/vault-backup-$(date +%Y%m%d)
 ---
 
 **Last Updated:** 2025-01-18
-**Version:** 1.3.0
+**Version:** 1.2.0
 
 **Need More Help?** See `docs/README.md` for complete documentation index.
