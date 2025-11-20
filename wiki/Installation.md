@@ -737,9 +737,31 @@ tail -5 .env
 
 **What Just Happened:**
 1. **Vault configured** a secrets storage system
-2. **25-character random passwords** generated for each service
-3. **Passwords stored securely** in Vault (not in plain text files)
-4. **TLS certificate system** set up (for HTTPS connections)
+2. **AppRole authentication enabled** - Each service gets its own role-id and secret-id
+3. **Service policies created** - PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ, Forgejo
+4. **AppRole credentials stored** in `~/.config/vault/approles/<service>/role-id` and `secret-id`
+5. **25-character random passwords** generated for each service
+6. **Passwords stored securely** in Vault (not in plain text files)
+7. **TLS certificate system** set up (for HTTPS connections)
+
+**AppRole Authentication:**
+- **role-id**: Identifies which service is connecting (like a username)
+- **secret-id**: Proves the service is authorized (like a password)
+- **Service tokens**: Short-lived (1 hour) tokens generated from AppRole login
+- **Least privilege**: Each service can only access its own credentials
+
+**Where Credentials Are Stored:**
+```
+~/.config/vault/
+├── approles/
+│   ├── postgres/role-id    # PostgreSQL AppRole credentials
+│   ├── postgres/secret-id
+│   ├── mysql/role-id       # MySQL AppRole credentials
+│   ├── mysql/secret-id
+│   └── ...                 # (7 services total with AppRole)
+├── ca/                     # TLS certificates
+└── root-token              # Vault root token (for management)
+```
 
 **7.2 Restart Services to Load Credentials:**
 
