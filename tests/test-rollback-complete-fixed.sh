@@ -332,7 +332,7 @@ phase2_rollback_execution() {
 
     # Step 1: Stop all services
     log_step "Stopping all services..."
-    if !../devstack stop; then
+    if ! ../devstack stop; then
         log_fail "Failed to stop services"
         capture_diagnostics
         return 1
@@ -650,7 +650,7 @@ phase4_remigrate_to_approle() {
 
     log_step "Starting services with AppRole..."
     # FIX #2: Remove invalid --profile flag
-    if !../devstack start; then
+    if ! ../devstack start; then
         log_fail "Failed to start services"
         return 1
     fi

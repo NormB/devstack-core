@@ -264,7 +264,7 @@ phase2_rollback_execution() {
 
     # Step 1: Stop all services
     log_step "Stopping all services..."
-    if !../devstack stop; then
+    if ! ../devstack stop; then
         log_fail "Failed to stop services"
         return 1
     fi
