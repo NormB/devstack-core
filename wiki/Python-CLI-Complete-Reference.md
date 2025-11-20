@@ -1,6 +1,6 @@
 # Python CLI Complete Reference
 
-This document provides complete feature parity documentation between the original bash script `manage-devstack.sh` (now deleted) and the new `devstack` Python CLI wrapper.
+This document provides complete feature parity documentation between the original bash script `devstack.sh` (now deleted) and the new `devstack` Python CLI wrapper.
 
 ## Installation
 
@@ -751,7 +751,7 @@ All commands have been tested and verified:
 
 ### For Existing Users
 
-If you were using `manage-devstack.sh`:
+If you were using `devstack.sh`:
 
 1. **Update your shell history/aliases:**
    - Old: `./devstack.sh start`

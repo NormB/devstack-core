@@ -219,10 +219,10 @@ $ ./devstack --help
 **Solution:**
 ```bash
 # Make script executable
-chmod +x manage-devstack
+chmod +x devstack
 
 # Check she bang line
-head -1 manage-devstack
+head -1 devstack
 # Should be: #!/usr/bin/env python3
 
 # Install dependencies
@@ -416,7 +416,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 All services should show `Up` and `healthy` within 60 seconds.
 
 **Prevention:**
-Add automatic bootstrap check to `manage-devstack start` (see [Future Enhancements](#future-enhancements)).
+Add automatic bootstrap check to `devstack start` (see [Future Enhancements](#future-enhancements)).
 
 ---
 
@@ -1827,7 +1827,7 @@ docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c \
 **Planned improvements to reduce troubleshooting:**
 
 1. **Automatic Vault Bootstrap Detection**
-   - Add check to `manage-devstack start`
+   - Add check to `devstack start`
    - Auto-run bootstrap if credentials missing
    - Make startup truly "one command"
 

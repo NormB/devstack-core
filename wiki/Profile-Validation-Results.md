@@ -344,7 +344,7 @@ docker exec dev-redis-1 redis-cli --cluster create \
    - Create `configs/profiles/reference.env`
 
 3. **Phase 3: Python Management Script** - PENDING
-   - Create `manage-devstack.py`
+   - Create `devstack.py`
    - Implement profile-aware commands
    - Add profile listing and validation
    - Replace bash script gradually

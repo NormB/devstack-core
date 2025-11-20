@@ -41,7 +41,7 @@ A: Only for standard and full profiles:
 Minimal profile uses single Redis instance (no initialization needed).
 
 **Q: Can I use the bash script with profiles?**
-A: The bash script (`manage-devstack.sh`) starts all services (no profile support). Use the Python script for profile control:
+A: The bash script (`devstack.sh`) starts all services (no profile support). Use the Python script for profile control:
 ```bash
 ./devstack.py start --profile standard  # Profile-aware
 ./devstack.sh start                     # All services
@@ -81,8 +81,8 @@ A: Profile environment overrides are in `configs/profiles/`:
 
 **Q: What's the difference between Python and Bash management scripts?**
 A:
-- **Python script** (`manage-devstack.py`): Profile-aware, colored output, better UX, 850 lines
-- **Bash script** (`manage-devstack.sh`): Traditional, no profiles, starts everything, 1,622 lines
+- **Python script** (`devstack.py`): Profile-aware, colored output, better UX, 850 lines
+- **Bash script** (`devstack.sh`): Traditional, no profiles, starts everything, 1,622 lines
 
 Both are maintained. Use Python for profiles, Bash for backwards compatibility.
 
@@ -117,7 +117,7 @@ psql -h $COLIMA_IP -p 5432 -U $POSTGRES_USER
 ```
 
 **Q: Can I use Docker Desktop instead of Colima?**
-A: Yes, but remove `colima` commands from `manage-devstack.sh`. Just use `docker compose up -d`.
+A: Yes, but remove `colima` commands from `devstack.sh`. Just use `docker compose up -d`.
 
 **Q: How do I update service versions?**
 A: Edit `docker-compose.yml`:

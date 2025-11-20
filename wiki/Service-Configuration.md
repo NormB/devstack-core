@@ -146,7 +146,7 @@ docker compose --profile standard --profile reference up -d
 
 ```
 devstack-core/
-├── manage-devstack.py              # New Python management script
+├── devstack.py              # New Python management script
 ├── profiles.yaml                   # Profile definitions
 ├── docker-compose.yml              # Updated with profile labels
 └── configs/
@@ -301,7 +301,7 @@ custom_profiles:
     ram_estimate: "1GB"
 ```
 
-### Step 3: Python Management Script (manage-devstack.py)
+### Step 3: Python Management Script (devstack.py)
 
 ```python
 #!/usr/bin/env python3
@@ -488,7 +488,7 @@ if __name__ == '__main__':
    - Forgejo initialization
 
 3. **Parallel operation**
-   - Keep manage-devstack.sh working
+   - Keep devstack.sh working
    - Users can choose which to use
    - Eventually deprecate bash version
 

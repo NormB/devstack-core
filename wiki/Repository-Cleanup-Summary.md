@@ -99,7 +99,7 @@ devstack-core/
 ├── docker-compose.yml  ✅ Infrastructure
 ├── Makefile            ✅ Build automation
 ├── .env.example        ✅ Configuration template
-└── manage-devstack     ✅ Management script
+└── devstack     ✅ Management script
 ```
 
 **No .md or .sh files in root except allowed exceptions!**

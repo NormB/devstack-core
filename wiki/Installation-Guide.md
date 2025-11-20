@@ -237,7 +237,7 @@ ls -la
 # Expected output: You should see files like:
 # .env.example
 # docker-compose.yml
-# manage-devstack
+# devstack
 # README.md
 # configs/
 # scripts/
@@ -270,13 +270,13 @@ ls -la .env
 
 ```bash
 # Add execute permissions
-chmod +x manage-devstack
+chmod +x devstack
 
 # Verify permissions
-ls -l manage-devstack
+ls -l devstack
 
 # Expected output (note the 'x'):
-# -rwxr-xr-x  1 yourusername  staff  xxxxx Nov 23 10:00 manage-devstack
+# -rwxr-xr-x  1 yourusername  staff  xxxxx Nov 23 10:00 devstack
 ```
 
 **4.3 Review Configuration (Optional but Recommended):**
@@ -344,13 +344,13 @@ uv pip install -r scripts/requirements.txt
 
 ```bash
 # Add execute permissions
-chmod +x manage-devstack
+chmod +x devstack
 
 # Verify permissions
-ls -l manage-devstack
+ls -l devstack
 
 # Expected output (note the 'x'):
-# -rwxr-xr-x  1 yourusername  staff  xxxxx Nov 23 10:00 manage-devstack
+# -rwxr-xr-x  1 yourusername  staff  xxxxx Nov 23 10:00 devstack
 ```
 
 **Skip This Section If:** You want to use the traditional bash script and start all services. Continue to Step 5.
@@ -1397,7 +1397,7 @@ nano .env  # or vim, code, etc.
 
 **4. Make Management Script Executable**
 ```bash
-chmod +x manage-devstack
+chmod +x devstack
 ```
 
 ### Configuration

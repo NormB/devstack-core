@@ -26,7 +26,7 @@ Complete guide for upgrading DevStack Core versions, service versions, and migra
 
 **Major Changes:**
 - Introduction of service profiles (minimal, standard, full, reference)
-- Python management CLI (manage-devstack.py)
+- Python management CLI (devstack.py)
 - Enhanced TLS certificate management
 - 4-tier network segmentation
 - AppRole authentication for all services

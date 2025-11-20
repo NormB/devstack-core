@@ -1249,7 +1249,7 @@ vault:
 5. **Subtask 2.3.5:** Create weekly verification schedule documentation
    - [ ] Update `docs/DISASTER_RECOVERY.md` with verification procedures
    - [ ] Document weekly verification schedule (Sunday 3 AM recommended)
-   - [ ] Add cron example: `0 3 * * 0 /path/to/manage-devstack verify-backup`
+   - [ ] Add cron example: `0 3 * * 0 /path/to/devstack verify-backup`
    - [ ] Document what to do if verification fails
    - [ ] Add verification checklist
    - [ ] Document manual verification procedure

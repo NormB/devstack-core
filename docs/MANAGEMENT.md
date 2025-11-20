@@ -39,7 +39,7 @@ uv venv
 uv pip install -r scripts/requirements.txt
 
 # The wrapper script automatically uses the venv
-chmod +x manage-devstack
+chmod +x devstack
 
 # Verify
 ./devstack --version

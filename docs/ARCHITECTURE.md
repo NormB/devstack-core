@@ -1009,7 +1009,7 @@ sequenceDiagram
 - **Runtime:** Docker
 - **Networking:** Bridged (VZ framework)
 
-**Customizable via manage-devstack.sh:**
+**Customizable via devstack.sh:**
 ```bash
 COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ```

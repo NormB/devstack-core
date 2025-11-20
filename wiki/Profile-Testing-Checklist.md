@@ -48,7 +48,7 @@ ls -la configs/profiles/*.env
 pip3 list | grep -E "click|rich|PyYAML|python-dotenv|docker"
 
 # 6. Verify scripts are executable
-ls -l manage-devstack.py manage-devstack.sh
+ls -l devstack.py devstack.sh
 ```
 
 ## Profile Testing Checklist

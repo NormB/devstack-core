@@ -602,7 +602,7 @@ with urllib.request.urlopen(req) as response:
 
 **When Credentials Are Loaded:**
 
-The `manage-devstack.py` script automatically loads credentials during startup:
+The `devstack.py` script automatically loads credentials during startup:
 
 1. Start Vault container
 2. Wait 5 seconds for Vault to be ready

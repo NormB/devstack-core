@@ -89,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Automatic Forgejo database creation during PostgreSQL initialization and vault-bootstrap
   - Added `configs/postgres/02-create-forgejo-db.sql` to create forgejo database automatically
-  - Updated `manage-devstack.sh` vault-bootstrap to ensure forgejo database exists
+  - Updated `devstack.sh` vault-bootstrap to ensure forgejo database exists
   - Prevents "installation page" issue when forgejo database is missing
 
 ### Removed
@@ -138,7 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Backup script unbound variable error**
-  - Added `load_vault_credentials()` call to `manage-devstack.sh` backup command
+  - Added `load_vault_credentials()` call to `devstack.sh` backup command
   - Updated `scripts/load-vault-env.sh` to load MySQL password from Vault
   - Backup script now successfully loads all required credentials
 
@@ -313,7 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PostgreSQL metrics collection via Vector
 - MongoDB metrics collection via Vector
 - MySQL metrics exporter capabilities
-- Comprehensive management script (manage-devstack.sh) with 20+ commands
+- Comprehensive management script (devstack.sh) with 20+ commands
 - Automated health checks for all services
 - Custom network configuration with static IP assignments
 - Volume persistence for all stateful services
@@ -359,7 +359,7 @@ When releasing a new version, move changes from [Unreleased] to a new version se
 - PostgreSQL 15 with SSL/TLS support
 - HashiCorp Vault integration with auto-unseal
 - Redis cluster with 6 nodes (3 primary, 3 replica)
-- Comprehensive management script (manage-devstack.sh)
+- Comprehensive management script (devstack.sh)
 - Automated Vault PKI bootstrapping
 - Health check system for all services
 - FastAPI reference application with SSL/TLS

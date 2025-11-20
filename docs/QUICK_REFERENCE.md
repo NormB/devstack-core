@@ -345,7 +345,7 @@ amqps://admin:PASSWORD@localhost:5671/dev_vhost
 
 ```
 ~/devstack-core/
-├── manage-devstack              # Python CLI wrapper
+├── devstack              # Python CLI wrapper
 ├── manage_devstack.py           # Python CLI implementation
 ├── docker-compose.yml           # Service definitions
 ├── .env                         # Environment configuration

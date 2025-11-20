@@ -223,7 +223,7 @@ All reference apps demonstrate:
 
 ### Management Commands
 
-The `manage-devstack` script provides all essential operations:
+The `devstack` script provides all essential operations:
 
 ```bash
 # Service management

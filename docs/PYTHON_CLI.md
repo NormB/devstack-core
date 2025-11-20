@@ -1063,7 +1063,7 @@ pip3 install --user click rich PyYAML python-dotenv
 
 **Solution:**
 ```bash
-chmod +x manage-devstack
+chmod +x devstack
 ```
 
 ---

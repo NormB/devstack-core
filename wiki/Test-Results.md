@@ -577,7 +577,7 @@ All security features verified:
 
 ## Recommendations
 
-1. **Enhance manage-devstack.sh start:**
+1. **Enhance devstack.sh start:**
    - Add automatic Vault bootstrap check
    - Run bootstrap if credentials missing
    - Make startup truly "one command"
@@ -585,7 +585,7 @@ All security features verified:
 2. **Add Health Check Dashboard:**
    - Create quick status endpoint showing all 28 services
    - Include Vault bootstrap status
-   - Add to manage-devstack.sh status command
+   - Add to devstack.sh status command
 
 3. **Document Bootstrap Requirement:**
    - Update README.md with clear bootstrap instructions

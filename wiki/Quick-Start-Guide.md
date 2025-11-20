@@ -1082,7 +1082,7 @@ jobs:
 
 ```
 ~/devstack-core/
-├── manage-devstack              # Main management script
+├── devstack              # Main management script
 ├── docker-compose.yml            # Service definitions
 ├── .env                          # Configuration
 ├── tests/run-all-tests.sh        # Master test runner

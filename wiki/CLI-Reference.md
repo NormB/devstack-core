@@ -489,7 +489,7 @@ uv pip install -r scripts/requirements.txt
 
 **Solution:**
 ```bash
-chmod +x manage-devstack
+chmod +x devstack
 ```
 
 ### Colima Not Found
