@@ -2,7 +2,7 @@ fastapi==0.121.1
 uvicorn[standard]==0.38.0
 pydantic-settings==2.1.0
 slowapi==0.1.9  # Rate limiting
-pybreaker==1.0.1  # Circuit breaker
+pybreaker==1.4.1  # Circuit breaker
 
 # HTTP client
 httpx==0.28.1
