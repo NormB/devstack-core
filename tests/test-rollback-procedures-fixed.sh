@@ -594,7 +594,7 @@ phase4_remigrate_to_approle() {
     fi
 
     log_step "Restarting services with AppRole..."
-    if !../devstack restart; then
+    if ! ../devstack restart; then
         log_fail "Failed to restart services"
         return 1
     fi
