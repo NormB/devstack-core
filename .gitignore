@@ -36,6 +36,7 @@ logs/
 
 # Private documentation (WIP files, task tracking, test results)
 docs/.private/
+.private/
 
 # Work directory (temporary files, scan results, development artifacts)
 work/
