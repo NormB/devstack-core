@@ -1,496 +1,613 @@
 # Reference Applications
 
-Complete guide to the six reference API implementations demonstrating infrastructure integration patterns across multiple programming languages.
-
 ## Table of Contents
 
-- [Overview](#overview)
-- [Available Implementations](#available-implementations)
-- [Common Features](#common-features)
-- [API Endpoints](#api-endpoints)
-- [Getting Started](#getting-started)
-- [Code Examples](#code-examples)
+- [⚠️ Important: Not Production Code](#⚠️-important-not-production-code)
+- [What Are Reference Apps?](#what-are-reference-apps)
+- [Current Reference Apps](#current-reference-apps)
+  - [1. FastAPI Code-First (Python)](#1-fastapi-code-first-python)
+  - [2. FastAPI API-First (Python)](#2-fastapi-api-first-python)
+  - [Comparing the Two Approaches](#comparing-the-two-approaches)
+  - [Validation: Shared Test Suite](#validation-shared-test-suite)
+  - [Release Notes](#release-notes)
+- [How to Use Reference Apps](#how-to-use-reference-apps)
+  - [As a Learning Tool](#as-a-learning-tool)
+  - [As a Testing Tool](#as-a-testing-tool)
+  - [As a Development Reference](#as-a-development-reference)
+- [Key Integration Patterns](#key-integration-patterns)
+  - [Fetching Secrets from Vault](#fetching-secrets-from-vault)
+  - [Database Connections](#database-connections)
+  - [Redis Cluster Operations](#redis-cluster-operations)
+- [What Reference Apps Are NOT](#what-reference-apps-are-not)
+- [What Reference Apps ARE](#what-reference-apps-are)
+- [API Documentation](#api-documentation)
+  - [3. Go Reference API](#3-go-reference-api)
+  - [4. Node.js Reference API](#4-nodejs-reference-api)
+  - [5. Rust Reference API (Partial Implementation)](#5-rust-reference-api-partial-implementation)
+- [Future Reference Apps](#future-reference-apps)
+- [Common Use Cases](#common-use-cases)
+  - [1. Testing Infrastructure Setup](#1-testing-infrastructure-setup)
+  - [2. Debugging Connection Issues](#2-debugging-connection-issues)
+  - [3. Learning Integration Patterns](#3-learning-integration-patterns)
+  - [4. Building Your Own App](#4-building-your-own-app)
+- [Architecture](#architecture)
 - [Testing](#testing)
-- [API Patterns](#api-patterns)
+- [Security Notes](#security-notes)
+- [Getting Help](#getting-help)
+- [Summary](#summary)
 
-## Overview
+---
 
-The reference applications are **production-ready examples** demonstrating how to integrate with all DevStack Core infrastructure components. They showcase:
+**Purpose:** Educational example applications demonstrating how to integrate with the DevStack Core infrastructure.
 
-- Language-agnostic patterns
-- Best practices for each ecosystem
-- Identical API contracts across implementations
-- Comprehensive testing strategies
+## ⚠️ Important: Not Production Code
 
-### Why Multiple Languages?
+These are **reference implementations** for learning and testing. They demonstrate best practices and integration patterns, but are **not intended for production use**.
 
-1. **Learn patterns** - See same concepts across different ecosystems
-2. **Compare approaches** - Different languages, same problems
-3. **Choose your stack** - Find what works for your team
-4. **Validate consistency** - Parity tests ensure identical behavior
+## What Are Reference Apps?
 
-## Available Implementations
+Reference applications are **working code examples** that show you how to:
 
-### 1. Python - FastAPI (Code-First)
+1. **Integrate with infrastructure services** - Vault, databases, Redis, RabbitMQ
+2. **Follow best practices** - Async operations, error handling, configuration management
+3. **Test infrastructure** - Health checks and inspection APIs
+4. **Get started quickly** - Copy patterns into your own applications
 
+## Current Reference Apps
+
+We provide **two FastAPI implementations** demonstrating different API development patterns:
+
+### 1. FastAPI Code-First (Python)
+
+**Location:** `reference-apps/fastapi/`
 **Port:** 8000 (HTTP), 8443 (HTTPS)
-**Container:** `dev-reference-api` (172.20.0.100)
-**Directory:** `reference-apps/fastapi/`
+**Pattern:** Implementation drives documentation
 
-**Features:**
-- OpenAPI spec auto-generated from code
-- Type hints and Pydantic validation
-- Async/await patterns
-- Comprehensive test suite (254 tests)
-- 84% code coverage
+**What it demonstrates:**
+- ✅ Vault integration (fetching secrets securely)
+- ✅ Database connectivity (PostgreSQL, MySQL, MongoDB)
+- ✅ Redis caching and cluster operations
+- ✅ RabbitMQ messaging patterns
+- ✅ Health monitoring for all services
+- ✅ HTTP/HTTPS dual-mode with Vault certificates
+- ✅ Async/await patterns throughout
+- ✅ Code-first development workflow
 
-**Access:**
-- Interactive docs: http://localhost:8000/docs
-- OpenAPI spec: http://localhost:8000/openapi.json
-- Health check: http://localhost:8000/health/all
-
-**Quick start:**
+**Quick Start:**
 ```bash
+# Start the code-first reference app
 docker compose up -d reference-api
+
+# View interactive API documentation
+open http://localhost:8000/docs
+
+# Check infrastructure health
 curl http://localhost:8000/health/all
+
+# Inspect Redis cluster
+curl http://localhost:8000/redis/cluster/info
 ```
 
-### 2. Python - FastAPI (API-First)
+**Full Documentation:** See [fastapi/README.md](fastapi/README.md)
 
+---
+
+### 2. FastAPI API-First (Python)
+
+**Location:** `reference-apps/fastapi-api-first/`
 **Port:** 8001 (HTTP), 8444 (HTTPS)
-**Container:** `dev-api-first` (172.20.0.104)
-**Directory:** `reference-apps/fastapi-api-first/`
+**Pattern:** OpenAPI specification drives implementation
 
-**Features:**
-- OpenAPI spec is source of truth
-- Code generated from specification
-- Guaranteed API contract compliance
-- Parity tests with code-first (64 tests)
+**What it demonstrates:**
+- ✅ **Same infrastructure integrations** as code-first
+- ✅ **Contract-first development** - OpenAPI spec defines the API
+- ✅ **Generated models** from specification
+- ✅ **100% behavioral parity** with code-first (validated by shared test suite)
+- ✅ **API-first workflow** - design contract before implementation
 
-**Access:**
-- Interactive docs: http://localhost:8001/docs
-- OpenAPI spec: http://localhost:8001/openapi.json
-- Health check: http://localhost:8001/health/all
-
-**Quick start:**
+**Quick Start:**
 ```bash
+# Start the API-first reference app
 docker compose up -d api-first
+
+# View interactive API documentation
+open http://localhost:8001/docs
+
+# Check infrastructure health
 curl http://localhost:8001/health/all
+
+# Inspect Redis cluster
+curl http://localhost:8001/redis/cluster/info
 ```
 
-### 3. Go - Gin Framework
+**Full Documentation:** See [fastapi-api-first/README.md](fastapi-api-first/README.md)
 
-**Port:** 8002 (HTTP), 8445 (HTTPS)
-**Container:** `dev-golang-api` (172.20.0.105)
-**Directory:** `reference-apps/golang/`
+---
 
-**Features:**
-- High-performance HTTP routing
-- Concurrent request handling
-- Structured logging
-- Graceful shutdown
+### Comparing the Two Approaches
 
-**Access:**
-- Health check: http://localhost:8002/health/
-- Vault info: http://localhost:8002/vault/info
+Both implementations provide **identical functionality** but follow different development workflows:
 
-**Quick start:**
+| Aspect | Code-First (Port 8000) | API-First (Port 8001) |
+|--------|------------------------|----------------------|
+| **Starting Point** | Write Python code | Design OpenAPI spec |
+| **Documentation** | Generated from code | Drives implementation |
+| **Best For** | Rapid prototyping, internal APIs | External APIs, team coordination |
+| **Changes Start In** | Python files | OpenAPI specification |
+| **Development Speed** | Faster initial development | Slower start, faster collaboration |
+| **Use Case** | MVP development, agile iterations | API contracts, microservices |
+
+**Key Insight:** Both approaches are valid! The shared test suite validates that both implementations behave identically, proving you can achieve the same result with different workflows.
+
+### Validation: Shared Test Suite
+
+A comprehensive test suite validates **100% parity** between both implementations:
+
 ```bash
-docker compose up -d golang-api
-curl http://localhost:8002/health/
+# Run parity tests (26 tests ensuring identical behavior)
+cd reference-apps/shared/test-suite
+pip install -r requirements.txt
+pytest -v
+
+# Expected: 26/26 tests passing
 ```
 
-### 4. Node.js - Express Framework
+See [shared/test-suite/README.md](shared/test-suite/README.md) for details.
 
-**Port:** 8003 (HTTP), 8446 (HTTPS)
-**Container:** `dev-nodejs-api` (172.20.0.106)
-**Directory:** `reference-apps/nodejs/`
+**What Gets Validated:**
+- ✅ Identical endpoint paths
+- ✅ Identical response structures
+- ✅ Identical error handling
+- ✅ Identical status codes
+- ✅ Consistent OpenAPI specifications
 
-**Features:**
-- Modern async/await patterns
-- Express middleware architecture
-- Promise-based database clients
-- Comprehensive error handling
+### Release Notes
 
-**Access:**
-- Health check: http://localhost:8003/health/
-- Vault info: http://localhost:8003/vault/info
+For details on both implementations, see [CHANGELOG.md](CHANGELOG.md) in this directory
 
-**Quick start:**
+## How to Use Reference Apps
+
+### As a Learning Tool
+
 ```bash
-docker compose up -d nodejs-api
-curl http://localhost:8003/health/
+# 1. Browse the code to see integration patterns
+cat reference-apps/fastapi/app/services/vault.py
+cat reference-apps/fastapi/app/routers/database_demo.py
+cat reference-apps/fastapi/app/routers/redis_cluster.py
+
+# 2. See working examples in the interactive docs
+open http://localhost:8000/docs
+
+# 3. Copy patterns into your own applications
+# The code shows:
+#   - How to fetch secrets from Vault
+#   - How to connect to databases with Vault credentials
+#   - How to handle errors gracefully
+#   - How to structure async operations
 ```
 
-### 5. Rust - Actix-web Framework
+### As a Testing Tool
 
-**Port:** 8004 (HTTP), 8447 (HTTPS)
-**Container:** `dev-rust-api` (172.20.0.107)
-**Directory:** `reference-apps/rust/`
-
-**Features:**
-- High-performance async runtime
-- Type-safe request handling
-- Zero-cost abstractions
-- Minimal resource footprint
-
-**Access:**
-- Health check: http://localhost:8004/health/
-- Vault info: http://localhost:8004/vault/info
-
-**Quick start:**
 ```bash
-docker compose up -d rust-api
-curl http://localhost:8004/health/
+# Check all infrastructure services are working
+curl http://localhost:8000/health/all
+
+# Verify Redis cluster is properly configured
+curl http://localhost:8000/redis/cluster/info
+
+# Test database connectivity
+curl http://localhost:8000/examples/database/postgres/query
+
+# Inspect cluster topology
+curl http://localhost:8000/redis/cluster/nodes | jq '.nodes[].role'
 ```
 
-### 6. TypeScript - API-First (Scaffolding)
+### As a Development Reference
 
-**Status:** Scaffolding only
-**Directory:** `reference-apps/typescript-api-first/`
+**Problem:** You need to add Redis caching to your application.
 
-**Planned features:**
-- TypeScript with strict typing
-- OpenAPI code generation
-- Similar to Python API-First approach
+**Without reference app:**
+- ❌ Read Redis docs
+- ❌ Figure out authentication
+- ❌ Debug connection issues
+- ❌ Implement patterns from scratch
 
-## Common Features
+**With reference app:**
+```bash
+# 1. Verify Redis is working
+curl http://localhost:8000/health/redis
 
-All reference applications demonstrate:
+# 2. See working example
+cat reference-apps/fastapi/app/routers/cache_demo.py
 
-### Vault Integration
-- Retrieving secrets from Vault KV store
-- Dynamic credential fetching
-- TLS certificate usage
-- Health check integration
+# 3. Copy the pattern - it already shows:
+#    - How to connect with Vault password
+#    - How to handle errors
+#    - How to set TTL
+#    - Async/await patterns
+
+# 4. Test it works
+curl -X POST "http://localhost:8000/examples/cache/test?value=hello"
+curl http://localhost:8000/examples/cache/test
+```
+
+## Key Integration Patterns
+
+### Fetching Secrets from Vault
+
+All reference apps demonstrate:
+
+```python
+from app.services.vault import vault_client
+
+# Get all credentials for a service
+creds = await vault_client.get_secret("postgres")
+user = creds.get("user")
+password = creds.get("password")
+```
+
+**Why this matters:**
+- ✅ No hardcoded passwords
+- ✅ Centralized secret management
+- ✅ Credentials can be rotated without code changes
 
 ### Database Connections
-- **PostgreSQL** - Relational data with connection pooling
-- **MySQL** - Legacy database support
-- **MongoDB** - Document storage patterns
 
-### Caching
-- **Redis Cluster** - Distributed caching
-- Connection pooling
-- Cluster-aware operations
-- SET/GET/DELETE operations
-
-### Messaging
-- **RabbitMQ** - Queue management
-- Publishing messages
-- Queue inspection
-- Connection management
-
-### Observability
-- Prometheus metrics export
-- Structured logging
-- Health check endpoints
-- Request tracing
-
-### Security
-- TLS/HTTPS support
-- Vault-managed certificates
-- Secure credential handling
-- CORS configuration
-
-## API Endpoints
-
-### Health Checks
-
-All implementations provide:
-
-```bash
-GET /health/                    # Basic health
-GET /health/all                 # All services (Python only)
-GET /health/vault               # Vault status
-GET /health/postgres            # PostgreSQL status
-GET /health/mysql               # MySQL status
-GET /health/mongodb             # MongoDB status
-GET /health/redis               # Redis cluster status
-GET /health/rabbitmq            # RabbitMQ status
-```
-
-### Vault Operations
-
-```bash
-GET  /vault/info                # Vault connection info
-GET  /vault/status              # Vault seal status
-POST /vault/secret              # Store secret
-GET  /vault/secret/{key}        # Retrieve secret
-```
-
-### Database Demo
-
-```bash
-GET  /database/postgres/test    # Test PostgreSQL connection
-GET  /database/mysql/test       # Test MySQL connection
-GET  /database/mongodb/test     # Test MongoDB connection
-```
-
-### Redis Cluster
-
-```bash
-GET    /redis/cluster/info      # Cluster information
-GET    /redis/cluster/nodes     # Node status
-POST   /redis/cache             # Store value
-GET    /redis/cache/{key}       # Retrieve value
-DELETE /redis/cache/{key}       # Delete value
-```
-
-### Messaging
-
-```bash
-POST /messaging/publish         # Publish to queue
-GET  /messaging/queue/{name}    # Queue information
-```
-
-### Cache Demo
-
-```bash
-POST   /cache/set               # Cache a value
-GET    /cache/get/{key}         # Retrieve cached value
-DELETE /cache/delete/{key}      # Delete cached value
-GET    /cache/keys              # List all keys
-```
-
-## Getting Started
-
-### Start All Reference Apps
-
-```bash
-# Start all at once
-docker compose up -d reference-api api-first golang-api nodejs-api rust-api
-
-# Or individually
-docker compose up -d reference-api
-docker compose up -d golang-api
-```
-
-### Test Connectivity
-
-```bash
-# Test all APIs
-for port in 8000 8001 8002 8003 8004; do
-  echo "Testing port $port..."
-  curl -s http://localhost:$port/health/ | jq .
-done
-```
-
-### View Interactive Documentation
-
-**Python implementations only:**
-
-- Code-First: http://localhost:8000/docs
-- API-First: http://localhost:8001/docs
-
-Provides:
-- Try-it-now interface
-- Request/response examples
-- Schema definitions
-- Authentication testing
-
-## Code Examples
-
-### Vault Integration
-
-**Python (FastAPI):**
 ```python
-from app.services.vault import VaultService
+import asyncpg
+from app.services.vault import vault_client
 
-vault = VaultService()
-secret = await vault.get_secret("postgres")
-password = secret["password"]
-```
+# Fetch credentials from Vault
+creds = await vault_client.get_secret("postgres")
 
-**Go:**
-```go
-import "github.com/hashicorp/vault/api"
-
-client, _ := api.NewClient(&api.Config{
-    Address: os.Getenv("VAULT_ADDR"),
-})
-secret, _ := client.Logical().Read("secret/data/postgres")
-password := secret.Data["data"].(map[string]interface{})["password"]
-```
-
-**Node.js:**
-```javascript
-const vault = require('node-vault')({
-  endpoint: process.env.VAULT_ADDR,
-  token: process.env.VAULT_TOKEN
-});
-const secret = await vault.read('secret/data/postgres');
-const password = secret.data.data.password;
-```
-
-### Database Connection
-
-**Python (FastAPI):**
-```python
-from app.db.postgres import get_db_connection
-
-conn = get_db_connection()
-cursor = conn.cursor()
-cursor.execute("SELECT version()")
-version = cursor.fetchone()
-```
-
-**Go:**
-```go
-import "database/sql"
-import _ "github.com/lib/pq"
-
-db, _ := sql.Open("postgres", connString)
-var version string
-db.QueryRow("SELECT version()").Scan(&version)
-```
-
-**Node.js:**
-```javascript
-const { Pool } = require('pg');
-const pool = new Pool({ connectionString });
-const result = await pool.query('SELECT version()');
-const version = result.rows[0].version;
-```
-
-### Redis Cluster
-
-**Python (FastAPI):**
-```python
-from redis.cluster import RedisCluster
-
-rc = RedisCluster(
-    host='redis-1',
-    port=6379,
-    password=redis_password
+# Connect using Vault credentials
+conn = await asyncpg.connect(
+    host="postgres",
+    user=creds.get("user"),
+    password=creds.get("password"),
+    database=creds.get("database")
 )
-rc.set('key', 'value')
-value = rc.get('key')
+
+# Execute query
+result = await conn.fetch("SELECT * FROM users")
+await conn.close()
 ```
 
-**Go:**
-```go
-import "github.com/redis/go-redis/v9"
+**What you learn:**
+- ✅ How to integrate Vault with databases
+- ✅ Async database operations
+- ✅ Connection management
+- ✅ Error handling
 
-rdb := redis.NewClusterClient(&redis.ClusterOptions{
-    Addrs: []string{"redis-1:6379", "redis-2:6379", "redis-3:6379"},
-    Password: redisPassword,
-})
-rdb.Set(ctx, "key", "value", 0)
+### Redis Cluster Operations
+
+```python
+import redis.asyncio as redis
+from app.services.vault import vault_client
+
+# Get Redis credentials
+creds = await vault_client.get_secret("redis-1")
+
+# Connect to cluster
+client = redis.Redis(
+    host="redis-1",
+    port=6379,
+    password=creds.get("password"),
+    decode_responses=True
+)
+
+# Use cache
+await client.setex("key", 60, "value")  # Set with 60s TTL
+value = await client.get("key")
+await client.close()
+```
+
+**What you learn:**
+- ✅ Redis cluster authentication
+- ✅ Setting TTL for cache entries
+- ✅ Async Redis operations
+
+## What Reference Apps Are NOT
+
+- ❌ **Not production-ready** - Missing security hardening, monitoring, scaling
+- ❌ **Not feature-complete** - Focus on integration patterns, not business logic
+- ❌ **Not performant at scale** - Simple implementations for learning
+- ❌ **Not security-hardened** - Uses root Vault token for simplicity
+
+## What Reference Apps ARE
+
+- ✅ **Educational code** showing how to integrate services
+- ✅ **Working examples** you can test immediately
+- ✅ **Integration patterns** you can copy
+- ✅ **Testing tools** to verify infrastructure
+- ✅ **Starting points** for your own applications
+
+## API Documentation
+
+Each reference app provides interactive API documentation:
+
+**Code-First (Port 8000):**
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
+- **OpenAPI JSON:** http://localhost:8000/openapi.json
+
+**API-First (Port 8001):**
+- **Swagger UI:** http://localhost:8001/docs
+- **ReDoc:** http://localhost:8001/redoc
+- **OpenAPI JSON:** http://localhost:8001/openapi.json
+
+Both implementations expose identical API endpoints with identical behavior.
+
+### 3. Go Reference API
+
+**Location:** `reference-apps/golang/`
+**Port:** 8002 (HTTP), 8445 (HTTPS)
+**Pattern:** Production-grade Go patterns with Gin framework
+
+**What it demonstrates:**
+- ✅ **Same infrastructure integrations** as Python implementations
+- ✅ **Concurrency** - Goroutines for async operations
+- ✅ **Context propagation** - Proper context.Context usage
+- ✅ **Type safety** - Strong typing with comprehensive error handling
+- ✅ **Graceful shutdown** - Signal handling for clean termination
+- ✅ **Structured logging** - Logrus with request ID correlation
+
+**Quick Start:**
+```bash
+# Start the Go reference API
+docker compose up -d golang-api
+
+# View API information
+curl http://localhost:8002/
+
+# Check infrastructure health
+curl http://localhost:8002/health/all
+```
+
+**Full Documentation:** See [golang/README.md](golang/README.md)
+
+---
+
+### 4. Node.js Reference API
+
+**Location:** `reference-apps/nodejs/`
+**Port:** 8003 (HTTP), 8446 (HTTPS)
+**Pattern:** Modern async/await patterns with Express
+
+**What it demonstrates:**
+- ✅ **Same infrastructure integrations** as other implementations
+- ✅ **Async/await** - Modern JavaScript asynchronous patterns
+- ✅ **Promise.allSettled** - Concurrent operations
+- ✅ **Express middleware** - Modular request processing
+- ✅ **Winston logging** - Structured logging with correlation IDs
+- ✅ **Graceful shutdown** - Clean signal handling
+
+**Quick Start:**
+```bash
+# Start the Node.js reference API
+docker compose up -d nodejs-api
+
+# View API information
+curl http://localhost:8003/
+
+# Check infrastructure health
+curl http://localhost:8003/health/all
+```
+
+**Full Documentation:** See [nodejs/README.md](nodejs/README.md)
+
+---
+
+### 5. Rust Reference API
+
+**Location:** `reference-apps/rust/`
+**Port:** 8004 (HTTP), 8447 (HTTPS)
+**Pattern:** High-performance async with Actix-web
+**Status:** ✅ **Feature-Complete (~95% parity)**
+
+**What it demonstrates:**
+- ✅ **Complete infrastructure integration** - All services: Vault, PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ
+- ✅ **Type safety** - Rust's compile-time guarantees preventing entire classes of bugs (null pointers, race conditions, memory safety)
+- ✅ **Zero-cost abstractions** - Performance without overhead (async I/O with Tokio)
+- ✅ **Memory safety** - Guaranteed by Rust's ownership system (no buffer overflows, no dangling pointers)
+- ✅ **Comprehensive health checks** - All 8 endpoints monitoring infrastructure services
+- ✅ **Database operations** - Full integration with PostgreSQL, MySQL, MongoDB (async drivers, credential fetching)
+- ✅ **Cache operations** - Complete Redis CRUD (GET, SET, DELETE) with TTL support
+- ✅ **Message queuing** - RabbitMQ publishing and queue management
+- ✅ **Redis cluster** - Full cluster support (nodes, slots, info, per-node operations)
+- ✅ **Vault secret management** - Secure credential retrieval for all services
+- ✅ **Real Prometheus metrics** - HTTP request counters and duration histograms
+- ✅ **CORS middleware** - Production-ready cross-origin configuration
+- ✅ **Async/await patterns** - Modern Rust async programming throughout
+- ✅ **Production-grade error handling** - Zero unwrap() calls, proper Result<T, E> usage
+- ✅ **Comprehensive testing** - 44 unit tests (positive, negative, edge cases)
+- ✅ **1,985 lines of production code** - Fully documented implementation
+
+**Quick Start:**
+```bash
+# Start the Rust reference API
+docker compose up -d rust-api
+
+# View API information and all endpoints
+curl http://localhost:8004/
+
+# Check all service health
+curl http://localhost:8004/health/all
+
+# Test database integration
+curl http://localhost:8004/examples/database/postgres/query
+
+# Test Redis cache
+curl -X POST http://localhost:8004/examples/cache/test \
+  -H "Content-Type: application/json" \
+  -d '{"value": "Hello from Rust!", "ttl": 60}'
+
+# Inspect Redis cluster
+curl http://localhost:8004/redis/cluster/info
+
+# View Prometheus metrics
+curl http://localhost:8004/metrics
+```
+
+**Full Documentation:** See [rust/README.md](rust/README.md)
+
+---
+
+## Future Reference Apps
+
+The structure supports additional language/framework implementations:
+
+```
+reference-apps/
+├── fastapi/          ✅ Python async patterns (FastAPI code-first)
+├── fastapi-api-first/✅ Python API-first (OpenAPI spec-driven)
+├── golang/           ✅ Go with goroutines
+├── nodejs/           ✅ Node.js with Express
+├── rust/             ✅ Rust with Actix-web (complete)
+├── typescript-api-first/ 🔜 TypeScript API-first
+└── spring-boot/      🔜 Java/Spring patterns
+```
+
+Each demonstrates the same integrations but in different languages.
+
+## Common Use Cases
+
+### 1. Testing Infrastructure Setup
+
+```bash
+# After setting up infrastructure
+curl http://localhost:8000/health/all | jq '.'
+
+# Verify all services are healthy
+# {
+#   "status": "healthy",
+#   "services": {
+#     "vault": {"status": "healthy"},
+#     "postgres": {"status": "healthy"},
+#     "redis": {"status": "healthy", "cluster_state": "ok"}
+#   }
+# }
+```
+
+### 2. Debugging Connection Issues
+
+```bash
+# Check which service is failing
+curl http://localhost:8000/health/all | jq '.services[] | select(.status != "healthy")'
+
+# Get detailed Redis cluster information
+curl http://localhost:8000/redis/cluster/nodes
+
+# Verify database connectivity
+curl http://localhost:8000/examples/database/postgres/query
+```
+
+### 3. Learning Integration Patterns
+
+```bash
+# Browse the code
+cd reference-apps/fastapi/app
+
+# See Vault integration
+cat services/vault.py
+
+# See database patterns
+cat routers/database_demo.py
+
+# See Redis cluster inspection
+cat routers/redis_cluster.py
+
+# See health check implementation
+cat routers/health.py
+```
+
+### 4. Building Your Own App
+
+```bash
+# 1. Copy the patterns
+cp reference-apps/fastapi/app/services/vault.py your-app/
+
+# 2. Adapt to your needs
+# 3. Use the same integration approach
+# 4. Test against the same infrastructure
+```
+
+## Architecture
+
+Each reference app follows similar structure:
+
+```
+reference-apps/{language}/
+├── app/
+│   ├── main.py              # Application entry point
+│   ├── config.py            # Environment configuration
+│   ├── routers/             # API endpoints
+│   │   ├── health.py        # Health checks
+│   │   ├── {service}_demo.py # Integration examples
+│   └── services/            # Reusable clients
+│       └── vault.py         # Vault integration
+├── tests/                   # Integration tests
+├── Dockerfile              # Container build
+├── requirements.txt        # Dependencies
+└── README.md              # Detailed docs
 ```
 
 ## Testing
 
-### Unit Tests
-
-**Python FastAPI:**
-```bash
-# Run inside container
-docker exec dev-reference-api pytest tests/ -v
-
-# 254 tests, 84% coverage
-```
-
-### Parity Tests
-
-Validate that both Python implementations have identical APIs:
+Each reference app includes test suites:
 
 ```bash
-# From host (requires uv)
-cd reference-apps/shared/test-suite
-uv run pytest -v
-
-# 64 tests validating consistency
-```
-
-### Integration Tests
-
-```bash
-# Test all infrastructure
-./tests/run-all-tests.sh
-
-# Test specific API
+# Test FastAPI reference app
 ./tests/test-fastapi.sh
+
+# Expected output:
+# ✓ Container running
+# ✓ HTTP/HTTPS endpoints accessible
+# ✓ Redis Cluster APIs working
+# ✓ Health checks functioning
+# ✓ Service integrations operational
 ```
 
-## API Patterns
+See [../tests/README.md](../tests/README.md) for comprehensive test documentation.
 
-### Code-First vs API-First
+## Security Notes
 
-**Code-First (FastAPI):**
-- Write Python code with type hints
-- OpenAPI spec auto-generated
-- Fast development iteration
-- Natural Python patterns
+Reference apps demonstrate integration patterns but **not production security**:
 
-**API-First (FastAPI):**
-- Design OpenAPI spec first
-- Code generated from spec
-- Contract-first development
-- Guaranteed API compliance
+- ⚠️ Uses Vault root token (simplified for learning)
+- ⚠️ No authentication/authorization on endpoints
+- ⚠️ No rate limiting
+- ⚠️ No input validation/sanitization
+- ⚠️ Debug mode enabled
 
-**Both approaches:**
-- Result in identical APIs
-- Pass same parity tests
-- Support same features
-- Use same infrastructure
+**For production:** Implement proper auth, use AppRole/JWT for Vault, add validation, monitoring, etc.
 
-See [API Patterns](API-Patterns) wiki page for detailed comparison.
+## Getting Help
 
-### Best Practices Demonstrated
+**Documentation:**
+- Main README: [../README.md](../README.md)
+- Code-First README: [fastapi/README.md](fastapi/README.md)
+- API-First README: [fastapi-api-first/README.md](fastapi-api-first/README.md)
+- Shared Test Suite: [shared/test-suite/README.md](shared/test-suite/README.md)
+- Release Notes: [CHANGELOG.md](CHANGELOG.md)
+- Test Documentation: [../tests/README.md](../tests/README.md)
 
-1. **Configuration Management**
-   - Environment variables for config
-   - Vault for secrets
-   - Separate dev/prod settings
+**Quick Links (Code-First):**
+- Interactive API: http://localhost:8000/docs
+- Health Checks: http://localhost:8000/health/all
+- Redis Cluster: http://localhost:8000/redis/cluster/info
 
-2. **Error Handling**
-   - Structured exceptions
-   - Consistent error responses
-   - Proper status codes
+**Quick Links (API-First):**
+- Interactive API: http://localhost:8001/docs
+- Health Checks: http://localhost:8001/health/all
+- Redis Cluster: http://localhost:8001/redis/cluster/info
 
-3. **Connection Management**
-   - Connection pooling
-   - Graceful shutdown
-   - Retry logic
+## Summary
 
-4. **Observability**
-   - Health checks
-   - Structured logging
-   - Metrics export
+Reference apps are **educational tools** that:
+- 📚 Show you how to integrate with infrastructure
+- 🔍 Help you test and debug
+- 🚀 Provide starting points for your applications
+- ✅ Demonstrate best practices
 
-5. **Security**
-   - No hardcoded credentials
-   - TLS support
-   - Input validation
-
-## Performance Comparison
-
-Run benchmark suite:
-
-```bash
-./tests/performance-benchmark.sh
-```
-
-**Typical results (requests/second):**
-- Rust: ~15,000 req/s
-- Go: ~12,000 req/s
-- Python FastAPI: ~5,000 req/s
-- Node.js: ~8,000 req/s
-
-**Note:** Numbers vary based on endpoint complexity and hardware.
-
-## Next Steps
-
-1. **Explore the code** - Browse `reference-apps/<language>/`
-2. **Try the APIs** - Use interactive docs at http://localhost:8000/docs
-3. **Run the tests** - See [Testing Guide](Testing-Guide)
-4. **Build your own** - Use as templates for your applications
-5. **Compare patterns** - See same problems solved differently
-
-## See Also
-
-- [Quick Start Guide](Quick-Start-Guide) - Get APIs running
-- [API Patterns](API-Patterns) - Code-first vs API-first
-- [Testing Guide](Testing-Guide) - Running and writing tests
-- [Vault Integration](Vault-Integration) - Using Vault in your apps
+**Remember:** These are learning resources, not production code. Use them to understand patterns, then build your own production-ready applications with proper security, monitoring, and error handling.
