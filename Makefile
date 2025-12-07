@@ -16,7 +16,7 @@
 #   make install-hooks     - Install git pre-commit hooks
 #   make help              - Show this help message
 
-.PHONY: help validate test sync-check sync-report extract-openapi regenerate install-hooks clean
+.PHONY: help validate test sync-check sync-report extract-openapi regenerate install-hooks clean version status
 
 # Default target
 .DEFAULT_GOAL := help
