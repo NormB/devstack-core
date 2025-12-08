@@ -8,7 +8,7 @@ pybreaker==1.4.1  # Circuit breaker
 httpx==0.28.1
 
 # Database drivers
-asyncpg==0.30.0
+asyncpg==0.31.0
 aiomysql==0.3.2
 cryptography>=41.0.0  # Required for MySQL caching_sha2_password auth
 motor==3.7.1
