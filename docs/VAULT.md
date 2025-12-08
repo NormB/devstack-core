@@ -303,6 +303,57 @@ vault write -f -field=secret_id auth/approle/role/reference-api/secret-id > ~/.c
 - AppRole implementation: `reference-apps/fastapi/app/services/vault.py`
 - Docker configuration: `docker-compose.yml` (line 879)
 
+#### AppRole Secret ID Renewal
+
+**⚠️ IMPORTANT:** AppRole secret_ids have a **30-day TTL**. Services will fail to authenticate after expiry.
+
+**Check Secret ID Expiry:**
+```bash
+export VAULT_ADDR=http://localhost:8200
+export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+
+# Check remaining TTL for a service (e.g., reference-api)
+vault write auth/approle/role/reference-api/secret-id-accessor/lookup \
+  secret_id_accessor=$(cat ~/.config/vault/approles/reference-api/secret-id-accessor 2>/dev/null)
+```
+
+**Renew Secret IDs (Before Expiry):**
+```bash
+# Renew all AppRole secret_ids
+./scripts/vault-approle-bootstrap.sh --renew-secrets
+
+# Or renew for a specific service
+SERVICE=reference-api
+vault write -f -field=secret_id auth/approle/role/${SERVICE}/secret-id \
+  > ~/.config/vault/approles/${SERVICE}/secret-id
+
+# Save the accessor for future lookups
+vault write -f -field=secret_id_accessor auth/approle/role/${SERVICE}/secret-id \
+  > ~/.config/vault/approles/${SERVICE}/secret-id-accessor
+
+# Restart the service to pick up new credentials
+docker compose restart ${SERVICE}
+```
+
+**Automated Renewal (Recommended for Production):**
+
+Add to crontab to renew secret_ids weekly:
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs every Sunday at 3 AM)
+0 3 * * 0 cd /path/to/devstack-core && ./scripts/vault-approle-bootstrap.sh --renew-secrets >> /var/log/vault-approle-renewal.log 2>&1
+```
+
+**Renewal Timeline:**
+| Event | TTL Remaining | Action |
+|-------|---------------|--------|
+| Created | 30 days | Normal operation |
+| Week 3 | 7-14 days | Consider renewal |
+| Week 4 | < 7 days | **Renew immediately** |
+| Expired | 0 days | Service authentication fails |
+
 ### SSL/TLS Certificate Management
 
 **TLS Implementation: Pre-Generated Certificates with Vault-Based Configuration**

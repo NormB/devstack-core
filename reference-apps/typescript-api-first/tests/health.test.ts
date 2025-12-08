@@ -4,7 +4,7 @@
  * Tests for health check endpoints without requiring actual service connections.
  */
 
-const request = require('supertest');
+import request from 'supertest';
 
 // Mock all external dependencies
 jest.mock('../src/services/vault', () => ({
@@ -52,13 +52,20 @@ jest.mock('amqplib', () => ({
   connect: jest.fn()
 }));
 
-const app = require('../src/index');
-const { vaultClient } = require('../src/services/vault');
-const { Client: PgClient } = require('pg');
-const mysql = require('mysql2/promise');
-const { MongoClient } = require('mongodb');
-const { createClient } = require('redis');
-const amqp = require('amqplib');
+import app from '../src/index';
+import { vaultClient } from '../src/services/vault';
+import { Client as PgClient } from 'pg';
+import mysql from 'mysql2/promise';
+import { MongoClient } from 'mongodb';
+import { createClient } from 'redis';
+import amqp from 'amqplib';
+
+const mockVaultClient = vaultClient as jest.Mocked<typeof vaultClient>;
+const mockPgClient = PgClient as jest.MockedClass<typeof PgClient>;
+const mockMysql = mysql as jest.Mocked<typeof mysql>;
+const mockMongoClient = MongoClient as jest.MockedClass<typeof MongoClient>;
+const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
+const mockAmqp = amqp as jest.Mocked<typeof amqp>;
 
 describe('Health Routes', () => {
   beforeEach(() => {
@@ -85,7 +92,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/vault', () => {
     it('should return healthy when Vault is accessible', async () => {
-      vaultClient.healthCheck.mockResolvedValue({
+      mockVaultClient.healthCheck.mockResolvedValue({
         status: 'healthy',
         initialized: true,
         sealed: false
@@ -99,7 +106,7 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when Vault check fails', async () => {
-      vaultClient.healthCheck.mockRejectedValue(new Error('Connection refused'));
+      mockVaultClient.healthCheck.mockRejectedValue(new Error('Connection refused'));
 
       const response = await request(app)
         .get('/health/vault')
@@ -111,20 +118,20 @@ describe('Health Routes', () => {
 
   describe('GET /health/postgres', () => {
     it('should return healthy when PostgreSQL is accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
       });
 
       const mockClient = {
-        connect: jest.fn().mockResolvedValue(),
+        connect: jest.fn().mockResolvedValue(undefined),
         query: jest.fn().mockResolvedValue({
           rows: [{ version: 'PostgreSQL 15.4 on x86_64' }]
         }),
-        end: jest.fn().mockResolvedValue()
+        end: jest.fn().mockResolvedValue(undefined)
       };
-      PgClient.mockImplementation(() => mockClient);
+      mockPgClient.mockImplementation(() => mockClient as any);
 
       const response = await request(app)
         .get('/health/postgres')
@@ -135,7 +142,7 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when PostgreSQL is not accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -143,9 +150,9 @@ describe('Health Routes', () => {
 
       const mockClient = {
         connect: jest.fn().mockRejectedValue(new Error('Connection refused')),
-        end: jest.fn().mockResolvedValue()
+        end: jest.fn().mockResolvedValue(undefined)
       };
-      PgClient.mockImplementation(() => mockClient);
+      mockPgClient.mockImplementation(() => mockClient as any);
 
       const response = await request(app)
         .get('/health/postgres')
@@ -157,7 +164,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/mysql', () => {
     it('should return healthy when MySQL is accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -165,9 +172,9 @@ describe('Health Routes', () => {
 
       const mockConnection = {
         query: jest.fn().mockResolvedValue([[{ version: '8.0.35' }]]),
-        end: jest.fn().mockResolvedValue()
+        end: jest.fn().mockResolvedValue(undefined)
       };
-      mysql.createConnection.mockResolvedValue(mockConnection);
+      mockMysql.createConnection.mockResolvedValue(mockConnection as any);
 
       const response = await request(app)
         .get('/health/mysql')
@@ -178,13 +185,13 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when MySQL is not accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
       });
 
-      mysql.createConnection.mockRejectedValue(new Error('Connection refused'));
+      mockMysql.createConnection.mockRejectedValue(new Error('Connection refused'));
 
       const response = await request(app)
         .get('/health/mysql')
@@ -196,22 +203,22 @@ describe('Health Routes', () => {
 
   describe('GET /health/mongodb', () => {
     it('should return healthy when MongoDB is accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
       });
 
       const mockClient = {
-        connect: jest.fn().mockResolvedValue(),
+        connect: jest.fn().mockResolvedValue(undefined),
         db: jest.fn(() => ({
           admin: jest.fn(() => ({
             serverInfo: jest.fn().mockResolvedValue({ version: '7.0.4' })
           }))
         })),
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
-      MongoClient.mockImplementation(() => mockClient);
+      mockMongoClient.mockImplementation(() => mockClient as any);
 
       const response = await request(app)
         .get('/health/mongodb')
@@ -222,7 +229,7 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when MongoDB is not accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -230,9 +237,9 @@ describe('Health Routes', () => {
 
       const mockClient = {
         connect: jest.fn().mockRejectedValue(new Error('Connection refused')),
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
-      MongoClient.mockImplementation(() => mockClient);
+      mockMongoClient.mockImplementation(() => mockClient as any);
 
       const response = await request(app)
         .get('/health/mongodb')
@@ -244,15 +251,15 @@ describe('Health Routes', () => {
 
   describe('GET /health/redis', () => {
     it('should return healthy when Redis is accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
+      mockVaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
 
       const mockClient = {
-        connect: jest.fn().mockResolvedValue(),
+        connect: jest.fn().mockResolvedValue(undefined),
         info: jest.fn().mockResolvedValue('redis_version:7.2.4\r\n'),
         sendCommand: jest.fn().mockResolvedValue('cluster_state:ok\r\n'),
-        quit: jest.fn().mockResolvedValue()
+        quit: jest.fn().mockResolvedValue(undefined)
       };
-      createClient.mockReturnValue(mockClient);
+      mockCreateClient.mockReturnValue(mockClient as any);
 
       const response = await request(app)
         .get('/health/redis')
@@ -262,13 +269,13 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when Redis is not accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
+      mockVaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
 
       const mockClient = {
         connect: jest.fn().mockRejectedValue(new Error('Connection refused')),
-        quit: jest.fn().mockResolvedValue()
+        quit: jest.fn().mockResolvedValue(undefined)
       };
-      createClient.mockReturnValue(mockClient);
+      mockCreateClient.mockReturnValue(mockClient as any);
 
       const response = await request(app)
         .get('/health/redis')
@@ -280,19 +287,19 @@ describe('Health Routes', () => {
 
   describe('GET /health/rabbitmq', () => {
     it('should return healthy when RabbitMQ is accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass'
       });
 
       const mockChannel = {
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
       const mockConnection = {
         createChannel: jest.fn().mockResolvedValue(mockChannel),
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
-      amqp.connect.mockResolvedValue(mockConnection);
+      mockAmqp.connect.mockResolvedValue(mockConnection as any);
 
       const response = await request(app)
         .get('/health/rabbitmq')
@@ -302,12 +309,12 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when RabbitMQ is not accessible', async () => {
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass'
       });
 
-      amqp.connect.mockRejectedValue(new Error('Connection refused'));
+      mockAmqp.connect.mockRejectedValue(new Error('Connection refused'));
 
       const response = await request(app)
         .get('/health/rabbitmq')
@@ -319,52 +326,51 @@ describe('Health Routes', () => {
 
   describe('GET /health/all', () => {
     it('should return aggregate health status', async () => {
-      // Mock all services as healthy
-      vaultClient.healthCheck.mockResolvedValue({ status: 'healthy' });
-      vaultClient.getSecret.mockResolvedValue({
+      mockVaultClient.healthCheck.mockResolvedValue({ status: 'healthy' });
+      mockVaultClient.getSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
       });
 
-      const mockPgClient = {
-        connect: jest.fn().mockResolvedValue(),
+      const mockPg = {
+        connect: jest.fn().mockResolvedValue(undefined),
         query: jest.fn().mockResolvedValue({ rows: [{ version: 'PostgreSQL 15.4' }] }),
-        end: jest.fn().mockResolvedValue()
+        end: jest.fn().mockResolvedValue(undefined)
       };
-      PgClient.mockImplementation(() => mockPgClient);
+      mockPgClient.mockImplementation(() => mockPg as any);
 
-      const mockMysqlConnection = {
+      const mockMysqlConn = {
         query: jest.fn().mockResolvedValue([[{ version: '8.0.35' }]]),
-        end: jest.fn().mockResolvedValue()
+        end: jest.fn().mockResolvedValue(undefined)
       };
-      mysql.createConnection.mockResolvedValue(mockMysqlConnection);
+      mockMysql.createConnection.mockResolvedValue(mockMysqlConn as any);
 
-      const mockMongoClient = {
-        connect: jest.fn().mockResolvedValue(),
+      const mockMongo = {
+        connect: jest.fn().mockResolvedValue(undefined),
         db: jest.fn(() => ({
           admin: jest.fn(() => ({
             serverInfo: jest.fn().mockResolvedValue({ version: '7.0.4' })
           }))
         })),
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
-      MongoClient.mockImplementation(() => mockMongoClient);
+      mockMongoClient.mockImplementation(() => mockMongo as any);
 
-      const mockRedisClient = {
-        connect: jest.fn().mockResolvedValue(),
+      const mockRedis = {
+        connect: jest.fn().mockResolvedValue(undefined),
         info: jest.fn().mockResolvedValue('redis_version:7.2.4\r\n'),
         sendCommand: jest.fn().mockResolvedValue('cluster_state:ok\r\n'),
-        quit: jest.fn().mockResolvedValue()
+        quit: jest.fn().mockResolvedValue(undefined)
       };
-      createClient.mockReturnValue(mockRedisClient);
+      mockCreateClient.mockReturnValue(mockRedis as any);
 
-      const mockRabbitChannel = { close: jest.fn().mockResolvedValue() };
-      const mockRabbitConnection = {
+      const mockRabbitChannel = { close: jest.fn().mockResolvedValue(undefined) };
+      const mockRabbitConn = {
         createChannel: jest.fn().mockResolvedValue(mockRabbitChannel),
-        close: jest.fn().mockResolvedValue()
+        close: jest.fn().mockResolvedValue(undefined)
       };
-      amqp.connect.mockResolvedValue(mockRabbitConnection);
+      mockAmqp.connect.mockResolvedValue(mockRabbitConn as any);
 
       const response = await request(app)
         .get('/health/all')
