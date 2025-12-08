@@ -57,7 +57,7 @@ func Load() *Config {
 	return &Config{
 		// Application
 		Environment: getEnv("ENVIRONMENT", "development"),
-		Debug:       getEnvBool("DEBUG", true),
+		Debug:       getEnvBool("DEBUG", false),
 		HTTPPort:    getEnv("HTTP_PORT", "8002"),
 		HTTPSPort:   getEnv("HTTPS_PORT", "8445"),
 		EnableTLS:   getEnvBool("GOLANG_API_ENABLE_TLS", false),

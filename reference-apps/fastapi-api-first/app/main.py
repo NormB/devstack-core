@@ -14,8 +14,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import logging
+import sys
 import time
 import uuid
+from pythonjsonlogger import jsonlogger
 
 from app.routers import (
     health_checks,
@@ -30,12 +32,19 @@ from app.middleware.exception_handlers import register_exception_handlers
 from app.middleware.cache import cache_manager
 from app.services.vault import vault_client
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# Configure structured JSON logging (matches code-first implementation)
+logHandler = logging.StreamHandler(sys.stdout)
+formatter = jsonlogger.JsonFormatter(
+    '%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(method)s %(path)s %(status_code)s %(duration_ms)s'
 )
+logHandler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
+logger.addHandler(logHandler)
+logger.setLevel(logging.INFO)
+
+# Disable default basicConfig
+logging.getLogger().handlers.clear()
+logging.getLogger().addHandler(logHandler)
 
 # Prometheus metrics
 http_requests_total = Counter(
@@ -68,7 +77,7 @@ limiter = Limiter(key_func=get_remote_address)
 # Create FastAPI app
 app = FastAPI(
     title="DevStack Core - Reference API (API-First)",
-    version="1.0.0",
+    version="1.1.0",
     description="API-First implementation generated from OpenAPI specification",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -112,10 +121,10 @@ async def metrics_middleware(request: Request, call_next):
     request.state.request_id = request_id
 
     method = request.method
-    path = request.url.path
+    endpoint = request.url.path
 
     # Track in-progress requests
-    http_requests_in_progress.labels(method=method, endpoint=path).inc()
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
 
     start_time = time.time()
 
@@ -126,14 +135,26 @@ async def metrics_middleware(request: Request, call_next):
         # Record metrics
         http_requests_total.labels(
             method=method,
-            endpoint=path,
+            endpoint=endpoint,
             status=response.status_code
         ).inc()
 
         http_request_duration_seconds.labels(
             method=method,
-            endpoint=path
+            endpoint=endpoint
         ).observe(duration)
+
+        # Log request with structured data (matches code-first implementation)
+        logger.info(
+            "HTTP request completed",
+            extra={
+                "request_id": request_id,
+                "method": method,
+                "path": endpoint,
+                "status_code": response.status_code,
+                "duration_ms": round(duration * 1000, 2)
+            }
+        )
 
         # Add headers
         response.headers["X-Request-ID"] = request_id
@@ -141,8 +162,31 @@ async def metrics_middleware(request: Request, call_next):
 
         return response
 
+    except Exception as e:
+        # Record error metrics
+        duration = time.time() - start_time
+        http_requests_total.labels(
+            method=method,
+            endpoint=endpoint,
+            status=500
+        ).inc()
+
+        # Log error with structured data
+        logger.error(
+            f"Request failed: {str(e)}",
+            extra={
+                "request_id": request_id,
+                "method": method,
+                "path": endpoint,
+                "status_code": 500,
+                "duration_ms": round(duration * 1000, 2)
+            },
+            exc_info=True
+        )
+        raise
+
     finally:
-        http_requests_in_progress.labels(method=method, endpoint=path).dec()
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
 
 
 # Include routers
@@ -158,7 +202,7 @@ app.include_router(redis_cluster.router)
 async def startup_event():
     """Application startup event handler."""
     # Set app info metric
-    app_info.labels(version="1.0.0", name="api-first").set(1)
+    app_info.labels(version="1.1.0", name="api-first").set(1)
 
     # Initialize response caching with Redis
     try:
@@ -171,10 +215,14 @@ async def startup_event():
         logger.error(f"Failed to initialize cache: {e}")
         logger.warning("Application will continue without caching")
 
-    logger.info("Starting API-First FastAPI application...")
-    logger.info(f"Debug mode: {settings.DEBUG}")
-    logger.info(f"Vault address: {settings.VAULT_ADDR}")
-    logger.info(f"Redis cache enabled: {cache_manager.enabled}")
+    logger.info(
+        "Starting DevStack Core Reference API (API-First)",
+        extra={
+            "vault_address": settings.VAULT_ADDR,
+            "redis_cache_enabled": cache_manager.enabled,
+            "version": "1.1.0"
+        }
+    )
     logger.info("Application ready")
 
 
@@ -195,7 +243,7 @@ async def root(request: Request):
     """
     return {
         "name": "DevStack Core Reference API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "description": "Reference implementation for infrastructure integration",
         "docs": "/docs",
         "health": "/health/all",
@@ -253,7 +301,8 @@ async def root(request: Request):
 
 
 @app.get("/metrics")
-async def metrics():
+@limiter.limit("1000/minute")  # High limit for metrics scraping
+async def metrics(request: Request):
     """Prometheus metrics endpoint"""
     return Response(
         content=generate_latest(),

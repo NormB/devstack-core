@@ -630,7 +630,7 @@ main() {
 
     # Check required environment variables
     if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
+        error "VAULT_TOKEN not set and ~/.config/vault/root-token not found. Run './devstack vault-init' first or export VAULT_TOKEN."
     fi
 
     # Wait for Vault
