@@ -27,8 +27,9 @@ func TestLoad(t *testing.T) {
 				if cfg.Environment != "development" {
 					t.Errorf("Expected Environment development, got %s", cfg.Environment)
 				}
-				if cfg.Debug != true {
-					t.Errorf("Expected Debug true (default), got %v", cfg.Debug)
+				// Debug should default to false for security (opt-in, not opt-out)
+				if cfg.Debug != false {
+					t.Errorf("Expected Debug false (default for security), got %v", cfg.Debug)
 				}
 			},
 		},

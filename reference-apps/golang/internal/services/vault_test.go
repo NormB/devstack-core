@@ -8,46 +8,52 @@ import (
 
 func TestNewVaultClient(t *testing.T) {
 	tests := []struct {
-		name    string
-		addr    string
-		token   string
-		wantErr bool
+		name       string
+		addr       string
+		token      string
+		appRoleDir string
+		wantErr    bool
 	}{
 		{
-			name:    "valid address and token",
-			addr:    "http://vault:8200",
-			token:   "test-token",
-			wantErr: false,
+			name:       "valid address and token",
+			addr:       "http://vault:8200",
+			token:      "test-token",
+			appRoleDir: "",
+			wantErr:    false,
 		},
 		{
-			name:    "valid https address",
-			addr:    "https://vault:8200",
-			token:   "test-token",
-			wantErr: false,
+			name:       "valid https address",
+			addr:       "https://vault:8200",
+			token:      "test-token",
+			appRoleDir: "",
+			wantErr:    false,
 		},
 		{
-			name:    "empty token (valid - token can be empty initially)",
-			addr:    "http://vault:8200",
-			token:   "",
-			wantErr: false,
+			name:       "empty token (valid - token can be empty initially)",
+			addr:       "http://vault:8200",
+			token:      "",
+			appRoleDir: "",
+			wantErr:    false,
 		},
 		{
-			name:    "localhost address",
-			addr:    "http://localhost:8200",
-			token:   "test-token",
-			wantErr: false,
+			name:       "localhost address",
+			addr:       "http://localhost:8200",
+			token:      "test-token",
+			appRoleDir: "",
+			wantErr:    false,
 		},
 		{
-			name:    "custom port",
-			addr:    "http://vault:9200",
-			token:   "test-token",
-			wantErr: false,
+			name:       "custom port",
+			addr:       "http://vault:9200",
+			token:      "test-token",
+			appRoleDir: "",
+			wantErr:    false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewVaultClient(tt.addr, tt.token)
+			client, err := NewVaultClient(tt.addr, tt.token, tt.appRoleDir)
 
 			if tt.wantErr {
 				if err == nil {
@@ -78,7 +84,7 @@ func TestVaultClient_GetSecret(t *testing.T) {
 	// Full integration tests would require a running Vault instance
 
 	t.Run("context timeout handling", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -94,7 +100,7 @@ func TestVaultClient_GetSecret(t *testing.T) {
 	})
 
 	t.Run("context cancellation", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -109,7 +115,7 @@ func TestVaultClient_GetSecret(t *testing.T) {
 	})
 
 	t.Run("method accepts valid path", func(t *testing.T) {
-		client, err := NewVaultClient("http://vault:8200", "test-token")
+		client, err := NewVaultClient("http://vault:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -132,7 +138,7 @@ func TestVaultClient_GetSecret(t *testing.T) {
 
 func TestVaultClient_GetSecretKey(t *testing.T) {
 	t.Run("method signature validation", func(t *testing.T) {
-		client, err := NewVaultClient("http://vault:8200", "test-token")
+		client, err := NewVaultClient("http://vault:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -153,7 +159,7 @@ func TestVaultClient_GetSecretKey(t *testing.T) {
 	})
 
 	t.Run("context handling", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -170,7 +176,7 @@ func TestVaultClient_GetSecretKey(t *testing.T) {
 
 func TestVaultClient_HealthCheck(t *testing.T) {
 	t.Run("health check method exists", func(t *testing.T) {
-		client, err := NewVaultClient("http://vault:8200", "test-token")
+		client, err := NewVaultClient("http://vault:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -190,7 +196,7 @@ func TestVaultClient_HealthCheck(t *testing.T) {
 	})
 
 	t.Run("context cancellation handling", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -210,7 +216,7 @@ func TestVaultClientStructure(t *testing.T) {
 		addr := "http://vault:8200"
 		token := "test-token"
 
-		client, err := NewVaultClient(addr, token)
+		client, err := NewVaultClient(addr, token, "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -225,7 +231,7 @@ func TestVaultClientStructure(t *testing.T) {
 	})
 
 	t.Run("client methods are accessible", func(t *testing.T) {
-		client, err := NewVaultClient("http://vault:8200", "test-token")
+		client, err := NewVaultClient("http://vault:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -241,7 +247,7 @@ func TestVaultClientStructure(t *testing.T) {
 
 func TestVaultClientConcurrency(t *testing.T) {
 	t.Run("client is safe for concurrent use", func(t *testing.T) {
-		client, err := NewVaultClient("http://vault:8200", "test-token")
+		client, err := NewVaultClient("http://vault:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -269,7 +275,7 @@ func TestVaultClientConcurrency(t *testing.T) {
 
 func TestVaultClientErrorFormatting(t *testing.T) {
 	t.Run("GetSecret error includes path", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
@@ -292,7 +298,7 @@ func TestVaultClientErrorFormatting(t *testing.T) {
 	})
 
 	t.Run("GetSecretKey error includes key name", func(t *testing.T) {
-		client, err := NewVaultClient("http://nonexistent:8200", "test-token")
+		client, err := NewVaultClient("http://nonexistent:8200", "test-token", "")
 		if err != nil {
 			t.Fatalf("Failed to create client: %v", err)
 		}
