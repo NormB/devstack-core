@@ -64,7 +64,7 @@ const config = {
   // Application Metadata
   app: {
     name: 'DevStack Core Node.js Reference API',
-    version: '1.0.0',
+    version: '1.1.0',
     language: 'Node.js',
     framework: 'Express'
   }

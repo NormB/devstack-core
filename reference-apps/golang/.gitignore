@@ -1,2 +1,2 @@
-# Build artifacts
-api
+# Build artifacts (binary only, not source directories)
+/api

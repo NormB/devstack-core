@@ -63,7 +63,7 @@ mod api_tests {
 
         let body: ApiInfo = test::read_body_json(resp).await;
         assert_eq!(body.name, "DevStack Core Reference API");
-        assert_eq!(body.version, "1.0.0");
+        assert_eq!(body.version, "1.1.0");
         assert_eq!(body.language, "Rust");
         assert_eq!(body.framework, "Actix-web");
     }
