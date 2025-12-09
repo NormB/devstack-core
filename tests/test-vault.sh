@@ -567,13 +567,13 @@ test_management_commands() {
     info "Test 10: Management script Vault commands work"
 
     # Test vault-status
-    if "$PROJECT_RO../devstack" vault-status &>/dev/null; then
+    if "$PROJECT_ROOT/devstack" vault-status &>/dev/null; then
         # Test vault-token
-        local token=$("$PROJECT_RO../devstack" vault-token 2>/dev/null)
+        local token=$("$PROJECT_ROOT/devstack" vault-token 2>/dev/null)
 
         if [ -n "$token" ]; then
             # Test vault-show-password
-            local password=$("$PROJECT_RO../devstack" vault-show-password postgres 2>/dev/null)
+            local password=$("$PROJECT_ROOT/devstack" vault-show-password postgres 2>/dev/null)
 
             if [ -n "$password" ]; then
                 success "Management commands work correctly"

@@ -166,11 +166,9 @@ class CacheManager:
             prefix: Cache key prefix
         """
         try:
-            self.redis_client = aioredis.from_url(
-                redis_url,
-                encoding="utf8",
-                decode_responses=True
-            )
+            # Note: decode_responses must be False (default) for fastapi-cache2
+            # as it stores cached data as binary/bytes
+            self.redis_client = aioredis.from_url(redis_url)
 
             # Test connection
             await self.redis_client.ping()

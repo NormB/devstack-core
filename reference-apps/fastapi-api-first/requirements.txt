@@ -19,7 +19,9 @@ motor==3.7.1
 pymongo==4.15.5
 
 # Redis and Caching
-redis[hiredis]==7.1.0  # Compatible with fastapi-cache2 (requires <5.0.0)
+# redis 4.3.0+ required for redis.asyncio.cluster module used by fastapi-cache2
+# redis 4.6.0 is the latest 4.x version compatible with fastapi-cache2 (<5.0.0 requirement)
+redis[hiredis]==4.6.0  # fastapi-cache2 0.2.2 requires redis>=4.2.0rc1,<5.0.0
 fastapi-cache2[redis]==0.2.2  # Response caching
 
 # RabbitMQ
