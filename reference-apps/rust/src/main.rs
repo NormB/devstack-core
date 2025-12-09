@@ -166,7 +166,7 @@ async fn get_vault_secret(service: &str) -> Result<serde_json::Value, String> {
 async fn root() -> impl Responder {
     let info = ApiInfo {
         name: "DevStack Core Reference API".to_string(),
-        version: "1.0.0".to_string(),
+        version: "1.1.0".to_string(),
         language: "Rust".to_string(),
         framework: "Actix-web".to_string(),
         description: "Rust reference implementation for infrastructure integration".to_string(),
@@ -246,9 +246,10 @@ async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
 
     let host = get_env_or("POSTGRES_HOST", "postgres");
     let port = get_env_or("POSTGRES_PORT", "5432");
-    let user = creds["user"].as_str().unwrap_or("devuser");
-    let password = creds["password"].as_str().unwrap_or("");
-    let database = creds["database"].as_str().unwrap_or("devdb");
+    // Fallback defaults match Vault bootstrap credentials
+    let user = creds["user"].as_str().unwrap_or("dev_admin");
+    let password = creds["password"].as_str().unwrap_or("changeme");
+    let database = creds["database"].as_str().unwrap_or("dev_database");
 
     let conn_str = format!(
         "host={} port={} user={} password={} dbname={}",
@@ -311,9 +312,10 @@ async fn check_mysql_health() -> Result<HealthResponse, HealthResponse> {
 
     let host = get_env_or("MYSQL_HOST", "mysql");
     let port: u16 = get_env_or("MYSQL_PORT", "3306").parse().unwrap_or(3306);
-    let user = creds["user"].as_str().unwrap_or("devuser");
-    let password = creds["password"].as_str().unwrap_or("");
-    let database = creds["database"].as_str().unwrap_or("devdb");
+    // Fallback defaults match Vault bootstrap credentials
+    let user = creds["user"].as_str().unwrap_or("dev_admin");
+    let password = creds["password"].as_str().unwrap_or("changeme");
+    let database = creds["database"].as_str().unwrap_or("dev_database");
 
     let opts = mysql_async::OptsBuilder::default()
         .ip_or_hostname(host)
@@ -385,8 +387,9 @@ async fn check_mongodb_health() -> Result<HealthResponse, HealthResponse> {
 
     let host = get_env_or("MONGODB_HOST", "mongodb");
     let port = get_env_or("MONGODB_PORT", "27017");
-    let user = creds["user"].as_str().unwrap_or("devuser");
-    let password = creds["password"].as_str().unwrap_or("");
+    // Fallback defaults match Vault bootstrap credentials
+    let user = creds["user"].as_str().unwrap_or("dev_admin");
+    let password = creds["password"].as_str().unwrap_or("changeme");
 
     let uri = format!("mongodb://{}:{}@{}:{}/?authSource=admin", user, password, host, port);
 

@@ -4,9 +4,21 @@
 
 import cors from 'cors';
 
+// Default CORS origins aligned with other reference implementations
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://localhost:8005'];
+  : [
+      'http://localhost:3000',   // React/Next.js dev server
+      'http://localhost:8000',   // FastAPI code-first
+      'http://localhost:8001',   // FastAPI API-first
+      'http://localhost:8005',   // TypeScript API-first
+      'http://localhost:8080',   // Common dev port
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:8000',
+      'http://127.0.0.1:8001',
+      'http://127.0.0.1:8005',
+      'http://127.0.0.1:8080',
+    ];
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {

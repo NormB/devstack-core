@@ -93,10 +93,10 @@ func Load() *Config {
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 
-		// RabbitMQ
+		// RabbitMQ - defaults match Vault bootstrap credentials
 		RabbitMQHost:     getEnv("RABBITMQ_HOST", "rabbitmq"),
 		RabbitMQPort:     getEnv("RABBITMQ_PORT", "5672"),
-		RabbitMQUser:     getEnv("RABBITMQ_USER", "guest"),
+		RabbitMQUser:     getEnv("RABBITMQ_USER", "dev_admin"),
 		RabbitMQPassword: getEnv("RABBITMQ_PASSWORD", ""),
 	}
 }
