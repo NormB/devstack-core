@@ -132,17 +132,17 @@ flowchart TD
 ### Quick Diagnostic Commands
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  QUICK DIAGNOSTICS                                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Overall status:     ./devstack health                      │
-│  Service logs:       ./devstack logs SERVICE                │
-│  Vault status:       ./devstack vault-status                │
-│  Container status:   docker ps -a                           │
-│  Resource usage:     docker stats                           │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            QUICK DIAGNOSTICS                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Overall status:     ./devstack health                                      │
+│  Service logs:       ./devstack logs SERVICE                                │
+│  Vault status:       ./devstack vault-status                                │
+│  Container status:   docker ps -a                                           │
+│  Resource usage:     docker stats                                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
