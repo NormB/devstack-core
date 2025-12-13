@@ -1,5 +1,6 @@
 # Services
 
+Detailed documentation for all DevStack Core services including infrastructure, observability, and reference applications.
 
 ## Table of Contents
 

@@ -1,5 +1,7 @@
 # IDE Setup Guide
 
+Configuration guides for popular IDEs and editors to work with DevStack Core, including VS Code, JetBrains IDEs, and Neovim.
+
 ## Table of Contents
 
 - [Overview](#overview)

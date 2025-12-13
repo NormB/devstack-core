@@ -1,5 +1,7 @@
 # Performance Baselines
 
+Benchmark results and baseline metrics for DevStack Core services, providing reference points for performance monitoring and optimization.
+
 ## Table of Contents
 
 - [Test Environment](#test-environment)

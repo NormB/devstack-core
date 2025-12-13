@@ -1,8 +1,8 @@
 # Migration Guide
 
-**Version:** 1.0
-**Last Updated:** November 19, 2025
-**Applies To:** DevStack Core v1.3.0+
+Step-by-step instructions for migrating from legacy configurations to DevStack Core v1.3.0+, including AppRole authentication and service profiles.
+
+**Version:** 1.0 | **Last Updated:** November 19, 2025
 
 ---
 

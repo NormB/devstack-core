@@ -1,5 +1,15 @@
 # Profile Implementation Guide
 
+Technical documentation for implementing and extending Docker Compose service profiles in DevStack Core.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Docker Compose Profile Assignment Strategy](#docker-compose-profile-assignment-strategy)
+- [Implementation Details](#implementation-details)
+
+---
+
 ## Overview
 
 This document explains how service profiles are implemented in DevStack Core using Docker Compose native profile support.

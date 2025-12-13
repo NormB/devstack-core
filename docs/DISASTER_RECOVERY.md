@@ -1,5 +1,7 @@
 # Disaster Recovery Runbook
 
+Step-by-step procedures for recovering from infrastructure failures, including complete environment loss, Vault data loss, database corruption, and network issues. Target RTO: 30 minutes.
+
 ## Table of Contents
 
 - [Overview](#overview)

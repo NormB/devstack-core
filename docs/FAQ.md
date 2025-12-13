@@ -1,5 +1,14 @@
 # FAQ
 
+Frequently asked questions about DevStack Core, covering service profiles, general usage, troubleshooting, and common configuration scenarios.
+
+## Table of Contents
+
+- [Service Profiles (NEW v1.3)](#service-profiles-new-v13)
+- [General Questions](#general-questions)
+
+---
+
 ## Service Profiles (NEW v1.3)
 
 **Q: What are service profiles and why should I use them?**

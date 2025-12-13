@@ -1,7 +1,8 @@
 # NETWORK SEGMENTATION
 
-**Version:** 1.3.0
-**Last Updated:** 2025-01-18
+4-tier network architecture isolating Vault, data services, applications, and observability components for enhanced security and traffic control.
+
+**Version:** 1.3.0 | **Last Updated:** 2025-01-18
 
 ## Table of Contents
 

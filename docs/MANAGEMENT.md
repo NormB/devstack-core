@@ -1,5 +1,7 @@
 # Management Script
 
+Documentation for DevStack Core's management scripts, including the Python CLI (profile-aware) and Bash script (traditional).
+
 ## Table of Contents
 
 - [Management Scripts Overview](#management-scripts-overview)
