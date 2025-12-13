@@ -96,34 +96,36 @@ open http://localhost:8001/docs
 ### API-First Development Pattern
 
 ```
-┌─────────────────────────────────────────┐
-│   OpenAPI Specification (Contract)      │
-│   shared/openapi.yaml                   │
-└───────────────┬─────────────────────────┘
-                │
-                │ Drives Implementation
-                ▼
-┌─────────────────────────────────────────┐
-│   Generated Models & Stubs              │
-│   (datamodel-code-generator)            │
-└───────────────┬─────────────────────────┘
-                │
-                │ Enhanced With
-                ▼
-┌─────────────────────────────────────────┐
-│   Business Logic & Integrations         │
-│   - Vault secrets management            │
-│   - Database connections                │
-│   - Cache operations                    │
-│   - Message queue integration           │
-└───────────────┬─────────────────────────┘
-                │
-                │ Validated By
-                ▼
-┌─────────────────────────────────────────┐
-│   Shared Test Suite (26 tests)         │
-│   Ensures parity with code-first        │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     OpenAPI Specification (Contract)                        │
+│                         shared/openapi.yaml                                 │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                                      │ Drives Implementation
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Generated Models & Stubs                              │
+│                      (datamodel-code-generator)                             │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                                      │ Enhanced With
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Business Logic & Integrations                          │
+│                                                                             │
+│  - Vault secrets management                                                 │
+│  - Database connections                                                     │
+│  - Cache operations                                                         │
+│  - Message queue integration                                                │
+│                                                                             │
+└─────────────────────────────────────┬───────────────────────────────────────┘
+                                      │
+                                      │ Validated By
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       Shared Test Suite (26 tests)                          │
+│                      Ensures parity with code-first                         │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Application Structure
