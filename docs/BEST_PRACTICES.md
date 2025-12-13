@@ -1,5 +1,7 @@
 # Best Practices
 
+Recommended patterns and guidelines for effective use of DevStack Core, including profile selection, resource management, and integration patterns.
+
 ## Table of Contents
 
 - [Service Profile Selection (NEW v1.3)](#service-profile-selection-new-v13)

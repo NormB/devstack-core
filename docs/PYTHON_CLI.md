@@ -1,7 +1,8 @@
 # Python Management CLI
 
-**Version:** 1.3.0
-**Last Updated:** 2025-01-18
+Modern Python-based CLI for DevStack Core with service profiles, colored output, and enhanced user experience.
+
+**Version:** 1.3.0 | **Last Updated:** 2025-01-18
 
 ## Table of Contents
 

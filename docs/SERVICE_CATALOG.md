@@ -1,8 +1,8 @@
 # Service Catalog
 
-**Version:** 1.0
-**Last Updated:** November 19, 2025
-**Total Services:** 23 containerized services
+Complete inventory of all 23 containerized services in DevStack Core, including ports, health checks, dependencies, and configuration details.
+
+**Version:** 1.0 | **Last Updated:** November 19, 2025
 
 ---
 

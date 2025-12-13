@@ -1,5 +1,7 @@
 # Environment Variable Reference
 
+Complete reference for all environment variables used by DevStack Core services, including Vault, databases, Redis, RabbitMQ, and observability components.
+
 ## Table of Contents
 
 - [Overview](#overview)

@@ -1,5 +1,7 @@
 # Vault Security Best Practices
 
+Security guidelines for HashiCorp Vault in DevStack Core, covering AppRole authentication, token management, backup procedures, and production hardening.
+
 ## Table of Contents
 - [Overview](#overview)
 - [Critical Security Warning](#critical-security-warning)

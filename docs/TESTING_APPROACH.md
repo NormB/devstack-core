@@ -1,5 +1,7 @@
 # Testing Approach - Best Practices
 
+Overview of the testing strategy for DevStack Core, including 431+ tests across Bash integration tests, Python unit tests, Go tests, and Rust tests.
+
 ## Table of Contents
 
 - [Overview](#overview)

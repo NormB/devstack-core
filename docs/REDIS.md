@@ -1,5 +1,7 @@
 # Redis Cluster
 
+Documentation for the 3-node Redis cluster configuration, including architecture, setup, operations, and troubleshooting.
+
 ## Table of Contents
 
 - [Architecture](#architecture)

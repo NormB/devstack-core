@@ -1,5 +1,16 @@
 # Service Profiles - Flexible Container Orchestration
 
+Resource-efficient service configurations allowing developers to run only the services they need, from minimal (5 services, 2GB) to full (18 services, 6GB).
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Available Profiles](#available-profiles)
+- [Profile Comparison](#profile-comparison)
+- [Usage](#usage)
+
+---
+
 ## Overview
 
 DevStack Core provides multiple **service profiles** to accommodate different development scenarios. This allows developers to run only the services they need, reducing resource consumption and startup time.

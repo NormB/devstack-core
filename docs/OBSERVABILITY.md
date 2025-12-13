@@ -1,5 +1,7 @@
 # Observability Stack
 
+Comprehensive monitoring, metrics collection, and log aggregation for DevStack Core using Prometheus, Grafana, Loki, and Vector.
+
 ## Table of Contents
 
   - [Prometheus](#prometheus)

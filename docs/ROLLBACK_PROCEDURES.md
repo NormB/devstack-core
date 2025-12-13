@@ -1,10 +1,8 @@
 # DevStack Core Rollback Procedures
 
-**Document Version:** 1.0
-**Created:** November 14, 2025
-**Baseline Commit:** 9bef892
-**Feature Branch:** phase-0-4-improvements
-**Improvement Commit:** 80f7072
+Procedures for safely rolling back DevStack Core changes, including database restores, service reverts, and configuration recovery.
+
+**Document Version:** 1.0 | **Created:** November 14, 2025
 
 ---
 

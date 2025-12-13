@@ -1,5 +1,7 @@
 # Comprehensive Security Assessment Report
 
+Security audit results for DevStack Core covering secrets management, authentication, container security, network isolation, and production recommendations.
+
 ## Table of Contents
 
 - [Executive Summary](#executive-summary)
