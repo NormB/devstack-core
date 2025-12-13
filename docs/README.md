@@ -33,6 +33,35 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 ## Documentation Index
 
+### New to DevStack? Start Here
+
+- **[GETTING_STARTED.md](./GETTING_STARTED.md)** - Quick start guide (5-10 minutes)
+  - Install prerequisites and start DevStack
+  - Get database credentials from Vault
+  - Connect your application
+  - Daily workflow commands
+
+- **[GLOSSARY.md](./GLOSSARY.md)** - Terms and concepts explained
+  - Plain-language definitions for all key terms
+  - Vault, AppRole, PKI, Redis cluster concepts
+  - Service descriptions and common abbreviations
+
+- **[LEARNING_PATHS.md](./LEARNING_PATHS.md)** - Guided learning by goal
+  - Choose a path based on your role or objective
+  - Step-by-step reading order with time estimates
+  - Paths for beginners, developers, DevOps, and contributors
+
+- **[USE_CASES.md](./USE_CASES.md)** - Task-driven walkthroughs
+  - Connect Python/Go/Node.js apps to databases
+  - Use Vault secrets in your application
+  - Set up monitoring with Grafana
+  - Run integration tests against DevStack
+
+- **[CLI_REFERENCE.md](./CLI_REFERENCE.md)** - Complete CLI command reference
+  - All `./devstack` commands with examples
+  - Options, arguments, and exit codes
+  - Quick reference card for common tasks
+
 ### Project Information
 
 - **[ACKNOWLEDGEMENTS.md](./ACKNOWLEDGEMENTS.md)** - Software acknowledgements and licenses
