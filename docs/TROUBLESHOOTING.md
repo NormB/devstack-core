@@ -1995,7 +1995,7 @@ If you encounter an issue not covered here:
    - [ARCHITECTURE.md](./ARCHITECTURE.md) - System design
    - [PERFORMANCE_TUNING.md](./PERFORMANCE_TUNING.md) - Optimization
    - [VAULT_SECURITY.md](./VAULT_SECURITY.md) - Vault specifics
-   - [TEST_RESULTS.md](./TEST_RESULTS.md) - Expected test behavior
+   - [TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md) - Expected test behavior
 
 ---
 

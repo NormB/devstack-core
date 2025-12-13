@@ -28,7 +28,7 @@ This document provides step-by-step procedures to roll back DevStack Core improv
 - **Quick validation:** `./tests/test-rollback-simple.sh` (⭐ Recommended - 30 seconds)
 - **Comprehensive:** `./tests/test-rollback-comprehensive.sh` (All databases - 2 minutes)
 - **All test scripts:** See [Rollback Testing](#rollback-testing) section below
-- **Test results:** `docs/ROLLBACK_TEST_RESULTS.md`
+- **Test results:** [TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md)
 
 ### When to Roll Back
 
@@ -628,7 +628,7 @@ DevStack Core includes **4 automated rollback test scripts** to validate rollbac
 
 **Recommended Test:** Use `test-rollback-simple.sh` for validation - it's proven to work and validates core rollback procedures (AppRole ↔ Root Token migration).
 
-**Latest Test Results:** See `docs/ROLLBACK_TEST_RESULTS.md` for comprehensive testing analysis (validated November 17, 2025).
+**Latest Test Results:** See [TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md) for comprehensive testing analysis.
 
 ### Running Rollback Tests
 
@@ -669,7 +669,7 @@ The following improvements have been implemented in test scripts:
 - Prerequisites validation before test execution
 - Automated cleanup on test failures
 
-See `docs/ROLLBACK_TEST_RESULTS.md` for detailed test results and analysis.
+See [TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md) for detailed test results and analysis.
 
 ### Pre-Rollback Test
 

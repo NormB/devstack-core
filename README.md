@@ -20,7 +20,7 @@ A comprehensive, self-contained development environment providing Git hosting (F
 - **🛡️ [AppRole Authentication](#-security--approle-authentication)** - Zero hardcoded secrets, least-privilege access for all core services
 - **🔐 [TLS/SSL Support](./docs/TLS_CERTIFICATE_MANAGEMENT.md)** - Dual-mode TLS with automated certificate generation via Vault PKI
 - **📦 [Zero Cloud Dependencies](#-zero-cloud-dependencies)** - Runs entirely on your Mac, perfect for offline development
-- **🛠️ [Easy Management](./docs/PYTHON_MANAGEMENT_SCRIPT.md)** - Single CLI script with 21 commands for all operations
+- **🛠️ [Easy Management](./docs/PYTHON_CLI.md)** - Single CLI script with 21 commands for all operations
 - **📚 [Reference Apps](./reference-apps/README.md)** - Production-quality examples in Python, Go, Node.js, TypeScript, and Rust
 - **🔍 [Full Observability](./docs/OBSERVABILITY.md)** - Built-in Prometheus, Grafana, and Loki for monitoring and logging
 
@@ -399,7 +399,7 @@ DevStack Core is optimized for **local development** while maintaining patterns 
 - **[Architecture Overview](./docs/ARCHITECTURE.md)** - System design with diagrams
 - **[Services Guide](./docs/SERVICES.md)** - Detailed service configurations
 - **[Management Script](./docs/MANAGEMENT.md)** - Complete CLI reference
-- **[Python CLI Guide](./docs/PYTHON_MANAGEMENT_SCRIPT.md)** - Modern Python CLI documentation
+- **[Python CLI Guide](./docs/PYTHON_CLI.md)** - Modern Python CLI documentation
 
 ### Infrastructure
 - **[Vault Integration](./docs/VAULT.md)** - PKI setup and secrets management
