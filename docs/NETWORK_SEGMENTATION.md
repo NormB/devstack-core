@@ -69,9 +69,9 @@ DevStack Core implements **4-tier network segmentation** to provide logical isol
 │  │ PostgreSQL │  │   MySQL    │  │  MongoDB   │  │  Redis x3  │          │
 │  └────────────┘  └────────────┘  └────────────┘  └────────────┘          │
 │                                                                           │
-│  ┌────────────┐                                                           │
-│  │  RabbitMQ  │                                                           │
-│  └────────────┘                                                           │
+│  ┌────────────┐                                                          │
+│  │  RabbitMQ  │                                                          │
+│  └────────────┘                                                          │
 │                                                                           │
 └───────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -96,9 +96,9 @@ DevStack Core implements **4-tier network segmentation** to provide logical isol
 │  │ Prometheus │  │  Grafana   │  │    Loki    │  │   Vector   │          │
 │  └────────────┘  └────────────┘  └────────────┘  └────────────┘          │
 │                                                                           │
-│  ┌────────────┐                                                           │
-│  │  cAdvisor  │                                                           │
-│  └────────────┘                                                           │
+│  ┌────────────┐                                                          │
+│  │  cAdvisor  │                                                          │
+│  └────────────┘                                                          │
 │                                                                           │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
