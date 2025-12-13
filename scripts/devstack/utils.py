@@ -28,8 +28,8 @@ try:
     from rich.console import Console
     from dotenv import dotenv_values
 except ImportError as e:
-    print(f"Error: Missing required dependency: {e}")
-    print("Install with: uv pip install -r scripts/requirements.txt")
+    sys.stderr.write(f"Error: Missing required dependency: {e}\n")
+    sys.stderr.write("Install with: uv pip install -r scripts/requirements.txt\n")
     sys.exit(1)
 
 # Rich console for output
