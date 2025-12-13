@@ -22,6 +22,131 @@ Comprehensive troubleshooting guide for common issues in the DevStack Core infra
 
 ---
 
+## Visual Troubleshooting Guides
+
+Use these focused flowcharts to quickly diagnose common issues.
+
+### Services Won't Start
+
+```mermaid
+flowchart TD
+    A[Services won't start] --> B{Is Colima running?}
+    B -->|No| C[Run: ./devstack start]
+    B -->|Yes| D{Is Vault healthy?}
+
+    D -->|No| E{Is Vault sealed?}
+    E -->|Yes| F[Run: ./devstack vault-unseal]
+    E -->|No| G[Check: ./devstack logs vault]
+
+    D -->|Yes| H{Which service fails?}
+    H --> I[Check: ./devstack logs SERVICE]
+
+    style A fill:#ffcdd2
+    style C fill:#c8e6c9
+    style F fill:#c8e6c9
+```
+
+### Database Connection Failed
+
+```mermaid
+flowchart TD
+    A[Can't connect to database] --> B{Is container running?}
+    B -->|No| C[Run: ./devstack start]
+    B -->|Yes| D{Is it healthy?}
+
+    D -->|No| E[Check logs: ./devstack logs postgres]
+    D -->|Yes| F{Using correct password?}
+
+    F -->|Not sure| G[Get password: ./devstack vault-show-password postgres]
+    F -->|Yes| H{Correct port?}
+
+    H -->|Not sure| I["PostgreSQL: 5432\nMySQL: 3306\nMongoDB: 27017"]
+
+    style A fill:#ffcdd2
+    style C fill:#c8e6c9
+    style G fill:#c8e6c9
+```
+
+### Vault is Sealed
+
+```mermaid
+flowchart TD
+    A[Vault is sealed] --> B{Do keys exist?}
+    B -->|Yes| C[Run: ./devstack vault-unseal]
+    B -->|No| D{Fresh install?}
+
+    D -->|Yes| E[Run: ./devstack vault-init]
+    D -->|No| F[Keys lost - must reset]
+
+    F --> G[./devstack reset]
+    G --> H[./devstack start]
+    H --> I[./devstack vault-init]
+    I --> J[./devstack vault-bootstrap]
+
+    style A fill:#ffcdd2
+    style C fill:#c8e6c9
+    style E fill:#c8e6c9
+```
+
+### Redis Cluster Not Working
+
+```mermaid
+flowchart TD
+    A[Redis cluster issues] --> B{Which profile?}
+    B -->|minimal| C[Minimal uses single Redis - no cluster]
+    B -->|standard/full| D{All 3 nodes running?}
+
+    D -->|No| E[./devstack start --profile standard]
+    D -->|Yes| F{Cluster initialized?}
+
+    F -->|No| G[Run: ./devstack redis-cluster-init]
+    F -->|Yes| H[Check: redis-cli cluster info]
+
+    style A fill:#ffcdd2
+    style C fill:#fff9c4
+    style G fill:#c8e6c9
+```
+
+### Container Keeps Restarting
+
+```mermaid
+flowchart TD
+    A[Container restarting] --> B[Check logs first]
+    B --> C[./devstack logs SERVICE]
+
+    C --> D{Error type?}
+    D -->|Permission denied| E[Volume permission issue]
+    D -->|Connection refused| F[Dependency not ready]
+    D -->|Out of memory| G[Increase Colima memory]
+
+    E --> H[./devstack reset and restart]
+    F --> I[Wait or restart dependencies]
+    G --> J["COLIMA_MEMORY=12 ./devstack start"]
+
+    style A fill:#ffcdd2
+    style H fill:#c8e6c9
+    style I fill:#c8e6c9
+    style J fill:#c8e6c9
+```
+
+### Quick Diagnostic Commands
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  QUICK DIAGNOSTICS                                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Overall status:     ./devstack health                      │
+│  Service logs:       ./devstack logs SERVICE                │
+│  Vault status:       ./devstack vault-status                │
+│  Container status:   docker ps -a                           │
+│  Resource usage:     docker stats                           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Service Profile Issues (NEW v1.3)
 
 ### Issue: Wrong Services Starting
