@@ -638,7 +638,7 @@ docker exec dev-postgres ls -la /var/lib/postgresql/certs/
 **Getting Help:**
 - Check logs: `docker compose logs <service> | grep -i error`
 - Run diagnostics: `./devstack health`
-- Review: [UltraThink Analysis](./ULTRATHINK_ANALYSIS_PHASE4.md)
+- Review: [UltraThink Analysis](./archive/ULTRATHINK_ANALYSIS_PHASE4.md)
 
 ---
 

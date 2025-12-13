@@ -105,7 +105,7 @@ chmod +x devstack
 ./devstack status
 ```
 
-**For complete Python script documentation, see [PYTHON_MANAGEMENT_SCRIPT.md](./PYTHON_MANAGEMENT_SCRIPT.md).**
+**For complete Python script documentation, see [PYTHON_CLI.md](./PYTHON_CLI.md).**
 
 ---
 

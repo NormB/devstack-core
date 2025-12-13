@@ -22,7 +22,7 @@ Comprehensive guide for optimizing the DevStack Core infrastructure for developm
 
 ### Current Performance Baseline
 
-Based on comprehensive testing (see [TEST_RESULTS.md](./TEST_RESULTS.md)):
+Based on comprehensive testing (see [PERFORMANCE_BASELINE.md](./PERFORMANCE_BASELINE.md)):
 
 | Service | Response Time | Threshold | Status |
 |---------|--------------|-----------|--------|
@@ -1094,7 +1094,7 @@ groups:
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and design
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
-- [TEST_RESULTS.md](./TEST_RESULTS.md) - Baseline performance metrics
+- [PERFORMANCE_BASELINE.md](./PERFORMANCE_BASELINE.md) - Baseline performance metrics
 - [Prometheus Best Practices](https://prometheus.io/docs/practices/)
 - [PostgreSQL Performance Tuning](https://wiki.postgresql.org/wiki/Performance_Optimization)
 
