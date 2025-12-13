@@ -19,6 +19,89 @@ x-logging: &default-logging
 x-platform: &default-platform
   platform: linux/arm64
 
+# =============================================================================
+# Shared Init Library Volume Mount
+# =============================================================================
+# All services using Vault AppRole mount this library for common init functions
+x-init-library: &init-library
+  ./scripts/lib:/scripts/lib:ro
+
+# =============================================================================
+# Redis Common Configuration (DRY - Don't Repeat Yourself)
+# =============================================================================
+x-redis-common: &redis-common
+  <<: *default-platform
+  image: redis:7.4-alpine3.21
+  restart: unless-stopped
+  entrypoint: ["/init/init-approle.sh"]
+  environment: &redis-env
+    VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+    VAULT_APPROLE_DIR: /vault-approles/redis
+    REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+  command:
+    - "/usr/local/etc/redis/redis.conf"
+    - "--port"
+    - "6379"
+    - "--cluster-enabled"
+    - "yes"
+    - "--cluster-config-file"
+    - "nodes.conf"
+    - "--cluster-node-timeout"
+    - "5000"
+    - "--appendonly"
+    - "${REDIS_APPENDONLY:-yes}"
+    - "--maxmemory"
+    - "${REDIS_MAXMEMORY:-256mb}"
+    - "--maxmemory-policy"
+    - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
+  healthcheck:
+    test: ["CMD", "timeout", "1", "redis-cli", "ping"]
+    interval: ${REDIS_HEALTH_INTERVAL:-60s}
+    timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
+    retries: ${REDIS_HEALTH_RETRIES:-5}
+    start_period: 10s
+  logging: *default-logging
+  deploy:
+    resources:
+      limits:
+        cpus: '1'
+        memory: 512M
+      reservations:
+        cpus: '0.25'
+        memory: 256M
+
+# =============================================================================
+# Redis Exporter Common Configuration
+# =============================================================================
+x-redis-exporter-common: &redis-exporter-common
+  <<: *default-platform
+  image: oliver006/redis_exporter:v1.55.0
+  restart: unless-stopped
+  entrypoint: ["/init/init.sh"]
+  environment: &redis-exporter-env
+    VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+    VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+  volumes:
+    - ./configs/exporters/redis/init.sh:/init/init.sh:ro
+    - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
+  healthcheck:
+    test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+  logging: *default-logging
+  deploy:
+    resources:
+      limits:
+        cpus: '0.25'
+        memory: 128M
+      reservations:
+        cpus: '0.05'
+        memory: 64M
+  labels:
+    - "com.voip.service=redis-exporter"
+    - "com.voip.platform=colima"
+
 networks:
   # Segmented Network Architecture for Security Hardening
   # Each tier has its own network for logical isolation
@@ -128,6 +211,7 @@ services:
       - postgres_data:/var/lib/postgresql
       - ./configs/postgres:/docker-entrypoint-initdb.d:ro
       - ./configs/postgres/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/certs/postgres:/var/lib/postgresql/certs:ro
       - ${HOME}/.config/vault/approles/postgres:/vault-approles/postgres:ro
 
@@ -282,6 +366,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./configs/mysql:/docker-entrypoint-initdb.d:ro
       - ./configs/mysql/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/mysql:/vault-approles/mysql:ro
       - ${HOME}/.config/vault/certs/mysql:/var/lib/mysql-certs:ro
 
@@ -329,6 +414,7 @@ services:
   # ===========================================================================
   # 3-node Redis cluster for high availability and horizontal scaling
   # All nodes are masters (no replicas in dev environment)
+  # Uses x-redis-common anchor for DRY configuration
   #
   # VAULT INTEGRATION:
   #   - Password fetched from Vault at startup (shared across all nodes)
@@ -337,250 +423,95 @@ services:
   # ===========================================================================
 
   redis-1:
-    <<: *default-platform
-    image: redis:7.4-alpine3.21
+    <<: *redis-common
     container_name: dev-redis-1
-    restart: unless-stopped
-
-    # PROFILE: Available in minimal (standalone), standard (cluster node 1), and full profiles
-    # In minimal: runs standalone mode (no cluster). In standard/full: cluster node 1 (slots 0-5460)
+    # PROFILE: Available in minimal (standalone), standard (cluster), and full profiles
     profiles: ["minimal", "standard", "full"]
-
-    entrypoint: ["/init/init-approle.sh"]
-
     environment:
-      # Vault configuration (AppRole authentication)
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis
-      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      <<: *redis-env
       REDIS_NODE: redis-1
-      REDIS_IP: ${REDIS_1_IP:-172.20.0.13}
-
+      REDIS_IP: ${REDIS_1_IP:-172.20.2.13}
     ports:
       - "${REDIS_1_HOST_PORT:-6379}:6379"
-      - "${REDIS_1_TLS_PORT:-6390}:6380"           # TLS port
+      - "${REDIS_1_TLS_PORT:-6390}:6380"
       - "${REDIS_1_CLUSTER_PORT:-16379}:16379"
-
     volumes:
       - redis_1_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
       - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-1:/etc/redis/certs:ro
-
     networks:
-      vault-network:  # Connect to Vault for AppRole auth
-      data-network:   # Primary network for data tier
+      vault-network:
+      data-network:
         ipv4_address: 172.20.2.13
-
     depends_on:
       vault:
         condition: service_healthy
-
-    command:
-      - "/usr/local/etc/redis/redis.conf"
-      - "--port"
-      - "6379"
-      - "--cluster-enabled"
-      - "yes"
-      - "--cluster-config-file"
-      - "nodes.conf"
-      - "--cluster-node-timeout"
-      - "5000"
-      - "--appendonly"
-      - "${REDIS_APPENDONLY:-yes}"
-      # --save disabled for dev performance (Phase 3 - Task 3.2)
-      # - "--save"
-      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
-      - "--maxmemory"
-      - "${REDIS_MAXMEMORY:-256mb}"
-      - "--maxmemory-policy"
-      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
-
-    healthcheck:
-      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
-      interval: ${REDIS_HEALTH_INTERVAL:-60s}
-      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
-      retries: ${REDIS_HEALTH_RETRIES:-5}
-      start_period: 10s
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-
     labels:
       - "com.voip.service=redis-cluster"
       - "com.voip.cluster.node=1"
 
   redis-2:
-    <<: *default-platform
-    image: redis:7.4-alpine3.21
+    <<: *redis-common
     container_name: dev-redis-2
-    restart: unless-stopped
-
-    # PROFILE: Available in standard and full profiles only
-    # Redis cluster node 2 (slots 5461-10922) - NOT included in minimal profile
+    # PROFILE: Available in standard and full profiles only (cluster node 2)
     profiles: ["standard", "full"]
-
-    entrypoint: ["/init/init-approle.sh"]
-
     environment:
-      # Vault configuration (AppRole authentication)
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis
-      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      <<: *redis-env
       REDIS_NODE: redis-2
-      REDIS_IP: ${REDIS_2_IP:-172.20.0.16}
-
+      REDIS_IP: ${REDIS_2_IP:-172.20.2.16}
     ports:
       - "${REDIS_2_HOST_PORT:-6380}:6379"
-      - "${REDIS_2_TLS_PORT:-6391}:6380"           # TLS port
+      - "${REDIS_2_TLS_PORT:-6391}:6380"
       - "${REDIS_2_CLUSTER_PORT:-16380}:16379"
-
     volumes:
       - redis_2_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
       - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-2:/etc/redis/certs:ro
-
     networks:
-      vault-network:  # Connect to Vault for AppRole auth
-      data-network:   # Primary network for data tier
+      vault-network:
+      data-network:
         ipv4_address: 172.20.2.16
-
     depends_on:
       vault:
         condition: service_healthy
-
-    command:
-      - "/usr/local/etc/redis/redis.conf"
-      - "--port"
-      - "6379"
-      - "--cluster-enabled"
-      - "yes"
-      - "--cluster-config-file"
-      - "nodes.conf"
-      - "--cluster-node-timeout"
-      - "5000"
-      - "--appendonly"
-      - "${REDIS_APPENDONLY:-yes}"
-      # --save disabled for dev performance (Phase 3 - Task 3.2)
-      # - "--save"
-      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
-      - "--maxmemory"
-      - "${REDIS_MAXMEMORY:-256mb}"
-      - "--maxmemory-policy"
-      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
-
-    healthcheck:
-      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
-      interval: ${REDIS_HEALTH_INTERVAL:-60s}
-      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
-      retries: ${REDIS_HEALTH_RETRIES:-5}
-      start_period: 10s
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-
     labels:
       - "com.voip.service=redis-cluster"
       - "com.voip.cluster.node=2"
 
   redis-3:
-    <<: *default-platform
-    image: redis:7.4-alpine3.21
+    <<: *redis-common
     container_name: dev-redis-3
-    restart: unless-stopped
-
-    # PROFILE: Available in standard and full profiles only
-    # Redis cluster node 3 (slots 10923-16383) - NOT included in minimal profile
+    # PROFILE: Available in standard and full profiles only (cluster node 3)
     profiles: ["standard", "full"]
-
-    entrypoint: ["/init/init-approle.sh"]
-
     environment:
-      # Vault configuration (AppRole authentication)
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis
-      REDIS_ENABLE_TLS: ${REDIS_ENABLE_TLS:-false}
+      <<: *redis-env
       REDIS_NODE: redis-3
-      REDIS_IP: ${REDIS_3_IP:-172.20.0.17}
+      REDIS_IP: ${REDIS_3_IP:-172.20.2.17}
 
     ports:
       - "${REDIS_3_HOST_PORT:-6381}:6379"
-      - "${REDIS_3_TLS_PORT:-6392}:6380"           # TLS port
+      - "${REDIS_3_TLS_PORT:-6392}:6380"
       - "${REDIS_3_CLUSTER_PORT:-16381}:16379"
-
     volumes:
       - redis_3_data:/data
       - ./configs/redis/redis-cluster.conf:/usr/local/etc/redis/redis.conf:ro
       - ./configs/redis/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/redis:/vault-approles/redis:ro
       - ${HOME}/.config/vault/certs/redis-3:/etc/redis/certs:ro
-
     networks:
-      vault-network:  # Connect to Vault for AppRole auth
-      data-network:   # Primary network for data tier
+      vault-network:
+      data-network:
         ipv4_address: 172.20.2.17
-
     depends_on:
       vault:
         condition: service_healthy
-
-    command:
-      - "/usr/local/etc/redis/redis.conf"
-      - "--port"
-      - "6379"
-      - "--cluster-enabled"
-      - "yes"
-      - "--cluster-config-file"
-      - "nodes.conf"
-      - "--cluster-node-timeout"
-      - "5000"
-      - "--appendonly"
-      - "${REDIS_APPENDONLY:-yes}"
-      # --save disabled for dev performance (Phase 3 - Task 3.2)
-      # - "--save"
-      # - "${REDIS_SAVE_ENABLED:-900 1 300 10 60 10000}"
-      - "--maxmemory"
-      - "${REDIS_MAXMEMORY:-256mb}"
-      - "--maxmemory-policy"
-      - "${REDIS_MAXMEMORY_POLICY:-allkeys-lru}"
-
-    healthcheck:
-      test: ["CMD", "timeout", "1", "redis-cli", "ping"]
-      interval: ${REDIS_HEALTH_INTERVAL:-60s}
-      timeout: ${REDIS_HEALTH_TIMEOUT:-5s}
-      retries: ${REDIS_HEALTH_RETRIES:-5}
-      start_period: 10s
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-
     labels:
       - "com.voip.service=redis-cluster"
       - "com.voip.cluster.node=3"
@@ -607,16 +538,11 @@ services:
     entrypoint: ["/init/init-approle.sh"]
 
     environment:
-      # Vault configuration (AppRole authentication)
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       VAULT_APPROLE_DIR: /vault-approles/rabbitmq
       RABBITMQ_ENABLE_TLS: ${RABBITMQ_ENABLE_TLS:-false}
-      RABBITMQ_IP: ${RABBITMQ_IP:-172.20.0.14}
-
-      # RabbitMQ vhost (user/password from Vault)
+      RABBITMQ_IP: ${RABBITMQ_IP:-172.20.2.14}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-dev_vhost}
-
-      # NOTE: RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS are fetched from Vault via AppRole
 
     ports:
       - "${RABBITMQ_AMQP_PORT:-5672}:5672"   # AMQP
@@ -626,12 +552,13 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./configs/rabbitmq/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/rabbitmq:/vault-approles/rabbitmq:ro
       - ${HOME}/.config/vault/certs/rabbitmq:/etc/rabbitmq/certs:ro
 
     networks:
-      vault-network:  # Connect to Vault for AppRole auth
-      data-network:   # Primary network for data tier
+      vault-network:
+      data-network:
         ipv4_address: 172.20.2.14
 
     depends_on:
@@ -683,10 +610,8 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
       VAULT_APPROLE_DIR: /vault-approles/mongodb
-      MONGODB_IP: ${MONGODB_IP:-172.20.0.15}
+      MONGODB_IP: ${MONGODB_IP:-172.20.2.15}
       MONGODB_ENABLE_TLS: ${MONGODB_ENABLE_TLS:-false}
-      # NOTE: MONGO_INITDB_ROOT_USERNAME, MONGO_INITDB_ROOT_PASSWORD, and
-      # MONGO_INITDB_DATABASE are fetched from Vault via AppRole by the init script
 
     ports:
       - "27017:27017"
@@ -694,12 +619,13 @@ services:
     volumes:
       - mongodb_data:/data/db
       - ./configs/mongodb/scripts/init-approle.sh:/init/init-approle.sh:ro
+      - *init-library
       - ${HOME}/.config/vault/approles/mongodb:/vault-approles/mongodb:ro
       - ${HOME}/.config/vault/certs/mongodb:/etc/mongodb/certs:ro
 
     networks:
-      vault-network:  # Connect to Vault for AppRole auth
-      data-network:   # Primary network for data tier
+      vault-network:
+      data-network:
         ipv4_address: 172.20.2.15
 
     depends_on:
@@ -1392,64 +1318,23 @@ services:
   # ---------------------------------------------------------------------------
 
   redis-exporter-1:
-    <<: *default-platform
-    image: oliver006/redis_exporter:v1.55.0
+    <<: *redis-exporter-common
     container_name: dev-redis-exporter-1
-    restart: unless-stopped
-
-    # PROFILE: Available in full profile only
-    # Redis metrics exporter for node 1
     profiles: ["full"]
-
-    entrypoint: ["/init/init.sh"]
-
     environment:
-      # Vault configuration
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      <<: *redis-exporter-env
       REDIS_NODE: redis-1
-
-      # Exporter configuration (REDIS_PASSWORD will be set by init script)
       REDIS_ADDR: "redis-1:6379"
-      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
-      # Note: Cluster mode disabled - scraping individual nodes instead
-      # REDIS_EXPORTER_CHECK_KEYS: "user:*,session:*"
-      # REDIS_EXPORTER_CHECK_SINGLE_KEYS: "cache:stats"
-      # REDIS_EXPORTER_IS_CLUSTER: "true"
-
-    volumes:
-      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
-      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
-
     networks:
-      vault-network:         # Connect to Vault for Redis password
-      data-network:          # Connect to redis-1
-      observability-network: # Export metrics to Prometheus
+      vault-network:
+      data-network:
+      observability-network:
         ipv4_address: 172.20.4.40
-
     depends_on:
       vault:
         condition: service_healthy
       redis-1:
         condition: service_healthy
-
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
-
     labels:
       - "com.voip.service=redis-exporter"
       - "com.voip.platform=colima"
@@ -1460,61 +1345,23 @@ services:
   # ---------------------------------------------------------------------------
 
   redis-exporter-2:
-    <<: *default-platform
-    image: oliver006/redis_exporter:v1.55.0
+    <<: *redis-exporter-common
     container_name: dev-redis-exporter-2
-    restart: unless-stopped
-
-    # PROFILE: Available in full profile only
-    # Redis metrics exporter for node 2
     profiles: ["full"]
-
-    entrypoint: ["/init/init.sh"]
-
     environment:
-      # Vault configuration
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      <<: *redis-exporter-env
       REDIS_NODE: redis-2
-
-      # Exporter configuration (REDIS_PASSWORD will be set by init script)
       REDIS_ADDR: "redis-2:6379"
-      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
-      # Note: Cluster mode disabled - scraping individual nodes instead
-      # REDIS_EXPORTER_IS_CLUSTER: "true"
-
-    volumes:
-      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
-      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
-
     networks:
-      vault-network:         # Connect to Vault for Redis password
-      data-network:          # Connect to redis-2
-      observability-network: # Export metrics to Prometheus
+      vault-network:
+      data-network:
+      observability-network:
         ipv4_address: 172.20.4.41
-
     depends_on:
       vault:
         condition: service_healthy
       redis-2:
         condition: service_healthy
-
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
 
     labels:
       - "com.voip.service=redis-exporter"
@@ -1526,61 +1373,23 @@ services:
   # ---------------------------------------------------------------------------
 
   redis-exporter-3:
-    <<: *default-platform
-    image: oliver006/redis_exporter:v1.55.0
+    <<: *redis-exporter-common
     container_name: dev-redis-exporter-3
-    restart: unless-stopped
-
-    # PROFILE: Available in full profile only
-    # Redis metrics exporter for node 3
     profiles: ["full"]
-
-    entrypoint: ["/init/init.sh"]
-
     environment:
-      # Vault configuration
-      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
-      VAULT_APPROLE_DIR: /vault-approles/redis-exporter
+      <<: *redis-exporter-env
       REDIS_NODE: redis-3
-
-      # Exporter configuration (REDIS_PASSWORD will be set by init script)
       REDIS_ADDR: "redis-3:6379"
-      # Note: CHECK_KEYS disabled - causes timeouts in cluster mode
-      # Note: Cluster mode disabled - scraping individual nodes instead
-      # REDIS_EXPORTER_IS_CLUSTER: "true"
-
-    volumes:
-      - ./configs/exporters/redis/init.sh:/init/init.sh:ro
-      - ${HOME}/.config/vault/approles/redis-exporter:/vault-approles/redis-exporter:ro
-
     networks:
-      vault-network:         # Connect to Vault for Redis password
-      data-network:          # Connect to redis-3
-      observability-network: # Export metrics to Prometheus
+      vault-network:
+      data-network:
+      observability-network:
         ipv4_address: 172.20.4.42
-
     depends_on:
       vault:
         condition: service_healthy
       redis-3:
         condition: service_healthy
-
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-    logging: *default-logging
-
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 64M
 
     labels:
       - "com.voip.service=redis-exporter"
