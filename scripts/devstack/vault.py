@@ -20,7 +20,6 @@ Functions:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 from .utils import run_command, console, VAULT_CONFIG_DIR
