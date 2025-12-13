@@ -1,0 +1,206 @@
+# =============================================================================
+# DevStack Core Network Configuration
+# =============================================================================
+# Centralized network and IP address configuration for all services.
+# This file serves as the single source of truth for network settings.
+#
+# USAGE:
+#   - Reference this file when configuring services
+#   - Use environment variables in docker-compose.yml that match these values
+#   - Scripts can parse this file to get IP addresses
+#
+# ARCHITECTURE:
+#   4-tier network segmentation for security hardening:
+#   - vault-network:        Secrets management (all services connect)
+#   - data-network:         Databases, cache, message queue
+#   - app-network:          Forgejo, reference APIs, proxy services
+#   - observability-network: Metrics, logs, visualization
+# =============================================================================
+
+networks:
+  vault:
+    subnet: 172.20.1.0/24
+    gateway: 172.20.1.1
+    bridge_name: br-vault
+    description: "Infrastructure tier - Vault secrets management"
+
+  data:
+    subnet: 172.20.2.0/24
+    gateway: 172.20.2.1
+    bridge_name: br-data
+    description: "Data tier - Databases, cache, message queue"
+
+  app:
+    subnet: 172.20.3.0/24
+    gateway: 172.20.3.1
+    bridge_name: br-app
+    description: "Application tier - Forgejo, reference APIs"
+
+  observability:
+    subnet: 172.20.4.0/24
+    gateway: 172.20.4.1
+    bridge_name: br-obs
+    description: "Observability tier - Metrics, logs, visualization"
+
+# =============================================================================
+# Service IP Assignments
+# =============================================================================
+# All IPs are on the 172.20.x.0/24 networks
+# x=1 (vault), x=2 (data), x=3 (app), x=4 (observability)
+
+services:
+  # Vault Network (172.20.1.0/24)
+  vault:
+    ip: 172.20.1.5
+    network: vault
+    ports:
+      http: 8200
+
+  # Data Network (172.20.2.0/24)
+  postgres:
+    ip: 172.20.2.10
+    network: data
+    ports:
+      default: 5432
+
+  pgbouncer:
+    ip: 172.20.2.11
+    network: data
+    ports:
+      default: 6432
+
+  mysql:
+    ip: 172.20.2.12
+    network: data
+    ports:
+      default: 3306
+
+  redis-1:
+    ip: 172.20.2.13
+    network: data
+    ports:
+      default: 6379
+      tls: 6380
+      cluster: 16379
+
+  rabbitmq:
+    ip: 172.20.2.14
+    network: data
+    ports:
+      amqp: 5672
+      amqps: 5671
+      management: 15672
+
+  mongodb:
+    ip: 172.20.2.15
+    network: data
+    ports:
+      default: 27017
+
+  redis-2:
+    ip: 172.20.2.16
+    network: data
+    ports:
+      default: 6380
+      tls: 6391
+      cluster: 16380
+
+  redis-3:
+    ip: 172.20.2.17
+    network: data
+    ports:
+      default: 6381
+      tls: 6392
+      cluster: 16381
+
+  # App Network (172.20.3.0/24)
+  forgejo:
+    ip: 172.20.3.20
+    network: app
+    ports:
+      http: 3000
+      ssh: 2222
+
+  reference-api:
+    ip: 172.20.3.100
+    network: app
+    ports:
+      http: 8000
+      https: 8443
+
+  api-first:
+    ip: 172.20.3.104
+    network: app
+    ports:
+      http: 8001
+      https: 8444
+
+  golang-api:
+    ip: 172.20.3.105
+    network: app
+    ports:
+      http: 8002
+      https: 8445
+
+  nodejs-api:
+    ip: 172.20.3.106
+    network: app
+    ports:
+      http: 8003
+      https: 8446
+
+  rust-api:
+    ip: 172.20.3.107
+    network: app
+    ports:
+      http: 8004
+      https: 8447
+
+  # Observability Network (172.20.4.0/24)
+  prometheus:
+    ip: 172.20.4.10
+    network: observability
+    ports:
+      http: 9090
+
+  grafana:
+    ip: 172.20.4.20
+    network: observability
+    ports:
+      http: 3001
+
+  loki:
+    ip: 172.20.4.30
+    network: observability
+    ports:
+      http: 3100
+
+  redis-exporter-1:
+    ip: 172.20.4.40
+    network: observability
+    ports:
+      metrics: 9121
+
+  redis-exporter-2:
+    ip: 172.20.4.41
+    network: observability
+    ports:
+      metrics: 9121
+
+  redis-exporter-3:
+    ip: 172.20.4.42
+    network: observability
+    ports:
+      metrics: 9121
+
+  cadvisor:
+    ip: 172.20.4.50
+    network: observability
+    ports:
+      http: 8080
+
+  vector:
+    ip: 172.20.4.60
+    network: observability
+    ports:
+      api: 8686

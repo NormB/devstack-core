@@ -88,6 +88,44 @@ TOTAL_SUITES=0
 PASSED_SUITES=0
 FAILED_SUITES=0
 
+# Parallel execution configuration
+PARALLEL_JOBS=${PARALLEL_JOBS:-4}  # Default 4 parallel jobs
+PARALLEL_MODE=false
+PARALLEL_LOG_DIR="/tmp/devstack-tests-$$"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --parallel|-p)
+            PARALLEL_MODE=true
+            shift
+            ;;
+        --jobs|-j)
+            PARALLEL_JOBS="$2"
+            PARALLEL_MODE=true
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --parallel, -p     Run independent tests in parallel"
+            echo "  --jobs N, -j N     Number of parallel jobs (default: 4)"
+            echo "  --help, -h         Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0                  # Run all tests sequentially"
+            echo "  $0 --parallel       # Run independent tests in parallel"
+            echo "  $0 -p -j 8          # Run with 8 parallel jobs"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 #######################################
 # Print formatted section header in cyan
 # Globals:
@@ -184,6 +222,109 @@ run_test_suite() {
         TEST_RESULTS+=("$test_name:FAILED")
         FAILED_SUITES=$((FAILED_SUITES + 1))
         return 1
+    fi
+}
+
+#######################################
+# Run a test in background for parallel execution
+# Arguments:
+#   $1 - Path to test script
+#   $2 - Test name
+# Outputs:
+#   Writes log to PARALLEL_LOG_DIR/{test_name}.log
+#   Writes exit code to PARALLEL_LOG_DIR/{test_name}.status
+#######################################
+run_test_background() {
+    local test_script="$1"
+    local test_name="$2"
+    local log_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.log"
+    local status_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.status"
+
+    {
+        if bash "$test_script" > "$log_file" 2>&1; then
+            echo "PASSED" > "$status_file"
+        else
+            echo "FAILED" > "$status_file"
+        fi
+    } &
+}
+
+#######################################
+# Wait for background tests and collect results
+# Globals:
+#   TEST_RESULTS, TOTAL_SUITES, PASSED_SUITES, FAILED_SUITES
+#######################################
+wait_and_collect_results() {
+    local test_names=("$@")
+
+    # Wait for all background jobs
+    wait
+
+    # Collect results
+    for test_name in "${test_names[@]}"; do
+        local safe_name="${test_name//[^a-zA-Z0-9_]/_}"
+        local status_file="$PARALLEL_LOG_DIR/${safe_name}.status"
+        local log_file="$PARALLEL_LOG_DIR/${safe_name}.log"
+
+        TOTAL_SUITES=$((TOTAL_SUITES + 1))
+
+        if [ -f "$status_file" ]; then
+            local status
+            status=$(cat "$status_file")
+
+            if [ "$status" = "PASSED" ]; then
+                TEST_RESULTS+=("$test_name:PASSED")
+                PASSED_SUITES=$((PASSED_SUITES + 1))
+                echo -e "  ${GREEN}✓${NC} $test_name"
+            else
+                TEST_RESULTS+=("$test_name:FAILED")
+                FAILED_SUITES=$((FAILED_SUITES + 1))
+                echo -e "  ${RED}✗${NC} $test_name"
+                # Show last few lines of error
+                if [ -f "$log_file" ]; then
+                    echo -e "    ${YELLOW}Last 5 lines of output:${NC}"
+                    tail -5 "$log_file" | sed 's/^/    /'
+                fi
+            fi
+        else
+            TEST_RESULTS+=("$test_name:FAILED")
+            FAILED_SUITES=$((FAILED_SUITES + 1))
+            echo -e "  ${RED}✗${NC} $test_name (no status)"
+        fi
+    done
+}
+
+#######################################
+# Run tests in parallel batches
+# Arguments:
+#   Array of "script:name" pairs
+#######################################
+run_parallel_batch() {
+    local -a tests=("$@")
+    local -a running_names=()
+    local count=0
+
+    info "Running ${#tests[@]} tests in parallel (max $PARALLEL_JOBS jobs)..."
+
+    for test_pair in "${tests[@]}"; do
+        local test_script="${test_pair%%:*}"
+        local test_name="${test_pair#*:}"
+
+        run_test_background "$test_script" "$test_name"
+        running_names+=("$test_name")
+        count=$((count + 1))
+
+        # Wait when we hit the job limit
+        if [ $count -ge "$PARALLEL_JOBS" ]; then
+            wait_and_collect_results "${running_names[@]}"
+            running_names=()
+            count=0
+        fi
+    done
+
+    # Wait for remaining jobs
+    if [ ${#running_names[@]} -gt 0 ]; then
+        wait_and_collect_results "${running_names[@]}"
     fi
 }
 
@@ -288,26 +429,75 @@ print_summary() {
 main() {
     header "DevStack Core - Test Suite"
 
+    if [ "$PARALLEL_MODE" = true ]; then
+        info "PARALLEL MODE enabled with $PARALLEL_JOBS jobs"
+        mkdir -p "$PARALLEL_LOG_DIR"
+        trap 'rm -rf "$PARALLEL_LOG_DIR"' EXIT
+    fi
+
     info "Starting all test suites..."
     echo
 
-    # Infrastructure Tests
-    run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
+    if [ "$PARALLEL_MODE" = true ]; then
+        # Parallel Mode: Run independent tests concurrently
+        header "Phase 1: Infrastructure Tests"
+        run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
 
-    # TLS Certificate Automation Tests
-    run_test_suite "$SCRIPT_DIR/test-tls-certificate-automation.sh" "TLS Certificate Automation" || true
+        header "Phase 2: Database Tests (Parallel)"
+        # Database tests can run in parallel - they use different services
+        run_parallel_batch \
+            "$SCRIPT_DIR/test-postgres.sh:PostgreSQL Vault Integration" \
+            "$SCRIPT_DIR/test-mysql.sh:MySQL Vault Integration" \
+            "$SCRIPT_DIR/test-mongodb.sh:MongoDB Vault Integration" \
+            "$SCRIPT_DIR/test-redis.sh:Redis Vault Integration"
 
-    # Database Tests
-    run_test_suite "$SCRIPT_DIR/test-postgres.sh" "PostgreSQL Vault Integration" || true
-    run_test_suite "$SCRIPT_DIR/test-mysql.sh" "MySQL Vault Integration" || true
-    run_test_suite "$SCRIPT_DIR/test-mongodb.sh" "MongoDB Vault Integration" || true
+        header "Phase 3: Service Tests (Parallel)"
+        run_parallel_batch \
+            "$SCRIPT_DIR/test-redis-cluster.sh:Redis Cluster" \
+            "$SCRIPT_DIR/test-rabbitmq.sh:RabbitMQ Integration" \
+            "$SCRIPT_DIR/test-tls-certificate-automation.sh:TLS Certificate Automation"
 
-    # Cache Tests
-    run_test_suite "$SCRIPT_DIR/test-redis.sh" "Redis Vault Integration" || true
-    run_test_suite "$SCRIPT_DIR/test-redis-cluster.sh" "Redis Cluster" || true
+        header "Phase 4: Extended Tests (Parallel)"
+        run_parallel_batch \
+            "$SCRIPT_DIR/test-vault-extended.sh:Vault Extended Tests" \
+            "$SCRIPT_DIR/test-postgres-extended.sh:PostgreSQL Extended Tests" \
+            "$SCRIPT_DIR/test-pgbouncer.sh:PgBouncer Tests" \
+            "$SCRIPT_DIR/test-performance.sh:Performance & Load Testing" \
+            "$SCRIPT_DIR/test-negative.sh:Negative Testing & Error Handling"
 
-    # Messaging Tests
-    run_test_suite "$SCRIPT_DIR/test-rabbitmq.sh" "RabbitMQ Integration" || true
+    else
+        # Sequential Mode (Default)
+        # Infrastructure Tests
+        run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
+
+        # TLS Certificate Automation Tests
+        run_test_suite "$SCRIPT_DIR/test-tls-certificate-automation.sh" "TLS Certificate Automation" || true
+
+        # Database Tests
+        run_test_suite "$SCRIPT_DIR/test-postgres.sh" "PostgreSQL Vault Integration" || true
+        run_test_suite "$SCRIPT_DIR/test-mysql.sh" "MySQL Vault Integration" || true
+        run_test_suite "$SCRIPT_DIR/test-mongodb.sh" "MongoDB Vault Integration" || true
+
+        # Cache Tests
+        run_test_suite "$SCRIPT_DIR/test-redis.sh" "Redis Vault Integration" || true
+        run_test_suite "$SCRIPT_DIR/test-redis-cluster.sh" "Redis Cluster" || true
+
+        # Messaging Tests
+        run_test_suite "$SCRIPT_DIR/test-rabbitmq.sh" "RabbitMQ Integration" || true
+
+        # Performance Tests
+        run_test_suite "$SCRIPT_DIR/test-performance.sh" "Performance & Load Testing" || true
+
+        # Negative Tests
+        run_test_suite "$SCRIPT_DIR/test-negative.sh" "Negative Testing & Error Handling" || true
+
+        # Extended Test Suites
+        header "Running: Extended Test Suites"
+        info "Running additional comprehensive tests for all services..."
+        run_test_suite "$SCRIPT_DIR/test-vault-extended.sh" "Vault Extended Tests" || true
+        run_test_suite "$SCRIPT_DIR/test-postgres-extended.sh" "PostgreSQL Extended Tests" || true
+        run_test_suite "$SCRIPT_DIR/test-pgbouncer.sh" "PgBouncer Tests" || true
+    fi
 
     # Application Tests (bash) - Only run if reference API services are available
     if docker ps --format '{{.Names}}' | grep -q "reference-api\|api-first\|golang-api\|nodejs-api\|rust-api"; then
@@ -319,20 +509,6 @@ main() {
         TEST_RESULTS+=("FastAPI Reference App:SKIPPED")
         TOTAL_SUITES=$((TOTAL_SUITES + 1))
     fi
-
-    # Performance Tests
-    run_test_suite "$SCRIPT_DIR/test-performance.sh" "Performance & Load Testing" || true
-
-    # Negative Tests
-    run_test_suite "$SCRIPT_DIR/test-negative.sh" "Negative Testing & Error Handling" || true
-
-    # Extended Test Suites (Additional comprehensive tests)
-    header "Running: Extended Test Suites"
-    info "Running additional comprehensive tests for all services..."
-
-    run_test_suite "$SCRIPT_DIR/test-vault-extended.sh" "Vault Extended Tests" || true
-    run_test_suite "$SCRIPT_DIR/test-postgres-extended.sh" "PostgreSQL Extended Tests" || true
-    run_test_suite "$SCRIPT_DIR/test-pgbouncer.sh" "PgBouncer Tests" || true
 
     # Observability Stack Tests - Only run if services are available
     if docker ps --format '{{.Names}}' | grep -q "prometheus\|grafana\|loki"; then
