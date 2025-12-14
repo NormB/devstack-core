@@ -1097,11 +1097,69 @@ async fn publish_message(path: web::Path<String>, req_body: web::Json<PublishMes
 async fn queue_info(path: web::Path<String>) -> impl Responder {
     let queue_name = path.into_inner();
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "queue": queue_name,
-        "info": "Queue info endpoint - RabbitMQ Management API would be used in production",
-        "note": "This is a placeholder implementation"
-    }))
+    match get_vault_secret("rabbitmq").await {
+        Ok(creds) => {
+            let host = get_env_or("RABBITMQ_HOST", "rabbitmq");
+            let port = get_env_or("RABBITMQ_PORT", "5672");
+            let user = creds["user"].as_str().unwrap_or("devuser");
+            let password = creds["password"].as_str().unwrap_or("");
+            let vhost = creds["vhost"].as_str().unwrap_or("dev_vhost");
+
+            let url = format!("amqp://{}:{}@{}:{}/{}", user, password, host, port, vhost);
+
+            match lapin::Connection::connect(&url, lapin::ConnectionProperties::default()).await {
+                Ok(conn) => {
+                    match conn.create_channel().await {
+                        Ok(channel) => {
+                            // Use passive=true to check if queue exists without creating it
+                            let mut options = lapin::options::QueueDeclareOptions::default();
+                            options.passive = true;
+
+                            match channel.queue_declare(
+                                &queue_name,
+                                options,
+                                lapin::types::FieldTable::default(),
+                            ).await {
+                                Ok(queue) => {
+                                    let message_count = queue.message_count();
+                                    let consumer_count = queue.consumer_count();
+                                    let _ = conn.close(0, "Done").await;
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "queue": queue_name,
+                                        "exists": true,
+                                        "message_count": message_count,
+                                        "consumer_count": consumer_count
+                                    }))
+                                }
+                                Err(_) => {
+                                    // Queue doesn't exist (passive declare failed)
+                                    let _ = conn.close(0, "Done").await;
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "queue": queue_name,
+                                        "exists": false,
+                                        "message_count": null,
+                                        "consumer_count": null
+                                    }))
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let _ = conn.close(0, "Error").await;
+                            HttpResponse::InternalServerError().json(serde_json::json!({
+                                "error": format!("Channel creation failed: {}", e)
+                            }))
+                        }
+                    }
+                }
+                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "error": format!("Connection failed: {}", e)
+                })),
+            }
+        }
+        Err(e) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+            "error": e
+        })),
+    }
 }
 
 // Redis cluster handlers
@@ -1119,25 +1177,109 @@ async fn redis_cluster_nodes() -> impl Responder {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
                             match redis::cmd("CLUSTER").arg("NODES").query_async::<String>(&mut conn).await {
-                                Ok(nodes) => HttpResponse::Ok().json(serde_json::json!({
-                                    "nodes": nodes
-                                })),
+                                Ok(nodes_raw) => {
+                                    // Parse CLUSTER NODES output
+                                    let mut nodes = Vec::new();
+                                    for line in nodes_raw.trim().split('\n') {
+                                        if line.is_empty() {
+                                            continue;
+                                        }
+                                        let parts: Vec<&str> = line.split_whitespace().collect();
+                                        if parts.len() < 8 {
+                                            continue;
+                                        }
+
+                                        let node_id = parts[0];
+                                        let address = parts[1];
+                                        let flags = parts[2];
+                                        let master_id = if parts[3] == "-" { None } else { Some(parts[3]) };
+                                        let ping_sent = parts[4];
+                                        let pong_recv = parts[5];
+                                        let config_epoch = parts[6];
+                                        let link_state = parts[7];
+
+                                        // Parse slots (if any)
+                                        let mut slot_ranges = Vec::new();
+                                        let mut slots_count = 0;
+                                        for i in 8..parts.len() {
+                                            let slot_info = parts[i];
+                                            if slot_info.starts_with('[') {
+                                                continue; // Skip migrating slots
+                                            }
+                                            if slot_info.contains('-') {
+                                                let range_parts: Vec<&str> = slot_info.split('-').collect();
+                                                if range_parts.len() == 2 {
+                                                    if let (Ok(start), Ok(end)) = (range_parts[0].parse::<i32>(), range_parts[1].parse::<i32>()) {
+                                                        slot_ranges.push(serde_json::json!({"start": start, "end": end}));
+                                                        slots_count += (end - start + 1) as usize;
+                                                    }
+                                                }
+                                            } else if let Ok(slot) = slot_info.parse::<i32>() {
+                                                slot_ranges.push(serde_json::json!({"start": slot, "end": slot}));
+                                                slots_count += 1;
+                                            }
+                                        }
+
+                                        // Parse address (remove cluster bus port)
+                                        let host_port = address.split('@').next().unwrap_or(address);
+                                        let addr_parts: Vec<&str> = host_port.rsplitn(2, ':').collect();
+                                        let (port_str, host_str) = if addr_parts.len() == 2 {
+                                            (addr_parts[0], addr_parts[1])
+                                        } else {
+                                            ("0", host_port)
+                                        };
+
+                                        // Determine role
+                                        let role = if flags.contains("master") {
+                                            "master"
+                                        } else if flags.contains("slave") {
+                                            "replica"
+                                        } else {
+                                            "unknown"
+                                        };
+
+                                        nodes.push(serde_json::json!({
+                                            "node_id": node_id,
+                                            "host": host_str,
+                                            "port": port_str.parse::<i32>().unwrap_or(0),
+                                            "role": role,
+                                            "flags": flags.split(',').collect::<Vec<&str>>(),
+                                            "master_id": master_id,
+                                            "ping_sent": ping_sent,
+                                            "pong_recv": pong_recv,
+                                            "config_epoch": config_epoch.parse::<i32>().unwrap_or(0),
+                                            "link_state": link_state,
+                                            "slots_count": slots_count,
+                                            "slot_ranges": slot_ranges
+                                        }));
+                                    }
+
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "status": "success",
+                                        "total_nodes": nodes.len(),
+                                        "nodes": nodes
+                                    }))
+                                }
                                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                                    "status": "error",
                                     "error": format!("CLUSTER NODES failed: {}", e)
                                 })),
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                            "status": "error",
                             "error": format!("Connection failed: {}", e)
                         })),
                     }
                 }
                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "status": "error",
                     "error": format!("Client creation failed: {}", e)
                 })),
             }
         }
         Err(e) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+            "status": "error",
             "error": e
         })),
     }
@@ -1157,25 +1299,131 @@ async fn redis_cluster_slots() -> impl Responder {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
                             match redis::cmd("CLUSTER").arg("SLOTS").query_async::<redis::Value>(&mut conn).await {
-                                Ok(slots) => HttpResponse::Ok().json(serde_json::json!({
-                                    "slots": format!("{:?}", slots)
-                                })),
+                                Ok(slots) => {
+                                    // Parse CLUSTER SLOTS response
+                                    let mut slot_distribution = Vec::new();
+                                    let mut total_slots = 0i64;
+
+                                    if let redis::Value::Array(slot_ranges) = slots {
+                                        for slot_info in slot_ranges {
+                                            if let redis::Value::Array(parts) = slot_info {
+                                                if parts.len() >= 3 {
+                                                    // Extract start and end slots
+                                                    let start_slot = match &parts[0] {
+                                                        redis::Value::Int(n) => *n,
+                                                        _ => continue,
+                                                    };
+                                                    let end_slot = match &parts[1] {
+                                                        redis::Value::Int(n) => *n,
+                                                        _ => continue,
+                                                    };
+
+                                                    // Extract master info
+                                                    let master = if let redis::Value::Array(master_info) = &parts[2] {
+                                                        if master_info.len() >= 3 {
+                                                            let host = match &master_info[0] {
+                                                                redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
+                                                                redis::Value::SimpleString(s) => s.clone(),
+                                                                _ => "".to_string(),
+                                                            };
+                                                            let port = match &master_info[1] {
+                                                                redis::Value::Int(n) => *n,
+                                                                _ => 0,
+                                                            };
+                                                            let node_id = match &master_info[2] {
+                                                                redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
+                                                                redis::Value::SimpleString(s) => s.clone(),
+                                                                _ => "".to_string(),
+                                                            };
+                                                            serde_json::json!({
+                                                                "host": host,
+                                                                "port": port,
+                                                                "node_id": node_id
+                                                            })
+                                                        } else {
+                                                            serde_json::json!({})
+                                                        }
+                                                    } else {
+                                                        serde_json::json!({})
+                                                    };
+
+                                                    // Extract replicas (if any)
+                                                    let mut replicas = Vec::new();
+                                                    for i in 3..parts.len() {
+                                                        if let redis::Value::Array(replica_info) = &parts[i] {
+                                                            if replica_info.len() >= 3 {
+                                                                let host = match &replica_info[0] {
+                                                                    redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
+                                                                    redis::Value::SimpleString(s) => s.clone(),
+                                                                    _ => "".to_string(),
+                                                                };
+                                                                let port = match &replica_info[1] {
+                                                                    redis::Value::Int(n) => *n,
+                                                                    _ => 0,
+                                                                };
+                                                                let node_id = match &replica_info[2] {
+                                                                    redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
+                                                                    redis::Value::SimpleString(s) => s.clone(),
+                                                                    _ => "".to_string(),
+                                                                };
+                                                                replicas.push(serde_json::json!({
+                                                                    "host": host,
+                                                                    "port": port,
+                                                                    "node_id": node_id
+                                                                }));
+                                                            }
+                                                        }
+                                                    }
+
+                                                    let slots_in_range = end_slot - start_slot + 1;
+                                                    total_slots += slots_in_range;
+
+                                                    slot_distribution.push(serde_json::json!({
+                                                        "start_slot": start_slot,
+                                                        "end_slot": end_slot,
+                                                        "slots_count": slots_in_range,
+                                                        "master": master,
+                                                        "replicas": replicas
+                                                    }));
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    let coverage = if total_slots > 0 {
+                                        ((total_slots as f64 / 16384.0) * 100.0 * 100.0).round() / 100.0
+                                    } else {
+                                        0.0
+                                    };
+
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "status": "success",
+                                        "total_slots": total_slots,
+                                        "max_slots": 16384,
+                                        "coverage_percentage": coverage,
+                                        "slot_distribution": slot_distribution
+                                    }))
+                                }
                                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                                    "status": "error",
                                     "error": format!("CLUSTER SLOTS failed: {}", e)
                                 })),
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                            "status": "error",
                             "error": format!("Connection failed: {}", e)
                         })),
                     }
                 }
                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "status": "error",
                     "error": format!("Client creation failed: {}", e)
                 })),
             }
         }
         Err(e) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+            "status": "error",
             "error": e
         })),
     }
@@ -1195,25 +1443,44 @@ async fn redis_cluster_info() -> impl Responder {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
                             match redis::cmd("CLUSTER").arg("INFO").query_async::<String>(&mut conn).await {
-                                Ok(info) => HttpResponse::Ok().json(serde_json::json!({
-                                    "info": info
-                                })),
+                                Ok(info_raw) => {
+                                    // Parse CLUSTER INFO output into key:value pairs
+                                    let mut cluster_info = serde_json::Map::new();
+                                    for line in info_raw.split('\n') {
+                                        if let Some((key, value)) = line.trim().split_once(':') {
+                                            // Try to parse as integer first
+                                            if let Ok(int_val) = value.parse::<i64>() {
+                                                cluster_info.insert(key.to_string(), serde_json::json!(int_val));
+                                            } else {
+                                                cluster_info.insert(key.to_string(), serde_json::json!(value));
+                                            }
+                                        }
+                                    }
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "status": "success",
+                                        "cluster_info": cluster_info
+                                    }))
+                                }
                                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                                    "status": "error",
                                     "error": format!("CLUSTER INFO failed: {}", e)
                                 })),
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                            "status": "error",
                             "error": format!("Connection failed: {}", e)
                         })),
                     }
                 }
                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "status": "error",
                     "error": format!("Client creation failed: {}", e)
                 })),
             }
         }
         Err(e) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+            "status": "error",
             "error": e
         })),
     }
@@ -1221,6 +1488,15 @@ async fn redis_cluster_info() -> impl Responder {
 
 async fn redis_node_info(path: web::Path<String>) -> impl Responder {
     let node_name = path.into_inner();
+
+    // Validate node name
+    let valid_nodes = ["redis-1", "redis-2", "redis-3"];
+    if !valid_nodes.contains(&node_name.as_str()) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "status": "error",
+            "error": format!("Invalid node name. Must be one of: {}", valid_nodes.join(", "))
+        }));
+    }
 
     match get_vault_secret("redis-1").await {
         Ok(creds) => {
@@ -1232,26 +1508,68 @@ async fn redis_node_info(path: web::Path<String>) -> impl Responder {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
                             match redis::cmd("INFO").query_async::<String>(&mut conn).await {
-                                Ok(info) => HttpResponse::Ok().json(serde_json::json!({
-                                    "node": node_name,
-                                    "info": info
-                                })),
+                                Ok(info_raw) => {
+                                    // Parse INFO output into sections
+                                    let mut info = serde_json::Map::new();
+                                    let mut current_section = String::new();
+                                    let mut section_data = serde_json::Map::new();
+
+                                    for line in info_raw.split('\n') {
+                                        let line = line.trim();
+                                        if line.is_empty() {
+                                            continue;
+                                        }
+                                        if line.starts_with('#') {
+                                            // Save previous section if exists
+                                            if !current_section.is_empty() && !section_data.is_empty() {
+                                                info.insert(current_section.clone(), serde_json::Value::Object(section_data.clone()));
+                                                section_data.clear();
+                                            }
+                                            // Start new section
+                                            current_section = line.trim_start_matches('#').trim().to_lowercase();
+                                        } else if let Some((key, value)) = line.split_once(':') {
+                                            // Try to parse as integer or float
+                                            let parsed_value = if let Ok(int_val) = value.parse::<i64>() {
+                                                serde_json::json!(int_val)
+                                            } else if let Ok(float_val) = value.parse::<f64>() {
+                                                serde_json::json!(float_val)
+                                            } else {
+                                                serde_json::json!(value)
+                                            };
+                                            section_data.insert(key.to_string(), parsed_value);
+                                        }
+                                    }
+                                    // Save last section
+                                    if !current_section.is_empty() && !section_data.is_empty() {
+                                        info.insert(current_section, serde_json::Value::Object(section_data));
+                                    }
+
+                                    HttpResponse::Ok().json(serde_json::json!({
+                                        "status": "success",
+                                        "node": node_name,
+                                        "info": info
+                                    }))
+                                }
                                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                                    "status": "error",
                                     "error": format!("INFO failed: {}", e)
                                 })),
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                            "status": "error",
                             "error": format!("Connection failed: {}", e)
                         })),
                     }
                 }
                 Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
+                    "status": "error",
                     "error": format!("Client creation failed: {}", e)
                 })),
             }
         }
         Err(e) => HttpResponse::ServiceUnavailable().json(serde_json::json!({
+            "status": "error",
             "error": e
         })),
     }
