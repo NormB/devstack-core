@@ -10,6 +10,7 @@ const { register: prometheusRegister } = require('prom-client');
 const config = require('./config');
 const { logger, loggingMiddleware } = require('./middleware/logging');
 const { corsMiddleware } = require('./middleware/cors');
+const { defaultLimiter, highLimiter } = require('./middleware/rate-limit');
 
 // Import routes
 const healthRoutes = require('./routes/health');
@@ -34,6 +35,10 @@ app.use(express.urlencoded({ extended: true }));
 // Logging middleware
 app.use(loggingMiddleware);
 
+// Default rate limiting (100 req/min)
+// Applied to all routes except those with specific limits
+app.use(defaultLimiter);
+
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -57,6 +62,11 @@ app.get('/', (req, res) => {
       info: '/redis/cluster/info',
       node_info: '/redis/nodes/{node_name}/info'
     },
+    rate_limiting: {
+      default: '100 requests/minute',
+      metrics: '1000 requests/minute',
+      description: 'IP-based rate limiting using express-rate-limit'
+    },
     documentation: 'See README.md for usage examples'
   });
 });
@@ -69,8 +79,8 @@ app.use('/examples/cache', cacheRoutes);
 app.use('/examples/messaging', messagingRoutes);
 app.use('/redis', redisClusterRoutes);
 
-// Prometheus metrics endpoint
-app.get('/metrics', async (req, res) => {
+// Prometheus metrics endpoint (higher rate limit: 1000 req/min)
+app.get('/metrics', highLimiter, async (req, res) => {
   try {
     res.set('Content-Type', prometheusRegister.contentType);
     res.end(await prometheusRegister.metrics());
