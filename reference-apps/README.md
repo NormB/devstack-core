@@ -23,7 +23,7 @@
 - [API Documentation](#api-documentation)
   - [3. Go Reference API](#3-go-reference-api)
   - [4. Node.js Reference API](#4-nodejs-reference-api)
-  - [5. Rust Reference API (Partial Implementation)](#5-rust-reference-api-partial-implementation)
+  - [5. Rust Reference API](#5-rust-reference-api)
 - [Future Reference Apps](#future-reference-apps)
 - [Common Use Cases](#common-use-cases)
   - [1. Testing Infrastructure Setup](#1-testing-infrastructure-setup)
@@ -373,6 +373,7 @@ curl http://localhost:8002/health/all
 **Location:** `reference-apps/nodejs/`
 **Port:** 8003 (HTTP), 8446 (HTTPS)
 **Pattern:** Modern async/await patterns with Express
+**Status:** ✅ **Feature-Complete (100% parity)**
 
 **What it demonstrates:**
 - ✅ **Same infrastructure integrations** as other implementations
@@ -381,6 +382,8 @@ curl http://localhost:8002/health/all
 - ✅ **Express middleware** - Modular request processing
 - ✅ **Winston logging** - Structured logging with correlation IDs
 - ✅ **Graceful shutdown** - Clean signal handling
+- ✅ **Rate limiting** - IP-based rate limiting (100/min default, 10/min strict, 1000/min high)
+- ✅ **Request validation** - Field presence, type checking, and constraint validation
 
 **Quick Start:**
 ```bash
@@ -403,7 +406,7 @@ curl http://localhost:8003/health/all
 **Location:** `reference-apps/rust/`
 **Port:** 8004 (HTTP), 8447 (HTTPS)
 **Pattern:** High-performance async with Actix-web
-**Status:** ✅ **Feature-Complete (~95% parity)**
+**Status:** ✅ **Feature-Complete (100% parity)**
 
 **What it demonstrates:**
 - ✅ **Complete infrastructure integration** - All services: Vault, PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ
@@ -421,7 +424,7 @@ curl http://localhost:8003/health/all
 - ✅ **Async/await patterns** - Modern Rust async programming throughout
 - ✅ **Production-grade error handling** - Zero unwrap() calls, proper Result<T, E> usage
 - ✅ **Comprehensive testing** - 44 unit tests (positive, negative, edge cases)
-- ✅ **1,985 lines of production code** - Fully documented implementation
+- ✅ **2,314 lines of production code** - Fully documented implementation (1,667 main + 647 tests)
 
 **Quick Start:**
 ```bash
@@ -581,6 +584,8 @@ Reference apps demonstrate integration patterns but **not production security**:
 - ⚠️ Debug mode enabled
 
 **For production:** Implement proper auth, use AppRole/JWT for Vault, add validation, monitoring, etc.
+
+**Note:** Node.js reference app now includes rate limiting middleware (default 100/min, strict 10/min, high 1000/min) and request validation as production examples.
 
 ## Getting Help
 
