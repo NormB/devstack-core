@@ -21,5 +21,9 @@ module.exports = {
   },
   setupFilesAfterEnv: ['./tests/setup.js'],
   testTimeout: 10000,
-  verbose: true
+  verbose: true,
+  // Transform ESM packages to CommonJS for Jest
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid)/)'
+  ]
 };

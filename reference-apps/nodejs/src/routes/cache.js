@@ -2,6 +2,7 @@ const express = require('express');
 const { createClient } = require('redis');
 const { vaultClient } = require('../services/vault');
 const config = require('../config');
+const { requireFields, validateTypes, validateConstraints } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -24,7 +25,14 @@ router.get('/:key', async (req, res) => {
   }
 });
 
-router.post('/:key', async (req, res) => {
+// Validation middleware for cache set
+const cacheSetValidation = [
+  requireFields(['value']),
+  validateTypes({ value: 'string', ttl: 'number' }),
+  validateConstraints({ ttl: { min: 0, max: 86400 } }) // Max TTL: 24 hours
+];
+
+router.post('/:key', cacheSetValidation, async (req, res) => {
   let client;
   try {
     const creds = await vaultClient.getSecret('redis-1');
