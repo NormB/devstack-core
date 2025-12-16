@@ -2,7 +2,7 @@
 # Must match code-first implementation versions for compatibility
 
 # Core FastAPI dependencies
-fastapi==0.124.0
+fastapi==0.124.4
 uvicorn[standard]==0.38.0
 pydantic-settings==2.12.0
 slowapi==0.1.9  # Rate limiting
