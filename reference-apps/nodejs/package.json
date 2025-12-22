@@ -30,7 +30,7 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "mongodb": "^7.0.0",
-    "mysql2": "^3.6.5",
+    "mysql2": "^3.16.0",
     "node-vault": "^0.10.2",
     "pg": "^8.11.3",
     "prom-client": "^15.1.0",
