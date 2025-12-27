@@ -1,4 +1,5 @@
-FROM codeberg.org/forgejo/forgejo:1.21.11-0
+ARG FORGEJO_VERSION=1.21.11-0
+FROM codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
 
 # Install dependencies for Vault integration (needs root)
 USER root

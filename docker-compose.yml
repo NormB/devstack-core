@@ -31,7 +31,7 @@ x-init-library: &init-library
 # =============================================================================
 x-redis-common: &redis-common
   <<: *default-platform
-  image: redis:7.4-alpine3.21
+  image: redis:${REDIS_VERSION:-7.4-alpine3.21}
   restart: unless-stopped
   entrypoint: ["/init/init-approle.sh"]
   environment: &redis-env
@@ -75,7 +75,7 @@ x-redis-common: &redis-common
 # =============================================================================
 x-redis-exporter-common: &redis-exporter-common
   <<: *default-platform
-  image: oliver006/redis_exporter:v1.55.0
+  image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION:-v1.55.0}
   restart: unless-stopped
   entrypoint: ["/init/init.sh"]
   environment: &redis-exporter-env
@@ -178,7 +178,7 @@ services:
 
   postgres:
     <<: *default-platform
-    image: postgres:18
+    image: postgres:${POSTGRES_VERSION:-18}
     container_name: dev-postgres
     restart: unless-stopped
 
@@ -270,7 +270,10 @@ services:
   
   pgbouncer:
     <<: *default-platform
-    build: ./configs/pgbouncer
+    build:
+      context: ./configs/pgbouncer
+      args:
+        PGBOUNCER_VERSION: ${PGBOUNCER_VERSION:-latest}
     container_name: dev-pgbouncer
     restart: unless-stopped
 
@@ -336,7 +339,7 @@ services:
 
   mysql:
     <<: *default-platform
-    image: mysql:8.0.40
+    image: mysql:${MYSQL_VERSION:-8.0.40}
     container_name: dev-mysql
     restart: unless-stopped
 
@@ -527,7 +530,7 @@ services:
 
   rabbitmq:
     <<: *default-platform
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:${RABBITMQ_VERSION:-3.13-management-alpine}
     container_name: dev-rabbitmq
     restart: unless-stopped
 
@@ -591,7 +594,7 @@ services:
   
   mongodb:
     <<: *default-platform
-    image: mongo:7.0
+    image: mongo:${MONGODB_VERSION:-7.0}
     container_name: dev-mongodb
     restart: unless-stopped
 
@@ -658,7 +661,10 @@ services:
   
   forgejo:
     <<: *default-platform
-    build: ./configs/forgejo
+    build:
+      context: ./configs/forgejo
+      args:
+        FORGEJO_VERSION: ${FORGEJO_VERSION:-1.21.11-0}
     container_name: dev-forgejo
     restart: unless-stopped
 
@@ -731,7 +737,7 @@ services:
 
   vault:
     <<: *default-platform
-    image: hashicorp/vault:1.18
+    image: hashicorp/vault:${VAULT_VERSION:-1.18}
     container_name: dev-vault
     restart: unless-stopped
 
@@ -1147,7 +1153,7 @@ services:
 
   prometheus:
     <<: *default-platform
-    image: prom/prometheus:v2.48.0
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.48.0}
     container_name: dev-prometheus
     restart: unless-stopped
 
@@ -1207,7 +1213,7 @@ services:
 
   grafana:
     <<: *default-platform
-    image: grafana/grafana:10.2.2
+    image: grafana/grafana:${GRAFANA_VERSION:-10.2.2}
     container_name: dev-grafana
     restart: unless-stopped
 
@@ -1267,7 +1273,7 @@ services:
 
   loki:
     <<: *default-platform
-    image: grafana/loki:2.9.3
+    image: grafana/loki:${LOKI_VERSION:-2.9.3}
     container_name: dev-loki
     restart: unless-stopped
 
@@ -1402,7 +1408,7 @@ services:
 
   cadvisor:
     <<: *default-platform
-    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.47.2}
     container_name: dev-cadvisor
     restart: unless-stopped
 
@@ -1458,7 +1464,10 @@ services:
 
   vector:
     <<: *default-platform
-    build: ./configs/vector
+    build:
+      context: ./configs/vector
+      args:
+        VECTOR_VERSION: ${VECTOR_VERSION:-0.50.0-debian}
     container_name: dev-vector
     restart: unless-stopped
 

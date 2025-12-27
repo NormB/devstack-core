@@ -92,20 +92,62 @@ jobs:
           done
         continue-on-error: true
 
-      - name: Check Docker image vulnerabilities
+      - name: Scan Docker images for vulnerabilities
         run: |
+          echo "Installing Trivy for Docker image scanning..."
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.58.0
+
+          echo ""
           echo "Extracting Docker images from docker-compose.yml..."
 
-          # Get unique images from docker-compose.yml
-          images=$(grep -E "^\s+image:" docker-compose.yml | awk '{print $2}' | sort -u)
+          # Get unique images from docker-compose.yml (resolve env vars to defaults)
+          images=$(grep -E "^\s+image:" docker-compose.yml | \
+            sed 's/.*image:\s*//' | \
+            sed 's/\${[^:]*:-\([^}]*\)}/\1/g' | \
+            sort -u)
 
           echo "Found images:"
           echo "$images"
           echo ""
-          echo "Note: For full vulnerability scanning, consider using:"
-          echo "  - Trivy: trivy image <image>"
-          echo "  - Snyk: snyk container test <image>"
-          echo "  - Docker Scout: docker scout cves <image>"
+
+          vuln_count=0
+          critical_count=0
+
+          for image in $images; do
+            echo ""
+            echo "=========================================="
+            echo "Scanning: $image"
+            echo "=========================================="
+
+            # Scan for CRITICAL and HIGH vulnerabilities
+            if ! trivy image --severity CRITICAL,HIGH --no-progress --exit-code 0 "$image" 2>/dev/null; then
+              echo "⚠ Warning: Could not scan $image (may need to be pulled first)"
+              continue
+            fi
+
+            # Count critical vulnerabilities
+            critical=$(trivy image --severity CRITICAL --no-progress --format json "$image" 2>/dev/null | \
+              jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0' 2>/dev/null || echo "0")
+
+            if [ "$critical" -gt 0 ]; then
+              echo "⚠ Found $critical CRITICAL vulnerabilities in $image"
+              critical_count=$((critical_count + critical))
+            fi
+
+            vuln_count=$((vuln_count + 1))
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "Scan Summary"
+          echo "=========================================="
+          echo "Images scanned: $vuln_count"
+          echo "Total CRITICAL vulnerabilities: $critical_count"
+
+          if [ "$critical_count" -gt 0 ]; then
+            echo ""
+            echo "⚠ Warning: Critical vulnerabilities found. Review and update affected images."
+          fi
 
   trivy-scan:
     name: Trivy Security Scan
