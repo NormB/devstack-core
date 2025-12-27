@@ -93,7 +93,6 @@ package-lock.json.bak
 
 # Rust
 target/
-Cargo.lock
 
 # Test cache
 .pytest_cache/
