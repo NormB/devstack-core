@@ -91,26 +91,15 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Test environment setup
   - Test execution guidelines
   - Coverage goals and metrics
+  - 571+ tests across 50 bash scripts
 
-- **[RUST_API_TESTING_GUIDE.md](./RUST_API_TESTING_GUIDE.md)** - Rust HTTP API testing guide (NEW)
+- **[RUST_API_TESTING_GUIDE.md](./RUST_API_TESTING_GUIDE.md)** - Rust HTTP API testing guide
   - Comprehensive Actix-web testing patterns
   - Unit tests vs integration tests organization
   - Testing best practices (positive, negative, edge cases)
   - Common testing crates and complete examples
   - Async testing with tokio and actix_rt
   - Production-ready testing patterns
-
-- **[TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md)** - Phase 0-2 validation results (NEW - Nov 2025)
-  - 100% test pass rate confirmation (494+ tests)
-  - Issues found and resolved during validation
-  - Performance metrics and security validation
-  - Production readiness assessment
-
-- **[NEW_TESTS_SUMMARY.md](./NEW_TESTS_SUMMARY.md)** - Extended test suite summary
-  - New test suites added to the project
-  - Coverage of Vault, PostgreSQL, PgBouncer, Observability
-  - 40+ new test cases across 4 suites
-  - Test statistics and implementation details
 
 ### Architecture & Design
 
@@ -328,19 +317,18 @@ See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 
 | Category | Files | Status |
 |----------|-------|--------|
-| Project Information | 1 | ✅ Complete |
+| Getting Started | 4 | ✅ Complete |
 | Security | 2 | ✅ Complete |
-| Testing | 4 | ✅ Complete |
+| Testing | 2 | ✅ Complete |
 | Architecture | 1 | ✅ Complete |
-| Service Profiles (v1.3) | 3 | ✅ Complete |
-| Operational Guides | 9 | ✅ Complete |
-| Upgrade Procedures | 1 | ✅ Complete |
+| Service Profiles | 3 | ✅ Complete |
+| Operational Guides | 12 | ✅ Complete |
 | API Patterns | 1 | ✅ Complete |
 | Reference Apps | 6 | ✅ Complete |
 | VoIP Infrastructure | 3 | ✅ Complete (voip/ subdirectory) |
-| **Total Core Documentation Files** | **~31** | **✅ 99% Coverage** |
+| **Total Core Documentation Files** | **~34** | **✅ Complete** |
 
-**Note:** Work-in-progress files (task tracking, test results) are now located in `docs/.private/` (gitignored).
+**Note:** Historical phase summaries and test reports are archived in `docs/archive/`. Work-in-progress files are in `docs/.private/` (gitignored).
 
 ## Useful Resources
 
