@@ -6,8 +6,8 @@ Procedures for safely rolling back DevStack Core changes, including database res
 
 > **Related Documentation:**
 > - For disaster recovery (complete environment loss), see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
-> - For upgrade procedures, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
-> - For AppRole/TLS migration rollback, see [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
+> - For upgrade and migration procedures, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
+> - For troubleshooting, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 
 ---
 

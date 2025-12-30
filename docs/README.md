@@ -143,25 +143,15 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Backup and restore procedures
   - Service lifecycle management
 
-- **[UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)** - Comprehensive upgrade procedures (NEW)
+- **[UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)** - Comprehensive upgrade and migration guide
   - Version upgrade paths (v1.2 → v1.3, earlier versions)
+  - Security migration: Root Token → AppRole, HTTP → TLS
   - Service version upgrades (PostgreSQL 18, MySQL, MongoDB, Redis, RabbitMQ)
   - Profile migration procedures (minimal ↔ standard ↔ full)
+  - Adding AppRole to custom services
   - Database migration procedures (pg_dump, logical replication)
-  - Backward compatibility considerations
-  - Rollback procedures (complete, service-specific, profile)
-  - Post-upgrade validation checklist (18 checks)
-  - Troubleshooting common upgrade issues
-
-- **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - AppRole and TLS migration guide (Phase 4)
-  - Root Token → AppRole migration (100% adoption)
-  - HTTP → HTTPS (TLS) migration with dual-mode support
-  - Pre-migration checklists and prerequisites
-  - Step-by-step migration procedures with verification
-  - Comprehensive troubleshooting guide
-  - Complete rollback procedures
-  - Post-migration validation (32 AppRole tests, 24 TLS tests)
-  - FAQ and best practices
+  - Rollback procedures and post-upgrade validation
+  - FAQ for upgrades, AppRole, TLS, and profiles
 
 - **[DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)** - Disaster recovery procedures
   - 30-minute RTO (Recovery Time Objective)

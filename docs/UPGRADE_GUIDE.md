@@ -1,12 +1,11 @@
-# Upgrade Guide
+# Upgrade & Migration Guide
 
-**Version:** 1.3.0
+**Version:** 2.0
 **Last Updated:** 2025-12-30
 
-Complete guide for upgrading DevStack Core versions, service versions, and migrating between profiles.
+Complete guide for upgrading DevStack Core versions, service versions, migrating between profiles, and implementing security features (AppRole authentication, TLS encryption).
 
 > **Related Documentation:**
-> - For AppRole and TLS migration specifically, see [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
 > - For disaster recovery procedures, see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
 > - For detailed rollback procedures, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
 
@@ -15,6 +14,7 @@ Complete guide for upgrading DevStack Core versions, service versions, and migra
 ## Table of Contents
 
 - [Version Upgrade Paths](#version-upgrade-paths)
+- [Security Migration (AppRole & TLS)](#security-migration-approle--tls)
 - [Service Version Upgrades](#service-version-upgrades)
 - [Profile Migration](#profile-migration)
 - [Database Migration Procedures](#database-migration-procedures)
@@ -22,6 +22,7 @@ Complete guide for upgrading DevStack Core versions, service versions, and migra
 - [Rollback Procedures](#rollback-procedures)
 - [Post-Upgrade Validation](#post-upgrade-validation)
 - [Troubleshooting Common Issues](#troubleshooting-common-issues)
+- [FAQ](#faq)
 
 ---
 
@@ -165,6 +166,176 @@ Complete guide for upgrading DevStack Core versions, service versions, and migra
 5. Migrate credentials from .env to Vault
 
 **Migration Time:** 30-45 minutes
+
+---
+
+## Security Migration (AppRole & TLS)
+
+This section covers migrating from legacy configurations to modern security features: AppRole authentication and TLS encryption.
+
+### Migration Scenarios
+
+| Scenario | Who | Path | Complexity | Downtime |
+|----------|-----|------|------------|----------|
+| Fresh Install | New users | Follow [INSTALLATION.md](./INSTALLATION.md) - AppRole enabled by default | N/A | N/A |
+| Pre-v1.2 → Current | Users before Nov 2025 | Migrate root token → AppRole | Medium | 10-15 min |
+| Adding TLS | Current users | Generate certs, enable dual-mode | Low | 5 min |
+| Custom Service | Developers | Create AppRole, policy, init script | Medium | None |
+
+### Root Token → AppRole Migration
+
+**Prerequisites:**
+1. ✅ Backup data: `./devstack backup`
+2. ✅ Backup Vault: `cp -r ~/.config/vault ~/vault-backup-$(date +%Y%m%d)`
+3. ✅ Vault accessible and unsealed
+4. ✅ All services healthy
+
+**Step 1: Stop Services**
+```bash
+./devstack stop
+docker ps  # Should be empty or Vault only
+```
+
+**Step 2: Enable AppRole in Vault**
+```bash
+docker compose up -d vault
+sleep 10
+
+export VAULT_ADDR=http://localhost:8200
+export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+./devstack vault-bootstrap
+```
+
+**Expected output:**
+```
+[✓] AppRole enabled
+[✓] Policy created: postgres-policy, mysql-policy, ...
+[✓] AppRole created: postgres, mysql, mongodb, redis, rabbitmq, forgejo, reference-api
+[✓] Credentials saved: ~/.config/vault/approles/*/
+```
+
+**Step 3: Verify AppRole Credentials**
+```bash
+ls -la ~/.config/vault/approles/
+# Should show: postgres, mysql, mongodb, redis, rabbitmq, forgejo, reference-api, management
+
+# Test authentication
+ROLE_ID=$(cat ~/.config/vault/approles/postgres/role-id)
+SECRET_ID=$(cat ~/.config/vault/approles/postgres/secret-id)
+curl -X POST http://localhost:8200/v1/auth/approle/login \
+  -d "{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}" | jq
+```
+
+**Step 4: Restart Services**
+```bash
+./devstack start --profile standard
+
+# Verify AppRole in use
+docker inspect dev-postgres | grep VAULT_APPROLE_DIR
+# Should show: /vault-approles/postgres
+```
+
+**Step 5: Validate**
+```bash
+./tests/test-approle-security.sh
+# Should show: 32/32 tests passed
+```
+
+### Enabling TLS (Dual-Mode)
+
+```bash
+# 1. Generate certificates
+export VAULT_ADDR=http://localhost:8200
+export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+./scripts/generate-certificates.sh
+
+# 2. Restart services (certs auto-mounted)
+docker compose restart postgres mysql mongodb redis-1 redis-2 redis-3 rabbitmq
+
+# 3. Verify TLS enabled
+docker exec dev-postgres psql -U devuser -d devdb -c "SHOW ssl;"
+# Should show: on
+```
+
+**Note:** Dual-mode accepts both TLS and non-TLS connections.
+
+### TLS-Only Mode (Production)
+
+**PostgreSQL:**
+```bash
+docker exec dev-postgres bash -c 'echo "hostssl all all 0.0.0.0/0 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf'
+docker compose restart postgres
+```
+
+**MySQL:**
+```bash
+docker exec dev-mysql bash -c 'echo "require_secure_transport = ON" >> /etc/mysql/conf.d/tls.cnf'
+docker compose restart mysql
+```
+
+### Adding AppRole to Custom Services
+
+**1. Create Vault Policy**
+```bash
+cat > configs/vault/policies/myservice-policy.hcl <<'EOF'
+path "secret/data/myservice" {
+  capabilities = ["read"]
+}
+EOF
+vault policy write myservice-policy configs/vault/policies/myservice-policy.hcl
+```
+
+**2. Create AppRole**
+```bash
+vault write auth/approle/role/myservice \
+  token_ttl=1h token_max_ttl=4h policies=myservice-policy
+
+mkdir -p ~/.config/vault/approles/myservice
+vault read -field=role_id auth/approle/role/myservice/role-id > \
+  ~/.config/vault/approles/myservice/role-id
+vault write -field=secret_id -f auth/approle/role/myservice/secret-id > \
+  ~/.config/vault/approles/myservice/secret-id
+chmod 600 ~/.config/vault/approles/myservice/secret-id
+```
+
+**3. Create init-approle.sh Script**
+```bash
+cp configs/postgres/scripts/init-approle.sh configs/myservice/scripts/init-approle.sh
+# Modify SERVICE_NAME and paths for your service
+chmod +x configs/myservice/scripts/init-approle.sh
+```
+
+**4. Update docker-compose.yml**
+```yaml
+myservice:
+  entrypoint: ["/init/init-approle.sh"]
+  environment:
+    VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+    VAULT_APPROLE_DIR: /vault-approles/myservice
+  volumes:
+    - ./configs/myservice/scripts/init-approle.sh:/init/init-approle.sh:ro
+    - ${HOME}/.config/vault/approles/myservice:/vault-approles/myservice:ro
+  networks:
+    vault-network:
+```
+
+### Security Migration Rollback
+
+**Rollback AppRole → Root Token:**
+```bash
+# 1. Restore docker-compose.yml backup
+cp docker-compose.yml.backup docker-compose.yml
+
+# 2. Restart with VAULT_TOKEN
+export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+VAULT_TOKEN="$VAULT_TOKEN" ./devstack restart
+```
+
+**Rollback TLS → Non-TLS:**
+```bash
+# Remove SSL requirements from service configs
+docker compose restart postgres mysql mongodb
+```
 
 ---
 
@@ -1146,8 +1317,54 @@ echo "✅ All validation checks passed!"
 
 ---
 
+## FAQ
+
+### Version Upgrades
+
+**Q: Can I skip versions (e.g., v1.1 → v1.3)?**
+A: Not recommended. Upgrade sequentially to ensure all migrations run correctly.
+
+**Q: How long do upgrades take?**
+A: Typically 15-30 minutes depending on database size and target version.
+
+### AppRole & TLS
+
+**Q: Do I need to migrate all services at once?**
+A: No. All services already use AppRole in DevStack Core v1.3.0+. Migration is only needed if upgrading from an older version.
+
+**Q: Will migration cause data loss?**
+A: No. Migration only changes authentication method, not data storage. However, always backup before migration.
+
+**Q: Can I use AppRole and root token simultaneously?**
+A: Yes. Core services use AppRole, infrastructure management uses root token. Both work together.
+
+**Q: Is TLS required?**
+A: No. TLS is optional. Services run in dual-mode (accept both TLS and non-TLS).
+
+**Q: How do I check if AppRole is working?**
+A: Run `./tests/test-approle-security.sh` - all 32 tests should pass.
+
+**Q: What happens when service token expires (1h TTL)?**
+A: Restart the service to get a new token: `docker compose restart <service>`
+
+**Q: Can I change token TTL?**
+A: Yes. Update AppRole: `vault write auth/approle/role/postgres token_ttl=2h token_max_ttl=8h`
+
+**Q: Where are AppRole credentials stored?**
+A: `~/.config/vault/approles/<service>/role-id` and `secret-id`
+
+### Profiles
+
+**Q: What's the difference between profiles?**
+A: Minimal (5 services, 2GB), Standard (10 services, 4GB), Full (18 services, 6GB). See [SERVICE_PROFILES.md](./SERVICE_PROFILES.md).
+
+**Q: Can I switch profiles without data loss?**
+A: Yes. Profile changes only affect which services run, not stored data.
+
+---
+
 ## Need Help?
 
 - Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues
-- Review [GitHub Issues](https://github.com/yourusername/devstack-core/issues)
+- Review [GitHub Issues](https://github.com/NormB/devstack-core/issues)
 - Consult service-specific documentation in `docs/`
