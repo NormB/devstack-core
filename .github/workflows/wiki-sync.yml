@@ -53,7 +53,6 @@ jobs:
             ["docs/TESTING_APPROACH.md"]="wiki/Testing-Approach.md"
             ["docs/SERVICE_CATALOG.md"]="wiki/Service-Catalog.md"
             ["docs/SERVICE_PROFILES.md"]="wiki/Service-Profiles.md"
-            ["docs/MIGRATION_GUIDE.md"]="wiki/Migration-Guide.md"
             ["docs/UPGRADE_GUIDE.md"]="wiki/Upgrade-Guide.md"
             ["docs/ROLLBACK_PROCEDURES.md"]="wiki/Rollback-Procedures.md"
             ["README.md"]="wiki/Home.md"
@@ -106,6 +105,7 @@ jobs:
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
+        continue-on-error: true
 
       - name: Create Pull Request for wiki changes
         if: steps.check_changes.outputs.changes == 'true'
