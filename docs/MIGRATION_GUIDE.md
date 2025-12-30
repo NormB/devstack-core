@@ -1,8 +1,13 @@
 # Migration Guide
 
-Step-by-step instructions for migrating from legacy configurations to DevStack Core v1.3.0+, including AppRole authentication and service profiles.
+Step-by-step instructions for migrating from legacy configurations to DevStack Core v1.3.0+, including AppRole authentication and TLS encryption.
 
-**Version:** 1.0 | **Last Updated:** November 19, 2025
+**Version:** 1.1 | **Last Updated:** 2025-12-30
+
+> **Related Documentation:**
+> - For version upgrades and service upgrades, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
+> - For disaster recovery procedures, see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
+> - For detailed rollback procedures, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
 
 ---
 

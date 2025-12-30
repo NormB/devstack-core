@@ -2,6 +2,13 @@
 
 Step-by-step procedures for recovering from infrastructure failures, including complete environment loss, Vault data loss, database corruption, and network issues. Target RTO: 30 minutes.
 
+**Last Updated:** 2025-12-30
+
+> **Related Documentation:**
+> - For rolling back upgrades or changes, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
+> - For upgrade procedures, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
+> - For troubleshooting, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
 ## Table of Contents
 
 - [Overview](#overview)

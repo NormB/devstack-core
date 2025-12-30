@@ -1,9 +1,14 @@
 # Upgrade Guide
 
 **Version:** 1.3.0
-**Last Updated:** 2025-01-18
+**Last Updated:** 2025-12-30
 
 Complete guide for upgrading DevStack Core versions, service versions, and migrating between profiles.
+
+> **Related Documentation:**
+> - For AppRole and TLS migration specifically, see [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
+> - For disaster recovery procedures, see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
+> - For detailed rollback procedures, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
 
 ---
 
