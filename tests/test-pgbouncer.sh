@@ -69,6 +69,50 @@ info() {
     echo -e "${BLUE}[TEST]${NC} $1"
 }
 
+################################################################################
+# Wait for PgBouncer to be fully operational
+################################################################################
+wait_for_pgbouncer() {
+    local max_attempts=30
+    local attempt=0
+
+    echo -e "${BLUE}[INFO]${NC} Waiting for PgBouncer to be fully operational..."
+
+    # First wait for container to be healthy
+    while [ $attempt -lt $max_attempts ]; do
+        local health=$(docker inspect dev-pgbouncer --format='{{.State.Health.Status}}' 2>/dev/null)
+        if [ "$health" == "healthy" ]; then
+            break
+        fi
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+
+    if [ $attempt -eq $max_attempts ]; then
+        echo -e "${RED}[ERROR]${NC} PgBouncer container did not become healthy within ${max_attempts}s"
+        return 1
+    fi
+
+    # Now wait for PgBouncer to accept connections and respond
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        # Try to connect to the admin console
+        local result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+            -d pgbouncer -t -c "SHOW VERSION;" 2>/dev/null | tr -d ' ')
+
+        if [ -n "$result" ] && [[ "$result" == *"PgBouncer"* ]]; then
+            echo -e "${GREEN}[OK]${NC} PgBouncer is ready (${result})"
+            return 0
+        fi
+
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+
+    echo -e "${YELLOW}[WARN]${NC} PgBouncer may not be fully ready, proceeding with tests..."
+    return 0
+}
+
 success() {
     echo -e "${GREEN}[PASS]${NC} $1"
     TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -430,6 +474,9 @@ run_all_tests() {
     echo "  PgBouncer Extended Test Suite"
     echo "========================================="
     echo
+
+    # Wait for PgBouncer to be fully operational before running tests
+    wait_for_pgbouncer || return 1
 
     test_pgbouncer_health || true
     test_pool_statistics || true
