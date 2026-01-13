@@ -98,6 +98,39 @@ scrape_configs:
   #   static_configs:
   #     - targets: ['cadvisor:8080']
 
+  # VoIP Stack - Lima VMs (OpenSIPS, Asterisk, RTPEngine)
+  - job_name: 'voip-nodes'
+    static_configs:
+      - targets:
+          - '192.168.105.2:9100'  # sip-1 (OpenSIPS)
+          - '192.168.105.6:9100'  # pbx-1 (Asterisk)
+          - '192.168.105.5:9100'  # media-1 (RTPEngine)
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '192.168.105.2:.*'
+        target_label: instance
+        replacement: 'sip-1'
+      - source_labels: [__address__]
+        regex: '192.168.105.6:.*'
+        target_label: instance
+        replacement: 'pbx-1'
+      - source_labels: [__address__]
+        regex: '192.168.105.5:.*'
+        target_label: instance
+        replacement: 'media-1'
+      - source_labels: [__address__]
+        regex: '192.168.105.2:.*'
+        target_label: role
+        replacement: 'sip-proxy'
+      - source_labels: [__address__]
+        regex: '192.168.105.6:.*'
+        target_label: role
+        replacement: 'pbx'
+      - source_labels: [__address__]
+        regex: '192.168.105.5:.*'
+        target_label: role
+        replacement: 'media'
+
   # Vault metrics (if enabled)
   - job_name: 'vault'
     metrics_path: '/v1/sys/metrics'

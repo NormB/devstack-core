@@ -1,0 +1,170 @@
+{
+  "title": "Asterisk Overview",
+  "uid": "asterisk-overview",
+  "tags": ["voip", "asterisk", "pbx", "sip"],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "Asterisk VM Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "up{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "pbx-1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        }
+      },
+      "options": {"colorMode": "background", "graphMode": "none"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Asterisk Info",
+      "type": "text",
+      "gridPos": {"h": 4, "w": 18, "x": 6, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "## Asterisk PBX (pbx-1)\n\n**Role:** Call processing, voicemail, IVR, recording\n\n| Port | Protocol | Purpose |\n|------|----------|--------|\n| 5080 | UDP | SIP (internal) |\n| 5038 | TCP | AMI (Asterisk Manager Interface) |\n| 8088 | TCP | ARI (Asterisk REST Interface) |\n\n*Note: Asterisk-specific metrics require asterisk_exporter to be installed*"
+      }
+    },
+    {
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{job=\"voip-nodes\", instance=\"pbx-1\", mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"voip-nodes\", instance=\"pbx-1\"} - node_memory_MemAvailable_bytes{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Used",
+          "refId": "A"
+        },
+        {
+          "expr": "node_memory_MemAvailable_bytes{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Available",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Network I/O",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{job=\"voip-nodes\", instance=\"pbx-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "RX",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{job=\"voip-nodes\", instance=\"pbx-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "TX",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Disk I/O (Recording Storage)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(node_disk_read_bytes_total{job=\"voip-nodes\", instance=\"pbx-1\"}[5m])",
+          "legendFormat": "Read",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_disk_written_bytes_total{job=\"voip-nodes\", instance=\"pbx-1\"}[5m])",
+          "legendFormat": "Write",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 20},
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{job=\"voip-nodes\", instance=\"pbx-1\", mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"voip-nodes\", instance=\"pbx-1\", mountpoint=\"/\"})) * 100",
+          "legendFormat": "Root",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}
+        }
+      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Process Count",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 20},
+      "targets": [
+        {
+          "expr": "node_procs_running{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Running",
+          "refId": "A"
+        },
+        {
+          "expr": "node_procs_blocked{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Blocked",
+          "refId": "B"
+        }
+      ],
+      "options": {"colorMode": "value", "graphMode": "area"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "File Descriptors",
+      "type": "timeseries",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 20},
+      "targets": [
+        {
+          "expr": "node_filefd_allocated{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Allocated",
+          "refId": "A"
+        },
+        {
+          "expr": "node_filefd_maximum{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "Maximum",
+          "refId": "B"
+        }
+      ],
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    }
+  ]
+}
