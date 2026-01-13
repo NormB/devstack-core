@@ -1,0 +1,164 @@
+{
+  "title": "VoIP Stack Overview",
+  "uid": "voip-overview",
+  "tags": ["voip", "overview", "sip", "asterisk", "opensips", "rtpengine"],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "VoIP VM Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "up{job=\"voip-nodes\", instance=\"sip-1\"}",
+          "legendFormat": "sip-1 (OpenSIPS)",
+          "refId": "A"
+        },
+        {
+          "expr": "up{job=\"voip-nodes\", instance=\"pbx-1\"}",
+          "legendFormat": "pbx-1 (Asterisk)",
+          "refId": "B"
+        },
+        {
+          "expr": "up{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "media-1 (RTPEngine)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        }
+      },
+      "options": {"colorMode": "value", "graphMode": "none", "orientation": "horizontal"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "VoIP Architecture",
+      "type": "text",
+      "gridPos": {"h": 4, "w": 16, "x": 8, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "## Three-Tier VoIP Architecture\n\n| VM | Role | Component | Ports |\n|---|---|---|---|\n| **sip-1** | SIP Proxy | OpenSIPS | 5060/UDP, 5061/TCP |\n| **pbx-1** | PBX | Asterisk | 5080/UDP, 5038/TCP (AMI), 8088/TCP (ARI) |\n| **media-1** | Media Relay | RTPEngine | 10000-20000/UDP |"
+      }
+    },
+    {
+      "title": "CPU Usage by VM",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{job=\"voip-nodes\", mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Memory Usage by VM",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes{job=\"voip-nodes\"} / node_memory_MemTotal_bytes{job=\"voip-nodes\"})) * 100",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Network RX (Receive)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{job=\"voip-nodes\", device!~\"lo|veth.*\"}[5m])",
+          "legendFormat": "{{instance}} - {{device}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Network TX (Transmit)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(node_network_transmit_bytes_total{job=\"voip-nodes\", device!~\"lo|veth.*\"}[5m])",
+          "legendFormat": "{{instance}} - {{device}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 20},
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{job=\"voip-nodes\", mountpoint=\"/\"} / node_filesystem_size_bytes{job=\"voip-nodes\", mountpoint=\"/\"})) * 100",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}
+        }
+      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Load Average (1m)",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 20},
+      "targets": [
+        {
+          "expr": "node_load1{job=\"voip-nodes\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 2}, {"color": "red", "value": 4}]}
+        }
+      },
+      "options": {"colorMode": "value", "graphMode": "area"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 20},
+      "targets": [
+        {
+          "expr": "node_time_seconds{job=\"voip-nodes\"} - node_boot_time_seconds{job=\"voip-nodes\"}",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "options": {"colorMode": "value", "graphMode": "none"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    }
+  ]
+}

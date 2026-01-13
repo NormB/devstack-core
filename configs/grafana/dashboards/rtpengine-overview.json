@@ -1,0 +1,201 @@
+{
+  "title": "RTPEngine Overview",
+  "uid": "rtpengine-overview",
+  "tags": ["voip", "rtpengine", "rtp", "media"],
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "title": "RTPEngine VM Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "up{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "media-1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": 0}, {"color": "green", "value": 1}]}
+        }
+      },
+      "options": {"colorMode": "background", "graphMode": "none"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "RTPEngine Info",
+      "type": "text",
+      "gridPos": {"h": 4, "w": 18, "x": 6, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "## RTPEngine Media Proxy (media-1)\n\n**Role:** RTP/RTCP media relay, transcoding, SRTP encryption\n\n| Port Range | Protocol | Purpose |\n|------|----------|--------|\n| 10000-20000 | UDP | RTP Media Streams |\n| 22222 | UDP | Control (ng protocol) |\n\n**Key Metrics:** Network throughput is critical for RTPEngine as it handles all media streams.\n\n*Note: RTPEngine-specific metrics require rtpengine_exporter to be installed*"
+      }
+    },
+    {
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{job=\"voip-nodes\", instance=\"media-1\", mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU %",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(irate(node_cpu_seconds_total{job=\"voip-nodes\", instance=\"media-1\", mode=\"system\"}[5m])) * 100",
+          "legendFormat": "System %",
+          "refId": "B"
+        },
+        {
+          "expr": "avg(irate(node_cpu_seconds_total{job=\"voip-nodes\", instance=\"media-1\", mode=\"softirq\"}[5m])) * 100",
+          "legendFormat": "SoftIRQ % (Network)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"voip-nodes\", instance=\"media-1\"} - node_memory_MemAvailable_bytes{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "Used",
+          "refId": "A"
+        },
+        {
+          "expr": "node_memory_MemAvailable_bytes{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "Available",
+          "refId": "B"
+        },
+        {
+          "expr": "node_memory_Buffers_bytes{job=\"voip-nodes\", instance=\"media-1\"} + node_memory_Cached_bytes{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "Buffers+Cache",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Network Throughput (Critical for Media)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "RX (Inbound Media)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "TX (Outbound Media)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"lineWidth": 2, "fillOpacity": 20}}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "UDP Packets (RTP Traffic)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_packets_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "RX Packets/s",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_packets_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "TX Packets/s",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "pps"}},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Network Errors & Drops",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_drop_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "RX Drops",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(node_network_transmit_drop_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "TX Drops",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(node_network_receive_errs_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "RX Errors",
+          "refId": "C"
+        },
+        {
+          "expr": "rate(node_network_transmit_errs_total{job=\"voip-nodes\", instance=\"media-1\", device=\"lima0\"}[5m])",
+          "legendFormat": "TX Errors",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": 0}, {"color": "yellow", "value": 1}, {"color": "red", "value": 10}]}
+        }
+      },
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "UDP Socket Usage",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 28},
+      "targets": [
+        {
+          "expr": "node_sockstat_UDP_inuse{job=\"voip-nodes\", instance=\"media-1\"}",
+          "legendFormat": "UDP Sockets",
+          "refId": "A"
+        }
+      ],
+      "options": {"colorMode": "value", "graphMode": "area"},
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Context Switches",
+      "type": "timeseries",
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 28},
+      "targets": [
+        {
+          "expr": "rate(node_context_switches_total{job=\"voip-nodes\", instance=\"media-1\"}[5m])",
+          "legendFormat": "Context Switches/s",
+          "refId": "A"
+        }
+      ],
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    },
+    {
+      "title": "Interrupts",
+      "type": "timeseries",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 28},
+      "targets": [
+        {
+          "expr": "rate(node_intr_total{job=\"voip-nodes\", instance=\"media-1\"}[5m])",
+          "legendFormat": "Interrupts/s",
+          "refId": "A"
+        }
+      ],
+      "datasource": {"type": "prometheus", "uid": "Prometheus"}
+    }
+  ]
+}
