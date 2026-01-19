@@ -15,7 +15,7 @@ log = "0.4"
 env_logger = "=0.11.8"
 tokio-postgres = "0.7"
 mysql_async = "0.36"
-mongodb = "3.4"
+mongodb = "3.5"
 redis = { version = "1.0", features = ["tokio-comp", "cluster-async"] }
 lapin = "3.7"
 prometheus = "0.14"
