@@ -31,7 +31,7 @@ aio-pika==9.5.8
 python-json-logger==4.0.0
 
 # Observability
-prometheus-client==0.23.1
+prometheus-client==0.24.1
 
 # Testing
 pytest==9.0.2
