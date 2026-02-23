@@ -25,7 +25,7 @@ redis[hiredis]==7.1.0  # fastapi-cache2 0.2.2 requires redis>=4.2.0rc1,<5.0.0
 fastapi-cache2[redis]==0.2.2  # Response caching
 
 # RabbitMQ
-aio-pika==9.5.8
+aio-pika==9.6.1
 
 # Utilities
 python-json-logger==4.0.0
