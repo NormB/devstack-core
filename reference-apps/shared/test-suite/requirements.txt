@@ -9,7 +9,7 @@ pytest-timeout>=2.1.0
 httpx>=0.24.0
 
 # Assertion helpers
-deepdiff>=6.3.0
+deepdiff>=9.0.0
 
 # JSON schema validation
 jsonschema>=4.18.0
