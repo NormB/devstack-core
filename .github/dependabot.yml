@@ -11,6 +11,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      docker-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Monitor GitHub Actions
   - package-ecosystem: "github-actions"
@@ -18,6 +25,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # One PR for every action bump rather than one per action.
+      github-actions:
+        patterns:
+          - "*"
 
   # Python - FastAPI Code-First implementation
   - package-ecosystem: "pip"
@@ -25,6 +37,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      fastapi-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Python - FastAPI API-First implementation
   - package-ecosystem: "pip"
@@ -32,6 +51,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      fastapi-api-first-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Python - Shared test suite
   - package-ecosystem: "pip"
@@ -39,6 +65,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      test-suite-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Go - Gin implementation
   - package-ecosystem: "gomod"
@@ -46,6 +79,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      golang-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Node.js - Express implementation
   - package-ecosystem: "npm"
@@ -53,6 +93,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      nodejs-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Rust - Actix-web implementation
   - package-ecosystem: "cargo"
@@ -60,6 +107,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      rust-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # TypeScript - API-First implementation
   - package-ecosystem: "npm"
@@ -67,3 +121,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      typescript-api-first-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
