@@ -4,7 +4,7 @@
 # Core FastAPI dependencies
 fastapi==0.141.1
 uvicorn[standard]==0.42.0
-pydantic-settings==2.13.1
+pydantic-settings==2.14.2
 slowapi==0.1.9  # Rate limiting
 pybreaker==1.4.1  # Circuit breaker
 
