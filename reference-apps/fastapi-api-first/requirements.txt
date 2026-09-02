@@ -14,7 +14,7 @@ httpx==0.28.1
 # Database drivers (versions must match code-first for compatibility)
 asyncpg==0.31.0
 aiomysql==0.3.2
-cryptography>=41.0.0  # Required for MySQL caching_sha2_password auth
+cryptography>=50.0.1  # Required for MySQL caching_sha2_password auth
 motor==3.7.1
 pymongo==4.16.0
 
