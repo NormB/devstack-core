@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod api_tests {
     use super::super::*;
-    use actix_web::{test, web, App, http::StatusCode};
+    use actix_web::{http::StatusCode, test, web, App};
     use serde_json::json;
 
     // Helper macro to create test app (avoids complex return types)
@@ -16,29 +16,32 @@ mod api_tests {
                 .service(
                     web::scope("/health")
                         .route("/", web::get().to(health_simple))
-                        .route("/all", web::get().to(health_all))
+                        .route("/all", web::get().to(health_all)),
                 )
                 .service(
                     web::scope("/examples/vault")
                         .route("/secret/{service_name}", web::get().to(get_secret))
-                        .route("/secret/{service_name}/{key}", web::get().to(get_secret_key))
+                        .route(
+                            "/secret/{service_name}/{key}",
+                            web::get().to(get_secret_key),
+                        ),
                 )
                 .service(
                     web::scope("/examples/cache")
                         .route("/{key}", web::get().to(get_cache))
                         .route("/{key}", web::post().to(set_cache))
-                        .route("/{key}", web::delete().to(delete_cache))
+                        .route("/{key}", web::delete().to(delete_cache)),
                 )
                 .service(
                     web::scope("/examples/messaging")
-                        .route("/queue/{queue_name}/info", web::get().to(queue_info))
+                        .route("/queue/{queue_name}/info", web::get().to(queue_info)),
                 )
                 .service(
                     web::scope("/redis")
                         .route("/cluster/nodes", web::get().to(redis_cluster_nodes))
                         .route("/cluster/slots", web::get().to(redis_cluster_slots))
                         .route("/cluster/info", web::get().to(redis_cluster_info))
-                        .route("/nodes/{node_name}/info", web::get().to(redis_node_info))
+                        .route("/nodes/{node_name}/info", web::get().to(redis_node_info)),
                 )
         };
     }
@@ -86,8 +89,14 @@ mod api_tests {
         let req = test::TestRequest::get().uri("/").to_request();
         let resp = test::call_service(&app, req).await;
 
-        let content_type = resp.headers().get("content-type").expect("Content-Type header should be present");
-        assert!(content_type.to_str().expect("Content-Type should be valid UTF-8").contains("application/json"));
+        let content_type = resp
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should be present");
+        assert!(content_type
+            .to_str()
+            .expect("Content-Type should be valid UTF-8")
+            .contains("application/json"));
     }
 
     // ============================================================================
@@ -172,7 +181,9 @@ mod api_tests {
     #[actix_web::test]
     async fn test_health_invalid_path_returns_404() {
         let app = test::init_service(create_test_app!()).await;
-        let req = test::TestRequest::get().uri("/health/nonexistent").to_request();
+        let req = test::TestRequest::get()
+            .uri("/health/nonexistent")
+            .to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
@@ -184,8 +195,10 @@ mod api_tests {
         let resp = test::call_service(&app, req).await;
         // Actix-web may return 404 if route doesn't match, or 405 if it does but method is wrong
         assert!(
-            resp.status() == StatusCode::NOT_FOUND || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
-            "Expected 404 or 405, got {}", resp.status()
+            resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
+            "Expected 404 or 405, got {}",
+            resp.status()
         );
     }
 
@@ -204,7 +217,8 @@ mod api_tests {
         // Should return either 200 (success) or 503 (Vault unavailable)
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -219,9 +233,10 @@ mod api_tests {
         // Should return 200, 404, or 503
         assert!(
             resp.status() == StatusCode::OK
-            || resp.status() == StatusCode::NOT_FOUND
-            || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200, 404, or 503, got {}", resp.status()
+                || resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
+            "Expected 200, 404, or 503, got {}",
+            resp.status()
         );
     }
 
@@ -247,8 +262,10 @@ mod api_tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(
-            resp.status() == StatusCode::NOT_FOUND || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
-            "Expected 404 or 405, got {}", resp.status()
+            resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
+            "Expected 404 or 405, got {}",
+            resp.status()
         );
     }
 
@@ -267,9 +284,10 @@ mod api_tests {
         // Should return 200 (found), 404 (not found), or 503 (service unavailable)
         assert!(
             resp.status() == StatusCode::OK
-            || resp.status() == StatusCode::NOT_FOUND
-            || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200, 404, or 503, got {}", resp.status()
+                || resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
+            "Expected 200, 404, or 503, got {}",
+            resp.status()
         );
     }
 
@@ -287,7 +305,8 @@ mod api_tests {
         // Should accept the request (200 or 503 if service unavailable)
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -305,7 +324,8 @@ mod api_tests {
 
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -319,7 +339,8 @@ mod api_tests {
 
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -371,8 +392,8 @@ mod api_tests {
         // Should handle special characters gracefully
         assert!(
             resp.status() == StatusCode::OK
-            || resp.status() == StatusCode::NOT_FOUND
-            || resp.status() == StatusCode::SERVICE_UNAVAILABLE
+                || resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::SERVICE_UNAVAILABLE
         );
     }
 
@@ -407,7 +428,9 @@ mod api_tests {
         let body: serde_json::Value = test::read_body_json(resp).await;
         // When service is available, expect "queue" field; otherwise expect "status" or "error"
         assert!(
-            body.get("queue").is_some() || body.get("status").is_some() || body.get("error").is_some(),
+            body.get("queue").is_some()
+                || body.get("status").is_some()
+                || body.get("error").is_some(),
             "Response should contain queue, status, or error field"
         );
     }
@@ -437,7 +460,8 @@ mod api_tests {
         // Should return 200 or 503 depending on service availability
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -451,7 +475,8 @@ mod api_tests {
 
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -465,7 +490,8 @@ mod api_tests {
 
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -479,7 +505,8 @@ mod api_tests {
 
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -501,8 +528,10 @@ mod api_tests {
             .to_request();
         let resp = test::call_service(&app, req).await;
         assert!(
-            resp.status() == StatusCode::NOT_FOUND || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
-            "Expected 404 or 405, got {}", resp.status()
+            resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
+            "Expected 404 or 405, got {}",
+            resp.status()
         );
     }
 
@@ -526,8 +555,14 @@ mod api_tests {
         let req = test::TestRequest::get().uri("/metrics").to_request();
         let resp = test::call_service(&app, req).await;
 
-        let content_type = resp.headers().get("content-type").expect("Content-Type header should be present");
-        assert!(content_type.to_str().expect("Content-Type should be valid UTF-8").contains("text/plain"));
+        let content_type = resp
+            .headers()
+            .get("content-type")
+            .expect("Content-Type header should be present");
+        assert!(content_type
+            .to_str()
+            .expect("Content-Type should be valid UTF-8")
+            .contains("text/plain"));
     }
 
     #[actix_web::test]
@@ -536,8 +571,10 @@ mod api_tests {
         let req = test::TestRequest::post().uri("/metrics").to_request();
         let resp = test::call_service(&app, req).await;
         assert!(
-            resp.status() == StatusCode::NOT_FOUND || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
-            "Expected 404 or 405, got {}", resp.status()
+            resp.status() == StatusCode::NOT_FOUND
+                || resp.status() == StatusCode::METHOD_NOT_ALLOWED,
+            "Expected 404 or 405, got {}",
+            resp.status()
         );
     }
 
@@ -558,9 +595,7 @@ mod api_tests {
     #[actix_web::test]
     async fn test_deeply_nested_nonexistent_path_returns_404() {
         let app = test::init_service(create_test_app!()).await;
-        let req = test::TestRequest::get()
-            .uri("/a/b/c/d/e/f/g")
-            .to_request();
+        let req = test::TestRequest::get().uri("/a/b/c/d/e/f/g").to_request();
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
@@ -574,7 +609,11 @@ mod api_tests {
         let resp = test::call_service(&app, req).await;
 
         // Should handle long keys (may return service error or success)
-        assert!(resp.status().is_client_error() || resp.status().is_success() || resp.status().is_server_error());
+        assert!(
+            resp.status().is_client_error()
+                || resp.status().is_success()
+                || resp.status().is_server_error()
+        );
     }
 
     #[actix_web::test]
@@ -592,7 +631,8 @@ mod api_tests {
         // Should handle zero TTL gracefully
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -626,7 +666,8 @@ mod api_tests {
         // Should accept empty string as valid value
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 
@@ -641,7 +682,8 @@ mod api_tests {
         // Should handle service names with special characters
         assert!(
             resp.status() == StatusCode::OK || resp.status() == StatusCode::SERVICE_UNAVAILABLE,
-            "Expected 200 or 503, got {}", resp.status()
+            "Expected 200 or 503, got {}",
+            resp.status()
         );
     }
 }

@@ -1,10 +1,10 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder, middleware};
 use actix_cors::Cors;
+use actix_web::{middleware, web, App, HttpResponse, HttpServer, Responder};
+use lazy_static::lazy_static;
+use mysql_async::prelude::Queryable;
+use prometheus::{CounterVec, Encoder, HistogramVec, Opts, Registry, TextEncoder};
 use serde::{Deserialize, Serialize};
 use std::env;
-use lazy_static::lazy_static;
-use prometheus::{Encoder, TextEncoder, HistogramVec, CounterVec, Opts, Registry};
-use mysql_async::prelude::Queryable;
 
 // Response types
 #[derive(Serialize, Deserialize)]
@@ -114,21 +114,25 @@ struct PublishMessageRequest {
 // Prometheus metrics
 lazy_static! {
     static ref REGISTRY: Registry = Registry::new();
-
     static ref HTTP_REQUESTS_TOTAL: CounterVec = CounterVec::new(
         Opts::new("http_requests_total", "Total HTTP requests"),
         &["method", "endpoint", "status"]
-    ).expect("Failed to create HTTP_REQUESTS_TOTAL metric");
-
+    )
+    .expect("Failed to create HTTP_REQUESTS_TOTAL metric");
     static ref HTTP_REQUEST_DURATION: HistogramVec = HistogramVec::new(
         prometheus::HistogramOpts::new("http_request_duration_seconds", "HTTP request latency"),
         &["method", "endpoint"]
-    ).expect("Failed to create HTTP_REQUEST_DURATION metric");
+    )
+    .expect("Failed to create HTTP_REQUEST_DURATION metric");
 }
 
 fn register_metrics() {
-    REGISTRY.register(Box::new(HTTP_REQUESTS_TOTAL.clone())).ok();
-    REGISTRY.register(Box::new(HTTP_REQUEST_DURATION.clone())).ok();
+    REGISTRY
+        .register(Box::new(HTTP_REQUESTS_TOTAL.clone()))
+        .ok();
+    REGISTRY
+        .register(Box::new(HTTP_REQUEST_DURATION.clone()))
+        .ok();
 }
 
 // Helper functions
@@ -206,24 +210,20 @@ async fn health_vault() -> impl Responder {
     let vault_addr = get_env_or("VAULT_ADDR", "http://vault:8200");
 
     match reqwest::get(format!("{}/v1/sys/health", vault_addr)).await {
-        Ok(resp) if resp.status().is_success() => {
-            HttpResponse::Ok().json(HealthResponse {
-                status: "healthy".to_string(),
-                timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                version: None,
-                error: None,
-                details: None,
-            })
-        }
-        _ => {
-            HttpResponse::ServiceUnavailable().json(HealthResponse {
-                status: "unhealthy".to_string(),
-                timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                version: None,
-                error: Some("Vault unavailable".to_string()),
-                details: None,
-            })
-        }
+        Ok(resp) if resp.status().is_success() => HttpResponse::Ok().json(HealthResponse {
+            status: "healthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: None,
+            details: None,
+        }),
+        _ => HttpResponse::ServiceUnavailable().json(HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some("Vault unavailable".to_string()),
+            details: None,
+        }),
     }
 }
 
@@ -236,13 +236,15 @@ async fn health_postgres() -> impl Responder {
 
 async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
     // Get credentials from Vault
-    let creds = get_vault_secret("postgres").await.map_err(|e| HealthResponse {
-        status: "unhealthy".to_string(),
-        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-        version: None,
-        error: Some(format!("Failed to get credentials: {}", e)),
-        details: None,
-    })?;
+    let creds = get_vault_secret("postgres")
+        .await
+        .map_err(|e| HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some(format!("Failed to get credentials: {}", e)),
+            details: None,
+        })?;
 
     let host = get_env_or("POSTGRES_HOST", "postgres");
     let port = get_env_or("POSTGRES_PORT", "5432");
@@ -270,7 +272,13 @@ async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
                     Ok(HealthResponse {
                         status: "healthy".to_string(),
                         timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: Some(version.split(',').next().map(|s| s.to_string()).unwrap_or_else(|| "unknown".to_string())),
+                        version: Some(
+                            version
+                                .split(',')
+                                .next()
+                                .map(|s| s.to_string())
+                                .unwrap_or_else(|| "unknown".to_string()),
+                        ),
                         error: None,
                         details: None,
                     })
@@ -302,13 +310,15 @@ async fn health_mysql() -> impl Responder {
 }
 
 async fn check_mysql_health() -> Result<HealthResponse, HealthResponse> {
-    let creds = get_vault_secret("mysql").await.map_err(|e| HealthResponse {
-        status: "unhealthy".to_string(),
-        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-        version: None,
-        error: Some(format!("Failed to get credentials: {}", e)),
-        details: None,
-    })?;
+    let creds = get_vault_secret("mysql")
+        .await
+        .map_err(|e| HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some(format!("Failed to get credentials: {}", e)),
+            details: None,
+        })?;
 
     let host = get_env_or("MYSQL_HOST", "mysql");
     let port: u16 = get_env_or("MYSQL_PORT", "3306").parse().unwrap_or(3306);
@@ -325,40 +335,38 @@ async fn check_mysql_health() -> Result<HealthResponse, HealthResponse> {
         .db_name(Some(database));
 
     match mysql_async::Conn::new(opts).await {
-        Ok(mut conn) => {
-            match conn.query_first::<String, _>("SELECT VERSION()").await {
-                Ok(Some(version)) => {
-                    let _ = conn.disconnect().await;
-                    Ok(HealthResponse {
-                        status: "healthy".to_string(),
-                        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: Some(version),
-                        error: None,
-                        details: None,
-                    })
-                }
-                Ok(None) => {
-                    let _ = conn.disconnect().await;
-                    Err(HealthResponse {
-                        status: "unhealthy".to_string(),
-                        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: None,
-                        error: Some("No version returned".to_string()),
-                        details: None,
-                    })
-                }
-                Err(e) => {
-                    let _ = conn.disconnect().await;
-                    Err(HealthResponse {
-                        status: "unhealthy".to_string(),
-                        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: None,
-                        error: Some(format!("Query failed: {}", e)),
-                        details: None,
-                    })
-                }
+        Ok(mut conn) => match conn.query_first::<String, _>("SELECT VERSION()").await {
+            Ok(Some(version)) => {
+                let _ = conn.disconnect().await;
+                Ok(HealthResponse {
+                    status: "healthy".to_string(),
+                    timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                    version: Some(version),
+                    error: None,
+                    details: None,
+                })
             }
-        }
+            Ok(None) => {
+                let _ = conn.disconnect().await;
+                Err(HealthResponse {
+                    status: "unhealthy".to_string(),
+                    timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                    version: None,
+                    error: Some("No version returned".to_string()),
+                    details: None,
+                })
+            }
+            Err(e) => {
+                let _ = conn.disconnect().await;
+                Err(HealthResponse {
+                    status: "unhealthy".to_string(),
+                    timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                    version: None,
+                    error: Some(format!("Query failed: {}", e)),
+                    details: None,
+                })
+            }
+        },
         Err(e) => Err(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
@@ -377,13 +385,15 @@ async fn health_mongodb() -> impl Responder {
 }
 
 async fn check_mongodb_health() -> Result<HealthResponse, HealthResponse> {
-    let creds = get_vault_secret("mongodb").await.map_err(|e| HealthResponse {
-        status: "unhealthy".to_string(),
-        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-        version: None,
-        error: Some(format!("Failed to get credentials: {}", e)),
-        details: None,
-    })?;
+    let creds = get_vault_secret("mongodb")
+        .await
+        .map_err(|e| HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some(format!("Failed to get credentials: {}", e)),
+            details: None,
+        })?;
 
     let host = get_env_or("MONGODB_HOST", "mongodb");
     let port = get_env_or("MONGODB_PORT", "27017");
@@ -391,20 +401,25 @@ async fn check_mongodb_health() -> Result<HealthResponse, HealthResponse> {
     let user = creds["user"].as_str().unwrap_or("dev_admin");
     let password = creds["password"].as_str().unwrap_or("changeme");
 
-    let uri = format!("mongodb://{}:{}@{}:{}/?authSource=admin", user, password, host, port);
+    let uri = format!(
+        "mongodb://{}:{}@{}:{}/?authSource=admin",
+        user, password, host, port
+    );
 
     match mongodb::Client::with_uri_str(&uri).await {
         Ok(client) => {
-            match client.database("admin").run_command(mongodb::bson::doc! { "ping": 1 }).await {
-                Ok(_) => {
-                    Ok(HealthResponse {
-                        status: "healthy".to_string(),
-                        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                        version: Some("MongoDB".to_string()),
-                        error: None,
-                        details: None,
-                    })
-                }
+            match client
+                .database("admin")
+                .run_command(mongodb::bson::doc! { "ping": 1 })
+                .await
+            {
+                Ok(_) => Ok(HealthResponse {
+                    status: "healthy".to_string(),
+                    timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                    version: Some("MongoDB".to_string()),
+                    error: None,
+                    details: None,
+                }),
                 Err(e) => Err(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
@@ -432,13 +447,15 @@ async fn health_redis() -> impl Responder {
 }
 
 async fn check_redis_health() -> Result<HealthResponse, HealthResponse> {
-    let creds = get_vault_secret("redis-1").await.map_err(|e| HealthResponse {
-        status: "unhealthy".to_string(),
-        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-        version: None,
-        error: Some(format!("Failed to get credentials: {}", e)),
-        details: None,
-    })?;
+    let creds = get_vault_secret("redis-1")
+        .await
+        .map_err(|e| HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some(format!("Failed to get credentials: {}", e)),
+            details: None,
+        })?;
 
     let host = get_env_or("REDIS_HOST", "redis-1");
     let port = get_env_or("REDIS_PORT", "6379");
@@ -447,35 +464,31 @@ async fn check_redis_health() -> Result<HealthResponse, HealthResponse> {
     let url = format!("redis://:{}@{}:{}", password, host, port);
 
     match redis::Client::open(url) {
-        Ok(client) => {
-            match client.get_multiplexed_async_connection().await {
-                Ok(mut conn) => {
-                    match redis::cmd("PING").query_async::<String>(&mut conn).await {
-                        Ok(_) => Ok(HealthResponse {
-                            status: "healthy".to_string(),
-                            timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                            version: None,
-                            error: None,
-                            details: None,
-                        }),
-                        Err(e) => Err(HealthResponse {
-                            status: "unhealthy".to_string(),
-                            timestamp: Some(chrono::Utc::now().to_rfc3339()),
-                            version: None,
-                            error: Some(format!("PING failed: {}", e)),
-                            details: None,
-                        }),
-                    }
-                }
+        Ok(client) => match client.get_multiplexed_async_connection().await {
+            Ok(mut conn) => match redis::cmd("PING").query_async::<String>(&mut conn).await {
+                Ok(_) => Ok(HealthResponse {
+                    status: "healthy".to_string(),
+                    timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                    version: None,
+                    error: None,
+                    details: None,
+                }),
                 Err(e) => Err(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
-                    error: Some(format!("Connection failed: {}", e)),
+                    error: Some(format!("PING failed: {}", e)),
                     details: None,
                 }),
-            }
-        }
+            },
+            Err(e) => Err(HealthResponse {
+                status: "unhealthy".to_string(),
+                timestamp: Some(chrono::Utc::now().to_rfc3339()),
+                version: None,
+                error: Some(format!("Connection failed: {}", e)),
+                details: None,
+            }),
+        },
         Err(e) => Err(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
@@ -494,13 +507,15 @@ async fn health_rabbitmq() -> impl Responder {
 }
 
 async fn check_rabbitmq_health() -> Result<HealthResponse, HealthResponse> {
-    let creds = get_vault_secret("rabbitmq").await.map_err(|e| HealthResponse {
-        status: "unhealthy".to_string(),
-        timestamp: Some(chrono::Utc::now().to_rfc3339()),
-        version: None,
-        error: Some(format!("Failed to get credentials: {}", e)),
-        details: None,
-    })?;
+    let creds = get_vault_secret("rabbitmq")
+        .await
+        .map_err(|e| HealthResponse {
+            status: "unhealthy".to_string(),
+            timestamp: Some(chrono::Utc::now().to_rfc3339()),
+            version: None,
+            error: Some(format!("Failed to get credentials: {}", e)),
+            details: None,
+        })?;
 
     let host = get_env_or("RABBITMQ_HOST", "rabbitmq");
     let port = get_env_or("RABBITMQ_PORT", "5672");
@@ -512,7 +527,7 @@ async fn check_rabbitmq_health() -> Result<HealthResponse, HealthResponse> {
 
     match lapin::Connection::connect(&url, lapin::ConnectionProperties::default()).await {
         Ok(conn) => {
-            let _ = conn.close(0, "Health check complete").await;
+            let _ = conn.close(0, "Health check complete".into()).await;
             Ok(HealthResponse {
                 status: "healthy".to_string(),
                 timestamp: Some(chrono::Utc::now().to_rfc3339()),
@@ -535,48 +550,94 @@ async fn health_all() -> impl Responder {
     let mut services = serde_json::Map::new();
 
     // Check Vault
-    match reqwest::get(format!("{}/v1/sys/health", get_env_or("VAULT_ADDR", "http://vault:8200"))).await {
+    match reqwest::get(format!(
+        "{}/v1/sys/health",
+        get_env_or("VAULT_ADDR", "http://vault:8200")
+    ))
+    .await
+    {
         Ok(resp) if resp.status().is_success() => {
-            services.insert("vault".to_string(), serde_json::json!({"status": "healthy"}));
+            services.insert(
+                "vault".to_string(),
+                serde_json::json!({"status": "healthy"}),
+            );
         }
         _ => {
-            services.insert("vault".to_string(), serde_json::json!({"status": "unhealthy"}));
+            services.insert(
+                "vault".to_string(),
+                serde_json::json!({"status": "unhealthy"}),
+            );
         }
     }
 
     // Check PostgreSQL
-    services.insert("postgres".to_string(), match check_postgres_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-    });
+    services.insert(
+        "postgres".to_string(),
+        match check_postgres_health().await {
+            Ok(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+            Err(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+        },
+    );
 
     // Check MySQL
-    services.insert("mysql".to_string(), match check_mysql_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-    });
+    services.insert(
+        "mysql".to_string(),
+        match check_mysql_health().await {
+            Ok(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+            Err(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+        },
+    );
 
     // Check MongoDB
-    services.insert("mongodb".to_string(), match check_mongodb_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-    });
+    services.insert(
+        "mongodb".to_string(),
+        match check_mongodb_health().await {
+            Ok(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+            Err(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+        },
+    );
 
     // Check Redis
-    services.insert("redis".to_string(), match check_redis_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-    });
+    services.insert(
+        "redis".to_string(),
+        match check_redis_health().await {
+            Ok(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+            Err(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+        },
+    );
 
     // Check RabbitMQ
-    services.insert("rabbitmq".to_string(), match check_rabbitmq_health().await {
-        Ok(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-        Err(h) => serde_json::to_value(h).unwrap_or_else(|_| serde_json::json!({"status": "error", "error": "Serialization failed"})),
-    });
+    services.insert(
+        "rabbitmq".to_string(),
+        match check_rabbitmq_health().await {
+            Ok(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+            Err(h) => serde_json::to_value(h).unwrap_or_else(
+                |_| serde_json::json!({"status": "error", "error": "Serialization failed"}),
+            ),
+        },
+    );
 
-    let all_healthy = services.values().all(|v| {
-        v.get("status").and_then(|s| s.as_str()) == Some("healthy")
-    });
+    let all_healthy = services
+        .values()
+        .all(|v| v.get("status").and_then(|s| s.as_str()) == Some("healthy"));
 
     let response = AllHealthResponse {
         status: if all_healthy { "healthy" } else { "degraded" }.to_string(),
@@ -646,7 +707,10 @@ async fn postgres_query() -> impl Responder {
             let password = creds["password"].as_str().unwrap_or("");
             let database = creds["database"].as_str().unwrap_or("devdb");
 
-            let conn_str = format!("host={} port={} user={} password={} dbname={}", host, port, user, password, database);
+            let conn_str = format!(
+                "host={} port={} user={} password={} dbname={}",
+                host, port, user, password, database
+            );
 
             match tokio_postgres::connect(&conn_str, tokio_postgres::NoTls).await {
                 Ok((client, connection)) => {
@@ -656,7 +720,13 @@ async fn postgres_query() -> impl Responder {
                         }
                     });
 
-                    match client.query_one("SELECT NOW()::text, 'Hello from PostgreSQL!' as message", &[]).await {
+                    match client
+                        .query_one(
+                            "SELECT NOW()::text, 'Hello from PostgreSQL!' as message",
+                            &[],
+                        )
+                        .await
+                    {
                         Ok(row) => {
                             let timestamp: String = row.get(0);
                             let message: String = row.get(1);
@@ -714,7 +784,12 @@ async fn mysql_query() -> impl Responder {
 
             match mysql_async::Conn::new(opts).await {
                 Ok(mut conn) => {
-                    match conn.query_first::<(String, String), _>("SELECT NOW(), 'Hello from MySQL!' as message").await {
+                    match conn
+                        .query_first::<(String, String), _>(
+                            "SELECT NOW(), 'Hello from MySQL!' as message",
+                        )
+                        .await
+                    {
                         Ok(Some((timestamp, message))) => {
                             let _ = conn.disconnect().await;
                             HttpResponse::Ok().json(DatabaseQueryResponse {
@@ -772,7 +847,10 @@ async fn mongodb_query() -> impl Responder {
             let user = creds["user"].as_str().unwrap_or("devuser");
             let password = creds["password"].as_str().unwrap_or("");
 
-            let uri = format!("mongodb://{}:{}@{}:{}/?authSource=admin", user, password, host, port);
+            let uri = format!(
+                "mongodb://{}:{}@{}:{}/?authSource=admin",
+                user, password, host, port
+            );
 
             match mongodb::Client::with_uri_str(&uri).await {
                 Ok(client) => {
@@ -785,17 +863,15 @@ async fn mongodb_query() -> impl Responder {
                     };
 
                     match collection.insert_one(doc.clone()).await {
-                        Ok(_) => {
-                            HttpResponse::Ok().json(DatabaseQueryResponse {
-                                status: "success".to_string(),
-                                database: "MongoDB".to_string(),
-                                result: Some(serde_json::json!({
-                                    "message": doc.get_str("message").unwrap_or("Unknown message"),
-                                    "timestamp": doc.get_str("timestamp").unwrap_or("Unknown timestamp")
-                                })),
-                                error: None,
-                            })
-                        }
+                        Ok(_) => HttpResponse::Ok().json(DatabaseQueryResponse {
+                            status: "success".to_string(),
+                            database: "MongoDB".to_string(),
+                            result: Some(serde_json::json!({
+                                "message": doc.get_str("message").unwrap_or("Unknown message"),
+                                "timestamp": doc.get_str("timestamp").unwrap_or("Unknown timestamp")
+                            })),
+                            error: None,
+                        }),
                         Err(e) => HttpResponse::InternalServerError().json(DatabaseQueryResponse {
                             status: "error".to_string(),
                             database: "MongoDB".to_string(),
@@ -834,38 +910,40 @@ async fn get_cache(path: web::Path<String>) -> impl Responder {
             let url = format!("redis://:{}@{}:{}", password, host, port);
 
             match redis::Client::open(url) {
-                Ok(client) => {
-                    match client.get_multiplexed_async_connection().await {
-                        Ok(mut conn) => {
-                            match redis::cmd("GET").arg(&key).query_async::<Option<String>>(&mut conn).await {
-                                Ok(Some(value)) => HttpResponse::Ok().json(CacheResponse {
-                                    status: "found".to_string(),
-                                    key,
-                                    value: Some(value),
-                                    error: None,
-                                }),
-                                Ok(None) => HttpResponse::NotFound().json(CacheResponse {
-                                    status: "not_found".to_string(),
-                                    key,
-                                    value: None,
-                                    error: None,
-                                }),
-                                Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                                    status: "error".to_string(),
-                                    key,
-                                    value: None,
-                                    error: Some(format!("GET failed: {}", e)),
-                                }),
-                            }
+                Ok(client) => match client.get_multiplexed_async_connection().await {
+                    Ok(mut conn) => {
+                        match redis::cmd("GET")
+                            .arg(&key)
+                            .query_async::<Option<String>>(&mut conn)
+                            .await
+                        {
+                            Ok(Some(value)) => HttpResponse::Ok().json(CacheResponse {
+                                status: "found".to_string(),
+                                key,
+                                value: Some(value),
+                                error: None,
+                            }),
+                            Ok(None) => HttpResponse::NotFound().json(CacheResponse {
+                                status: "not_found".to_string(),
+                                key,
+                                value: None,
+                                error: None,
+                            }),
+                            Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                                status: "error".to_string(),
+                                key,
+                                value: None,
+                                error: Some(format!("GET failed: {}", e)),
+                            }),
                         }
-                        Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                            status: "error".to_string(),
-                            key,
-                            value: None,
-                            error: Some(format!("Connection failed: {}", e)),
-                        }),
                     }
-                }
+                    Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                        status: "error".to_string(),
+                        key,
+                        value: None,
+                        error: Some(format!("Connection failed: {}", e)),
+                    }),
+                },
                 Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
                     status: "error".to_string(),
                     key,
@@ -883,7 +961,10 @@ async fn get_cache(path: web::Path<String>) -> impl Responder {
     }
 }
 
-async fn set_cache(path: web::Path<String>, req_body: web::Json<CacheSetRequest>) -> impl Responder {
+async fn set_cache(
+    path: web::Path<String>,
+    req_body: web::Json<CacheSetRequest>,
+) -> impl Responder {
     let key = path.into_inner();
     let value = &req_body.value;
     let ttl = req_body.ttl;
@@ -897,38 +978,45 @@ async fn set_cache(path: web::Path<String>, req_body: web::Json<CacheSetRequest>
             let url = format!("redis://:{}@{}:{}", password, host, port);
 
             match redis::Client::open(url) {
-                Ok(client) => {
-                    match client.get_multiplexed_async_connection().await {
-                        Ok(mut conn) => {
-                            let result = if let Some(ttl_seconds) = ttl {
-                                redis::cmd("SETEX").arg(&key).arg(ttl_seconds).arg(value).query_async::<String>(&mut conn).await
-                            } else {
-                                redis::cmd("SET").arg(&key).arg(value).query_async::<String>(&mut conn).await
-                            };
+                Ok(client) => match client.get_multiplexed_async_connection().await {
+                    Ok(mut conn) => {
+                        let result = if let Some(ttl_seconds) = ttl {
+                            redis::cmd("SETEX")
+                                .arg(&key)
+                                .arg(ttl_seconds)
+                                .arg(value)
+                                .query_async::<String>(&mut conn)
+                                .await
+                        } else {
+                            redis::cmd("SET")
+                                .arg(&key)
+                                .arg(value)
+                                .query_async::<String>(&mut conn)
+                                .await
+                        };
 
-                            match result {
-                                Ok(_) => HttpResponse::Ok().json(CacheResponse {
-                                    status: "stored".to_string(),
-                                    key,
-                                    value: Some(value.clone()),
-                                    error: None,
-                                }),
-                                Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                                    status: "error".to_string(),
-                                    key,
-                                    value: None,
-                                    error: Some(format!("SET failed: {}", e)),
-                                }),
-                            }
+                        match result {
+                            Ok(_) => HttpResponse::Ok().json(CacheResponse {
+                                status: "stored".to_string(),
+                                key,
+                                value: Some(value.clone()),
+                                error: None,
+                            }),
+                            Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                                status: "error".to_string(),
+                                key,
+                                value: None,
+                                error: Some(format!("SET failed: {}", e)),
+                            }),
                         }
-                        Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                            status: "error".to_string(),
-                            key,
-                            value: None,
-                            error: Some(format!("Connection failed: {}", e)),
-                        }),
                     }
-                }
+                    Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                        status: "error".to_string(),
+                        key,
+                        value: None,
+                        error: Some(format!("Connection failed: {}", e)),
+                    }),
+                },
                 Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
                     status: "error".to_string(),
                     key,
@@ -958,32 +1046,34 @@ async fn delete_cache(path: web::Path<String>) -> impl Responder {
             let url = format!("redis://:{}@{}:{}", password, host, port);
 
             match redis::Client::open(url) {
-                Ok(client) => {
-                    match client.get_multiplexed_async_connection().await {
-                        Ok(mut conn) => {
-                            match redis::cmd("DEL").arg(&key).query_async::<i32>(&mut conn).await {
-                                Ok(count) => HttpResponse::Ok().json(CacheResponse {
-                                    status: if count > 0 { "deleted" } else { "not_found" }.to_string(),
-                                    key,
-                                    value: None,
-                                    error: None,
-                                }),
-                                Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                                    status: "error".to_string(),
-                                    key,
-                                    value: None,
-                                    error: Some(format!("DEL failed: {}", e)),
-                                }),
-                            }
+                Ok(client) => match client.get_multiplexed_async_connection().await {
+                    Ok(mut conn) => {
+                        match redis::cmd("DEL")
+                            .arg(&key)
+                            .query_async::<i32>(&mut conn)
+                            .await
+                        {
+                            Ok(count) => HttpResponse::Ok().json(CacheResponse {
+                                status: if count > 0 { "deleted" } else { "not_found" }.to_string(),
+                                key,
+                                value: None,
+                                error: None,
+                            }),
+                            Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                                status: "error".to_string(),
+                                key,
+                                value: None,
+                                error: Some(format!("DEL failed: {}", e)),
+                            }),
                         }
-                        Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
-                            status: "error".to_string(),
-                            key,
-                            value: None,
-                            error: Some(format!("Connection failed: {}", e)),
-                        }),
                     }
-                }
+                    Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
+                        status: "error".to_string(),
+                        key,
+                        value: None,
+                        error: Some(format!("Connection failed: {}", e)),
+                    }),
+                },
                 Err(e) => HttpResponse::InternalServerError().json(CacheResponse {
                     status: "error".to_string(),
                     key,
@@ -1002,7 +1092,10 @@ async fn delete_cache(path: web::Path<String>) -> impl Responder {
 }
 
 // Messaging example handlers
-async fn publish_message(path: web::Path<String>, req_body: web::Json<PublishMessageRequest>) -> impl Responder {
+async fn publish_message(
+    path: web::Path<String>,
+    req_body: web::Json<PublishMessageRequest>,
+) -> impl Responder {
     let queue = path.into_inner();
     let message = &req_body.message;
 
@@ -1021,22 +1114,28 @@ async fn publish_message(path: web::Path<String>, req_body: web::Json<PublishMes
                     match conn.create_channel().await {
                         Ok(channel) => {
                             // Declare queue
-                            match channel.queue_declare(
-                                &queue,
-                                lapin::options::QueueDeclareOptions::default(),
-                                lapin::types::FieldTable::default(),
-                            ).await {
+                            match channel
+                                .queue_declare(
+                                    queue.as_str().into(),
+                                    lapin::options::QueueDeclareOptions::default(),
+                                    lapin::types::FieldTable::default(),
+                                )
+                                .await
+                            {
                                 Ok(_) => {
                                     // Publish message
-                                    match channel.basic_publish(
-                                        "",
-                                        &queue,
-                                        lapin::options::BasicPublishOptions::default(),
-                                        message.as_bytes(),
-                                        lapin::BasicProperties::default(),
-                                    ).await {
+                                    match channel
+                                        .basic_publish(
+                                            "".into(),
+                                            queue.as_str().into(),
+                                            lapin::options::BasicPublishOptions::default(),
+                                            message.as_bytes(),
+                                            lapin::BasicProperties::default(),
+                                        )
+                                        .await
+                                    {
                                         Ok(_) => {
-                                            let _ = conn.close(0, "Done").await;
+                                            let _ = conn.close(0, "Done".into()).await;
                                             HttpResponse::Ok().json(MessagingResponse {
                                                 status: "published".to_string(),
                                                 message: Some(message.clone()),
@@ -1045,18 +1144,20 @@ async fn publish_message(path: web::Path<String>, req_body: web::Json<PublishMes
                                             })
                                         }
                                         Err(e) => {
-                                            let _ = conn.close(0, "Error").await;
-                                            HttpResponse::InternalServerError().json(MessagingResponse {
-                                                status: "error".to_string(),
-                                                message: None,
-                                                queue: Some(queue),
-                                                error: Some(format!("Publish failed: {}", e)),
-                                            })
+                                            let _ = conn.close(0, "Error".into()).await;
+                                            HttpResponse::InternalServerError().json(
+                                                MessagingResponse {
+                                                    status: "error".to_string(),
+                                                    message: None,
+                                                    queue: Some(queue),
+                                                    error: Some(format!("Publish failed: {}", e)),
+                                                },
+                                            )
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    let _ = conn.close(0, "Error").await;
+                                    let _ = conn.close(0, "Error".into()).await;
                                     HttpResponse::InternalServerError().json(MessagingResponse {
                                         status: "error".to_string(),
                                         message: None,
@@ -1067,7 +1168,7 @@ async fn publish_message(path: web::Path<String>, req_body: web::Json<PublishMes
                             }
                         }
                         Err(e) => {
-                            let _ = conn.close(0, "Error").await;
+                            let _ = conn.close(0, "Error".into()).await;
                             HttpResponse::InternalServerError().json(MessagingResponse {
                                 status: "error".to_string(),
                                 message: None,
@@ -1112,18 +1213,24 @@ async fn queue_info(path: web::Path<String>) -> impl Responder {
                     match conn.create_channel().await {
                         Ok(channel) => {
                             // Use passive=true to check if queue exists without creating it
-                            let mut options = lapin::options::QueueDeclareOptions::default();
-                            options.passive = true;
+                            // passive: check the queue exists without creating it.
+                            let options = lapin::options::QueueDeclareOptions {
+                                passive: true,
+                                ..Default::default()
+                            };
 
-                            match channel.queue_declare(
-                                &queue_name,
-                                options,
-                                lapin::types::FieldTable::default(),
-                            ).await {
+                            match channel
+                                .queue_declare(
+                                    queue_name.as_str().into(),
+                                    options,
+                                    lapin::types::FieldTable::default(),
+                                )
+                                .await
+                            {
                                 Ok(queue) => {
                                     let message_count = queue.message_count();
                                     let consumer_count = queue.consumer_count();
-                                    let _ = conn.close(0, "Done").await;
+                                    let _ = conn.close(0, "Done".into()).await;
                                     HttpResponse::Ok().json(serde_json::json!({
                                         "queue": queue_name,
                                         "exists": true,
@@ -1133,7 +1240,7 @@ async fn queue_info(path: web::Path<String>) -> impl Responder {
                                 }
                                 Err(_) => {
                                     // Queue doesn't exist (passive declare failed)
-                                    let _ = conn.close(0, "Done").await;
+                                    let _ = conn.close(0, "Done".into()).await;
                                     HttpResponse::Ok().json(serde_json::json!({
                                         "queue": queue_name,
                                         "exists": false,
@@ -1144,7 +1251,7 @@ async fn queue_info(path: web::Path<String>) -> impl Responder {
                             }
                         }
                         Err(e) => {
-                            let _ = conn.close(0, "Error").await;
+                            let _ = conn.close(0, "Error".into()).await;
                             HttpResponse::InternalServerError().json(serde_json::json!({
                                 "error": format!("Channel creation failed: {}", e)
                             }))
@@ -1176,7 +1283,11 @@ async fn redis_cluster_nodes() -> impl Responder {
                 Ok(client) => {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
-                            match redis::cmd("CLUSTER").arg("NODES").query_async::<String>(&mut conn).await {
+                            match redis::cmd("CLUSTER")
+                                .arg("NODES")
+                                .query_async::<String>(&mut conn)
+                                .await
+                            {
                                 Ok(nodes_raw) => {
                                     // Parse CLUSTER NODES output
                                     let mut nodes = Vec::new();
@@ -1192,7 +1303,11 @@ async fn redis_cluster_nodes() -> impl Responder {
                                         let node_id = parts[0];
                                         let address = parts[1];
                                         let flags = parts[2];
-                                        let master_id = if parts[3] == "-" { None } else { Some(parts[3]) };
+                                        let master_id = if parts[3] == "-" {
+                                            None
+                                        } else {
+                                            Some(parts[3])
+                                        };
                                         let ping_sent = parts[4];
                                         let pong_recv = parts[5];
                                         let config_epoch = parts[6];
@@ -1201,28 +1316,36 @@ async fn redis_cluster_nodes() -> impl Responder {
                                         // Parse slots (if any)
                                         let mut slot_ranges = Vec::new();
                                         let mut slots_count = 0;
-                                        for i in 8..parts.len() {
-                                            let slot_info = parts[i];
+                                        for slot_info in parts.iter().skip(8) {
+                                            let slot_info = *slot_info;
                                             if slot_info.starts_with('[') {
                                                 continue; // Skip migrating slots
                                             }
                                             if slot_info.contains('-') {
-                                                let range_parts: Vec<&str> = slot_info.split('-').collect();
+                                                let range_parts: Vec<&str> =
+                                                    slot_info.split('-').collect();
                                                 if range_parts.len() == 2 {
-                                                    if let (Ok(start), Ok(end)) = (range_parts[0].parse::<i32>(), range_parts[1].parse::<i32>()) {
+                                                    if let (Ok(start), Ok(end)) = (
+                                                        range_parts[0].parse::<i32>(),
+                                                        range_parts[1].parse::<i32>(),
+                                                    ) {
                                                         slot_ranges.push(serde_json::json!({"start": start, "end": end}));
                                                         slots_count += (end - start + 1) as usize;
                                                     }
                                                 }
                                             } else if let Ok(slot) = slot_info.parse::<i32>() {
-                                                slot_ranges.push(serde_json::json!({"start": slot, "end": slot}));
+                                                slot_ranges.push(
+                                                    serde_json::json!({"start": slot, "end": slot}),
+                                                );
                                                 slots_count += 1;
                                             }
                                         }
 
                                         // Parse address (remove cluster bus port)
-                                        let host_port = address.split('@').next().unwrap_or(address);
-                                        let addr_parts: Vec<&str> = host_port.rsplitn(2, ':').collect();
+                                        let host_port =
+                                            address.split('@').next().unwrap_or(address);
+                                        let addr_parts: Vec<&str> =
+                                            host_port.rsplitn(2, ':').collect();
                                         let (port_str, host_str) = if addr_parts.len() == 2 {
                                             (addr_parts[0], addr_parts[1])
                                         } else {
@@ -1260,10 +1383,12 @@ async fn redis_cluster_nodes() -> impl Responder {
                                         "nodes": nodes
                                     }))
                                 }
-                                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
-                                    "status": "error",
-                                    "error": format!("CLUSTER NODES failed: {}", e)
-                                })),
+                                Err(e) => {
+                                    HttpResponse::InternalServerError().json(serde_json::json!({
+                                        "status": "error",
+                                        "error": format!("CLUSTER NODES failed: {}", e)
+                                    }))
+                                }
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
@@ -1298,7 +1423,11 @@ async fn redis_cluster_slots() -> impl Responder {
                 Ok(client) => {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
-                            match redis::cmd("CLUSTER").arg("SLOTS").query_async::<redis::Value>(&mut conn).await {
+                            match redis::cmd("CLUSTER")
+                                .arg("SLOTS")
+                                .query_async::<redis::Value>(&mut conn)
+                                .await
+                            {
                                 Ok(slots) => {
                                     // Parse CLUSTER SLOTS response
                                     let mut slot_distribution = Vec::new();
@@ -1319,51 +1448,78 @@ async fn redis_cluster_slots() -> impl Responder {
                                                     };
 
                                                     // Extract master info
-                                                    let master = if let redis::Value::Array(master_info) = &parts[2] {
-                                                        if master_info.len() >= 3 {
-                                                            let host = match &master_info[0] {
-                                                                redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
-                                                                redis::Value::SimpleString(s) => s.clone(),
-                                                                _ => "".to_string(),
-                                                            };
-                                                            let port = match &master_info[1] {
-                                                                redis::Value::Int(n) => *n,
-                                                                _ => 0,
-                                                            };
-                                                            let node_id = match &master_info[2] {
-                                                                redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
-                                                                redis::Value::SimpleString(s) => s.clone(),
-                                                                _ => "".to_string(),
-                                                            };
-                                                            serde_json::json!({
-                                                                "host": host,
-                                                                "port": port,
-                                                                "node_id": node_id
-                                                            })
+                                                    let master =
+                                                        if let redis::Value::Array(master_info) =
+                                                            &parts[2]
+                                                        {
+                                                            if master_info.len() >= 3 {
+                                                                let host = match &master_info[0] {
+                                                                    redis::Value::BulkString(b) => {
+                                                                        String::from_utf8_lossy(b)
+                                                                            .to_string()
+                                                                    }
+                                                                    redis::Value::SimpleString(
+                                                                        s,
+                                                                    ) => s.clone(),
+                                                                    _ => "".to_string(),
+                                                                };
+                                                                let port = match &master_info[1] {
+                                                                    redis::Value::Int(n) => *n,
+                                                                    _ => 0,
+                                                                };
+                                                                let node_id = match &master_info[2]
+                                                                {
+                                                                    redis::Value::BulkString(b) => {
+                                                                        String::from_utf8_lossy(b)
+                                                                            .to_string()
+                                                                    }
+                                                                    redis::Value::SimpleString(
+                                                                        s,
+                                                                    ) => s.clone(),
+                                                                    _ => "".to_string(),
+                                                                };
+                                                                serde_json::json!({
+                                                                    "host": host,
+                                                                    "port": port,
+                                                                    "node_id": node_id
+                                                                })
+                                                            } else {
+                                                                serde_json::json!({})
+                                                            }
                                                         } else {
                                                             serde_json::json!({})
-                                                        }
-                                                    } else {
-                                                        serde_json::json!({})
-                                                    };
+                                                        };
 
                                                     // Extract replicas (if any)
                                                     let mut replicas = Vec::new();
-                                                    for i in 3..parts.len() {
-                                                        if let redis::Value::Array(replica_info) = &parts[i] {
+                                                    for part in parts.iter().skip(3) {
+                                                        if let redis::Value::Array(replica_info) =
+                                                            part
+                                                        {
                                                             if replica_info.len() >= 3 {
                                                                 let host = match &replica_info[0] {
-                                                                    redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
-                                                                    redis::Value::SimpleString(s) => s.clone(),
+                                                                    redis::Value::BulkString(b) => {
+                                                                        String::from_utf8_lossy(b)
+                                                                            .to_string()
+                                                                    }
+                                                                    redis::Value::SimpleString(
+                                                                        s,
+                                                                    ) => s.clone(),
                                                                     _ => "".to_string(),
                                                                 };
                                                                 let port = match &replica_info[1] {
                                                                     redis::Value::Int(n) => *n,
                                                                     _ => 0,
                                                                 };
-                                                                let node_id = match &replica_info[2] {
-                                                                    redis::Value::BulkString(b) => String::from_utf8_lossy(b).to_string(),
-                                                                    redis::Value::SimpleString(s) => s.clone(),
+                                                                let node_id = match &replica_info[2]
+                                                                {
+                                                                    redis::Value::BulkString(b) => {
+                                                                        String::from_utf8_lossy(b)
+                                                                            .to_string()
+                                                                    }
+                                                                    redis::Value::SimpleString(
+                                                                        s,
+                                                                    ) => s.clone(),
                                                                     _ => "".to_string(),
                                                                 };
                                                                 replicas.push(serde_json::json!({
@@ -1391,7 +1547,8 @@ async fn redis_cluster_slots() -> impl Responder {
                                     }
 
                                     let coverage = if total_slots > 0 {
-                                        ((total_slots as f64 / 16384.0) * 100.0 * 100.0).round() / 100.0
+                                        ((total_slots as f64 / 16384.0) * 100.0 * 100.0).round()
+                                            / 100.0
                                     } else {
                                         0.0
                                     };
@@ -1404,10 +1561,12 @@ async fn redis_cluster_slots() -> impl Responder {
                                         "slot_distribution": slot_distribution
                                     }))
                                 }
-                                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
-                                    "status": "error",
-                                    "error": format!("CLUSTER SLOTS failed: {}", e)
-                                })),
+                                Err(e) => {
+                                    HttpResponse::InternalServerError().json(serde_json::json!({
+                                        "status": "error",
+                                        "error": format!("CLUSTER SLOTS failed: {}", e)
+                                    }))
+                                }
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
@@ -1442,7 +1601,11 @@ async fn redis_cluster_info() -> impl Responder {
                 Ok(client) => {
                     match client.get_multiplexed_async_connection().await {
                         Ok(mut conn) => {
-                            match redis::cmd("CLUSTER").arg("INFO").query_async::<String>(&mut conn).await {
+                            match redis::cmd("CLUSTER")
+                                .arg("INFO")
+                                .query_async::<String>(&mut conn)
+                                .await
+                            {
                                 Ok(info_raw) => {
                                     // Parse CLUSTER INFO output into key:value pairs
                                     let mut cluster_info = serde_json::Map::new();
@@ -1450,9 +1613,15 @@ async fn redis_cluster_info() -> impl Responder {
                                         if let Some((key, value)) = line.trim().split_once(':') {
                                             // Try to parse as integer first
                                             if let Ok(int_val) = value.parse::<i64>() {
-                                                cluster_info.insert(key.to_string(), serde_json::json!(int_val));
+                                                cluster_info.insert(
+                                                    key.to_string(),
+                                                    serde_json::json!(int_val),
+                                                );
                                             } else {
-                                                cluster_info.insert(key.to_string(), serde_json::json!(value));
+                                                cluster_info.insert(
+                                                    key.to_string(),
+                                                    serde_json::json!(value),
+                                                );
                                             }
                                         }
                                     }
@@ -1461,10 +1630,12 @@ async fn redis_cluster_info() -> impl Responder {
                                         "cluster_info": cluster_info
                                     }))
                                 }
-                                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
-                                    "status": "error",
-                                    "error": format!("CLUSTER INFO failed: {}", e)
-                                })),
+                                Err(e) => {
+                                    HttpResponse::InternalServerError().json(serde_json::json!({
+                                        "status": "error",
+                                        "error": format!("CLUSTER INFO failed: {}", e)
+                                    }))
+                                }
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
@@ -1521,27 +1692,37 @@ async fn redis_node_info(path: web::Path<String>) -> impl Responder {
                                         }
                                         if line.starts_with('#') {
                                             // Save previous section if exists
-                                            if !current_section.is_empty() && !section_data.is_empty() {
-                                                info.insert(current_section.clone(), serde_json::Value::Object(section_data.clone()));
+                                            if !current_section.is_empty()
+                                                && !section_data.is_empty()
+                                            {
+                                                info.insert(
+                                                    current_section.clone(),
+                                                    serde_json::Value::Object(section_data.clone()),
+                                                );
                                                 section_data.clear();
                                             }
                                             // Start new section
-                                            current_section = line.trim_start_matches('#').trim().to_lowercase();
+                                            current_section =
+                                                line.trim_start_matches('#').trim().to_lowercase();
                                         } else if let Some((key, value)) = line.split_once(':') {
                                             // Try to parse as integer or float
-                                            let parsed_value = if let Ok(int_val) = value.parse::<i64>() {
-                                                serde_json::json!(int_val)
-                                            } else if let Ok(float_val) = value.parse::<f64>() {
-                                                serde_json::json!(float_val)
-                                            } else {
-                                                serde_json::json!(value)
-                                            };
+                                            let parsed_value =
+                                                if let Ok(int_val) = value.parse::<i64>() {
+                                                    serde_json::json!(int_val)
+                                                } else if let Ok(float_val) = value.parse::<f64>() {
+                                                    serde_json::json!(float_val)
+                                                } else {
+                                                    serde_json::json!(value)
+                                                };
                                             section_data.insert(key.to_string(), parsed_value);
                                         }
                                     }
                                     // Save last section
                                     if !current_section.is_empty() && !section_data.is_empty() {
-                                        info.insert(current_section, serde_json::Value::Object(section_data));
+                                        info.insert(
+                                            current_section,
+                                            serde_json::Value::Object(section_data),
+                                        );
                                     }
 
                                     HttpResponse::Ok().json(serde_json::json!({
@@ -1550,10 +1731,12 @@ async fn redis_node_info(path: web::Path<String>) -> impl Responder {
                                         "info": info
                                     }))
                                 }
-                                Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
-                                    "status": "error",
-                                    "error": format!("INFO failed: {}", e)
-                                })),
+                                Err(e) => {
+                                    HttpResponse::InternalServerError().json(serde_json::json!({
+                                        "status": "error",
+                                        "error": format!("INFO failed: {}", e)
+                                    }))
+                                }
                             }
                         }
                         Err(e) => HttpResponse::InternalServerError().json(serde_json::json!({
@@ -1585,8 +1768,9 @@ async fn metrics() -> impl Responder {
         Ok(_) => HttpResponse::Ok()
             .content_type("text/plain; version=0.0.4")
             .body(buffer),
-        Err(e) => HttpResponse::InternalServerError()
-            .body(format!("Failed to encode metrics: {}", e))
+        Err(e) => {
+            HttpResponse::InternalServerError().body(format!("Failed to encode metrics: {}", e))
+        }
     }
 }
 
@@ -1621,33 +1805,36 @@ async fn main() -> std::io::Result<()> {
                     .route("/mongodb", web::get().to(health_mongodb))
                     .route("/redis", web::get().to(health_redis))
                     .route("/rabbitmq", web::get().to(health_rabbitmq))
-                    .route("/all", web::get().to(health_all))
+                    .route("/all", web::get().to(health_all)),
             )
             // Vault example routes
             .service(
                 web::scope("/examples/vault")
                     .route("/secret/{service_name}", web::get().to(get_secret))
-                    .route("/secret/{service_name}/{key}", web::get().to(get_secret_key))
+                    .route(
+                        "/secret/{service_name}/{key}",
+                        web::get().to(get_secret_key),
+                    ),
             )
             // Database example routes
             .service(
                 web::scope("/examples/database")
                     .route("/postgres/query", web::get().to(postgres_query))
                     .route("/mysql/query", web::get().to(mysql_query))
-                    .route("/mongodb/query", web::get().to(mongodb_query))
+                    .route("/mongodb/query", web::get().to(mongodb_query)),
             )
             // Cache example routes
             .service(
                 web::scope("/examples/cache")
                     .route("/{key}", web::get().to(get_cache))
                     .route("/{key}", web::post().to(set_cache))
-                    .route("/{key}", web::delete().to(delete_cache))
+                    .route("/{key}", web::delete().to(delete_cache)),
             )
             // Messaging example routes
             .service(
                 web::scope("/examples/messaging")
                     .route("/publish/{queue}", web::post().to(publish_message))
-                    .route("/queue/{queue_name}/info", web::get().to(queue_info))
+                    .route("/queue/{queue_name}/info", web::get().to(queue_info)),
             )
             // Redis cluster routes
             .service(
@@ -1655,7 +1842,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/cluster/nodes", web::get().to(redis_cluster_nodes))
                     .route("/cluster/slots", web::get().to(redis_cluster_slots))
                     .route("/cluster/info", web::get().to(redis_cluster_info))
-                    .route("/nodes/{node_name}/info", web::get().to(redis_node_info))
+                    .route("/nodes/{node_name}/info", web::get().to(redis_node_info)),
             )
     })
     .bind(("0.0.0.0", port))?
@@ -1664,4 +1851,4 @@ async fn main() -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests;  // Comprehensive test suite in tests.rs
+mod tests; // Comprehensive test suite in tests.rs
