@@ -2,9 +2,9 @@ name: Test Suite
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 # One run per workflow per ref. Merging a queue of dependency PRs fires a
@@ -143,7 +143,7 @@ jobs:
 
       - name: Validate JSON files
         run: |
-          json_files=$(find configs -name "*.json" -type f 2>/dev/null || true)
+          json_files=$(find configs -name "*.json" -type f)
 
           if [ -n "$json_files" ]; then
             for file in $json_files; do
@@ -159,7 +159,7 @@ jobs:
 
       - name: Validate YAML files
         run: |
-          yaml_files=$(find configs -name "*.yml" -o -name "*.yaml" -type f 2>/dev/null || true)
+          yaml_files=$(find configs -name "*.yml" -o -name "*.yaml" -type f)
 
           if [ -n "$yaml_files" ]; then
             pip install pyyaml
@@ -201,7 +201,6 @@ jobs:
         with:
           use-quiet-mode: 'yes'
           config-file: '.github/workflows/markdown-link-check-config.json'
-        continue-on-error: true
 
       - name: Validate required documentation sections
         run: |
@@ -236,7 +235,7 @@ jobs:
 
       - name: Check Python syntax
         run: |
-          python_files=$(find scripts tests -name "*.py" -type f 2>/dev/null || true)
+          python_files=$(find scripts tests -name "*.py" -type f)
 
           if [ -n "$python_files" ]; then
             for file in $python_files; do
@@ -271,6 +270,15 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      # Current LTS. The mongodb driver both Node.js apps pin requires
+      # Node >= 20, which the node:18-alpine images they ship do not meet;
+      # that is a Dockerfile problem to fix separately, not a reason to test
+      # on a runtime the dependencies reject.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
       - name: Install Python test dependencies
         run: |
           pip install pytest pytest-asyncio pytest-cov pytest-mock httpx
@@ -281,20 +289,30 @@ jobs:
           pip install -r requirements.txt
           # Run tests that don't require external services
           pytest tests/ -v --ignore=tests/test_integration.py -k "not integration" \
-            --tb=short || echo "⚠ Some tests require running services (expected in CI)"
-        continue-on-error: true
+            --tb=short
 
       - name: Run Go unit tests
         run: |
           cd reference-apps/golang
-          go test -v -short ./... 2>&1 || echo "⚠ Some tests require running services (expected in CI)"
-        continue-on-error: true
+          go test -v -short ./...
 
       - name: Run Rust unit tests
         run: |
           cd reference-apps/rust
-          cargo test --lib -- --test-threads=1 2>&1 || echo "⚠ Some tests require running services (expected in CI)"
-        continue-on-error: true
+          # The package is a single binary crate; --lib finds no target.
+          cargo test -- --test-threads=1
+
+      - name: Run Node.js unit tests
+        run: |
+          cd reference-apps/nodejs
+          npm ci
+          npm test
+
+      - name: Run TypeScript unit tests
+        run: |
+          cd reference-apps/typescript-api-first
+          npm ci
+          npm test
 
       - name: Test summary
         run: |
@@ -302,8 +320,8 @@ jobs:
           echo "Unit Test Summary"
           echo "=========================================="
           echo ""
-          echo "Note: Full test coverage requires running infrastructure services."
-          echo "Unit tests that don't require external dependencies were executed."
+          echo "Unit tests that need no running services were executed for the"
+          echo "FastAPI, Go, Rust, Node.js and TypeScript reference apps."
           echo ""
           echo "For full integration tests, run locally with:"
           echo "  ./devstack start --profile standard"
@@ -443,16 +461,13 @@ jobs:
             failed=1
           fi
 
-          # Unit tests are informational (some require services)
-          if [ "${{ needs.unit-tests.result }}" == "failure" ]; then
-            echo "⚠ Unit tests had failures (some may require running services)"
+          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
+            echo "❌ Unit tests failed"
+            failed=1
           fi
 
           if [ $failed -eq 1 ]; then
             exit 1
           fi
 
-          echo "✅ All validation tests passed!"
-          echo ""
-          echo "Note: Unit tests for reference apps may have partial failures"
-          echo "when external services are not available. This is expected in CI."
+          echo "✅ All tests passed"

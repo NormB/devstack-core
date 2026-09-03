@@ -2,9 +2,9 @@ name: Security Scanning
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   schedule:
     # Run weekly on Mondays at 9:00 AM UTC
     - cron: '0 9 * * 1'
@@ -75,9 +75,9 @@ jobs:
         id: check-python
         run: |
           if [ -f "requirements.txt" ] || find . -name "requirements.txt" -type f | grep -q .; then
-            echo "has_python=true" >> $GITHUB_OUTPUT
+            echo "has_python=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_python=false" >> $GITHUB_OUTPUT
+            echo "has_python=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python
@@ -93,16 +93,22 @@ jobs:
       - name: Check Python dependencies
         if: steps.check-python.outputs.has_python == 'true'
         run: |
-          find . -name "requirements.txt" -type f | while read req_file; do
+          failed=0
+          while read -r req_file; do
             echo "Checking $req_file..."
-            safety check --file "$req_file" --output text || true
-          done
-        continue-on-error: true
+            if ! safety check --file "$req_file" --output text; then
+              echo "✗ Known vulnerabilities in $req_file"
+              failed=1
+            fi
+          done < <(find . -name "requirements.txt" -type f | sort)
+          exit $failed
 
       - name: Scan Docker images for vulnerabilities
         run: |
           echo "Installing Trivy for Docker image scanning..."
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.58.0
+          # The release assets of old versions disappear: v0.58.0 answered 404
+          # from 2026-09 on and this step died before scanning anything.
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.74.0
 
           echo ""
           echo "Extracting Docker images from docker-compose.yml..."
@@ -117,7 +123,8 @@ jobs:
           echo "$images"
           echo ""
 
-          vuln_count=0
+          scanned=0
+          unscannable=0
           critical_count=0
 
           for image in $images; do
@@ -126,34 +133,39 @@ jobs:
             echo "Scanning: $image"
             echo "=========================================="
 
-            # Scan for CRITICAL and HIGH vulnerabilities
-            if ! trivy image --severity CRITICAL,HIGH --no-progress --exit-code 0 "$image" 2>/dev/null; then
-              echo "⚠ Warning: Could not scan $image (may need to be pulled first)"
+            # Report CRITICAL and HIGH; the gate below counts CRITICAL only.
+            if ! trivy image --severity CRITICAL,HIGH --no-progress --exit-code 0 "$image"; then
+              echo "✗ Could not scan $image"
+              unscannable=$((unscannable + 1))
               continue
             fi
 
-            # Count critical vulnerabilities
-            critical=$(trivy image --severity CRITICAL --no-progress --format json "$image" 2>/dev/null | \
-              jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0' 2>/dev/null || echo "0")
+            critical=$(trivy image --severity CRITICAL --no-progress --format json "$image" | \
+              jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0')
 
             if [ "$critical" -gt 0 ]; then
-              echo "⚠ Found $critical CRITICAL vulnerabilities in $image"
+              echo "✗ $critical CRITICAL vulnerabilities in $image"
               critical_count=$((critical_count + critical))
             fi
 
-            vuln_count=$((vuln_count + 1))
+            scanned=$((scanned + 1))
           done
 
           echo ""
           echo "=========================================="
           echo "Scan Summary"
           echo "=========================================="
-          echo "Images scanned: $vuln_count"
+          echo "Images scanned: $scanned"
+          echo "Images that could not be scanned: $unscannable"
           echo "Total CRITICAL vulnerabilities: $critical_count"
 
-          if [ "$critical_count" -gt 0 ]; then
+          # This is the one job expected to be red for a while: the base
+          # images carry CRITICAL findings that only an image update clears.
+          # It stays a failure so the red is visible, not a warning nobody reads.
+          if [ "$critical_count" -gt 0 ] || [ "$unscannable" -gt 0 ]; then
             echo ""
-            echo "⚠ Warning: Critical vulnerabilities found. Review and update affected images."
+            echo "✗ Critical vulnerabilities or unscannable images. Update the affected images."
+            exit 1
           fi
 
   trivy-scan:
@@ -364,19 +376,19 @@ jobs:
 
           echo "Installing dependencies from reference apps..."
           if [ -f "reference-apps/fastapi/requirements.txt" ]; then
-            pip install -r reference-apps/fastapi/requirements.txt || true
+            pip install -r reference-apps/fastapi/requirements.txt
           fi
 
           if [ -f "reference-apps/fastapi-api-first/requirements.txt" ]; then
-            pip install -r reference-apps/fastapi-api-first/requirements.txt || true
+            pip install -r reference-apps/fastapi-api-first/requirements.txt
           fi
 
           if [ -f "tests/requirements.txt" ]; then
-            pip install -r tests/requirements.txt || true
+            pip install -r tests/requirements.txt
           fi
 
           if [ -f "reference-apps/shared/test-suite/requirements.txt" ]; then
-            pip install -r reference-apps/shared/test-suite/requirements.txt || true
+            pip install -r reference-apps/shared/test-suite/requirements.txt
           fi
 
           echo "✓ Dependencies installed for CodeQL analysis"
@@ -442,26 +454,26 @@ jobs:
         run: |
           failed=0
 
-          if [ "${{ needs.secret-scan.result }}" == "failure" ]; then
-            echo "❌ Secret scanning failed - potential secrets detected"
-            failed=1
-          fi
+          check() {
+            if [ "$2" != "success" ]; then
+              echo "❌ $1: $2"
+              failed=1
+            fi
+          }
 
-          if [ "${{ needs.env-security.result }}" == "failure" ]; then
-            echo "❌ Environment security check failed"
-            failed=1
-          fi
-
-          if [ "${{ needs.trivy-scan.result }}" == "failure" ]; then
-            echo "⚠ Warning: Trivy scan found vulnerabilities"
-          fi
+          check "Secret scanning" "${{ needs.secret-scan.result }}"
+          check "Dependency scanning" "${{ needs.dependency-scan.result }}"
+          check "Trivy scan" "${{ needs.trivy-scan.result }}"
+          check "Docker Compose security review" "${{ needs.docker-compose-security.result }}"
+          check "Environment file security" "${{ needs.env-security.result }}"
+          check "Shell script security" "${{ needs.script-security.result }}"
+          check "CodeQL (Python)" "${{ needs.codeql-analysis-python.result }}"
+          check "CodeQL (Go)" "${{ needs.codeql-analysis-go.result }}"
 
           if [ $failed -eq 1 ]; then
             echo ""
-            echo "Critical security issues detected. Please review and fix before merging."
+            echo "Security issues detected. Review the failing jobs above."
             exit 1
           fi
 
-          echo "✅ Security scans completed"
-          echo ""
-          echo "Please review any warnings in the individual job outputs."
+          echo "✅ Security scans passed"

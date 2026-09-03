@@ -77,14 +77,14 @@ jobs:
               if ! cmp -s "$src" "$dest" 2>/dev/null; then
                 echo "  Syncing: $src → $dest"
                 cp "$src" "$dest"
-                ((SYNCED++)) || true
+                SYNCED=$((SYNCED + 1))
               else
                 echo "  Unchanged: $dest"
-                ((SKIPPED++)) || true
+                SKIPPED=$((SKIPPED + 1))
               fi
             else
               echo "  Warning: $src not found, skipping"
-              ((SKIPPED++)) || true
+              SKIPPED=$((SKIPPED + 1))
             fi
           done
 
@@ -97,13 +97,17 @@ jobs:
         id: check_changes
         run: |
           if [[ -n $(git status wiki/ --porcelain) ]]; then
-            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "changes=true" >> "$GITHUB_OUTPUT"
             echo "Wiki files have changes"
           else
-            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "changes=false" >> "$GITHUB_OUTPUT"
             echo "No wiki changes detected"
           fi
 
+      # This step fails when the GPG_PRIVATE_KEY secret is absent, and it has
+      # to: the repository ruleset requires signed commits on every branch, so
+      # an unsigned wiki-sync-auto push is rejected a step later anyway. The
+      # failure belongs here, on its cause.
       - name: Import GPG key for signing
         if: steps.check_changes.outputs.changes == 'true'
         uses: crazy-max/ghaction-import-gpg@v7
@@ -112,7 +116,6 @@ jobs:
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
-        continue-on-error: true
 
       - name: Create Pull Request for wiki changes
         if: steps.check_changes.outputs.changes == 'true'

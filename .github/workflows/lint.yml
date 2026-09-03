@@ -2,9 +2,9 @@ name: Linting
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
 
 # One run per workflow per ref. Merging a queue of dependency PRs fires a
@@ -52,7 +52,7 @@ jobs:
         id: find-dockerfiles
         run: |
           dockerfiles=$(find . -name "Dockerfile*" -o -name "*.dockerfile" | tr '\n' ' ')
-          echo "dockerfiles=$dockerfiles" >> $GITHUB_OUTPUT
+          echo "dockerfiles=$dockerfiles" >> "$GITHUB_OUTPUT"
 
           if [ -z "$dockerfiles" ]; then
             echo "No Dockerfiles found"
@@ -66,7 +66,6 @@ jobs:
         with:
           dockerfile: ${{ steps.find-dockerfiles.outputs.dockerfiles }}
           failure-threshold: warning
-        continue-on-error: true
 
   yaml-lint:
     name: YAML Lint
@@ -107,7 +106,7 @@ jobs:
 
       - name: Run yamllint
         run: |
-          yamllint -c .yamllint.yml . || true
+          yamllint -c .yamllint.yml .
           echo "✓ YAML linting completed"
 
   markdown-lint:
@@ -118,6 +117,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      # Advisory, deliberately. Measured on 2026-09-03: about 13,000 findings
+      # across 162 Markdown files, three quarters of them MD060, MD032, MD031,
+      # MD013 and MD022, which are formatting conventions this corpus has never
+      # followed. Turning the step into a gate needs a rule policy first
+      # (a .markdownlint-cli2 config) and one pass over the corpus; until then
+      # the step reports and the lint summary treats it as informational.
       - name: Markdown Lint
         uses: DavidAnson/markdownlint-cli2-action@v23
         with:
@@ -139,9 +144,9 @@ jobs:
         id: check-python
         run: |
           if find . -name "*.py" -type f | grep -q .; then
-            echo "has_python=true" >> $GITHUB_OUTPUT
+            echo "has_python=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_python=false" >> $GITHUB_OUTPUT
+            echo "has_python=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Python
@@ -157,7 +162,7 @@ jobs:
       - name: Run Ruff
         if: steps.check-python.outputs.has_python == 'true'
         run: |
-          ruff check . --select=E,F,W,C,N --ignore=E501 || true
+          ruff check . --select=E,F,W,C,N --ignore=E501
           echo "✓ Python linting completed"
 
       - name: Skip Python linting
@@ -176,24 +181,24 @@ jobs:
         id: check-go
         run: |
           if find . -name "*.go" -type f | grep -q .; then
-            echo "has_go=true" >> $GITHUB_OUTPUT
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_go=false" >> $GITHUB_OUTPUT
+            echo "has_go=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Go
         if: steps.check-go.outputs.has_go == 'true'
         uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version-file: 'reference-apps/golang/go.mod'
 
       - name: Run golangci-lint
         if: steps.check-go.outputs.has_go == 'true'
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          args: --timeout=5m --exclude-dirs=node_modules
-        continue-on-error: true
+          working-directory: reference-apps/golang
+          args: --timeout=5m
 
       - name: Go lint summary
         if: steps.check-go.outputs.has_go == 'true'
@@ -215,9 +220,9 @@ jobs:
         id: check-rust
         run: |
           if find . -name "*.rs" -type f | grep -q .; then
-            echo "has_rust=true" >> $GITHUB_OUTPUT
+            echo "has_rust=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_rust=false" >> $GITHUB_OUTPUT
+            echo "has_rust=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Rust
@@ -231,13 +236,11 @@ jobs:
         if: steps.check-rust.outputs.has_rust == 'true'
         run: cargo fmt --all -- --check
         working-directory: reference-apps/rust
-        continue-on-error: true
 
       - name: Run cargo clippy
         if: steps.check-rust.outputs.has_rust == 'true'
         run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: reference-apps/rust
-        continue-on-error: true
 
       - name: Rust lint summary
         if: steps.check-rust.outputs.has_rust == 'true'
@@ -356,7 +359,7 @@ jobs:
 
           found_issues=0
           for ext in "${extensions[@]}"; do
-            files=$(find . -name "*.$ext" -type f -executable 2>/dev/null || true)
+            files=$(find . -name "*.$ext" -type f -executable)
             if [ -n "$files" ]; then
               echo "⚠ Warning: Found executable .$ext files:"
               echo "$files"
@@ -389,19 +392,26 @@ jobs:
         run: |
           failed=0
 
-          if [ "${{ needs.shellcheck.result }}" == "failure" ]; then
-            echo "❌ ShellCheck failed"
-            failed=1
-          fi
+          check() {
+            if [ "$2" != "success" ]; then
+              echo "❌ $1: $2"
+              failed=1
+            fi
+          }
 
-          if [ "${{ needs.docker-compose-lint.result }}" == "failure" ]; then
-            echo "❌ Docker Compose lint failed"
-            failed=1
-          fi
+          check "ShellCheck" "${{ needs.shellcheck.result }}"
+          check "Dockerfile lint" "${{ needs.dockerfile-lint.result }}"
+          check "YAML lint" "${{ needs.yaml-lint.result }}"
+          check "Python lint" "${{ needs.python-lint.result }}"
+          check "Go lint" "${{ needs.go-lint.result }}"
+          check "Rust lint" "${{ needs.rust-lint.result }}"
+          check "Docker Compose lint" "${{ needs.docker-compose-lint.result }}"
+          check "Environment file lint" "${{ needs.env-file-lint.result }}"
+          check "File permissions check" "${{ needs.permissions-check.result }}"
 
-          if [ "${{ needs.env-file-lint.result }}" == "failure" ]; then
-            echo "❌ Environment file lint failed"
-            failed=1
+          # Advisory by design; see the markdown-lint job.
+          if [ "${{ needs.markdown-lint.result }}" != "success" ]; then
+            echo "⚠ Markdown lint: ${{ needs.markdown-lint.result }}"
           fi
 
           if [ $failed -eq 1 ]; then
@@ -410,6 +420,4 @@ jobs:
             exit 1
           fi
 
-          echo "✅ All critical linting checks passed!"
-          echo ""
-          echo "Note: Some checks may have warnings - please review them when possible."
+          echo "✅ All linting checks passed"
