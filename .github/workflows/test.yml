@@ -206,18 +206,24 @@ jobs:
       # answers 404 or 410 and still fails.
       - name: Check for broken markdown links
         run: |
-          npm install --no-save --no-audit --no-fund markdown-link-check@3.15.0
+          npm install --no-save --no-package-lock --no-audit --no-fund markdown-link-check@3.15.0
+          checked=0
           failed=0
           while read -r file; do
-            out=$(npx --no-install markdown-link-check -q \
-              -c .github/workflows/markdown-link-check-config.json "$file" 2>&1)
-            rc=$?
+            checked=$((checked + 1))
+            # The runner's bash -e would end the script on the first failing
+            # substitution, before anything is printed; `|| rc=$?` keeps the
+            # loop alive so every file is reported.
+            rc=0
+            out=$(./node_modules/.bin/markdown-link-check -q \
+              -c .github/workflows/markdown-link-check-config.json "$file" 2>&1) || rc=$?
             if [ "$rc" -ne 0 ] || echo "$out" | grep -q "ERROR:"; then
               echo "$out"
-              failed=1
+              failed=$((failed + 1))
             fi
           done < <(find . -name '*.md' -not -path './wiki/*' -not -path '*/node_modules/*' | sort)
-          exit $failed
+          echo "Checked $checked Markdown files, $failed with dead links"
+          [ "$failed" -eq 0 ]
 
       - name: Validate required documentation sections
         run: |
