@@ -24,7 +24,7 @@
   "author": "DevStack Core Team",
   "license": "MIT",
   "dependencies": {
-    "amqplib": "^0.10.3",
+    "amqplib": "^2.0.1",
     "cors": "^2.8.6",
     "express": "^5.2.0",
     "express-rate-limit": "^8.7.0",
