@@ -27,13 +27,22 @@ schema_config:
       index:
         prefix: index_
         period: 24h
+    # Loki 3 stores structured metadata and needs schema v13 on a tsdb index
+    # for the active period; the v11 period above stays readable for the data
+    # written under it.
+    - from: 2026-09-03
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
 
 ruler:
   alertmanager_url: http://localhost:9093
 
 limits_config:
   retention_period: 744h  # 31 days
-  enforce_metric_name: false
   reject_old_samples: true
   reject_old_samples_max_age: 168h
   ingestion_rate_mb: 10
@@ -48,7 +57,7 @@ table_manager:
 
 compactor:
   working_directory: /loki/compactor
-  shared_store: filesystem
+  delete_request_store: filesystem
   compaction_interval: 10m
   retention_enabled: true
   retention_delete_delay: 2h

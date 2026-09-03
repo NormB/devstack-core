@@ -25,20 +25,20 @@ Detailed documentation for all DevStack Core services including infrastructure, 
 |---------|---------|---------|---------|--------------|
 | **PostgreSQL** | 18 | 5432 | Git storage + dev database | pg_isready |
 | **PgBouncer** | latest | 6432 | Connection pooling | psql test |
-| **MySQL** | 8.0.40 | 3306 | Legacy database support | mysqladmin ping |
+| **MySQL** | 8.0.46 | 3306 | Legacy database support | mysqladmin ping |
 | **Redis Cluster** | 7.4-alpine | 6379 (non-TLS), 6390 (TLS), 16379 (cluster bus) | Distributed cache (3 nodes) | redis-cli ping |
-| **RabbitMQ** | 3.13-management-alpine | 5672, 15672 | Message queue + UI | rabbitmq-diagnostics |
-| **MongoDB** | 7.0 | 27017 | NoSQL database | mongosh ping |
+| **RabbitMQ** | 4.3-management-alpine | 5672, 15672 | Message queue + UI | rabbitmq-diagnostics |
+| **MongoDB** | 8.0 | 27017 | NoSQL database | mongosh ping |
 | **Forgejo** | 1.21 | 3000, 2222 | Self-hosted Git server | curl /api/healthz |
-| **Vault** | 1.18 | 8200 | Secrets management | wget /sys/health |
+| **Vault** | 1.21 | 8200 | Secrets management | wget /sys/health |
 
 ### Observability Stack
 
 | Service | Version | Port(s) | Purpose | Health Check |
 |---------|---------|---------|---------|--------------|
-| **Prometheus** | 2.48.0 | 9090 | Metrics collection & time-series DB | wget /metrics |
-| **Grafana** | 10.2.2 | 3001 | Visualization & dashboards | curl /-/health |
-| **Loki** | 2.9.3 | 3100 | Log aggregation system | wget /ready |
+| **Prometheus** | 3.14.0 | 9090 | Metrics collection & time-series DB | wget /metrics |
+| **Grafana** | 12.4.10 | 3001 | Visualization & dashboards | curl /-/health |
+| **Loki** | 3.7.7 | 3100 | Log aggregation system | none (distroless image); GET /ready from the host |
 
 ### Reference Applications
 
@@ -508,7 +508,7 @@ const pool = new Pool({
 **Purpose:** Legacy database support during migration period.
 
 **Configuration:**
-- Image: `mysql:8.0.40`
+- Image: `mysql:8.0.46`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/mysql/scripts/init.sh`
   - Stored in Vault at `secret/mysql`
   - Fields: `root_password`, `user`, `password`, `database`
@@ -687,7 +687,7 @@ docker exec dev-rabbitmq rabbitmqctl list_connections
 **Purpose:** NoSQL document database for unstructured data.
 
 **Configuration:**
-- Image: `mongo:7.0`
+- Image: `mongo:8.0`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/mongodb/scripts/init.sh`
   - Stored in Vault at `secret/mongodb`
   - Fields: `user`, `password`, `database`

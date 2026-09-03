@@ -133,14 +133,22 @@ jobs:
             echo "Scanning: $image"
             echo "=========================================="
 
-            # Report CRITICAL and HIGH; the gate below counts CRITICAL only.
-            if ! trivy image --severity CRITICAL,HIGH --no-progress --exit-code 0 "$image"; then
+            # Report every fixable CRITICAL and HIGH, including the ones
+            # .trivyignore.yaml excepts, so the exceptions stay visible; the
+            # gate below counts CRITICAL only.
+            if ! trivy image --severity CRITICAL,HIGH --no-progress --exit-code 0 \
+                --ignore-unfixed "$image"; then
               echo "✗ Could not scan $image"
               unscannable=$((unscannable + 1))
               continue
             fi
 
-            critical=$(trivy image --severity CRITICAL --no-progress --format json "$image" | \
+            # Only findings with a fix count: an image update is the one remedy
+            # this repository has, and it cannot clear a finding nothing has
+            # fixed. Findings the newest published tag still carries are listed
+            # in .trivyignore.yaml, each with an expiry that turns this red again.
+            critical=$(trivy image --severity CRITICAL --no-progress --format json \
+                --ignore-unfixed --ignorefile .trivyignore.yaml "$image" | \
               jq '[.Results[]?.Vulnerabilities // [] | length] | add // 0')
 
             if [ "$critical" -gt 0 ]; then
@@ -159,12 +167,13 @@ jobs:
           echo "Images that could not be scanned: $unscannable"
           echo "Total CRITICAL vulnerabilities: $critical_count"
 
-          # This is the one job expected to be red for a while: the base
-          # images carry CRITICAL findings that only an image update clears.
-          # It stays a failure so the red is visible, not a warning nobody reads.
+          # A failure here means an image update, or an expired entry in
+          # .trivyignore.yaml, is due. It stays a failure so the red is
+          # visible, not a warning nobody reads.
           if [ "$critical_count" -gt 0 ] || [ "$unscannable" -gt 0 ]; then
             echo ""
-            echo "✗ Critical vulnerabilities or unscannable images. Update the affected images."
+            echo "✗ Fixable critical vulnerabilities or unscannable images."
+            echo "  Update the affected images, or see .trivyignore.yaml for the exception rule."
             exit 1
           fi
 

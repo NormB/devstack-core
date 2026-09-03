@@ -181,8 +181,8 @@ curl -X POST $VAULT_ADDR/v1/auth/approle/login \
 | **HashiCorp Vault** | Secrets management + PKI | localhost:8200 |
 | **PostgreSQL 18** | Primary relational database | localhost:5432 |
 | **PgBouncer** | PostgreSQL connection pooling | localhost:6432 |
-| **MySQL 8.0.40** | Legacy application support | localhost:3306 |
-| **MongoDB 7.0** | NoSQL document database | localhost:27017 |
+| **MySQL 8.0.46** | Legacy application support | localhost:3306 |
+| **MongoDB 8.0** | NoSQL document database | localhost:27017 |
 | **Redis Cluster** | 3-node distributed cache | localhost:6379-6381 (non-TLS), 6390-6392 (TLS) |
 | **RabbitMQ** | Message queue + UI | localhost:5672, 15672 |
 | **Forgejo** | Self-hosted Git server | localhost:3000 |

@@ -35,7 +35,7 @@ The observability stack provides comprehensive monitoring, metrics collection, a
 **Purpose:** Time-series metrics database and monitoring system.
 
 **Configuration:**
-- Image: `prom/prometheus:v2.48.0`
+- Image: `prom/prometheus:v3.14.0`
 - Port: 9090
 - Retention: 30 days
 - Scrape interval: 15 seconds
@@ -82,7 +82,7 @@ pg_stat_database_numbackends
 **Purpose:** Visualization and dashboarding platform.
 
 **Configuration:**
-- Image: `grafana/grafana:10.2.2`
+- Image: `grafana/grafana:12.4.10`
 - Port: 3001
 - Default credentials: `admin/admin` (change after first login!)
 - Auto-provisioned datasources:
@@ -125,7 +125,7 @@ Password: admin
 - **API Endpoints:** `http://localhost:3100/loki/api/v1/...`
 
 **Configuration:**
-- Image: `grafana/loki:2.9.3`
+- Image: `grafana/loki:3.7.7`
 - API Port: 3100 (no web UI)
 - Retention: 31 days (744 hours)
 - Storage: Filesystem-based (BoltDB + filesystem chunks)
@@ -251,7 +251,7 @@ exec /redis_exporter "$@"
 
 ```yaml
 redis-exporter-1:
-  image: oliver006/redis_exporter:v1.55.0
+  image: oliver006/redis_exporter:v1.90.0-alpine
   entrypoint: ["/init/init.sh"]  # Override to run wrapper script
   environment:
     VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}

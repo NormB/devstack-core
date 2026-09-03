@@ -147,7 +147,7 @@ PGPASSWORD=$(vault kv get -field=password secret/postgres) \
 
 ### MySQL
 
-MySQL 8.0.40 for legacy application support.
+MySQL 8.0.46 for legacy application support.
 
 #### Credentials (Vault-Managed)
 

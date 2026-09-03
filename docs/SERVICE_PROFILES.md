@@ -218,15 +218,15 @@ services:
   # FULL PROFILE (adds observability)
   prometheus:
     profiles: ["full"]
-    image: prom/prometheus:v2.48.0
+    image: prom/prometheus:v3.14.0
 
   grafana:
     profiles: ["full"]
-    image: grafana/grafana:10.2.2
+    image: grafana/grafana:12.4.10
 
   loki:
     profiles: ["full"]
-    image: grafana/loki:2.9.3
+    image: grafana/loki:3.7.7
 
   # REFERENCE APPS (separate profile, combinable)
   reference-api:

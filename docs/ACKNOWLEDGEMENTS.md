@@ -77,14 +77,14 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### MySQL
 **Project**: MySQL Community Server
-**Version**: 8.0.40
+**Version**: 8.0.46
 **Website**: https://www.mysql.com/
 **License**: GPL-2.0
 **Purpose**: Relational database for legacy application support
 
 ### MongoDB
 **Project**: MongoDB Community Edition
-**Version**: 7.0
+**Version**: 8.0
 **Website**: https://www.mongodb.com/
 **License**: SSPL
 **Purpose**: NoSQL document database for flexible data structures
@@ -108,7 +108,7 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### RabbitMQ
 **Project**: RabbitMQ
-**Version**: 3.13
+**Version**: 4.3
 **Website**: https://www.rabbitmq.com/
 **License**: MPL-2.0
 **Purpose**: Message broker for asynchronous task processing and event streaming
@@ -119,7 +119,7 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### HashiCorp Vault
 **Project**: Vault
-**Version**: 1.18
+**Version**: 1.21
 **Website**: https://www.vaultproject.io/
 **License**: BSL 1.1 (Business Source License)
 **Purpose**: Secrets management, PKI infrastructure, and dynamic credentials
@@ -136,21 +136,21 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### Prometheus
 **Project**: Prometheus
-**Version**: 2.48.0
+**Version**: 3.14.0
 **Website**: https://prometheus.io/
 **License**: Apache 2.0
 **Purpose**: Time-series metrics collection and monitoring system
 
 ### Grafana
 **Project**: Grafana
-**Version**: 10.2.2
+**Version**: 12.4.10
 **Website**: https://grafana.com/
 **License**: AGPL-3.0
 **Purpose**: Metrics visualization and dashboarding platform
 
 ### Loki
 **Project**: Loki
-**Version**: 2.9.3
+**Version**: 3.7.7
 **Website**: https://grafana.com/oss/loki/
 **License**: AGPL-3.0
 **Purpose**: Log aggregation system optimized for label-based indexing
@@ -164,14 +164,14 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### cAdvisor
 **Project**: Container Advisor
-**Version**: 0.47.2
+**Version**: 0.55.1
 **Website**: https://github.com/google/cadvisor
 **License**: Apache 2.0
 **Purpose**: Container resource usage and performance monitoring
 
 ### Redis Exporter
 **Project**: Redis Exporter
-**Version**: 1.55.0
+**Version**: 1.90.0
 **Maintainer**: oliver006
 **Website**: https://github.com/oliver006/redis_exporter
 **License**: MIT

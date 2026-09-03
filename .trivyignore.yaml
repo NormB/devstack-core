@@ -1,0 +1,81 @@
+# Exceptions for the Docker image scan in .github/workflows/security.yml.
+#
+# The rule: the scan counts CRITICAL findings that have a fix (--ignore-unfixed),
+# because a finding without a fix cannot be cleared by updating the image.
+# A fixed finding is listed here only when the newest published tag of the
+# image still carries it, so this repository cannot act on it either; the
+# entry names the binary, the fix it waits for, and the day that was checked.
+#
+# Every entry expires. When one does, the scan goes red: re-scan the newest
+# tag of the image (trivy image --ignore-unfixed --severity CRITICAL <image>).
+# If it is clean, bump the image in docker-compose.yml and delete the entry.
+# If not, record the new check date and move expired_at forward.
+#
+# Checked 2026-09-03 with Trivy 0.74.0 against the newest tags of
+# postgres:18, mysql:8.0, mongo:8.0, prom/prometheus:v3, hashicorp/vault:1.21
+# and gcr.io/cadvisor/cadvisor.
+
+vulnerabilities:
+  - id: CVE-2025-68121
+    paths:
+      - "usr/local/bin/gosu"
+      - "usr/bin/cadvisor"
+    statement: >-
+      Go standard library, fixed in Go 1.24.13 / 1.25.7. The gosu binary that
+      the official postgres, mysql and mongo images ship, and the cadvisor
+      binary, are built with older Go; the fix lands when upstream rebuilds.
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-56854
+    paths:
+      - "usr/bin/bsondump"
+      - "usr/bin/mongodump"
+      - "usr/bin/mongoexport"
+      - "usr/bin/mongofiles"
+      - "usr/bin/mongoimport"
+      - "usr/bin/mongorestore"
+      - "usr/bin/mongostat"
+      - "usr/bin/mongotop"
+      - "bin/prometheus"
+      - "bin/promtool"
+      - "bin/vault"
+      - "usr/bin/cadvisor"
+    statement: >-
+      golang.org/x/crypto, fixed in 0.55.0. Statically linked into the MongoDB
+      database tools, Prometheus, Vault and cadvisor; the fix lands when each
+      upstream rebuilds against the newer module.
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-31789
+    paths:
+      - "hashicorp/vault:1.21 (alpine 3.23.3)"
+      - "gcr.io/cadvisor/cadvisor:v0.55.1 (alpine 3.22.2)"
+    statement: >-
+      OpenSSL libcrypto3/libssl3, fixed in Alpine 3.5.6-r0. The newest vault
+      and cadvisor images were built before the Alpine package update.
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-33815
+    paths:
+      - "bin/vault"
+    statement: >-
+      github.com/jackc/pgx/v5, fixed in 5.9.0; linked into the newest Vault
+      release.
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-33816
+    paths:
+      - "bin/vault"
+    statement: >-
+      github.com/jackc/pgx/v5, fixed in 5.9.0; linked into the newest Vault
+      release.
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-33186
+    paths:
+      - "bin/vault"
+      - "usr/bin/cadvisor"
+    statement: >-
+      google.golang.org/grpc, fixed in 1.79.3; linked into the newest Vault
+      and cadvisor releases.
+    expired_at: 2026-10-31

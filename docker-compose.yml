@@ -75,7 +75,7 @@ x-redis-common: &redis-common
 # =============================================================================
 x-redis-exporter-common: &redis-exporter-common
   <<: *default-platform
-  image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION:-v1.55.0}
+  image: oliver006/redis_exporter:${REDIS_EXPORTER_VERSION:-v1.90.0-alpine}
   restart: unless-stopped
   entrypoint: ["/init/init.sh"]
   environment: &redis-exporter-env
@@ -339,7 +339,7 @@ services:
 
   mysql:
     <<: *default-platform
-    image: mysql:${MYSQL_VERSION:-8.0.40}
+    image: mysql:${MYSQL_VERSION:-8.0.46}
     container_name: dev-mysql
     restart: unless-stopped
 
@@ -530,7 +530,7 @@ services:
 
   rabbitmq:
     <<: *default-platform
-    image: rabbitmq:${RABBITMQ_VERSION:-3.13-management-alpine}
+    image: rabbitmq:${RABBITMQ_VERSION:-4.3-management-alpine}
     container_name: dev-rabbitmq
     restart: unless-stopped
 
@@ -594,7 +594,7 @@ services:
 
   mongodb:
     <<: *default-platform
-    image: mongo:${MONGODB_VERSION:-7.0}
+    image: mongo:${MONGODB_VERSION:-8.0}
     container_name: dev-mongodb
     restart: unless-stopped
 
@@ -737,7 +737,7 @@ services:
 
   vault:
     <<: *default-platform
-    image: hashicorp/vault:${VAULT_VERSION:-1.18}
+    image: hashicorp/vault:${VAULT_VERSION:-1.21}
     container_name: dev-vault
     restart: unless-stopped
 
@@ -1153,7 +1153,7 @@ services:
 
   prometheus:
     <<: *default-platform
-    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.48.0}
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3.14.0}
     container_name: dev-prometheus
     restart: unless-stopped
 
@@ -1213,7 +1213,7 @@ services:
 
   grafana:
     <<: *default-platform
-    image: grafana/grafana:${GRAFANA_VERSION:-10.2.2}
+    image: grafana/grafana:${GRAFANA_VERSION:-12.4.10}
     container_name: dev-grafana
     restart: unless-stopped
 
@@ -1273,7 +1273,7 @@ services:
 
   loki:
     <<: *default-platform
-    image: grafana/loki:${LOKI_VERSION:-2.9.3}
+    image: grafana/loki:${LOKI_VERSION:-3.7.7}
     container_name: dev-loki
     restart: unless-stopped
 
@@ -1294,11 +1294,9 @@ services:
       observability-network: # Primary observability network
         ipv4_address: 172.20.4.30
 
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-Y", "off", "http://localhost:3100/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # No healthcheck: from 3.6 the Loki image is distroless and ships nothing
+    # a healthcheck could run (no shell, no wget). Readiness is served at
+    # http://localhost:3100/ready; nothing in this file waits on it.
 
     logging: *default-logging
 
@@ -1408,7 +1406,7 @@ services:
 
   cadvisor:
     <<: *default-platform
-    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.47.2}
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-v0.55.1}
     container_name: dev-cadvisor
     restart: unless-stopped
 
