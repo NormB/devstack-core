@@ -225,6 +225,13 @@ jobs:
           echo "Checked $checked Markdown files, $failed with dead links"
           [ "$failed" -eq 0 ]
 
+      # tests/test-documentation-accuracy.sh cross-checks the documentation
+      # against docker-compose.yml, the AppRole bootstrap and the wiki
+      # mirror. It had never run in CI, and three of its tests had drifted
+      # red unnoticed; from here on it gates.
+      - name: Check documentation accuracy
+        run: bash tests/test-documentation-accuracy.sh
+
       - name: Validate required documentation sections
         run: |
           required_sections=(

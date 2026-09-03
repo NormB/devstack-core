@@ -29,7 +29,7 @@ Detailed documentation for all DevStack Core services including infrastructure, 
 | **Redis Cluster** | 7.4-alpine | 6379 (non-TLS), 6390 (TLS), 16379 (cluster bus) | Distributed cache (3 nodes) | redis-cli ping |
 | **RabbitMQ** | 4.3-management-alpine | 5672, 15672 | Message queue + UI | rabbitmq-diagnostics |
 | **MongoDB** | 8.0 | 27017 | NoSQL database | mongosh ping |
-| **Forgejo** | 1.21 | 3000, 2222 | Self-hosted Git server | curl /api/healthz |
+| **Forgejo** | 1.21.11-0 | 3000, 2222 | Self-hosted Git server | curl /api/healthz |
 | **Vault** | 1.21 | 8200 | Secrets management | wget /sys/health |
 
 ### Observability Stack
@@ -649,7 +649,7 @@ curl http://localhost:8000/redis/nodes/redis-1/info
 **Purpose:** Message queue for asynchronous communication between services.
 
 **Configuration:**
-- Image: `rabbitmq:3-management-alpine`
+- Image: `rabbitmq:4.3-management-alpine`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/rabbitmq/scripts/init.sh`
   - Stored in Vault at `secret/rabbitmq`
   - Fields: `user`, `password`, `vhost`
@@ -717,7 +717,7 @@ mongodb://dev_admin:password@localhost:27017/dev_database?authSource=admin
 **Purpose:** Self-hosted Git server (Gitea fork) for private repositories with full Git forge capabilities.
 
 **Configuration:**
-- Image: `forgejo:1.21`
+- Image: `codeberg.org/forgejo/forgejo:1.21.11-0`
 - Uses PostgreSQL for metadata storage
 - Git data stored in Docker volume (`forgejo_data`)
 - SSH port mapped to 2222 (to avoid conflict with Mac's SSH on 22)

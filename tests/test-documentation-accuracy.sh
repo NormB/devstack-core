@@ -103,13 +103,11 @@ print_header
 ################################################################################
 print_test "Service count matches documentation (should be 23)"
 
-# Count actual services in docker-compose.yml
-ACTUAL_COUNT=$(grep '^  [a-z]' docker-compose.yml | \
-    awk '{print $1}' | tr -d ':' | \
-    grep -v 'network$' | grep -v '_data$' | \
-    grep -v '^driver$' | grep -v '^options$' | grep -v '^platform$' | \
+# Count the keys of the services: section only. The x-* anchor blocks above
+# it also have two-space children (image:, healthcheck:, ...) that an
+# indentation-only grep counted as services.
+ACTUAL_COUNT=$(awk '/^services:/{p=1;next} /^[A-Za-z]/{p=0} p && /^  [a-z0-9_-]+:$/' docker-compose.yml | \
     wc -l | tr -d ' ')
-
 EXPECTED_COUNT=23
 
 if [ "$ACTUAL_COUNT" -eq "$EXPECTED_COUNT" ]; then
@@ -153,16 +151,25 @@ fi
 ################################################################################
 # Test 4: VAULT_APPROLE_DIR References Match AppRole Services
 ################################################################################
-print_test "VAULT_APPROLE_DIR references match AppRole bootstrap services"
+print_test "Every AppRole in vault-approle-bootstrap.sh is wired into docker-compose.yml"
 
-# Count VAULT_APPROLE_DIR in docker-compose.yml
-APPROLE_DIR_COUNT=$(grep -c "VAULT_APPROLE_DIR:" docker-compose.yml || echo "0")
+# The bootstrap script names every AppRole it creates. Each one except
+# "management", the AppRole the host-side CLI (scripts/manage_devstack.py)
+# authenticates with, must appear in docker-compose.yml as a
+# /vault-approles/<name> path, and nothing in compose may use an AppRole the
+# bootstrap does not create. A count cannot see either mistake: the redis and
+# redis-exporter nodes share YAML anchors, so one line serves three services.
+BOOTSTRAP_APPROLES=$(awk '/^SERVICES=\(/,/^\)/' scripts/vault-approle-bootstrap.sh | \
+    grep '    "' | tr -d ' "' | grep -v '^management$' | sort)
+COMPOSE_APPROLES=$(grep -oE '/vault-approles/[a-z0-9-]+' docker-compose.yml | \
+    sed 's|/vault-approles/||' | sort -u)
+NOT_IN_COMPOSE=$(comm -23 <(echo "$BOOTSTRAP_APPROLES") <(echo "$COMPOSE_APPROLES") | tr '\n' ' ')
+NOT_IN_BOOTSTRAP=$(comm -13 <(echo "$BOOTSTRAP_APPROLES") <(echo "$COMPOSE_APPROLES") | tr '\n' ' ')
 
-# Should be at least 15 (some services like redis have 3 nodes)
-if [ "$APPROLE_DIR_COUNT" -ge 15 ]; then
+if [ -z "$NOT_IN_COMPOSE" ] && [ -z "$NOT_IN_BOOTSTRAP" ]; then
     pass
 else
-    fail "Expected >= 15 VAULT_APPROLE_DIR references, found $APPROLE_DIR_COUNT" "AppRole config mismatch"
+    fail "bootstrapped but not in compose: [$NOT_IN_COMPOSE] in compose but not bootstrapped: [$NOT_IN_BOOTSTRAP]" "AppRole wiring mismatch"
 fi
 
 ################################################################################
@@ -228,9 +235,12 @@ fi
 ################################################################################
 # Test 9: No PostgreSQL 16 References in Wiki
 ################################################################################
-print_test "Wiki files reference PostgreSQL 18 (not 16)"
+print_test "Wiki files reference PostgreSQL 18 (not 16), upgrade history excepted"
 
-PG16_COUNT=$(grep -r "PostgreSQL 16" wiki 2>/dev/null | wc -l | tr -d ' ')
+# Upgrade-Guide.md and Changelog.md record the 16 -> 18 upgrade and have to
+# name 16; every other page describes the running stack.
+PG16_COUNT=$(grep -r "PostgreSQL 16" wiki --exclude=Upgrade-Guide.md --exclude=Changelog.md 2>/dev/null | \
+    wc -l | tr -d ' ')
 
 if [ "$PG16_COUNT" -eq 0 ]; then
     pass
@@ -276,6 +286,34 @@ if MIRROR_OUTPUT=$(./scripts/wiki-mirror.sh --check 2>&1); then
     pass
 else
     fail "$(echo "$MIRROR_OUTPUT" | grep 'wiki mirror check failed')" "Wiki sync required"
+fi
+
+################################################################################
+# Test 12: SERVICE_CATALOG.md image tags match the images the stack runs
+################################################################################
+print_test "SERVICE_CATALOG.md image tags match docker-compose.yml and the Dockerfiles"
+
+# What the stack runs: every compose `image:` default, plus the base image of
+# each configs/*/Dockerfile with its ARG default substituted into FROM.
+RUNNING_IMAGES=$( {
+    grep -E '^\s+image:' docker-compose.yml | sed 's/.*image:\s*//' | sed 's/\${[^:]*:-\([^}]*\)}/\1/g'
+    for df in configs/*/Dockerfile; do
+        arg_default=$(grep -m1 -E '^ARG [A-Z_]+=' "$df" | sed 's/^ARG [A-Z_]*=//')
+        grep -m1 -E '^FROM ' "$df" | sed "s/^FROM //; s/\${[A-Z_]*}/$arg_default/"
+    done
+} | sort -u)
+
+STALE_IMAGES=""
+while read -r img; do
+    if ! echo "$RUNNING_IMAGES" | grep -qxF "$img"; then
+        STALE_IMAGES="$STALE_IMAGES $img"
+    fi
+done < <(grep -oE '\*\*Image:\*\* `[^`]+`' docs/SERVICE_CATALOG.md | sed 's/.*`\(.*\)`/\1/')
+
+if [ -z "$STALE_IMAGES" ]; then
+    pass
+else
+    fail "not what the stack runs:$STALE_IMAGES" "Service catalog image tags stale"
 fi
 
 ################################################################################

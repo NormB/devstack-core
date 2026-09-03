@@ -70,7 +70,7 @@ This project is made possible by the excellent open-source software and tools cr
 
 ### PostgreSQL
 **Project**: PostgreSQL Database
-**Version**: 16.6
+**Version**: 18
 **Website**: https://www.postgresql.org/
 **License**: PostgreSQL License
 **Purpose**: Primary relational database for Forgejo and development workloads

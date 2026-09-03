@@ -94,7 +94,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Credentials:** Stored in Vault at `secret/postgres`
 
 ### 3. PgBouncer
-- **Image:** `edoburu/pgbouncer:1.21.0`
+- **Image:** `edoburu/pgbouncer:latest` (built from `configs/pgbouncer/`)
 - **Purpose:** PostgreSQL connection pooling
 - **Profile:** standard, full
 - **Network:** data-network (172.20.2.11)
@@ -135,7 +135,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Credentials:** Stored in Vault at `secret/mongodb`
 
 ### 6-8. Redis Cluster (redis-1, redis-2, redis-3)
-- **Image:** `redis:7.4-alpine`
+- **Image:** `redis:7.4-alpine3.21`
 - **Purpose:** In-memory data structure store, cluster mode
 - **Profile:** redis-1 (all), redis-2/3 (standard, full)
 - **Network:** data-network (172.20.2.41, .42, .43)
@@ -150,7 +150,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Cluster:** Requires `./devstack redis-cluster-init` after startup
 
 ### 9. RabbitMQ
-- **Image:** `rabbitmq:4.0-management`
+- **Image:** `rabbitmq:4.3-management-alpine`
 - **Purpose:** Message broker / queue
 - **Profile:** minimal, standard, full
 - **Network:** data-network (172.20.2.50)
@@ -168,7 +168,7 @@ This document serves as the **single source of truth** for all services in the D
 ## Git & Collaboration
 
 ### 10. Forgejo
-- **Image:** `codeberg.org/forgejo/forgejo:9.0`
+- **Image:** `codeberg.org/forgejo/forgejo:1.21.11-0` (built from `configs/forgejo/`)
 - **Purpose:** Self-hosted Git service (Gitea fork)
 - **Profile:** minimal, standard, full
 - **Network:** app-network (172.20.3.10)
@@ -260,7 +260,7 @@ This document serves as the **single source of truth** for all services in the D
 ## Observability Stack
 
 ### 16. Prometheus
-- **Image:** `prom/prometheus:latest`
+- **Image:** `prom/prometheus:v3.14.0`
 - **Purpose:** Metrics collection and storage
 - **Profile:** full
 - **Network:** observability-network (172.20.4.10)
@@ -274,7 +274,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Scrape Targets:** All services with /metrics endpoints
 
 ### 17. Grafana
-- **Image:** `grafana/grafana:latest`
+- **Image:** `grafana/grafana:12.4.10`
 - **Purpose:** Metrics visualization and dashboards
 - **Profile:** full
 - **Network:** observability-network (172.20.4.20)
@@ -288,7 +288,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Dashboards:** Pre-configured for DevStack services
 
 ### 18. Loki
-- **Image:** `grafana/loki:latest`
+- **Image:** `grafana/loki:3.7.7`
 - **Purpose:** Log aggregation and storage
 - **Profile:** full
 - **Network:** observability-network (172.20.4.30)
@@ -301,7 +301,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Config:** `configs/loki/loki-config.yaml`
 
 ### 19. Vector
-- **Image:** `timberio/vector:latest`
+- **Image:** `timberio/vector:0.50.0-debian` (built from `configs/vector/`)
 - **Purpose:** Log routing, transformation, and shipping
 - **Profile:** full
 - **Network:** observability-network (172.20.4.40), data-network
@@ -315,7 +315,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Credentials:** Fetches from Vault at `secret/postgres`, `secret/mongodb`, `secret/redis-*`
 
 ### 20. cAdvisor
-- **Image:** `gcr.io/cadvisor/cadvisor:latest`
+- **Image:** `gcr.io/cadvisor/cadvisor:v0.55.1`
 - **Purpose:** Container resource usage metrics
 - **Profile:** full
 - **Network:** observability-network (172.20.4.50)
@@ -327,7 +327,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Volumes:** Mounts Docker socket and system directories
 
 ### 21-23. Redis Exporters (redis-exporter-1/2/3)
-- **Image:** `oliver006/redis_exporter:latest`
+- **Image:** `oliver006/redis_exporter:v1.90.0-alpine`
 - **Purpose:** Export Redis metrics to Prometheus
 - **Profile:** full
 - **Network:** observability-network (172.20.4.61, .62, .63), data-network
