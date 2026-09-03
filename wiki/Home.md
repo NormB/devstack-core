@@ -14,15 +14,15 @@ A comprehensive, self-contained development environment providing Git hosting (F
 ## ✨ Key Features
 
 - **🚀 [Complete Infrastructure](#️-architecture)** - Everything you need: Git, databases, caching, messaging, secrets, observability
-- **🎯 [Service Profiles](Service-Configuration)** - Choose your stack: minimal (2GB), standard (4GB), or full (6GB) with observability
+- **🎯 [Service Profiles](./docs/SERVICE_PROFILES.md)** - Choose your stack: minimal (2GB), standard (4GB), or full (6GB) with observability
 - **🍎 [Apple Silicon Optimized](#-prerequisites)** - Native ARM64 support via Colima's Virtualization.framework
-- **🔒 [Vault-First Security](Vault-Integration)** - All credentials managed by HashiCorp Vault with AppRole authentication
+- **🔒 [Vault-First Security](./docs/VAULT.md)** - All credentials managed by HashiCorp Vault with AppRole authentication
 - **🛡️ [AppRole Authentication](#-security--approle-authentication)** - Zero hardcoded secrets, least-privilege access for all core services
 - **🔐 [TLS/SSL Support](./docs/TLS_CERTIFICATE_MANAGEMENT.md)** - Dual-mode TLS with automated certificate generation via Vault PKI
 - **📦 [Zero Cloud Dependencies](#-zero-cloud-dependencies)** - Runs entirely on your Mac, perfect for offline development
-- **🛠️ [Easy Management](CLI-Reference)** - Single CLI script with 21 commands for all operations
-- **📚 [Reference Apps](Development-Workflow)** - Production-quality examples in Python, Go, Node.js, TypeScript, and Rust
-- **🔍 [Full Observability](Health-Monitoring)** - Built-in Prometheus, Grafana, and Loki for monitoring and logging
+- **🛠️ [Easy Management](./docs/PYTHON_CLI.md)** - Single CLI script with 21 commands for all operations
+- **📚 [Reference Apps](./reference-apps/README.md)** - Production-quality examples in Python, Go, Node.js, TypeScript, and Rust
+- **🔍 [Full Observability](./docs/OBSERVABILITY.md)** - Built-in Prometheus, Grafana, and Loki for monitoring and logging
 
 ## 🚀 Quick Start
 
@@ -109,7 +109,7 @@ Choose the profile that fits your needs:
 ./devstack health
 ```
 
-**See [Service Profiles Guide](Service-Configuration) for detailed information.**
+**See [Service Profiles Guide](./docs/SERVICE_PROFILES.md) for detailed information.**
 
 ## 🛡️ Security & AppRole Authentication
 
@@ -170,7 +170,7 @@ curl -X POST $VAULT_ADDR/v1/auth/approle/login \
 # 6. Start service with fetched credentials
 ```
 
-**See [Vault Integration Guide](Vault-Integration) for complete details.**
+**See [Vault Integration Guide](./docs/VAULT.md) for complete details.**
 
 ## 🏗️ Architecture
 
@@ -181,8 +181,8 @@ curl -X POST $VAULT_ADDR/v1/auth/approle/login \
 | **HashiCorp Vault** | Secrets management + PKI | localhost:8200 |
 | **PostgreSQL 18** | Primary relational database | localhost:5432 |
 | **PgBouncer** | PostgreSQL connection pooling | localhost:6432 |
-| **MySQL 8.0.40** | Legacy application support | localhost:3306 |
-| **MongoDB 7.0** | NoSQL document database | localhost:27017 |
+| **MySQL 8.0.46** | Legacy application support | localhost:3306 |
+| **MongoDB 8.0** | NoSQL document database | localhost:27017 |
 | **Redis Cluster** | 3-node distributed cache | localhost:6379-6381 (non-TLS), 6390-6392 (TLS) |
 | **RabbitMQ** | Message queue + UI | localhost:5672, 15672 |
 | **Forgejo** | Self-hosted Git server | localhost:3000 |
@@ -217,13 +217,13 @@ All reference apps demonstrate:
 - Health checks and metrics
 - TLS/SSL support
 
-**See [Reference Apps Overview](Development-Workflow) for details.**
+**See [Reference Apps Overview](./reference-apps/README.md) for details.**
 
 ## 💻 Usage
 
 ### Management Commands
 
-The `devstack` script provides all essential operations:
+The `manage-devstack` script provides all essential operations:
 
 ```bash
 # Service management
@@ -391,40 +391,40 @@ DevStack Core is optimized for **local development** while maintaining patterns 
 ## 📚 Documentation
 
 ### Getting Started
-- **[Installation Guide](Installation)** - Comprehensive setup with troubleshooting
-- **[Quick Start Tutorial](Quick-Start-Guide)** - Step-by-step usage guide
-- **[Service Profiles](Service-Configuration)** - Profile selection and configuration
+- **[Installation Guide](./docs/INSTALLATION.md)** - Comprehensive setup with troubleshooting
+- **[Quick Start Tutorial](./docs/USAGE.md)** - Step-by-step usage guide
+- **[Service Profiles](./docs/SERVICE_PROFILES.md)** - Profile selection and configuration
 
 ### Core Documentation
-- **[Architecture Overview](Architecture-Overview)** - System design with diagrams
-- **[Services Guide](Service-Overview)** - Detailed service configurations
-- **[Management Script](Management-Commands)** - Complete CLI reference
-- **[Python CLI Guide](CLI-Reference)** - Modern Python CLI documentation
+- **[Architecture Overview](./docs/ARCHITECTURE.md)** - System design with diagrams
+- **[Services Guide](./docs/SERVICES.md)** - Detailed service configurations
+- **[Management Script](./docs/MANAGEMENT.md)** - Complete CLI reference
+- **[Python CLI Guide](./docs/PYTHON_CLI.md)** - Modern Python CLI documentation
 
 ### Infrastructure
-- **[Vault Integration](Vault-Integration)** - PKI setup and secrets management
-- **[Redis Cluster](Redis-Cluster)** - Cluster architecture and operations
-- **[Observability Stack](Health-Monitoring)** - Prometheus, Grafana, Loki setup
+- **[Vault Integration](./docs/VAULT.md)** - PKI setup and secrets management
+- **[Redis Cluster](./docs/REDIS.md)** - Cluster architecture and operations
+- **[Observability Stack](./docs/OBSERVABILITY.md)** - Prometheus, Grafana, Loki setup
 
 ### Development
-- **[Reference Apps Overview](Development-Workflow)** - Multi-language examples
-- **[Best Practices](Best-Practices)** - Development patterns
+- **[Reference Apps Overview](./reference-apps/README.md)** - Multi-language examples
+- **[Best Practices](./docs/BEST_PRACTICES.md)** - Development patterns
 - **[Testing Guide](./tests/README.md)** - Testing infrastructure
-- **[Test Coverage](./tests/TEST_COVERAGE.md)** - Coverage metrics (571+ tests across 4 test suites)
-- **[Testing Approach](Testing-Guide)** - Best practices for running tests
-- **[Task 2.1 Testing](./docs/.private/TASK_2.1_TESTING.md)** - Backup system test suite (63 tests)
+- **[Test Coverage](./tests/TEST_COVERAGE.md)** - Coverage metrics (571+ tests: 50 bash scripts, 188 Python unit tests, 38 parity tests, 95+ Go tests)
+- **[Testing Approach](./docs/TESTING_APPROACH.md)** - Best practices for running tests
+- **Task 2.1 Testing** - Backup system test suite (63 tests); the write-up is kept outside the repository (`docs/.private/` is gitignored)
 
 ### Operations
-- **[Troubleshooting](Common-Issues)** - Common issues and solutions
-- **[Performance Tuning](Debugging-Techniques)** - Optimization strategies
-- **[Disaster Recovery](Disaster-Recovery)** - Backup and restore procedures
-- **[Security Assessment](Certificate-Management)** - Security hardening
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Performance Tuning](./docs/PERFORMANCE_TUNING.md)** - Optimization strategies
+- **[Disaster Recovery](./docs/DISASTER_RECOVERY.md)** - Backup and restore procedures
+- **[Security Assessment](./docs/SECURITY_ASSESSMENT.md)** - Security hardening
 
 ### Project
-- **[FAQ](FAQ)** - Frequently asked questions
-- **[Changelog](./Changelog)** - Version history
-- **[Contributing](./Contributing-Guide)** - Contribution guidelines
-- **[Security Policy](./Secrets-Rotation)** - Security reporting
+- **[FAQ](./docs/FAQ.md)** - Frequently asked questions
+- **[Changelog](./.github/CHANGELOG.md)** - Version history
+- **[Contributing](./.github/CONTRIBUTING.md)** - Contribution guidelines
+- **[Security Policy](./.github/SECURITY.md)** - Security reporting
 
 ## 🤝 Contributing
 
@@ -446,7 +446,7 @@ We welcome contributions! Here's how to get started:
 - Use conventional commit messages
 - Ensure CI/CD checks pass
 
-**See [CONTRIBUTING.md](./Contributing-Guide) for detailed guidelines.**
+**See [CONTRIBUTING.md](./.github/CONTRIBUTING.md) for detailed guidelines.**
 
 ## 🐛 Issues and Support
 
@@ -457,8 +457,8 @@ We welcome contributions! Here's how to get started:
 - System information (OS, Colima version, etc.)
 
 **Need help?**
-1. Check the [FAQ](FAQ)
-2. Review [Troubleshooting Guide](Common-Issues)
+1. Check the [FAQ](./docs/FAQ.md)
+2. Review [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
 3. Search [existing issues](https://github.com/NormB/devstack-core/issues)
 4. Ask in [Discussions](https://github.com/NormB/devstack-core/discussions)
 
@@ -485,7 +485,7 @@ Built with excellent open-source software:
 - [Prometheus](https://prometheus.io/) - Monitoring system
 - [Grafana](https://grafana.com/) - Observability platform
 
-**See complete list:** [ACKNOWLEDGEMENTS.md](Acknowledgements)
+**See complete list:** [ACKNOWLEDGEMENTS.md](./docs/ACKNOWLEDGEMENTS.md)
 
 ---
 

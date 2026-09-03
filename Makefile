@@ -16,7 +16,7 @@
 #   make install-hooks     - Install git pre-commit hooks
 #   make help              - Show this help message
 
-.PHONY: help validate test sync-check sync-report extract-openapi regenerate install-hooks clean version status
+.PHONY: help validate test sync-check sync-report extract-openapi regenerate install-hooks clean version status wiki-mirror
 
 # Default target
 .DEFAULT_GOAL := help
@@ -40,6 +40,9 @@ help: ## Display this help message
 	@echo ""
 
 ##@ Validation
+
+wiki-mirror: ## Copy the core docs into wiki/ (CI checks the copies are current)
+	@./scripts/wiki-mirror.sh
 
 validate: ## Run all validation checks (use in CI/CD)
 	@echo "$(BLUE)[VALIDATE]$(NC) Running all validation checks..."

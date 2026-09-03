@@ -1,5 +1,7 @@
 # Testing Approach - Best Practices
 
+Overview of the testing strategy for DevStack Core, including 431+ tests across Bash integration tests, Python unit tests, Go tests, and Rust tests.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -114,9 +116,9 @@ This document explains the **best practices** for running the 571+ tests in the 
 - ⚠️ test-tls-connections.sh: 7/24 validated (29%, infrastructure gap)
 - ⏸️ test-load.sh: Deferred (resource-intensive, 3-5 min runtime)
 
-See [Phase 3 Test Validation Report](../tests/PHASE_3_TEST_VALIDATION.md) for comprehensive details.
+See [Phase 3 Test Validation Report](./archive/PHASE_3_TEST_VALIDATION.md) for comprehensive details.
 
-See [Task 2.1 Testing Documentation](../docs/.private/TASK_2.1_TESTING.md) for comprehensive backup system test details.
+The Task 2.1 backup-system test write-up is kept outside the repository (`docs/.private/` is gitignored).
 
 ### 2. Python Unit Tests (FastAPI)
 **Method:** Execute inside Docker container

@@ -275,25 +275,26 @@ Located in the project root and `.github/`:
 
 ### Wiki Synchronization
 
-Core documentation files are automatically synced from `docs/` to `wiki/` directory:
+A fixed set of core documentation files is mirrored verbatim into the `wiki/`
+directory. The set is defined in one place, `scripts/wiki-mirror.sh`, and CI
+fails when a mirrored copy is out of date.
 
-- **Automated Sync:** GitHub Actions workflow syncs files when PRs are merged to `main`
-- **Verification:** `tests/test-documentation-accuracy.sh` includes Test 11 to verify wiki sync
+- **Update the copies:** `make wiki-mirror` (or `./scripts/wiki-mirror.sh`)
+- **Check the copies:** `./scripts/wiki-mirror.sh --check`, also run by the
+  Wiki Sync workflow and by Test 11 in `tests/test-documentation-accuracy.sh`
 - **Workflow:**
-  1. Update source file in `docs/` (e.g., `docs/ARCHITECTURE.md`)
-  2. Create pull request with changes
-  3. PR is reviewed and merged to `main`
-  4. GitHub Actions automatically syncs to `wiki/` (e.g., `wiki/Architecture-Overview.md`)
-  5. Test 11 verifies sync in CI/CD
+  1. Update the source file in `docs/` (e.g., `docs/ARCHITECTURE.md`)
+  2. Run `make wiki-mirror` and commit the `wiki/` changes with the source
+  3. CI verifies the copies are current
 - **Sync Mappings:**
   - `docs/README.md` → `wiki/Documentation-Index.md`
   - `docs/ARCHITECTURE.md` → `wiki/Architecture-Overview.md`
   - `docs/SERVICE_CATALOG.md` → `wiki/Service-Catalog.md`
   - `README.md` → `wiki/Home.md`
   - `.github/CHANGELOG.md` → `wiki/Changelog.md`
-  - And other core documentation files
+  - And the other core documentation files listed in `scripts/wiki-mirror.sh`
 
-**Important:** Always update the source file in `docs/`, not the wiki copy. Changes only reach `main` via merged PRs, which trigger the wiki sync workflow.
+**Important:** Always update the source file in `docs/`, not the wiki copy.
 
 ## Contributing to Documentation
 
@@ -336,7 +337,7 @@ See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 
 - [PostgreSQL 18 Documentation](https://www.postgresql.org/docs/18/)
 - [MySQL 8.0 Documentation](https://dev.mysql.com/doc/refman/8.0/)
-- [MongoDB 7.0 Documentation](https://www.mongodb.com/docs/v7.0/)
+- [MongoDB 8.0 Documentation](https://www.mongodb.com/docs/v8.0/)
 - [Redis 7.4 Documentation](https://redis.io/docs/)
 - [RabbitMQ 3.13 Documentation](https://www.rabbitmq.com/docs)
 

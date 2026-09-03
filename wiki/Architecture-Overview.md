@@ -4,6 +4,162 @@ Complete architectural documentation for the DevStack Core infrastructure projec
 
 ---
 
+## Visual Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Host Machine (macOS Apple Silicon)"
+        CLI[devstack CLI]
+
+        subgraph "Colima VM"
+            subgraph "Vault Network<br/>172.20.1.0/24"
+                Vault[("🔐 Vault<br/>:8200")]
+            end
+
+            subgraph "Data Network<br/>172.20.2.0/24"
+                PG[("🐘 PostgreSQL<br/>:5432")]
+                PGB[("📊 PgBouncer<br/>:6432")]
+                MySQL[("🐬 MySQL<br/>:3306")]
+                Mongo[("🍃 MongoDB<br/>:27017")]
+                RMQ[("🐰 RabbitMQ<br/>:5672")]
+
+                subgraph "Redis Cluster"
+                    R1[("Redis-1<br/>:6379")]
+                    R2[("Redis-2<br/>:6380")]
+                    R3[("Redis-3<br/>:6381")]
+                end
+            end
+
+            subgraph "App Network<br/>172.20.3.0/24"
+                Forgejo[("🦊 Forgejo<br/>:3000")]
+                API1["FastAPI<br/>:8000"]
+                API2["Go API<br/>:8002"]
+                API3["Node API<br/>:8003"]
+                API4["Rust API<br/>:8004"]
+            end
+
+            subgraph "Observability Network<br/>172.20.4.0/24"
+                Prom[("📈 Prometheus<br/>:9090")]
+                Graf[("📊 Grafana<br/>:3001")]
+                Loki[("📝 Loki<br/>:3100")]
+                Vector["Vector"]
+                cAdvisor["cAdvisor"]
+            end
+        end
+    end
+
+    CLI --> Vault
+    Vault --> PG & MySQL & Mongo & RMQ & R1 & Forgejo
+    PG --> Forgejo
+    PGB --> PG
+    R1 <--> R2 <--> R3
+
+    Prom --> PG & MySQL & R1 & RMQ & Mongo
+    Vector --> Loki
+    Graf --> Prom & Loki
+
+    API1 & API2 & API3 & API4 --> PG & MySQL & Mongo & R1 & RMQ
+
+    style Vault fill:#7c3aed,color:#fff
+    style PG fill:#336791,color:#fff
+    style MySQL fill:#4479a1,color:#fff
+    style Mongo fill:#47a248,color:#fff
+    style RMQ fill:#ff6600,color:#fff
+    style R1 fill:#dc382d,color:#fff
+    style R2 fill:#dc382d,color:#fff
+    style R3 fill:#dc382d,color:#fff
+    style Forgejo fill:#609926,color:#fff
+    style Prom fill:#e6522c,color:#fff
+    style Graf fill:#f46800,color:#fff
+```
+
+### Startup Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI as devstack CLI
+    participant Colima
+    participant Vault
+    participant Services
+
+    User->>CLI: ./devstack start
+    CLI->>Colima: Start VM (if not running)
+    Colima-->>CLI: VM ready
+
+    CLI->>Vault: Start Vault container
+    Vault-->>CLI: Vault healthy
+
+    CLI->>Vault: Auto-unseal (if keys exist)
+    Vault-->>CLI: Unsealed
+
+    CLI->>Services: Start services with profile
+
+    loop Each Service
+        Services->>Vault: AppRole login
+        Vault-->>Services: Client token
+        Services->>Vault: Get credentials
+        Vault-->>Services: Credentials
+        Services->>Services: Configure & start
+    end
+
+    Services-->>CLI: All healthy
+    CLI-->>User: Stack ready
+```
+
+### Network Topology
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              Colima VM (Docker)                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  VAULT NETWORK (172.20.1.0/24) - All services connect here             │  │
+│  │                                                                        │  │
+│  │  ┌─────────────────┐                                                   │  │
+│  │  │      Vault      │  ← Central secrets management                     │  │
+│  │  │   172.20.1.10   │                                                   │  │
+│  │  └─────────────────┘                                                   │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                       │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  DATA NETWORK (172.20.2.0/24) - Databases & message queue              │  │
+│  │                                                                        │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐        │  │
+│  │  │ PostgreSQL │  │   MySQL    │  │  MongoDB   │  │  RabbitMQ  │        │  │
+│  │  │   .2.10    │  │   .2.12    │  │   .2.15    │  │   .2.14    │        │  │
+│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘        │  │
+│  │                                                                        │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐                        │  │
+│  │  │  Redis-1   │  │  Redis-2   │  │  Redis-3   │  ← Cluster             │  │
+│  │  │   .2.13    │  │   .2.16    │  │   .2.17    │                        │  │
+│  │  └────────────┘  └────────────┘  └────────────┘                        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                       │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  APP NETWORK (172.20.3.0/24) - Applications                            │  │
+│  │                                                                        │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐        │  │
+│  │  │  Forgejo   │  │  FastAPI   │  │     Go     │  │    Rust    │        │  │
+│  │  │   .3.10    │  │   .3.20    │  │   .3.22    │  │   .3.24    │        │  │
+│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                       │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │  OBSERVABILITY NETWORK (172.20.4.0/24) - Monitoring                    │  │
+│  │                                                                        │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐        │  │
+│  │  │ Prometheus │  │  Grafana   │  │    Loki    │  │   Vector   │        │  │
+│  │  │   .4.10    │  │   .4.11    │  │   .4.12    │  │   .4.13    │        │  │
+│  │  └────────────┘  └────────────┘  └────────────┘  └────────────┘        │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Table of Contents
 
 1. [Overview](#overview)

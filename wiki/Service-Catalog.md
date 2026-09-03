@@ -1,8 +1,8 @@
 # Service Catalog
 
-**Version:** 1.0
-**Last Updated:** November 19, 2025
-**Total Services:** 23 containerized services
+Complete inventory of all 23 containerized services in DevStack Core, including ports, health checks, dependencies, and configuration details.
+
+**Version:** 1.0 | **Last Updated:** November 19, 2025
 
 ---
 
@@ -68,7 +68,7 @@ This document serves as the **single source of truth** for all services in the D
 ## Core Data Services
 
 ### 1. Vault
-- **Image:** `hashicorp/vault:1.18`
+- **Image:** `hashicorp/vault:1.21`
 - **Purpose:** Centralized secrets management and PKI
 - **Profile:** All (always runs - no profile required)
 - **Network:** vault-network (172.20.1.10)
@@ -107,7 +107,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Credentials:** Fetches PostgreSQL creds from Vault at `secret/postgres`
 
 ### 4. MySQL
-- **Image:** `mysql:8.0.40`
+- **Image:** `mysql:8.0.46`
 - **Purpose:** Secondary relational database
 - **Profile:** minimal, standard, full
 - **Network:** data-network (172.20.2.20)
@@ -121,7 +121,7 @@ This document serves as the **single source of truth** for all services in the D
 - **Credentials:** Stored in Vault at `secret/mysql`
 
 ### 5. MongoDB
-- **Image:** `mongo:7.0`
+- **Image:** `mongo:8.0`
 - **Purpose:** Document-oriented database
 - **Profile:** minimal, standard, full
 - **Network:** data-network (172.20.2.30)

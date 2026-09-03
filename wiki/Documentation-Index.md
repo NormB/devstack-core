@@ -33,6 +33,35 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 ## Documentation Index
 
+### New to DevStack? Start Here
+
+- **[GETTING_STARTED.md](./GETTING_STARTED.md)** - Quick start guide (5-10 minutes)
+  - Install prerequisites and start DevStack
+  - Get database credentials from Vault
+  - Connect your application
+  - Daily workflow commands
+
+- **[GLOSSARY.md](./GLOSSARY.md)** - Terms and concepts explained
+  - Plain-language definitions for all key terms
+  - Vault, AppRole, PKI, Redis cluster concepts
+  - Service descriptions and common abbreviations
+
+- **[LEARNING_PATHS.md](./LEARNING_PATHS.md)** - Guided learning by goal
+  - Choose a path based on your role or objective
+  - Step-by-step reading order with time estimates
+  - Paths for beginners, developers, DevOps, and contributors
+
+- **[USE_CASES.md](./USE_CASES.md)** - Task-driven walkthroughs
+  - Connect Python/Go/Node.js apps to databases
+  - Use Vault secrets in your application
+  - Set up monitoring with Grafana
+  - Run integration tests against DevStack
+
+- **[CLI_REFERENCE.md](./CLI_REFERENCE.md)** - Complete CLI command reference
+  - All `./devstack` commands with examples
+  - Options, arguments, and exit codes
+  - Quick reference card for common tasks
+
 ### Project Information
 
 - **[ACKNOWLEDGEMENTS.md](./ACKNOWLEDGEMENTS.md)** - Software acknowledgements and licenses
@@ -62,18 +91,15 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Test environment setup
   - Test execution guidelines
   - Coverage goals and metrics
+  - 571+ tests across 50 bash scripts
 
-- **[TEST_VALIDATION_REPORT.md](./TEST_VALIDATION_REPORT.md)** - Phase 0-2 validation results (NEW - Nov 2025)
-  - 100% test pass rate confirmation (494+ tests)
-  - Issues found and resolved during validation
-  - Performance metrics and security validation
-  - Production readiness assessment
-
-- **[NEW_TESTS_SUMMARY.md](./NEW_TESTS_SUMMARY.md)** - Extended test suite summary
-  - New test suites added to the project
-  - Coverage of Vault, PostgreSQL, PgBouncer, Observability
-  - 40+ new test cases across 4 suites
-  - Test statistics and implementation details
+- **[RUST_API_TESTING_GUIDE.md](./RUST_API_TESTING_GUIDE.md)** - Rust HTTP API testing guide
+  - Comprehensive Actix-web testing patterns
+  - Unit tests vs integration tests organization
+  - Testing best practices (positive, negative, edge cases)
+  - Common testing crates and complete examples
+  - Async testing with tokio and actix_rt
+  - Production-ready testing patterns
 
 ### Architecture & Design
 
@@ -117,25 +143,15 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Backup and restore procedures
   - Service lifecycle management
 
-- **[UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)** - Comprehensive upgrade procedures (NEW)
+- **[UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)** - Comprehensive upgrade and migration guide
   - Version upgrade paths (v1.2 → v1.3, earlier versions)
+  - Security migration: Root Token → AppRole, HTTP → TLS
   - Service version upgrades (PostgreSQL 18, MySQL, MongoDB, Redis, RabbitMQ)
   - Profile migration procedures (minimal ↔ standard ↔ full)
+  - Adding AppRole to custom services
   - Database migration procedures (pg_dump, logical replication)
-  - Backward compatibility considerations
-  - Rollback procedures (complete, service-specific, profile)
-  - Post-upgrade validation checklist (18 checks)
-  - Troubleshooting common upgrade issues
-
-- **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - AppRole and TLS migration guide (Phase 4)
-  - Root Token → AppRole migration (100% adoption)
-  - HTTP → HTTPS (TLS) migration with dual-mode support
-  - Pre-migration checklists and prerequisites
-  - Step-by-step migration procedures with verification
-  - Comprehensive troubleshooting guide
-  - Complete rollback procedures
-  - Post-migration validation (32 AppRole tests, 24 TLS tests)
-  - FAQ and best practices
+  - Rollback procedures and post-upgrade validation
+  - FAQ for upgrades, AppRole, TLS, and profiles
 
 - **[DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)** - Disaster recovery procedures
   - 30-minute RTO (Recovery Time Objective)
@@ -194,7 +210,7 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 ### API Development Patterns
 
-- **[.API-Patterns](.API-Patterns)** - API design patterns
+- **[../reference-apps/API_PATTERNS.md](../reference-apps/API_PATTERNS.md)** - API design patterns
   - Code-first vs API-first development
   - Pattern implementations
   - Synchronization strategies
@@ -212,21 +228,21 @@ This directory contains comprehensive documentation for the DevStack Core projec
 
 Located in the project root and `.github/`:
 - [README.md](../README.md) - Main project documentation
-- [CONTRIBUTING.md](../Contributing-Guide) - Contribution guidelines
-- [SECURITY.md](../Secrets-Rotation) - Security policy and reporting
+- [CONTRIBUTING.md](../.github/CONTRIBUTING.md) - Contribution guidelines
+- [SECURITY.md](../.github/SECURITY.md) - Security policy and reporting
 - [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md) - Community standards
-- [CHANGELOG.md](../Changelog) - Version history
+- [CHANGELOG.md](../.github/CHANGELOG.md) - Version history
 
 ### Component Documentation
 
 - **Reference Applications**
-  - [Reference Apps Overview](.Development-Workflow)
+  - [Reference Apps Overview](../reference-apps/README.md)
   - [FastAPI Code-First](../reference-apps/fastapi/README.md)
   - [FastAPI API-First](../reference-apps/fastapi-api-first/README.md)
   - [Go Reference API](../reference-apps/golang/README.md)
   - [Node.js Reference API](../reference-apps/nodejs/README.md)
   - [Rust Reference API](../reference-apps/rust/README.md)
-  - [API Patterns](.API-Patterns)
+  - [API Patterns](../reference-apps/API_PATTERNS.md)
 
 - **Testing Infrastructure**
   - [Tests Overview](../tests/README.md)
@@ -259,29 +275,30 @@ Located in the project root and `.github/`:
 
 ### Wiki Synchronization
 
-Core documentation files are automatically synced from `docs/` to `wiki/` directory:
+A fixed set of core documentation files is mirrored verbatim into the `wiki/`
+directory. The set is defined in one place, `scripts/wiki-mirror.sh`, and CI
+fails when a mirrored copy is out of date.
 
-- **Automated Sync:** GitHub Actions workflow syncs files when PRs are merged to `main`
-- **Verification:** `tests/test-documentation-accuracy.sh` includes Test 11 to verify wiki sync
+- **Update the copies:** `make wiki-mirror` (or `./scripts/wiki-mirror.sh`)
+- **Check the copies:** `./scripts/wiki-mirror.sh --check`, also run by the
+  Wiki Sync workflow and by Test 11 in `tests/test-documentation-accuracy.sh`
 - **Workflow:**
-  1. Update source file in `docs/` (e.g., `docs/ARCHITECTURE.md`)
-  2. Create pull request with changes
-  3. PR is reviewed and merged to `main`
-  4. GitHub Actions automatically syncs to `wiki/` (e.g., `wiki/Architecture-Overview.md`)
-  5. Test 11 verifies sync in CI/CD
+  1. Update the source file in `docs/` (e.g., `docs/ARCHITECTURE.md`)
+  2. Run `make wiki-mirror` and commit the `wiki/` changes with the source
+  3. CI verifies the copies are current
 - **Sync Mappings:**
   - `docs/README.md` → `wiki/Documentation-Index.md`
   - `docs/ARCHITECTURE.md` → `wiki/Architecture-Overview.md`
   - `docs/SERVICE_CATALOG.md` → `wiki/Service-Catalog.md`
   - `README.md` → `wiki/Home.md`
-  - `Changelog` → `wiki/Changelog.md`
-  - And other core documentation files
+  - `.github/CHANGELOG.md` → `wiki/Changelog.md`
+  - And the other core documentation files listed in `scripts/wiki-mirror.sh`
 
-**Important:** Always update the source file in `docs/`, not the wiki copy. Changes only reach `main` via merged PRs, which trigger the wiki sync workflow.
+**Important:** Always update the source file in `docs/`, not the wiki copy.
 
 ## Contributing to Documentation
 
-See [CONTRIBUTING.md](../Contributing-Guide) for guidelines on:
+See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
 - Documentation style guide
 - Review process
 - Testing documentation changes
@@ -291,19 +308,18 @@ See [CONTRIBUTING.md](../Contributing-Guide) for guidelines on:
 
 | Category | Files | Status |
 |----------|-------|--------|
-| Project Information | 1 | ✅ Complete |
+| Getting Started | 4 | ✅ Complete |
 | Security | 2 | ✅ Complete |
-| Testing | 1 | ✅ Complete |
+| Testing | 2 | ✅ Complete |
 | Architecture | 1 | ✅ Complete |
-| Service Profiles (v1.3) | 3 | ✅ Complete |
-| Operational Guides | 9 | ✅ Complete |
-| Upgrade Procedures | 1 | ✅ Complete |
+| Service Profiles | 3 | ✅ Complete |
+| Operational Guides | 12 | ✅ Complete |
 | API Patterns | 1 | ✅ Complete |
 | Reference Apps | 6 | ✅ Complete |
 | VoIP Infrastructure | 3 | ✅ Complete (voip/ subdirectory) |
-| **Total Core Documentation Files** | **~28** | **✅ 99% Coverage** |
+| **Total Core Documentation Files** | **~34** | **✅ Complete** |
 
-**Note:** Work-in-progress files (task tracking, test results) are now located in `docs/.private/` (gitignored).
+**Note:** Historical phase summaries and test reports are archived in `docs/archive/`. Work-in-progress files are in `docs/.private/` (gitignored).
 
 ## Useful Resources
 
@@ -321,7 +337,7 @@ See [CONTRIBUTING.md](../Contributing-Guide) for guidelines on:
 
 - [PostgreSQL 18 Documentation](https://www.postgresql.org/docs/18/)
 - [MySQL 8.0 Documentation](https://dev.mysql.com/doc/refman/8.0/)
-- [MongoDB 7.0 Documentation](https://www.mongodb.com/docs/v7.0/)
+- [MongoDB 8.0 Documentation](https://www.mongodb.com/docs/v8.0/)
 - [Redis 7.4 Documentation](https://redis.io/docs/)
 - [RabbitMQ 3.13 Documentation](https://www.rabbitmq.com/docs)
 
@@ -347,13 +363,13 @@ See [CONTRIBUTING.md](../Contributing-Guide) for guidelines on:
 
 - **Monthly:** Review for accuracy
 - **Quarterly:** Update test results
-- **Per Release:** Update Changelog
+- **Per Release:** Update .github/CHANGELOG.md
 - **As Needed:** Security documentation
 
 ## Need Help?
 
 - 📖 Start with [README.md](../README.md)
-- 🔒 Security questions? See [SECURITY.md](../Secrets-Rotation)
+- 🔒 Security questions? See [SECURITY.md](../.github/SECURITY.md)
 - 🧪 Testing questions? See [tests/README.md](../tests/README.md)
-- 🚀 API questions? See [reference-apps/README.md](.Development-Workflow)
-- 🤝 Want to contribute? See [CONTRIBUTING.md](../Contributing-Guide)
+- 🚀 API questions? See [reference-apps/README.md](../reference-apps/README.md)
+- 🤝 Want to contribute? See [CONTRIBUTING.md](../.github/CONTRIBUTING.md)

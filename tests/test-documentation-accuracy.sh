@@ -270,55 +270,12 @@ fi
 ################################################################################
 print_test "Wiki files are in sync with main documentation"
 
-# Define sync mappings (source → destination)
-# Using arrays instead of associative arrays for better compatibility
-WIKI_SOURCES=(
-    "docs/README.md"
-    "docs/ARCHITECTURE.md"
-    "docs/SERVICE_CATALOG.md"
-    "README.md"
-    ".github/CHANGELOG.md"
-)
-
-WIKI_DESTS=(
-    "wiki/Documentation-Index.md"
-    "wiki/Architecture-Overview.md"
-    "wiki/Service-Catalog.md"
-    "wiki/Home.md"
-    "wiki/Changelog.md"
-)
-
-OUT_OF_SYNC=0
-MISSING_WIKI_FILES=0
-
-for i in "${!WIKI_SOURCES[@]}"; do
-    src="${WIKI_SOURCES[$i]}"
-    dest="${WIKI_DESTS[$i]}"
-
-    if [ ! -f "$src" ]; then
-        ((MISSING_WIKI_FILES++))
-        continue
-    fi
-
-    if [ ! -f "$dest" ]; then
-        ((MISSING_WIKI_FILES++))
-        continue
-    fi
-
-    # Check if files are identical
-    if ! cmp -s "$src" "$dest" 2>/dev/null; then
-        ((OUT_OF_SYNC++))
-    fi
-done
-
-if [ "$OUT_OF_SYNC" -eq 0 ] && [ "$MISSING_WIKI_FILES" -eq 0 ]; then
+# The mirrored set is defined once, in scripts/wiki-mirror.sh; this test
+# runs its check mode so the two can never disagree.
+if MIRROR_OUTPUT=$(./scripts/wiki-mirror.sh --check 2>&1); then
     pass
 else
-    if [ "$OUT_OF_SYNC" -gt 0 ]; then
-        fail "$OUT_OF_SYNC wiki files out of sync with main docs" "Wiki sync required"
-    else
-        fail "$MISSING_WIKI_FILES wiki files missing" "Missing wiki files"
-    fi
+    fail "$(echo "$MIRROR_OUTPUT" | grep 'wiki mirror check failed')" "Wiki sync required"
 fi
 
 ################################################################################

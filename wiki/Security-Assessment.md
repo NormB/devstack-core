@@ -1,5 +1,7 @@
 # Comprehensive Security Assessment Report
 
+Security audit results for DevStack Core covering secrets management, authentication, container security, network isolation, and production recommendations.
+
 ## Table of Contents
 
 - [Executive Summary](#executive-summary)
@@ -330,9 +332,9 @@ For production deployment, implement:
 ✅ **All container images use specific versions**
 ```yaml
 postgres: postgres:18
-mysql: mysql:8.0.40
+mysql: mysql:8.0.46
 redis: redis:7.4-alpine3.21
-vault: hashicorp/vault:1.18
+vault: hashicorp/vault:1.21
 ```
 
 #### 3.2 Read-Only Volume Mounts
