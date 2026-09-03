@@ -44,6 +44,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # fastapi-cache2 0.2.2 (the newest release) pins redis<5.0.0 through its
+      # [redis] extra. Every bump past 4.x has made requirements.txt
+      # unresolvable, twice merged unnoticed while CI could not fail.
+      - dependency-name: "redis"
+        versions: [">=5.0.0"]
 
   # Python - FastAPI API-First implementation
   - package-ecosystem: "pip"
@@ -58,6 +64,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # fastapi-cache2 0.2.2 (the newest release) pins redis<5.0.0 through its
+      # [redis] extra. Every bump past 4.x has made requirements.txt
+      # unresolvable, twice merged unnoticed while CI could not fail.
+      - dependency-name: "redis"
+        versions: [">=5.0.0"]
 
   # Python - Shared test suite
   - package-ecosystem: "pip"

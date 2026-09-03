@@ -19,10 +19,16 @@ motor==3.7.1
 pymongo==4.16.0
 
 # Redis and Caching
-# redis 4.3.0+ required for redis.asyncio.cluster module used by fastapi-cache2
-# redis 4.6.0 is the latest 4.x version compatible with fastapi-cache2 (<5.0.0 requirement)
-redis[hiredis]==7.3.0  # fastapi-cache2 0.2.2 requires redis>=4.2.0rc1,<5.0.0
+# fastapi-cache2 0.2.2 is the newest release and its [redis] extra requires
+# redis>=4.2.0rc1,<5.0.0; redis 4.6.0 is the last 4.x. Any redis>=5 pin makes
+# this file unresolvable (pip: ResolutionImpossible). Dependabot is told to
+# leave redis on 4.x in .github/dependabot.yml; do not bump it by hand either.
+redis[hiredis]==4.6.0
 fastapi-cache2[redis]==0.2.2  # Response caching
+# fastapi-cache2's coder module imports starlette.templating, which raises
+# ImportError without jinja2 (starlette 1.x). Nothing else pulls it in, so
+# without this pin the app cannot be imported from a clean install.
+jinja2==3.1.6
 
 # RabbitMQ
 aio-pika==9.6.2

@@ -16,7 +16,12 @@ from app.middleware.circuit_breaker import (
     circuit_breaker_opened,
     circuit_breaker_half_open,
     circuit_breaker_closed,
-    circuit_breaker_failures
+    circuit_breaker_failures,
+    with_circuit_breaker,
+    # The decorator raises this module's own ServiceUnavailableError, a plain
+    # Exception subclass, not app.exceptions.ServiceUnavailableError; the
+    # tests pin the class actually raised.
+    ServiceUnavailableError
 )
 
 
@@ -167,3 +172,45 @@ class TestCircuitBreakerIntegration:
         """Test circuit breaker middleware with actual app"""
         # This would require full app integration
         pass
+
+
+@pytest.mark.unit
+class TestWithCircuitBreakerDecorator:
+    """Test the with_circuit_breaker decorator, the package's public wrapper"""
+
+    async def test_passes_the_result_through_while_closed(self):
+        """A closed breaker runs the wrapped coroutine and returns its value"""
+        breaker = pybreaker.CircuitBreaker(fail_max=1, reset_timeout=60, name="probe")
+
+        @with_circuit_breaker(breaker)
+        async def fetch(value):
+            return {"value": value}
+
+        assert await fetch(42) == {"value": 42}
+        assert breaker.current_state == "closed"
+
+    async def test_raises_service_unavailable_while_open(self):
+        """An open breaker never calls the coroutine and raises the API error"""
+        breaker = pybreaker.CircuitBreaker(fail_max=1, reset_timeout=60, name="probe")
+
+        def failing():
+            raise RuntimeError("down")
+
+        # With fail_max=1 the first failure already trips the breaker, and
+        # pybreaker reports that as CircuitBreakerError chained from the cause.
+        with pytest.raises(pybreaker.CircuitBreakerError):
+            breaker.call(failing)
+        assert breaker.current_state == "open"
+
+        calls = []
+
+        @with_circuit_breaker(breaker)
+        async def fetch():
+            calls.append(1)
+            return "unreachable"
+
+        with pytest.raises(ServiceUnavailableError) as exc_info:
+            await fetch()
+
+        assert str(exc_info.value) == "Probe service is temporarily unavailable"
+        assert calls == []
