@@ -27,7 +27,7 @@ fastapi-cache2[redis]==0.2.2  # Response caching
 jinja2==3.1.6
 
 # RabbitMQ
-aio-pika==9.6.2
+aio-pika==10.0.1
 
 # Utilities
 python-json-logger==4.0.0
