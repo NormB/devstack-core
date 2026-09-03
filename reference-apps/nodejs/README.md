@@ -17,7 +17,7 @@ A modern Node.js/Express application demonstrating infrastructure integration pa
 - **Express middleware** - Modular request processing with CORS, logging, error handling
 - **Graceful shutdown** - Signal handling for clean termination
 - **Structured logging** - Winston with correlation IDs and JSON output
-- **Real Prometheus metrics** - HTTP request counters and latency histograms
+- **Prometheus metrics** - process and Node.js runtime metrics from prom-client at `/metrics`
 - **Helmet security** - HTTP security headers
 - **Comprehensive health checks** - 8 health endpoints monitoring infrastructure
 

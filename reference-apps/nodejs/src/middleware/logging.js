@@ -5,7 +5,7 @@
  */
 
 const winston = require('winston');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const config = require('../config');
 
 // Create logger instance
@@ -35,7 +35,7 @@ const logger = winston.createLogger({
  */
 function loggingMiddleware(req, res, next) {
   // Generate or extract request ID
-  const requestId = req.headers['x-request-id'] || uuidv4();
+  const requestId = req.headers['x-request-id'] || randomUUID();
   req.requestId = requestId;
 
   // Add request ID to response headers

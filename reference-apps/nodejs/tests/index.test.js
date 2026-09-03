@@ -15,7 +15,24 @@ jest.mock('../src/services/vault', () => ({
   }
 }));
 
+const { createServer } = require('net');
 const app = require('../src/index');
+const config = require('../src/config');
+
+describe('Requiring the application module', () => {
+  it('does not bind the configured HTTP port', async () => {
+    // The tests require `src/index` to get a testable app. That require must
+    // not start a listener: with several suites in one process the second
+    // `listen` fails with EADDRINUSE, and a listener nobody closes keeps the
+    // test process alive. Proving the port is free is the only observable.
+    const probe = createServer();
+    await new Promise((resolve, reject) => {
+      probe.once('error', reject);
+      probe.listen(config.http.port, config.http.host, resolve);
+    });
+    await new Promise(resolve => probe.close(resolve));
+  });
+});
 
 describe('Application Entry Point', () => {
   describe('GET /', () => {

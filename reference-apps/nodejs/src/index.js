@@ -6,7 +6,7 @@
 
 const express = require('express');
 const helmet = require('helmet');
-const { register: prometheusRegister } = require('prom-client');
+const { register: prometheusRegister, collectDefaultMetrics } = require('prom-client');
 const config = require('./config');
 const { logger, loggingMiddleware } = require('./middleware/logging');
 const { corsMiddleware } = require('./middleware/cors');
@@ -79,6 +79,10 @@ app.use('/examples/cache', cacheRoutes);
 app.use('/examples/messaging', messagingRoutes);
 app.use('/redis', redisClusterRoutes);
 
+// Prometheus metrics: the process and Node.js runtime metrics prom-client
+// collects by default, exposed from its default registry.
+collectDefaultMetrics();
+
 // Prometheus metrics endpoint (higher rate limit: 1000 req/min)
 app.get('/metrics', highLimiter, async (req, res) => {
   try {
@@ -113,31 +117,35 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-const server = app.listen(config.http.port, config.http.host, () => {
-  logger.info(`${config.app.name} started`, {
-    port: config.http.port,
-    host: config.http.host,
-    environment: config.env,
-    debug: config.debug
+// Start the server only when this file is the entry point (`node src/index.js`).
+// The tests require the module for the `app` export and must not get a
+// listener bound to the port as a side effect.
+if (require.main === module) {
+  const server = app.listen(config.http.port, config.http.host, () => {
+    logger.info(`${config.app.name} started`, {
+      port: config.http.port,
+      host: config.http.host,
+      environment: config.env,
+      debug: config.debug
+    });
   });
-});
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
   });
-});
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
+  process.on('SIGINT', () => {
+    logger.info('SIGINT received, shutting down gracefully');
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
   });
-});
+}
 
 module.exports = app;
