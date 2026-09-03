@@ -592,7 +592,7 @@ services:
 
   mongodb:
     <<: *default-platform
-    image: mongo:8.0
+    image: mongo:8.3
     container_name: dev-mongodb
     restart: unless-stopped
 
