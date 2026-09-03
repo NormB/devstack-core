@@ -412,7 +412,7 @@ DevStack Core is optimized for **local development** while maintaining patterns 
 - **[Testing Guide](./tests/README.md)** - Testing infrastructure
 - **[Test Coverage](./tests/TEST_COVERAGE.md)** - Coverage metrics (571+ tests: 50 bash scripts, 188 Python unit tests, 38 parity tests, 95+ Go tests)
 - **[Testing Approach](./docs/TESTING_APPROACH.md)** - Best practices for running tests
-- **[Task 2.1 Testing](./docs/.private/TASK_2.1_TESTING.md)** - Backup system test suite (63 tests)
+- **Task 2.1 Testing** - Backup system test suite (63 tests); the write-up is kept outside the repository (`docs/.private/` is gitignored)
 
 ### Operations
 - **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions

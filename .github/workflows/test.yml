@@ -196,11 +196,28 @@ jobs:
 
           echo "✓ README.md exists and has content"
 
+      # wiki/ is left out on purpose: it mirrors GitHub-wiki pages, whose links
+      # are wiki page names and verbatim copies of docs/ paths that resolve on
+      # the wiki, never in this tree (27 of them fail here, none elsewhere).
+      # The checker is pinned because 3.13.x exited 0 on dead links; the
+      # "ERROR:" marker is a second detector in case that ever recurs. The
+      # config counts 403 and 429 as alive: bot protection (dev.mysql.com)
+      # and rate limiting answer those to a CI runner, while a removed page
+      # answers 404 or 410 and still fails.
       - name: Check for broken markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
-        with:
-          use-quiet-mode: 'yes'
-          config-file: '.github/workflows/markdown-link-check-config.json'
+        run: |
+          npm install --no-save --no-audit --no-fund markdown-link-check@3.15.0
+          failed=0
+          while read -r file; do
+            out=$(npx --no-install markdown-link-check -q \
+              -c .github/workflows/markdown-link-check-config.json "$file" 2>&1)
+            rc=$?
+            if [ "$rc" -ne 0 ] || echo "$out" | grep -q "ERROR:"; then
+              echo "$out"
+              failed=1
+            fi
+          done < <(find . -name '*.md' -not -path './wiki/*' -not -path '*/node_modules/*' | sort)
+          exit $failed
 
       - name: Validate required documentation sections
         run: |

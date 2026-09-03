@@ -406,7 +406,7 @@ Start Here
 📖 Follow: [Path 1: Just Start Developing](#path-1-just-start-developing)
 
 ### Step 2: Contribution Guidelines
-📖 Read: [Contributing](../CONTRIBUTING.md)
+📖 Read: [Contributing](../.github/CONTRIBUTING.md)
 
 **You'll learn:**
 - Code style requirements

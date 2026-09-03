@@ -357,7 +357,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Security constraints (prevent privilege escalation)
 - Vault API integration from host
 
-See [tests/test-approle-auth.sh:1](../tests/test-approle-auth.sh:1)
+See [tests/test-approle-auth.sh](../tests/test-approle-auth.sh)
 
 ---
 
@@ -384,7 +384,7 @@ See [tests/test-approle-auth.sh:1](../tests/test-approle-auth.sh:1)
 - Timestamp and size tracking
 - Backup type differentiation
 
-See [tests/test-incremental-backup.sh:1](../tests/test-incremental-backup.sh:1)
+See [tests/test-incremental-backup.sh](../tests/test-incremental-backup.sh)
 
 ---
 
@@ -413,7 +413,7 @@ See [tests/test-incremental-backup.sh:1](../tests/test-incremental-backup.sh:1)
 - Decryption successful with correct passphrase
 - Non-encrypted backups still supported
 
-See [tests/test-backup-encryption.sh:1](../tests/test-backup-encryption.sh:1)
+See [tests/test-backup-encryption.sh](../tests/test-backup-encryption.sh)
 
 ---
 
@@ -442,7 +442,7 @@ See [tests/test-backup-encryption.sh:1](../tests/test-backup-encryption.sh:1)
 - Performance acceptable (<5s for typical backup)
 - Works with both encrypted and unencrypted backups
 
-See [tests/test-backup-verification.sh:1](../tests/test-backup-verification.sh:1)
+See [tests/test-backup-verification.sh](../tests/test-backup-verification.sh)
 
 ---
 
@@ -471,7 +471,7 @@ See [tests/test-backup-verification.sh:1](../tests/test-backup-verification.sh:1
 - User-friendly table output for backup selection
 - Complete end-to-end restore workflow
 
-See [tests/test-backup-restore.sh:1](../tests/test-backup-restore.sh:1)
+See [tests/test-backup-restore.sh](../tests/test-backup-restore.sh)
 
 ---
 
@@ -482,7 +482,7 @@ See [tests/test-backup-restore.sh:1](../tests/test-backup-restore.sh:1)
 - **Integration Testing:** Vault API, GPG, manifest system, checksum validation
 - **Performance Testing:** Verification speed, encryption overhead
 
-**Detailed Documentation:** See [docs/.private/TASK_2.1_TESTING.md](../docs/.private/TASK_2.1_TESTING.md) for comprehensive test documentation, troubleshooting, and best practices.
+**Detailed Documentation:** See docs/.private/TASK_2.1_TESTING.md (kept outside the repository; `docs/.private/` is gitignored) for comprehensive test documentation, troubleshooting, and best practices.
 
 ---
 
@@ -517,7 +517,7 @@ See [tests/test-backup-restore.sh:1](../tests/test-backup-restore.sh:1)
 - Node rejoin process
 - Cluster health restoration
 
-See [tests/test-redis-failover.sh:1](../tests/test-redis-failover.sh:1)
+See [tests/test-redis-failover.sh](../tests/test-redis-failover.sh)
 
 ---
 
@@ -554,7 +554,7 @@ See [tests/test-redis-failover.sh:1](../tests/test-redis-failover.sh:1)
 - Service-specific secret access
 - Security boundaries
 
-See [tests/test-approle-security.sh:1](../tests/test-approle-security.sh:1)
+See [tests/test-approle-security.sh](../tests/test-approle-security.sh)
 
 ---
 
@@ -593,7 +593,7 @@ See [tests/test-approle-security.sh:1](../tests/test-approle-security.sh:1)
 - Certificate validation
 - Port configuration
 
-See [tests/test-tls-connections.sh:1](../tests/test-tls-connections.sh:1)
+See [tests/test-tls-connections.sh](../tests/test-tls-connections.sh)
 
 ---
 
@@ -617,7 +617,7 @@ See [tests/test-tls-connections.sh:1](../tests/test-tls-connections.sh:1)
 - Latency thresholds met (p95)
 - Phase 3 optimizations sustained
 
-See [tests/test-performance-regression.sh:1](../tests/test-performance-regression.sh:1)
+See [tests/test-performance-regression.sh](../tests/test-performance-regression.sh)
 
 ---
 
@@ -640,7 +640,7 @@ See [tests/test-performance-regression.sh:1](../tests/test-performance-regressio
 - Cache concurrency handling
 - Resource usage under load (CPU < 80%, Memory < 500MB)
 
-See [tests/test-load.sh:1](../tests/test-load.sh:1)
+See [tests/test-load.sh](../tests/test-load.sh)
 
 ---
 

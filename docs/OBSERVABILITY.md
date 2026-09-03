@@ -113,8 +113,8 @@ Password: admin
 4. Save dashboard JSON to `configs/grafana/dashboards/` for auto-loading
 
 **Pre-Configured Datasources:**
-- **Prometheus:** http://prometheus:9090 (default)
-- **Loki:** http://loki:3100
+- **Prometheus:** `http://prometheus:9090` (default)
+- **Loki:** `http://loki:3100`
 
 ### Loki
 
