@@ -678,7 +678,7 @@ cached = response.json()
 - [ ] API synchronization validation (planned)
 - [x] Docker integration
 - [ ] TLS/HTTPS support (planned)
-- [ ] Prometheus metrics (placeholder implemented)
+- [x] Prometheus metrics (prom-client default registry at `/metrics`)
 - [x] Structured logging (Winston with request IDs)
 
 ### Phase 4: Documentation & Polish ✅ COMPLETE

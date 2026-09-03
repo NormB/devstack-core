@@ -6,6 +6,7 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
+import { collectDefaultMetrics, register } from 'prom-client';
 import config from './config';
 import { logger, loggingMiddleware } from './middleware/logging';
 import { corsMiddleware } from './middleware/cors';
@@ -71,10 +72,13 @@ app.use('/examples/cache', cacheRoutes);
 app.use('/examples/messaging', messagingRoutes);
 app.use('/redis', redisClusterRoutes);
 
-// Metrics endpoint (placeholder)
-app.get('/metrics', (req: Request, res: Response): void => {
-  res.set('Content-Type', 'text/plain');
-  res.send('# Metrics endpoint - implementation pending\n');
+// Prometheus metrics: the process and Node.js runtime metrics prom-client
+// collects by default, exposed from its default registry.
+collectDefaultMetrics();
+
+app.get('/metrics', async (req: Request, res: Response): Promise<void> => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 // 404 handler
@@ -104,25 +108,29 @@ app.use((err: Error & { status?: number }, req: CustomRequest, res: Response, ne
   res.status(err.status || 500).json(errorResponse);
 });
 
-// Start server
-const server = app.listen(config.server.httpPort, '0.0.0.0', () => {
-  logger.info(`${config.app.name} started`, {
-    port: config.server.httpPort,
-    environment: config.server.environment,
-    debug: config.server.debug
+// Start the server only when this file is the entry point (`node dist/index.js`,
+// `ts-node src/index.ts`). The tests import the module for the `app` export and
+// must not get a listener bound to the port as a side effect.
+if (require.main === module) {
+  const server = app.listen(config.server.httpPort, '0.0.0.0', () => {
+    logger.info(`${config.app.name} started`, {
+      port: config.server.httpPort,
+      environment: config.server.environment,
+      debug: config.server.debug
+    });
   });
-});
 
-// Graceful shutdown
-const gracefulShutdown = (signal: string): void => {
-  logger.info(`${signal} received, shutting down gracefully`);
-  server.close(() => {
-    logger.info('Server closed');
-    process.exit(0);
-  });
-};
+  // Graceful shutdown
+  const gracefulShutdown = (signal: string): void => {
+    logger.info(`${signal} received, shutting down gracefully`);
+    server.close(() => {
+      logger.info('Server closed');
+      process.exit(0);
+    });
+  };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
 
 export default app;

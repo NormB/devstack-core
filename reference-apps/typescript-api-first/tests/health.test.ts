@@ -2,17 +2,20 @@
  * Health Check Route Tests
  *
  * Tests for health check endpoints without requiring actual service connections.
+ *
+ * The Vault mock targets what `src/routes/health.ts` actually imports from
+ * `src/services/vault`: the exported functions `getSecret` and
+ * `checkVaultHealth`. An earlier version mocked a `vaultClient` object with
+ * `healthCheck`/`getSecret` methods that no export has ever had; the file did
+ * not compile, so none of these tests had run.
  */
 
 import request from 'supertest';
 
 // Mock all external dependencies
 jest.mock('../src/services/vault', () => ({
-  vaultClient: {
-    healthCheck: jest.fn(),
-    getSecret: jest.fn(),
-    isAuthenticated: jest.fn().mockReturnValue(true)
-  }
+  getSecret: jest.fn(),
+  checkVaultHealth: jest.fn()
 }));
 
 jest.mock('pg', () => ({
@@ -53,14 +56,15 @@ jest.mock('amqplib', () => ({
 }));
 
 import app from '../src/index';
-import { vaultClient } from '../src/services/vault';
+import { getSecret, checkVaultHealth } from '../src/services/vault';
 import { Client as PgClient } from 'pg';
 import mysql from 'mysql2/promise';
 import { MongoClient } from 'mongodb';
 import { createClient } from 'redis';
 import amqp from 'amqplib';
 
-const mockVaultClient = vaultClient as jest.Mocked<typeof vaultClient>;
+const mockGetSecret = getSecret as jest.MockedFunction<typeof getSecret>;
+const mockCheckVaultHealth = checkVaultHealth as jest.MockedFunction<typeof checkVaultHealth>;
 const mockPgClient = PgClient as jest.MockedClass<typeof PgClient>;
 const mockMysql = mysql as jest.Mocked<typeof mysql>;
 const mockMongoClient = MongoClient as jest.MockedClass<typeof MongoClient>;
@@ -92,11 +96,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/vault', () => {
     it('should return healthy when Vault is accessible', async () => {
-      mockVaultClient.healthCheck.mockResolvedValue({
-        status: 'healthy',
-        initialized: true,
-        sealed: false
-      });
+      mockCheckVaultHealth.mockResolvedValue(true);
 
       const response = await request(app)
         .get('/health/vault')
@@ -105,20 +105,34 @@ describe('Health Routes', () => {
       expect(response.body.status).toBe('healthy');
     });
 
-    it('should return unhealthy when Vault check fails', async () => {
-      mockVaultClient.healthCheck.mockRejectedValue(new Error('Connection refused'));
+    it('should return unhealthy when Vault reports sealed or uninitialised', async () => {
+      // `checkVaultHealth` resolves false on any failure; it never rejects.
+      mockCheckVaultHealth.mockResolvedValue(false);
 
       const response = await request(app)
         .get('/health/vault')
         .expect(503);
 
       expect(response.body.status).toBe('unhealthy');
+      expect(response.body.details).toEqual({ accessible: false });
+    });
+
+    it('should return unhealthy when the Vault check throws', async () => {
+      // The route also guards against a throw, so exercise that path too.
+      mockCheckVaultHealth.mockRejectedValue(new Error('Connection refused'));
+
+      const response = await request(app)
+        .get('/health/vault')
+        .expect(503);
+
+      expect(response.body.status).toBe('unhealthy');
+      expect(response.body.details.error).toBe('Connection refused');
     });
   });
 
   describe('GET /health/postgres', () => {
     it('should return healthy when PostgreSQL is accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -138,11 +152,15 @@ describe('Health Routes', () => {
         .expect(200);
 
       expect(response.body.status).toBe('healthy');
-      expect(response.body).toHaveProperty('version');
+      // This app reports per-service facts under `details` (the `ServiceHealth`
+      // type); the nodejs, FastAPI and Go apps put `version` at the top level.
+      // The assertion pins what this app does. Aligning the shape across the
+      // reference apps is an API decision, not a test repair.
+      expect(response.body.details.version).toBe('15.4');
     });
 
     it('should return unhealthy when PostgreSQL is not accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -164,7 +182,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/mysql', () => {
     it('should return healthy when MySQL is accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -181,11 +199,11 @@ describe('Health Routes', () => {
         .expect(200);
 
       expect(response.body.status).toBe('healthy');
-      expect(response.body.version).toBe('8.0.35');
+      expect(response.body.details.version).toBe('8.0.35');
     });
 
     it('should return unhealthy when MySQL is not accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -203,7 +221,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/mongodb', () => {
     it('should return healthy when MongoDB is accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -225,11 +243,11 @@ describe('Health Routes', () => {
         .expect(200);
 
       expect(response.body.status).toBe('healthy');
-      expect(response.body.version).toBe('7.0.4');
+      expect(response.body.details.version).toBe('7.0.4');
     });
 
     it('should return unhealthy when MongoDB is not accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'
@@ -251,7 +269,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/redis', () => {
     it('should return healthy when Redis is accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
+      mockGetSecret.mockResolvedValue({ password: 'testpass' });
 
       const mockClient = {
         connect: jest.fn().mockResolvedValue(undefined),
@@ -269,7 +287,7 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when Redis is not accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({ password: 'testpass' });
+      mockGetSecret.mockResolvedValue({ password: 'testpass' });
 
       const mockClient = {
         connect: jest.fn().mockRejectedValue(new Error('Connection refused')),
@@ -287,7 +305,7 @@ describe('Health Routes', () => {
 
   describe('GET /health/rabbitmq', () => {
     it('should return healthy when RabbitMQ is accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass'
       });
@@ -309,7 +327,7 @@ describe('Health Routes', () => {
     });
 
     it('should return unhealthy when RabbitMQ is not accessible', async () => {
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass'
       });
@@ -326,8 +344,8 @@ describe('Health Routes', () => {
 
   describe('GET /health/all', () => {
     it('should return aggregate health status', async () => {
-      mockVaultClient.healthCheck.mockResolvedValue({ status: 'healthy' });
-      mockVaultClient.getSecret.mockResolvedValue({
+      mockCheckVaultHealth.mockResolvedValue(true);
+      mockGetSecret.mockResolvedValue({
         user: 'testuser',
         password: 'testpass',
         database: 'testdb'

@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "jest",
+    "test": "npm run build && jest",
     "generate": "openapi-generator-cli generate -i ../shared/openapi.yaml -g typescript-express-server -o ./generated"
   },
   "keywords": [
@@ -31,7 +31,6 @@
     "pg": "^8.18.0",
     "prom-client": "^15.1.0",
     "redis": "^5.10.0",
-    "uuid": "^14.0.0",
     "winston": "^3.19.0"
   },
   "devDependencies": {
@@ -43,7 +42,6 @@
     "@types/node": "^25.5.0",
     "@types/pg": "^8.16.0",
     "@types/supertest": "^7.2.0",
-    "@types/uuid": "^11.0.0",
     "jest": "^30.2.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.6",

@@ -4,7 +4,7 @@
 
 import winston from 'winston';
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CustomRequest } from '../types';
 
 // Create Winston logger
@@ -32,7 +32,7 @@ export const logger = winston.createLogger({
  */
 export function loggingMiddleware(req: CustomRequest, res: Response, next: NextFunction): void {
   // Generate unique request ID
-  req.requestId = uuidv4();
+  req.requestId = randomUUID();
 
   // Add request ID to response headers
   res.setHeader('X-Request-ID', req.requestId);

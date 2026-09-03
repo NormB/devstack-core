@@ -6,16 +6,33 @@
 
 import request from 'supertest';
 
-// Mock the vault service before importing app
+// Mock the vault service before importing app. The factory mirrors the
+// module's real exports so nothing here can drift from `src/services/vault`.
 jest.mock('../src/services/vault', () => ({
-  vaultClient: {
-    healthCheck: jest.fn(),
-    getSecret: jest.fn(),
-    isAuthenticated: jest.fn().mockReturnValue(true)
-  }
+  getSecret: jest.fn(),
+  checkVaultHealth: jest.fn()
 }));
 
+import { createServer } from 'net';
 import app from '../src/index';
+import config from '../src/config';
+
+describe('Importing the application module', () => {
+  it('does not bind the configured HTTP port', async () => {
+    // The tests import `src/index` to get a testable app. That import must
+    // not start a listener: with several suites in one process the second
+    // `listen` fails with EADDRINUSE, and a listener nobody closes keeps the
+    // test process alive. Proving the port is free is the only observable.
+    const probe = createServer();
+    await new Promise<void>((resolve, reject) => {
+      probe.once('error', reject);
+      probe.listen(config.server.httpPort, '0.0.0.0', () => resolve());
+    });
+    await new Promise<void>(resolve => {
+      probe.close(() => resolve());
+    });
+  });
+});
 
 describe('Application Entry Point', () => {
   describe('GET /', () => {
