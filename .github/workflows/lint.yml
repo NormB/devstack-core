@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Find Dockerfiles
         id: find-dockerfiles
@@ -62,7 +62,7 @@ jobs:
 
       - name: Lint Dockerfiles
         if: steps.find-dockerfiles.outputs.dockerfiles != ''
-        uses: hadolint/hadolint-action@v3.3.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: ${{ steps.find-dockerfiles.outputs.dockerfiles }}
           failure-threshold: warning
@@ -73,10 +73,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -115,7 +115,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Advisory, deliberately. Measured on 2026-09-03: about 13,000 findings
       # across 162 Markdown files, three quarters of them MD060, MD032, MD031,
@@ -124,7 +124,7 @@ jobs:
       # (a .markdownlint-cli2 config) and one pass over the corpus; until then
       # the step reports and the lint summary treats it as informational.
       - name: Markdown Lint
-        uses: DavidAnson/markdownlint-cli2-action@v23
+        uses: DavidAnson/markdownlint-cli2-action@v24
         with:
           globs: |
             **/*.md
@@ -138,7 +138,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check for Python files
         id: check-python
@@ -151,7 +151,7 @@ jobs:
 
       - name: Set up Python
         if: steps.check-python.outputs.has_python == 'true'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -175,7 +175,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check for Go files
         id: check-go
@@ -188,7 +188,7 @@ jobs:
 
       - name: Set up Go
         if: steps.check-go.outputs.has_go == 'true'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'reference-apps/golang/go.mod'
 
@@ -214,7 +214,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check for Rust files
         id: check-rust
@@ -256,7 +256,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -286,7 +286,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check .env.example format
         run: |
@@ -331,7 +331,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check script permissions
         run: |
