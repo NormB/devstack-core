@@ -1,4 +1,4 @@
-FROM timberio/vector:0.50.0-debian
+FROM timberio/vector:0.58.0-debian
 
 # Install dependencies required by init script
 RUN apt-get update && \
