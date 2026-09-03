@@ -1,5 +1,4 @@
-ARG PGBOUNCER_VERSION=latest
-FROM edoburu/pgbouncer:${PGBOUNCER_VERSION}
+FROM edoburu/pgbouncer:latest
 
 # Install dependencies for Vault integration
 USER root

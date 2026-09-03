@@ -9,7 +9,9 @@ updates:
   # ecosystem: the docker ecosystem reads Dockerfiles only, and configured
   # on "/" it found none and errored on every run ("No Dockerfiles nor
   # Kubernetes YAML found in /"), which is how the compose defaults went a
-  # year without a bump.
+  # year without a bump. It reads literal tags only: an image written as
+  # `postgres:${POSTGRES_VERSION:-18}` is skipped (the 2026-09-03 run parsed
+  # zero dependencies), so docker-compose.yml pins every image literally.
   - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
@@ -23,7 +25,8 @@ updates:
           - "minor"
           - "patch"
 
-  # Base images of the Dockerfiles this repository builds.
+  # Base images of the Dockerfiles this repository builds. Same rule: a
+  # `FROM image:${ARG}` is skipped, so the FROM lines carry literal tags.
   - package-ecosystem: "docker"
     directories:
       - "/configs/forgejo"

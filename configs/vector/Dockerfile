@@ -1,5 +1,4 @@
-ARG VECTOR_VERSION=0.50.0-debian
-FROM timberio/vector:${VECTOR_VERSION}
+FROM timberio/vector:0.50.0-debian
 
 # Install dependencies required by init script
 RUN apt-get update && \
