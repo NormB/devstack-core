@@ -10,8 +10,8 @@ ignored:
   - DL3018
   - DL3008
   # DL3007 flags the alpine:latest runtime stage of the Go and Rust apps.
-  # Dependabot's docker ecosystem watches docker-compose.yml only, so a tag
-  # pinned in these Dockerfiles would never be bumped; the floating tag is
-  # deliberate for a minimal runtime stage that installs nothing but
-  # ca-certificates and wget.
+  # The floating tag is deliberate for a minimal runtime stage that installs
+  # nothing but ca-certificates and wget. (Dependabot does watch these
+  # Dockerfiles since 2026-09-03, so a pinned tag would now be bumped; the
+  # choice to float is about the stage, not the tooling.)
   - DL3007

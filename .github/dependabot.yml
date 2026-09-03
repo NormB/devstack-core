@@ -5,8 +5,12 @@
 
 version: 2
 updates:
-  # Monitor Docker Compose for base image updates
-  - package-ecosystem: "docker"
+  # Image tags in docker-compose.yml. This has to be the docker-compose
+  # ecosystem: the docker ecosystem reads Dockerfiles only, and configured
+  # on "/" it found none and errored on every run ("No Dockerfiles nor
+  # Kubernetes YAML found in /"), which is how the compose defaults went a
+  # year without a bump.
+  - package-ecosystem: "docker-compose"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -14,7 +18,25 @@ updates:
     groups:
       # Batch low-risk patch/minor bumps into a single PR to cut noise.
       # Majors stay individual: they are the ones worth reading.
-      docker-minor-patch:
+      docker-compose-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Base images of the Dockerfiles this repository builds.
+  - package-ecosystem: "docker"
+    directories:
+      - "/configs/forgejo"
+      - "/configs/pgbouncer"
+      - "/configs/vector"
+      - "/reference-apps/*"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Batch low-risk patch/minor bumps into a single PR to cut noise.
+      # Majors stay individual: they are the ones worth reading.
+      dockerfile-minor-patch:
         update-types:
           - "minor"
           - "patch"
