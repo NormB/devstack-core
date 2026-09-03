@@ -291,29 +291,28 @@ fi
 ################################################################################
 # Test 12: SERVICE_CATALOG.md image tags match the images the stack runs
 ################################################################################
-print_test "SERVICE_CATALOG.md image tags match docker-compose.yml and the Dockerfiles"
+print_test "SERVICE_CATALOG.md names the images docker-compose.yml and the Dockerfiles run"
 
-# What the stack runs: every compose `image:` default, plus the base image of
-# each configs/*/Dockerfile with its ARG default substituted into FROM.
+# The catalog names each image without its tag: tags are pinned in compose
+# and the Dockerfile FROM lines, where Dependabot bumps them weekly, and a
+# second copy of a tag could only fall behind. What is checked is identity:
+# every image the catalog names must be one the stack runs.
 RUNNING_IMAGES=$( {
-    grep -E '^\s+image:' docker-compose.yml | sed 's/.*image:\s*//' | sed 's/\${[^:]*:-\([^}]*\)}/\1/g'
-    for df in configs/*/Dockerfile; do
-        arg_default=$(grep -m1 -E '^ARG [A-Z_]+=' "$df" | sed 's/^ARG [A-Z_]*=//')
-        grep -m1 -E '^FROM ' "$df" | sed "s/^FROM //; s/\${[A-Z_]*}/$arg_default/"
-    done
-} | sort -u)
+    grep -E '^\s+image:' docker-compose.yml | sed 's/.*image:\s*//'
+    grep -hE '^FROM ' configs/*/Dockerfile | sed 's/^FROM //'
+} | sed 's/:[^:/]*$//' | sort -u)
 
-STALE_IMAGES=""
+UNKNOWN_IMAGES=""
 while read -r img; do
     if ! echo "$RUNNING_IMAGES" | grep -qxF "$img"; then
-        STALE_IMAGES="$STALE_IMAGES $img"
+        UNKNOWN_IMAGES="$UNKNOWN_IMAGES $img"
     fi
 done < <(grep -oE '\*\*Image:\*\* `[^`]+`' docs/SERVICE_CATALOG.md | sed 's/.*`\(.*\)`/\1/')
 
-if [ -z "$STALE_IMAGES" ]; then
+if [ -z "$UNKNOWN_IMAGES" ]; then
     pass
 else
-    fail "not what the stack runs:$STALE_IMAGES" "Service catalog image tags stale"
+    fail "not an image the stack runs:$UNKNOWN_IMAGES" "Service catalog names an unknown image"
 fi
 
 ################################################################################
