@@ -197,7 +197,7 @@ This project is made possible by the excellent open-source software and tools cr
 ### Uvicorn
 **Project**: Uvicorn
 **Version**: 0.24.0
-**Website**: https://www.uvicorn.org/
+**Website**: https://uvicorn.dev/
 **License**: BSD-3-Clause
 **Purpose**: ASGI server for FastAPI applications
 
