@@ -234,7 +234,7 @@ async fn health_postgres() -> impl Responder {
     }
 }
 
-async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
+async fn check_postgres_health() -> Result<HealthResponse, Box<HealthResponse>> {
     // Get credentials from Vault
     let creds = get_vault_secret("postgres")
         .await
@@ -283,22 +283,22 @@ async fn check_postgres_health() -> Result<HealthResponse, HealthResponse> {
                         details: None,
                     })
                 }
-                Err(e) => Err(HealthResponse {
+                Err(e) => Err(Box::new(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
                     error: Some(format!("Query failed: {}", e)),
                     details: None,
-                }),
+                })),
             }
         }
-        Err(e) => Err(HealthResponse {
+        Err(e) => Err(Box::new(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
             version: None,
             error: Some(format!("Connection failed: {}", e)),
             details: None,
-        }),
+        })),
     }
 }
 
@@ -309,7 +309,7 @@ async fn health_mysql() -> impl Responder {
     }
 }
 
-async fn check_mysql_health() -> Result<HealthResponse, HealthResponse> {
+async fn check_mysql_health() -> Result<HealthResponse, Box<HealthResponse>> {
     let creds = get_vault_secret("mysql")
         .await
         .map_err(|e| HealthResponse {
@@ -348,32 +348,32 @@ async fn check_mysql_health() -> Result<HealthResponse, HealthResponse> {
             }
             Ok(None) => {
                 let _ = conn.disconnect().await;
-                Err(HealthResponse {
+                Err(Box::new(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
                     error: Some("No version returned".to_string()),
                     details: None,
-                })
+                }))
             }
             Err(e) => {
                 let _ = conn.disconnect().await;
-                Err(HealthResponse {
+                Err(Box::new(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
                     error: Some(format!("Query failed: {}", e)),
                     details: None,
-                })
+                }))
             }
         },
-        Err(e) => Err(HealthResponse {
+        Err(e) => Err(Box::new(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
             version: None,
             error: Some(format!("Connection failed: {}", e)),
             details: None,
-        }),
+        })),
     }
 }
 
@@ -384,7 +384,7 @@ async fn health_mongodb() -> impl Responder {
     }
 }
 
-async fn check_mongodb_health() -> Result<HealthResponse, HealthResponse> {
+async fn check_mongodb_health() -> Result<HealthResponse, Box<HealthResponse>> {
     let creds = get_vault_secret("mongodb")
         .await
         .map_err(|e| HealthResponse {
@@ -420,22 +420,22 @@ async fn check_mongodb_health() -> Result<HealthResponse, HealthResponse> {
                     error: None,
                     details: None,
                 }),
-                Err(e) => Err(HealthResponse {
+                Err(e) => Err(Box::new(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
                     error: Some(format!("Ping failed: {}", e)),
                     details: None,
-                }),
+                })),
             }
         }
-        Err(e) => Err(HealthResponse {
+        Err(e) => Err(Box::new(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
             version: None,
             error: Some(format!("Connection failed: {}", e)),
             details: None,
-        }),
+        })),
     }
 }
 
@@ -446,7 +446,7 @@ async fn health_redis() -> impl Responder {
     }
 }
 
-async fn check_redis_health() -> Result<HealthResponse, HealthResponse> {
+async fn check_redis_health() -> Result<HealthResponse, Box<HealthResponse>> {
     let creds = get_vault_secret("redis-1")
         .await
         .map_err(|e| HealthResponse {
@@ -473,29 +473,29 @@ async fn check_redis_health() -> Result<HealthResponse, HealthResponse> {
                     error: None,
                     details: None,
                 }),
-                Err(e) => Err(HealthResponse {
+                Err(e) => Err(Box::new(HealthResponse {
                     status: "unhealthy".to_string(),
                     timestamp: Some(chrono::Utc::now().to_rfc3339()),
                     version: None,
                     error: Some(format!("PING failed: {}", e)),
                     details: None,
-                }),
+                })),
             },
-            Err(e) => Err(HealthResponse {
+            Err(e) => Err(Box::new(HealthResponse {
                 status: "unhealthy".to_string(),
                 timestamp: Some(chrono::Utc::now().to_rfc3339()),
                 version: None,
                 error: Some(format!("Connection failed: {}", e)),
                 details: None,
-            }),
+            })),
         },
-        Err(e) => Err(HealthResponse {
+        Err(e) => Err(Box::new(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
             version: None,
             error: Some(format!("Client creation failed: {}", e)),
             details: None,
-        }),
+        })),
     }
 }
 
@@ -506,7 +506,7 @@ async fn health_rabbitmq() -> impl Responder {
     }
 }
 
-async fn check_rabbitmq_health() -> Result<HealthResponse, HealthResponse> {
+async fn check_rabbitmq_health() -> Result<HealthResponse, Box<HealthResponse>> {
     let creds = get_vault_secret("rabbitmq")
         .await
         .map_err(|e| HealthResponse {
@@ -536,13 +536,13 @@ async fn check_rabbitmq_health() -> Result<HealthResponse, HealthResponse> {
                 details: None,
             })
         }
-        Err(e) => Err(HealthResponse {
+        Err(e) => Err(Box::new(HealthResponse {
             status: "unhealthy".to_string(),
             timestamp: Some(chrono::Utc::now().to_rfc3339()),
             version: None,
             error: Some(format!("Connection failed: {}", e)),
             details: None,
-        }),
+        })),
     }
 }
 
