@@ -1,7 +1,9 @@
 ARG FORGEJO_VERSION=1.21.11-0
 FROM codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
 
-# Install dependencies for Vault integration (needs root)
+# Install dependencies for Vault integration (needs root). Staying root at
+# the end is deliberate: see the note above ENTRYPOINT.
+# hadolint ignore=DL3002
 USER root
 RUN apk add --no-cache wget jq
 

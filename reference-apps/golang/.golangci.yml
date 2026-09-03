@@ -1,0 +1,12 @@
+# golangci-lint v2 configuration.
+#
+# The default linter set stays on. The one exclusion preset restores what
+# golangci-lint v1 applied by default and v2 dropped: errcheck no longer
+# reports an unchecked error from Close, Flush, os.Setenv and the other
+# calls whose failure a handler has no way to act on. Without it every
+# `defer conn.Close()` in the handlers is a finding.
+version: "2"
+linters:
+  exclusions:
+    presets:
+      - std-error-handling

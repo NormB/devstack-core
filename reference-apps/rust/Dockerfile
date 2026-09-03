@@ -44,7 +44,7 @@ EXPOSE 8004 8447
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8004/health/ || exit 1
+  CMD ["sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:8004/health/ || exit 1"]
 
 # Run
 CMD ["./devstack-core-rust-api"]

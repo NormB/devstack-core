@@ -24,7 +24,9 @@ from typing import Optional, Dict, Any
 from fastapi import status
 
 
-class BaseAPIException(Exception):
+# The name mirrors FastAPI's HTTPException, which every subclass here
+# extends in spirit; N818 wants an Error suffix.
+class BaseAPIException(Exception):  # noqa: N818
     """
     Base exception class for all custom API exceptions.
 

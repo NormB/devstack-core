@@ -630,7 +630,7 @@ def decrypt_file_gpg(encrypted_path: Path, passphrase: str, output_path: Optiona
         return False
 
 
-def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:
+def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C901 -- known complex; split it before adding branches
     """
     Verify backup integrity using checksums from manifest.
 
@@ -989,7 +989,7 @@ def start(profile: Tuple[str], detach: bool):
             console.print("[green]✓ Colima VM already running[/green]")
 
     # Step 2: Clean up any orphaned containers/networks from previous runs
-    console.print(f"\n[dim]Cleaning up orphaned resources...[/dim]")
+    console.print("\n[dim]Cleaning up orphaned resources...[/dim]")
 
     # Stop and remove ALL containers/networks (use all possible profiles to ensure cleanup)
     cleanup_cmd = ["docker", "compose"]
@@ -999,7 +999,7 @@ def start(profile: Tuple[str], detach: bool):
     run_command(cleanup_cmd, check=False)
 
     # Step 3: Start Docker services with profile(s)
-    console.print(f"\n[cyan]Starting Docker services...[/cyan]")
+    console.print("\n[cyan]Starting Docker services...[/cyan]")
 
     cmd = ["docker", "compose"]
     for p in profile:
@@ -1341,7 +1341,7 @@ def shell(service: str, shell: str):
       - Useful for manual inspection, debugging, or one-off commands
     """
     console.print(f"\n[cyan]Opening shell in {service}...[/cyan]")
-    console.print(f"[dim]Type 'exit' to close the shell[/dim]\n")
+    console.print("[dim]Type 'exit' to close the shell[/dim]\n")
 
     run_command(
         ["docker", "compose", "exec", service, shell],
@@ -1507,7 +1507,7 @@ def reset():
     is_flag=True,
     help="Encrypt backup files with GPG (AES256 symmetric encryption)"
 )
-def backup(incremental, full, encrypt):
+def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it before adding branches
     """
     Backup all service data to timestamped directory.
 
@@ -1772,7 +1772,7 @@ def backup(incremental, full, encrypt):
 
 @cli.command()
 @click.argument('backup_name', required=False)
-def restore(backup_name):
+def restore(backup_name):  # noqa: C901 -- known complex; split it before adding branches
     """
     Restore service data from a backup directory.
 
@@ -2123,7 +2123,7 @@ def restore(backup_name):
 @cli.command()
 @click.argument('backup_name', required=False)
 @click.option('--all', 'verify_all', is_flag=True, help='Verify all backups')
-def verify(backup_name, verify_all):
+def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it before adding branches
     """
     Verify backup integrity using checksums from manifest.
 
@@ -2203,7 +2203,7 @@ def verify(backup_name, verify_all):
                 table.add_row(backup.name, "no manifest", "-", "-")
 
         console.print(table)
-        console.print(f"\n[cyan]Tip:[/cyan] Run [green]./devstack verify <backup_id>[/green] to verify a backup\n")
+        console.print("\n[cyan]Tip:[/cyan] Run [green]./devstack verify <backup_id>[/green] to verify a backup\n")
         return
 
     # Verify single backup
@@ -2214,7 +2214,7 @@ def verify(backup_name, verify_all):
             console.print(f"[red]Error: Backup not found:[/red] {backup_dir}\n")
             sys.exit(1)
 
-        console.print(f"\n[cyan]═══ Backup Verification Report ═══[/cyan]\n")
+        console.print("\n[cyan]═══ Backup Verification Report ═══[/cyan]\n")
         console.print(f"[cyan]Backup ID:[/cyan] {backup_name}")
 
         # Load manifest for header info
@@ -2257,7 +2257,7 @@ def verify(backup_name, verify_all):
 
         # Show errors
         if report['errors']:
-            console.print(f"\n[red]Errors:[/red]")
+            console.print("\n[red]Errors:[/red]")
             for error in report['errors']:
                 console.print(f"  [red]•[/red] {error}")
 
@@ -2265,7 +2265,7 @@ def verify(backup_name, verify_all):
         console.print(f"\n[cyan]Duration:[/cyan] {duration:.2f} seconds")
 
         if success:
-            console.print(f"\n[green]✓ Backup verification PASSED[/green]\n")
+            console.print("\n[green]✓ Backup verification PASSED[/green]\n")
             sys.exit(0)
         else:
             console.print(f"\n[red]✗ Backup verification FAILED ({report['files_failed']} errors)[/red]")
@@ -2300,7 +2300,7 @@ def verify(backup_name, verify_all):
                 console.print(f"[red]FAIL[/red] ({report['files_failed']} errors)")
                 total_failed += 1
 
-        console.print(f"\n[cyan]Summary:[/cyan]")
+        console.print("\n[cyan]Summary:[/cyan]")
         console.print(f"  [green]✓ Passed:[/green] {total_verified}")
         console.print(f"  [red]✗ Failed:[/red] {total_failed}")
         console.print("")
@@ -2629,7 +2629,7 @@ def vault_show_password(service: str):
             console.print(f"[yellow]Make sure credentials exist: vault kv get secret/{service}[/yellow]\n")
             sys.exit(1)
 
-        console.print(f"[green]✓ Forgejo Admin Credentials:[/green]")
+        console.print("[green]✓ Forgejo Admin Credentials:[/green]")
         console.print(f"  [cyan]Username:[/cyan] {admin_user}")
         console.print(f"  [cyan]Email:[/cyan]    {admin_email}")
         console.print(f"  [cyan]Password:[/cyan] {password}\n")

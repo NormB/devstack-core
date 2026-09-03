@@ -41,18 +41,18 @@ ALLOWED_CONTENT_TYPES = [
 ]
 
 # Configure structured JSON logging
-logHandler = logging.StreamHandler(sys.stdout)
+log_handler = logging.StreamHandler(sys.stdout)
 formatter = jsonlogger.JsonFormatter(
     '%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(method)s %(path)s %(status_code)s %(duration_ms)s'
 )
-logHandler.setFormatter(formatter)
+log_handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
-logger.addHandler(logHandler)
+logger.addHandler(log_handler)
 logger.setLevel(logging.INFO)
 
 # Disable default basicConfig
 logging.getLogger().handlers.clear()
-logging.getLogger().addHandler(logHandler)
+logging.getLogger().addHandler(log_handler)
 
 # Prometheus metrics
 http_requests_total = Counter(

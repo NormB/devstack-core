@@ -40,7 +40,7 @@ async def check_vault() -> Dict[str, Any]:
             "status": health.get("status", "unknown"),
             "details": health
         }
-    except Exception as e:
+    except Exception:
         return {"status": "unhealthy", "error": "Vault health check failed"}
 
 
@@ -198,7 +198,7 @@ async def check_redis() -> Dict[str, Any]:
                     "used_memory_human": info.get("used_memory_human", "unknown")
                 })
 
-            except Exception as e:
+            except Exception:
                 nodes.append({
                     "host": host,
                     "port": int(port),

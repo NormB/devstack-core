@@ -151,7 +151,9 @@ func (d *DatabaseHandler) MongoDBQuery(c *gin.Context) {
 		})
 		return
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	// Test query
 	database := client.Database("test")

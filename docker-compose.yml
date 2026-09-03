@@ -247,7 +247,7 @@ services:
       timeout: ${POSTGRES_HEALTH_TIMEOUT:-5s}
       retries: ${POSTGRES_HEALTH_RETRIES:-5}
       start_period: ${POSTGRES_HEALTH_START_PERIOD:-30s}
-    
+
     logging: *default-logging
 
     deploy:
@@ -267,7 +267,7 @@ services:
   # ===========================================================================
   # PGBOUNCER - Connection Pooling for Git/Dev
   # ===========================================================================
-  
+
   pgbouncer:
     <<: *default-platform
     build:
@@ -296,7 +296,7 @@ services:
 
     volumes:
       - ${HOME}/.config/vault/approles/pgbouncer:/vault-approles/pgbouncer:ro
-    
+
     ports:
       - "${PGBOUNCER_HOST_PORT:-6432}:5432"
 
@@ -305,18 +305,18 @@ services:
       data-network:    # Connect to PostgreSQL
         ipv4_address: 172.20.2.11
       app-network:     # Accept connections from apps
-    
+
     depends_on:
       postgres:
         condition: service_healthy
-    
+
     healthcheck:
       test: ["CMD-SHELL", "PGPASSFILE=/var/lib/postgresql/.pgpass psql -h localhost -U devuser -d devdb -c 'SELECT 1' || exit 1"]
       interval: 60s
       timeout: 10s
       retries: 5
       start_period: 30s
-    
+
     logging: *default-logging
 
     deploy:
@@ -591,7 +591,7 @@ services:
   # ===========================================================================
   # MONGODB - NoSQL Database (Local Dev)
   # ===========================================================================
-  
+
   mongodb:
     <<: *default-platform
     image: mongo:${MONGODB_VERSION:-7.0}
@@ -658,7 +658,7 @@ services:
   # ===========================================================================
   # Forgejo uses the local PostgreSQL instance for git repository storage
   # ===========================================================================
-  
+
   forgejo:
     <<: *default-platform
     build:
@@ -696,23 +696,23 @@ services:
       - ${HOME}/.config/vault/approles/forgejo:/vault-approles/forgejo:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    
+
     networks:
       vault-network:  # Connect to Vault for AppRole auth
       data-network:   # Connect to PostgreSQL database
       app-network:    # Primary network for app tier
         ipv4_address: 172.20.3.20
-    
+
     depends_on:
       postgres:
         condition: service_healthy
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
       interval: 60s
       timeout: 10s
       retries: 5
-    
+
     logging: *default-logging
 
     deploy:

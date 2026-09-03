@@ -7,7 +7,6 @@ Tests the caching middleware, cache key generation, and cache operations.
 import pytest
 from unittest.mock import MagicMock, patch
 
-from app.main import app
 from app.middleware.cache import (
     generate_cache_key,
     CacheManager,

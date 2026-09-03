@@ -110,7 +110,9 @@ func (rch *RedisClusterHandler) ClusterSlots(c *gin.Context) {
 	}
 	defer rdb.Close()
 
-	slots, err := rdb.ClusterSlots(ctx).Result()
+	// CLUSTER SLOTS is the shape the other reference apps expose; go-redis
+	// deprecates it in favour of ClusterShards, which changes the response.
+	slots, err := rdb.ClusterSlots(ctx).Result() //nolint:staticcheck // see above
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

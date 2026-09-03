@@ -1,0 +1,17 @@
+# hadolint policy. CI (lint.yml, "Dockerfile Lint") fails at warning and
+# above, so every rule listed here is one the repository has decided not to
+# follow, with the reason. Anything not listed is enforced.
+ignored:
+  # DL3018 (apk add) and DL3008 (apt-get install) want every package pinned
+  # to a version. Alpine and Debian drop superseded package versions from
+  # their repositories, so a pinned install breaks within weeks and the
+  # pins would need constant hand maintenance; --no-cache and a pinned base
+  # image are the reproducibility this project relies on instead.
+  - DL3018
+  - DL3008
+  # DL3007 flags the alpine:latest runtime stage of the Go and Rust apps.
+  # Dependabot's docker ecosystem watches docker-compose.yml only, so a tag
+  # pinned in these Dockerfiles would never be bumped; the floating tag is
+  # deliberate for a minimal runtime stage that installs nothing but
+  # ca-certificates and wget.
+  - DL3007

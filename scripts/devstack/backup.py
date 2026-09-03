@@ -356,7 +356,7 @@ def decrypt_file_gpg(
         return False
 
 
-def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:
+def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  # noqa: C901 -- known complex; split it before adding branches
     """
     Verify backup integrity using checksums from manifest.
 

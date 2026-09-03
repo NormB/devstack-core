@@ -190,7 +190,9 @@ func (h *HealthHandler) MongoDBHealth(c *gin.Context) {
 		})
 		return
 	}
-	defer client.Disconnect(ctx)
+	defer func() {
+		_ = client.Disconnect(ctx)
+	}()
 
 	err = client.Ping(ctx, nil)
 	if err != nil {

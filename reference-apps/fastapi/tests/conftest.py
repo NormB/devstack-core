@@ -13,7 +13,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from app.main import app
-from app.config import settings
 
 
 @pytest.fixture
@@ -109,7 +108,6 @@ def reset_prometheus_metrics():
     """
     Reset Prometheus metrics before each test to avoid side effects
     """
-    from prometheus_client import REGISTRY
     # Note: We can't easily reset metrics, so we'll just yield
     # In production tests, you'd want to use a separate registry
     yield

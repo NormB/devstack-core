@@ -79,7 +79,7 @@ class TestDatabaseDemoRouters:
         with patch('app.routers.database_demo.vault_client.get_secret') as mock_vault:
             with patch('app.routers.database_demo.asyncpg.connect') as mock_connect:
                 mock_vault.return_value = {
-                    "user": "test", 
+                    "user": "test",
                     "password": "test",
                     "database": "test"
                 }

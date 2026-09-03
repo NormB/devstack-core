@@ -151,8 +151,10 @@ func (mh *MessagingHandler) QueueInfo(c *gin.Context) {
 	}
 	defer ch.Close()
 
-	// Inspect queue
-	q, err := ch.QueueInspect(queueName)
+	// Inspect the queue. A passive declare is exactly what the deprecated
+	// QueueInspect sent: it answers for an existing queue and errors for a
+	// missing one, without creating anything.
+	q, err := ch.QueueDeclarePassive(queueName, false, false, false, false, nil)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": fmt.Sprintf("queue %s not found", queueName),
