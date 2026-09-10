@@ -16,7 +16,7 @@ asyncpg==0.31.0
 aiomysql==0.3.2
 cryptography>=50.0.1  # Required for MySQL caching_sha2_password auth
 motor==3.7.1
-pymongo==4.17.0
+pymongo==4.18.0
 
 # Redis and Caching
 # fastapi-cache2 0.2.2 is the newest release and its [redis] extra requires
