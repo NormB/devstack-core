@@ -75,7 +75,7 @@ x-redis-common: &redis-common
 # =============================================================================
 x-redis-exporter-common: &redis-exporter-common
   <<: *default-platform
-  image: oliver006/redis_exporter:v1.90.0-alpine
+  image: oliver006/redis_exporter:v1.91.1-alpine
   restart: unless-stopped
   entrypoint: ["/init/init.sh"]
   environment: &redis-exporter-env
@@ -1269,7 +1269,7 @@ services:
 
   loki:
     <<: *default-platform
-    image: grafana/loki:3.7.7
+    image: grafana/loki:3.7.8
     container_name: dev-loki
     restart: unless-stopped
 
