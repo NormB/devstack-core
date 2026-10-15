@@ -58,7 +58,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="api-first"
-SERVICE_IP="${API_FIRST_IP:-172.20.0.31}"
 CERT_DIR="/app/certs"
 VAULT_CERT_DIR="${HOME}/.config/vault/certs"
 ENABLE_TLS="" # Will be read from Vault

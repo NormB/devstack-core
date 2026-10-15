@@ -104,9 +104,8 @@ fetch_credentials_from_vault() {
   fi
 
   # Validate token has read access
-  local token_test
-  token_test=$(wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/auth/token/lookup-self" 2>&1)
+  wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/auth/token/lookup-self" > /dev/null 2>&1
 
   if [ $? -ne 0 ]; then
     error "VAULT_TOKEN is invalid or Vault is unreachable"
@@ -204,8 +203,7 @@ db_type=postgres&db_host=${DB_HOST}&db_user=${DB_USER}&db_passwd=${encoded_db_pa
 EOF
 
   # Submit installation using POST file (prevents credential exposure)
-  local install_response
-  install_response=$(wget -qO- --post-file="$tmpfile" http://localhost:3000/ 2> /dev/null) || {
+  wget -qO- --post-file="$tmpfile" http://localhost:3000/ > /dev/null 2>&1 || {
     warn "Installation API call completed (checking status...)"
   }
 

@@ -21,7 +21,6 @@ set -euo pipefail
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -399,9 +398,8 @@ test_integration() {
   echo "Simulating full certificate management workflow..."
 
   # Step 1: Check expiration
-  local check_output
   local check_output_status=0
-  check_output=$("$CHECK_SCRIPT" 2>&1) || check_output_status=$?
+  "$CHECK_SCRIPT" > /dev/null 2>&1 || check_output_status=$?
   if [ "$check_output_status" -eq 0 ] || [ "$check_output_status" -eq 1 ]; then
     pass "Step 1: Certificate expiration check completes"
   else
@@ -412,8 +410,7 @@ test_integration() {
   export VAULT_ADDR=http://localhost:8200
   VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
   export VAULT_TOKEN
-  local renew_output
-  if renew_output=$("$RENEW_SCRIPT" --dry-run 2>&1); then
+  if "$RENEW_SCRIPT" --dry-run > /dev/null 2>&1; then
     pass "Step 2: Dry-run renewal completes"
   else
     fail "Step 2: Dry-run renewal fails"

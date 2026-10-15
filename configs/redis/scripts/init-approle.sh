@@ -28,6 +28,7 @@ set -e
 
 # Service configuration
 SERVICE_NAME="redis-1" # All nodes fetch credentials from shared path
+# shellcheck disable=SC2034 # read by the log functions in scripts/lib/service-init-common.sh
 SERVICE_DISPLAY_NAME="Redis"
 REDIS_NODE_NAME="${REDIS_NODE:-redis-1}"
 VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-/vault-approles/redis}"

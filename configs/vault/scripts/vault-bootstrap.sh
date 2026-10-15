@@ -212,7 +212,7 @@ check_vault() {
     error "VAULT_TOKEN not set. Please set it or ensure ~/.config/vault/root-token exists"
   fi
 
-  for i in {1..30}; do
+  for _ in {1..30}; do
     if curl -sf -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/sys/health" > /dev/null 2>&1; then
       success "Vault is ready"
       return 0
@@ -397,7 +397,8 @@ setup_intermediate_ca() {
       "$VAULT_ADDR/v1/pki/root/sign-intermediate")
 
     SIGNED_CERT=$(echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.certificate')
-    CA_CHAIN=$(echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.ca_chain | join("\n")')
+    # jq fails, and set -e stops the script, when the response has no CA chain
+    echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.ca_chain | join("\n")' > /dev/null
 
     # Set the signed certificate
     curl -sf -X POST \
@@ -445,14 +446,12 @@ setup_intermediate_ca() {
 #######################################
 create_cert_role() {
   local service=$1
-  local ip_address=$2
   local role_name="${service}-role"
 
   info "Creating certificate role for $service..."
 
-  # Build allowed domains and alt names
+  # Build allowed domains
   local allowed_domains="$service.dev-services.local,localhost"
-  local alt_names="$service,dev-$service,localhost"
 
   # Create the role
   curl -sf -X POST \

@@ -25,6 +25,7 @@ set -e
 
 # Service configuration
 SERVICE_NAME="rabbitmq"
+# shellcheck disable=SC2034 # read by the log functions in scripts/lib/service-init-common.sh
 SERVICE_DISPLAY_NAME="RabbitMQ"
 VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-/vault-approles/rabbitmq}"
 CERT_DIR="/etc/rabbitmq/certs"

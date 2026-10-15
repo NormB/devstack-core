@@ -17,7 +17,6 @@
 #   VAULT_ADDR - Vault server address (default: http://vault:8200)
 #   VAULT_TOKEN - Authentication token for Vault API access (required)
 #   SERVICE_NAME - Service identifier for Vault secrets (set to "mysql")
-#   SERVICE_IP - MySQL service IP address (default: 172.20.0.12)
 #   CERT_DIR - Directory containing TLS certificates (/var/lib/mysql-certs)
 #   ENABLE_TLS - TLS enablement flag (read from Vault)
 #   MYSQL_ROOT_PASSWORD - Root user password (exported from Vault)
@@ -86,7 +85,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="mysql"
-SERVICE_IP="${MYSQL_IP:-172.20.0.12}"
 CERT_DIR="/var/lib/mysql-certs"
 ENABLE_TLS="" # Will be read from Vault
 

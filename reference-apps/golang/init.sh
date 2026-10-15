@@ -5,7 +5,6 @@ set -e
 SERVICE_NAME="golang-api"
 SERVICE_IP="${GOLANG_API_IP:-172.20.0.105}"
 CERT_DIR="/etc/ssl/certs/golang-api"
-VAULT_CERT_DIR="${HOME}/.config/vault/certs"
 MAX_RETRIES=30
 RETRY_DELAY=2
 

@@ -483,14 +483,6 @@ generate_main_app() {
 
   local app_file="$OUTPUT_DIR/app/main.py"
 
-  # Extract API metadata from spec
-  local api_title
-  api_title=$(yq eval '.info.title' "$OPENAPI_SPEC") || true
-  local api_version
-  api_version=$(yq eval '.info.version' "$OPENAPI_SPEC") || true
-  local api_description
-  api_description=$(yq eval '.info.description' "$OPENAPI_SPEC") || true
-
   cat > "$app_file" << 'EOF'
 """
 Main FastAPI Application (API-First Implementation)

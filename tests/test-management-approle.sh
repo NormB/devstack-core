@@ -28,7 +28,6 @@ set -euo pipefail
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -38,7 +37,6 @@ TESTS_FAILED=0
 TOTAL_TESTS=7
 
 # Configuration
-VAULT_ADDR="http://localhost:8200"
 VAULT_CONFIG_DIR="${HOME}/.config/vault"
 APPROLE_DIR="${VAULT_CONFIG_DIR}/approles/management"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

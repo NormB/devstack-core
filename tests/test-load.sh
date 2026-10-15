@@ -33,10 +33,8 @@ DB_CONCURRENT_QUERIES=1000
 CACHE_CONCURRENT_OPS=10000
 
 # Performance thresholds
-MAX_ERROR_RATE=1.0      # Maximum 1% error rate
-MIN_SUCCESS_RATE=99.0   # Minimum 99% success rate
-MAX_P95_LATENCY_MS=500  # Maximum p95 latency 500ms under load
-MAX_P99_LATENCY_MS=1000 # Maximum p99 latency 1000ms under load
+MAX_ERROR_RATE=1.0    # Maximum 1% error rate
+MIN_SUCCESS_RATE=99.0 # Minimum 99% success rate
 
 print_header() {
   echo -e "\n${YELLOW}=== $1 ===${NC}"
@@ -94,7 +92,6 @@ test_sustained_load() {
   local total_requests=0
   local successful_requests=0
   local failed_requests=0
-  local response_times=()
 
   # Run concurrent requests
   local start_time

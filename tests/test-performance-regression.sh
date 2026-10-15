@@ -26,12 +26,6 @@ MYSQL_INSERT_MIN=10000   # Baseline: ~20000 rows/sec for 1000 row batch
 MONGODB_INSERT_MIN=50000 # Baseline: ~80000 docs/sec for bulk insert
 REDIS_OPS_MIN=30000      # Baseline: ~50000 ops/sec, allow regression to 30000
 
-# API response time thresholds (p95)
-API_HEALTH_P95_MAX=100 # p95 < 100ms for simple endpoints
-DB_QUERY_P95_MAX=50    # p95 < 50ms for single row queries
-REDIS_OP_P95_MAX=5     # p95 < 5ms for cache operations
-VAULT_OP_P95_MAX=20    # p95 < 20ms for secret retrieval
-
 # Get credentials from Vault
 get_credential() {
   local service=$1
@@ -64,7 +58,9 @@ MYSQL_DATABASE=$(get_credential mysql database)
 
 MONGO_PASSWORD=$(get_credential mongodb password)
 MONGO_USER=$(get_credential mongodb user)
-MONGO_DATABASE=$(get_credential mongodb database)
+# Not used below; the lookup still stops the script, like the other
+# lookups, when Vault has no MongoDB database field.
+get_credential mongodb database > /dev/null
 
 REDIS_PASSWORD=$(get_credential redis-1 password)
 

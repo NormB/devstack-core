@@ -96,6 +96,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load common test library
@@ -119,8 +120,11 @@ run_python() {
 
 # Test counters
 TESTS_RUN=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_PASSED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_FAILED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 declare -a FAILED_TESTS=()
 
 ################################################################################
@@ -562,7 +566,7 @@ test_connection_limit() {
   local pids=()
   local max_connections=50
 
-  for i in $(seq 1 $max_connections); do
+  for _ in $(seq 1 $max_connections); do
     run_python lib/postgres_client.py --test connection > /dev/null 2>&1 &
     pids+=($!)
   done

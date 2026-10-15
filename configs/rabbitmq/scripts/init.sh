@@ -17,8 +17,6 @@
 #   VAULT_ADDR - Vault server address (default: http://vault:8200)
 #   VAULT_TOKEN - Authentication token for Vault API access (required)
 #   SERVICE_NAME - Service identifier for Vault secrets (set to "rabbitmq")
-#   SERVICE_IP - RabbitMQ service IP address (default: 172.20.0.14)
-#   PKI_ROLE - Vault PKI role name for certificate generation (rabbitmq-role)
 #   CERT_DIR - Directory containing TLS certificates (/etc/rabbitmq/certs)
 #   ENABLE_TLS - TLS enablement flag (read from Vault)
 #   RABBITMQ_DEFAULT_USER - Default username (exported from Vault)
@@ -86,8 +84,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="rabbitmq"
-SERVICE_IP="${RABBITMQ_IP:-172.20.0.14}"
-PKI_ROLE="rabbitmq-role"
 CERT_DIR="/etc/rabbitmq/certs"
 ENABLE_TLS="" # Will be read from Vault
 

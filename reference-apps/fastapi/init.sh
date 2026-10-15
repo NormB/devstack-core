@@ -58,7 +58,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="reference-api"
-SERVICE_IP="${REFERENCE_API_IP:-172.20.0.30}"
 CERT_DIR="/app/certs"
 VAULT_CERT_DIR="/app/vault-certs"
 ENABLE_TLS="" # Will be read from Vault

@@ -23,13 +23,9 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -94,8 +90,6 @@ test_vault_health_detailed() {
   sealed=$(echo "$health" | jq -r '.sealed') || true
   local standby
   standby=$(echo "$health" | jq -r '.standby') || true
-  local performance_standby
-  performance_standby=$(echo "$health" | jq -r '.performance_standby') || true
   local version
   version=$(echo "$health" | jq -r '.version') || true
 
@@ -118,10 +112,9 @@ test_secret_versioning() {
   # Write a test secret with metadata
   local test_secret
   test_secret="test-version-$(date +%s)" || true
-  local response
-  response=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
+  curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
     -d '{"data": {"value": "version1"}}' \
-    "$VAULT_ADDR/v1/secret/data/$test_secret") || true
+    "$VAULT_ADDR/v1/secret/data/$test_secret" > /dev/null || true
 
   # Read the secret and check version
   local read_response
@@ -181,8 +174,6 @@ test_token_management() {
 
   local child_token
   child_token=$(echo "$token_response" | jq -r '.auth.client_token') || true
-  local ttl
-  ttl=$(echo "$token_response" | jq -r '.auth.lease_duration') || true
 
   if [ -n "$child_token" ] && [ "$child_token" != "null" ]; then
     # Lookup the token
@@ -305,8 +296,6 @@ test_vault_seal_configuration() {
   threshold=$(echo "$seal_status" | jq -r '.t') || true
   local shares
   shares=$(echo "$seal_status" | jq -r '.n') || true
-  local progress
-  progress=$(echo "$seal_status" | jq -r '.progress') || true
 
   if [ "$sealed" == "false" ] && [ "$threshold" -gt 0 ] && [ "$shares" -gt 0 ]; then
     success "Vault seal configuration valid (threshold: $threshold/$shares, sealed: $sealed)"
@@ -434,8 +423,6 @@ test_vault_metrics() {
   has_requests=$(echo "$metrics" | grep -c "vault_core_handle_request" 2> /dev/null | head -1 || echo "0") || true
   local has_memory
   has_memory=$(echo "$metrics" | grep -c "go_memstats" 2> /dev/null | head -1 || echo "0") || true
-  local has_runtime
-  has_runtime=$(echo "$metrics" | grep -c "vault_runtime" 2> /dev/null | head -1 || echo "0") || true
 
   if [ "$has_requests" -gt 0 ] || [ "$has_memory" -gt 0 ]; then
     success "Vault metrics collection working (request metrics: $has_requests, memory metrics: $has_memory)"

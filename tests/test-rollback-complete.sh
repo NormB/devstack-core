@@ -412,8 +412,6 @@ test_full_environment_rollback() {
   log_info "Creating environment snapshot..."
 
   # Get current state
-  local services
-  services=$(docker compose ps --services) || true
   local running_count
   running_count=$(docker compose ps | grep -c "running" || echo "0") || true
   log_info "Currently running services: $running_count"

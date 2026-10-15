@@ -85,6 +85,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load common test library
@@ -108,14 +109,18 @@ run_python() {
 
 # Test counters
 TESTS_RUN=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_PASSED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_FAILED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 declare -a FAILED_TESTS=()
 
 # Performance thresholds (milliseconds)
 VAULT_THRESHOLD=200
 API_THRESHOLD=500
 DB_QUERY_THRESHOLD=1000
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 DB_CONNECTION_THRESHOLD=2000
 
 ################################################################################
@@ -602,7 +607,7 @@ test_concurrent_connections() {
 
   # Run 10 concurrent connections
   local pids=()
-  for i in {1..10}; do
+  for _ in {1..10}; do
     run_python lib/postgres_client.py --test connection > /dev/null 2>&1 &
     pids+=($!)
   done
@@ -674,7 +679,7 @@ test_vault_under_load() {
   start=$(date +%s%N) || true
   local failed=0
 
-  for i in {1..20}; do
+  for _ in {1..20}; do
     if ! curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" > /dev/null 2>&1; then
       failed=$((failed + 1))
     fi
@@ -737,7 +742,7 @@ test_api_under_load() {
   start=$(date +%s%N) || true
   local failed=0
 
-  for i in {1..50}; do
+  for _ in {1..50}; do
     if ! curl -sf "$url" > /dev/null 2>&1; then
       failed=$((failed + 1))
     fi

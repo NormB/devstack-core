@@ -19,7 +19,6 @@
 set -euo pipefail
 
 # Colors for output
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -27,13 +26,6 @@ NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CRON_COMMENT="# DevStack Core - Certificate Auto-Renewal"
-
-# Check if running on macOS or Linux
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  IS_MACOS=true
-else
-  IS_MACOS=false
-fi
 
 # List existing cron jobs
 list_cron_jobs() {

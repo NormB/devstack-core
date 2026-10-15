@@ -23,13 +23,9 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -134,7 +130,7 @@ test_concurrent_connections() {
   fi
 
   # Create 10 concurrent connections with longer-running queries
-  for i in {1..10}; do
+  for _ in {1..10}; do
     psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT pg_sleep(1);" &> /dev/null &
   done
 

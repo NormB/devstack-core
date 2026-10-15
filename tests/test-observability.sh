@@ -23,13 +23,9 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -363,9 +359,6 @@ test_service_discovery() {
   metadata_count=$(echo "$service_discovery" | jq -r '.data | length') || true
 
   # Check if common services are being monitored
-  local has_prometheus
-  has_prometheus=$(curl -s "$PROMETHEUS_URL/api/v1/query?query=up{job=\"prometheus\"}" 2> /dev/null |
-    jq -r '.data.result | length') || true
 
   if [ "$metadata_count" -gt 0 ]; then
     success "Service discovery working ($metadata_count metric metadata entries, Prometheus self-monitoring: OK)"

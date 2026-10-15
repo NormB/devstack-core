@@ -22,9 +22,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -321,7 +318,6 @@ test_concurrent_connections() {
       -d postgres -c "SELECT $i, pg_sleep(0.2);" &> /dev/null &
   done
 
-  local pids=$!
   sleep 1
 
   # Check if PgBouncer is handling connections
@@ -413,8 +409,6 @@ test_connection_limits() {
 
   local max_client_conn
   max_client_conn=$(echo "$config" | grep "max_client_conn" | awk '{print $3}') || true
-  local max_db_connections
-  max_db_connections=$(echo "$config" | grep "max_db_connections" | awk '{print $3}') || true
 
   # Get current connection counts
   local current_clients

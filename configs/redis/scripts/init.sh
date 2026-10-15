@@ -19,7 +19,6 @@
 #   REDIS_TLS_PORT  - Redis TLS port (default: 6380)
 #   SERVICE_NAME    - Resolved service name from REDIS_NODE
 #   SERVICE_IP      - Resolved IP from REDIS_IP
-#   PKI_ROLE        - Vault PKI role for certificate generation
 #   CERT_DIR        - Directory containing TLS certificates
 #   ENABLE_TLS      - Whether TLS is enabled (read from Vault)
 #   REDIS_PASSWORD  - Redis password (fetched from Vault)
@@ -85,7 +84,6 @@ VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="${REDIS_NODE:-redis-1}"
 SERVICE_IP="${REDIS_IP}"
-PKI_ROLE="redis-role"
 CERT_DIR="/etc/redis/certs"
 ENABLE_TLS=""  # Will be read from Vault
 

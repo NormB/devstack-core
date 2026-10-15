@@ -25,6 +25,7 @@ set -e
 
 # Service configuration
 SERVICE_NAME="postgres"
+# shellcheck disable=SC2034 # read by the log functions in scripts/lib/service-init-common.sh
 SERVICE_DISPLAY_NAME="PostgreSQL"
 VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-/vault-approles/postgres}"
 CERT_DIR="/var/lib/postgresql/certs"

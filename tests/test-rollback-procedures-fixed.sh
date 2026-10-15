@@ -680,7 +680,6 @@ phase5_final_validation() {
 ################################################################################
 
 main() {
-  local overall_result=0
 
   # Safety check
   echo -e "${YELLOW}WARNING: This is a DESTRUCTIVE test${NC}"
