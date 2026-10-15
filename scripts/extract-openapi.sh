@@ -42,9 +42,9 @@
 #     scripts/regenerate-api-first.sh - Regenerates API-first from spec
 #
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
-set -o pipefail  # Exit if any command in pipe fails
+set -e          # Exit on error
+set -u          # Exit on undefined variable
+set -o pipefail # Exit if any command in pipe fails
 
 #######################################
 # Configuration and Constants
@@ -69,7 +69,7 @@ readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m'  # No Color
+readonly NC='\033[0m' # No Color
 
 #######################################
 # Print informational message to stdout.
@@ -88,7 +88,7 @@ readonly NC='\033[0m'  # No Color
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -108,7 +108,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -129,8 +129,8 @@ success() {
 #   Writes formatted error message to stderr
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-    exit "${2:-1}"
+  echo -e "${RED}[ERROR]${NC} $1" >&2
+  exit "${2:-1}"
 }
 
 #######################################
@@ -150,7 +150,7 @@ error() {
 #   Writes formatted warning message to stdout
 #######################################
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+  echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 #######################################
@@ -181,34 +181,34 @@ warn() {
 #   fi
 #######################################
 wait_for_api_healthy() {
-    local start_time=$(date +%s)
-    local end_time=$((start_time + TIMEOUT))
-    local attempt=1
-    local max_backoff=10
+  local start_time=$(date +%s)
+  local end_time=$((start_time + TIMEOUT))
+  local attempt=1
+  local max_backoff=10
 
-    info "Waiting for API to be healthy at ${CODE_FIRST_URL}..."
+  info "Waiting for API to be healthy at ${CODE_FIRST_URL}..."
 
-    while [ $(date +%s) -lt $end_time ]; do
-        # Try health endpoint
-        if curl -sf "${CODE_FIRST_URL}/health" >/dev/null 2>&1; then
-            local elapsed=$(($(date +%s) - start_time))
-            success "API is healthy (took ${elapsed}s)"
-            return 0
-        fi
+  while [ $(date +%s) -lt $end_time ]; do
+    # Try health endpoint
+    if curl -sf "${CODE_FIRST_URL}/health" > /dev/null 2>&1; then
+      local elapsed=$(($(date +%s) - start_time))
+      success "API is healthy (took ${elapsed}s)"
+      return 0
+    fi
 
-        # Calculate backoff delay (exponential with max)
-        local delay=$((attempt < max_backoff ? attempt : max_backoff))
+    # Calculate backoff delay (exponential with max)
+    local delay=$((attempt < max_backoff ? attempt : max_backoff))
 
-        # Show progress
-        local remaining=$((end_time - $(date +%s)))
-        info "Attempt ${attempt}: API not ready yet, retrying in ${delay}s (${remaining}s remaining)..."
+    # Show progress
+    local remaining=$((end_time - $(date +%s)))
+    info "Attempt ${attempt}: API not ready yet, retrying in ${delay}s (${remaining}s remaining)..."
 
-        sleep "$delay"
-        attempt=$((attempt + 1))
-    done
+    sleep "$delay"
+    attempt=$((attempt + 1))
+  done
 
-    error "Timeout: API did not become healthy within ${TIMEOUT}s"
-    return 1
+  error "Timeout: API did not become healthy within ${TIMEOUT}s"
+  return 1
 }
 
 #######################################
@@ -239,37 +239,37 @@ wait_for_api_healthy() {
 #   fi
 #######################################
 extract_openapi_spec() {
-    local url="${CODE_FIRST_URL}/openapi.json"
+  local url="${CODE_FIRST_URL}/openapi.json"
 
-    info "Extracting OpenAPI spec from ${url}..."
+  info "Extracting OpenAPI spec from ${url}..."
 
-    # Download spec to temporary file
-    local temp_file=$(mktemp)
-    if ! curl -sf "$url" -o "$temp_file"; then
-        rm -f "$temp_file"
-        error "Failed to download OpenAPI spec from ${url}"
-        return 1
-    fi
+  # Download spec to temporary file
+  local temp_file=$(mktemp)
+  if ! curl -sf "$url" -o "$temp_file"; then
+    rm -f "$temp_file"
+    error "Failed to download OpenAPI spec from ${url}"
+    return 1
+  fi
 
-    # Validate JSON
-    if ! jq empty "$temp_file" 2>/dev/null; then
-        rm -f "$temp_file"
-        error "Downloaded spec is not valid JSON"
-        return 1
-    fi
+  # Validate JSON
+  if ! jq empty "$temp_file" 2> /dev/null; then
+    rm -f "$temp_file"
+    error "Downloaded spec is not valid JSON"
+    return 1
+  fi
 
-    # Create output directory if needed
-    local output_dir=$(dirname "$OUTPUT_FILE")
-    mkdir -p "$output_dir"
+  # Create output directory if needed
+  local output_dir=$(dirname "$OUTPUT_FILE")
+  mkdir -p "$output_dir"
 
-    # Move to final location
-    mv "$temp_file" "$OUTPUT_FILE"
+  # Move to final location
+  mv "$temp_file" "$OUTPUT_FILE"
 
-    # Show file info
-    local file_size=$(du -h "$OUTPUT_FILE" | cut -f1)
-    success "OpenAPI spec saved to ${OUTPUT_FILE} (${file_size})"
+  # Show file info
+  local file_size=$(du -h "$OUTPUT_FILE" | cut -f1)
+  success "OpenAPI spec saved to ${OUTPUT_FILE} (${file_size})"
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -292,26 +292,26 @@ extract_openapi_spec() {
 #   Summary information to stdout
 #######################################
 display_spec_summary() {
-    info "Specification Summary:"
+  info "Specification Summary:"
 
-    # Extract key information using jq
-    local title=$(jq -r '.info.title // "Unknown"' "$OUTPUT_FILE")
-    local version=$(jq -r '.info.version // "Unknown"' "$OUTPUT_FILE")
-    local endpoint_count=$(jq -r '.paths | length' "$OUTPUT_FILE")
-    local schema_count=$(jq -r '.components.schemas | length' "$OUTPUT_FILE")
+  # Extract key information using jq
+  local title=$(jq -r '.info.title // "Unknown"' "$OUTPUT_FILE")
+  local version=$(jq -r '.info.version // "Unknown"' "$OUTPUT_FILE")
+  local endpoint_count=$(jq -r '.paths | length' "$OUTPUT_FILE")
+  local schema_count=$(jq -r '.components.schemas | length' "$OUTPUT_FILE")
 
-    echo "  Title: $title"
-    echo "  Version: $version"
-    echo "  Endpoints: $endpoint_count"
-    echo "  Schemas: $schema_count"
+  echo "  Title: $title"
+  echo "  Version: $version"
+  echo "  Endpoints: $endpoint_count"
+  echo "  Schemas: $schema_count"
 
-    # List tags
-    echo "  Tags:"
-    jq -r '.paths | to_entries | .[].value | .. | .tags? | select(. != null) | .[]' "$OUTPUT_FILE" | \
-        sort -u | \
-        sed 's/^/    - /'
+  # List tags
+  echo "  Tags:"
+  jq -r '.paths | to_entries | .[].value | .. | .tags? | select(. != null) | .[]' "$OUTPUT_FILE" |
+    sort -u |
+    sed 's/^/    - /'
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -338,41 +338,41 @@ display_spec_summary() {
 #   Progress messages and summary to stdout
 #######################################
 main() {
-    info "Starting OpenAPI extraction..."
-    info "Source: ${CODE_FIRST_URL}"
-    info "Output: ${OUTPUT_FILE}"
-    echo ""
+  info "Starting OpenAPI extraction..."
+  info "Source: ${CODE_FIRST_URL}"
+  info "Output: ${OUTPUT_FILE}"
+  echo ""
 
-    # Check prerequisites
-    if ! command -v curl &> /dev/null; then
-        error "curl is not installed. Please install it first."
-    fi
+  # Check prerequisites
+  if ! command -v curl &> /dev/null; then
+    error "curl is not installed. Please install it first."
+  fi
 
-    if ! command -v jq &> /dev/null; then
-        error "jq is not installed. Please install it first."
-    fi
+  if ! command -v jq &> /dev/null; then
+    error "jq is not installed. Please install it first."
+  fi
 
-    # Wait for API
-    if ! wait_for_api_healthy; then
-        error "API is not accessible. Is the service running?"
-    fi
+  # Wait for API
+  if ! wait_for_api_healthy; then
+    error "API is not accessible. Is the service running?"
+  fi
 
-    echo ""
+  echo ""
 
-    # Extract spec
-    if ! extract_openapi_spec; then
-        error "Failed to extract OpenAPI specification"
-    fi
+  # Extract spec
+  if ! extract_openapi_spec; then
+    error "Failed to extract OpenAPI specification"
+  fi
 
-    echo ""
+  echo ""
 
-    # Show summary
-    display_spec_summary
+  # Show summary
+  display_spec_summary
 
-    echo ""
-    success "OpenAPI extraction complete!"
+  echo ""
+  success "OpenAPI extraction complete!"
 
-    return 0
+  return 0
 }
 
 # Execute main function

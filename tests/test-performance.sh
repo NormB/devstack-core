@@ -103,7 +103,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 #   Exit code from the Python script
 ################################################################################
 run_python() {
-    (cd "$SCRIPT_DIR" && uv run python "$@")
+  (cd "$SCRIPT_DIR" && uv run python "$@")
 }
 
 # Test counters
@@ -146,38 +146,38 @@ DB_CONNECTION_THRESHOLD=2000
 #   - Uses nanosecond precision for accurate measurement
 ################################################################################
 test_vault_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 1: Vault API response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 1: Vault API response time"
 
-    local vault_addr="http://localhost:8200"
-    local vault_token=$(cat ~/.config/vault/root-token 2>/dev/null)
+  local vault_addr="http://localhost:8200"
+  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    if [ -z "$vault_token" ]; then
-        warn "Vault token not found, skipping test"
-        success "Test skipped (no Vault token)"
-        return 0
-    fi
+  if [ -z "$vault_token" ]; then
+    warn "Vault token not found, skipping test"
+    success "Test skipped (no Vault token)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local response=$(curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" 2>/dev/null)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local response=$(curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" 2> /dev/null)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && [ -n "$response" ]; then
-        if [ $duration_ms -lt $VAULT_THRESHOLD ]; then
-            success "Vault query completed in ${duration_ms}ms (< ${VAULT_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "Vault query took ${duration_ms}ms (exceeds ${VAULT_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && [ -n "$response" ]; then
+    if [ $duration_ms -lt $VAULT_THRESHOLD ]; then
+      success "Vault query completed in ${duration_ms}ms (< ${VAULT_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "Vault query failed"
-        return 1
+      warn "Vault query took ${duration_ms}ms (exceeds ${VAULT_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "Vault query failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -208,35 +208,35 @@ test_vault_response_time() {
 #   - Includes connection establishment time in measurement
 ################################################################################
 test_postgres_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 2: PostgreSQL query response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 2: PostgreSQL query response time"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local result=$(run_python lib/postgres_client.py --test version 2>&1)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local result=$(run_python lib/postgres_client.py --test version 2>&1)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
-        if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
-            success "PostgreSQL query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "PostgreSQL query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
+    if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
+      success "PostgreSQL query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "PostgreSQL query failed"
-        return 1
+      warn "PostgreSQL query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "PostgreSQL query failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -267,35 +267,35 @@ test_postgres_response_time() {
 #   - Includes connection establishment time in measurement
 ################################################################################
 test_mysql_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 3: MySQL query response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 3: MySQL query response time"
 
-    if ! is_container_running "dev-mysql"; then
-        warn "MySQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-mysql"; then
+    warn "MySQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local result=$(run_python lib/mysql_client.py --test version 2>&1)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local result=$(run_python lib/mysql_client.py --test version 2>&1)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
-        if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
-            success "MySQL query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "MySQL query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
+    if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
+      success "MySQL query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "MySQL query failed"
-        return 1
+      warn "MySQL query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "MySQL query failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -326,35 +326,35 @@ test_mysql_response_time() {
 #   - Includes connection establishment time in measurement
 ################################################################################
 test_mongodb_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 4: MongoDB query response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 4: MongoDB query response time"
 
-    if ! is_container_running "dev-mongodb"; then
-        warn "MongoDB container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-mongodb"; then
+    warn "MongoDB container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local result=$(run_python lib/mongodb_client.py --test version 2>&1)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local result=$(run_python lib/mongodb_client.py --test version 2>&1)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
-        if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
-            success "MongoDB query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "MongoDB query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
+    if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
+      success "MongoDB query completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "MongoDB query failed"
-        return 1
+      warn "MongoDB query took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "MongoDB query failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -384,36 +384,36 @@ test_mongodb_response_time() {
 #   - Redis has lower threshold (500ms) due to in-memory architecture
 ################################################################################
 test_redis_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 5: Redis command response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 5: Redis command response time"
 
-    if ! is_container_running "dev-redis-1"; then
-        warn "Redis container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-redis-1"; then
+    warn "Redis container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local result=$(run_python lib/redis_client.py --test info 2>&1)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local result=$(run_python lib/redis_client.py --test info 2>&1)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ info: success"; then
-        # Redis should be very fast
-        if [ $duration_ms -lt 500 ]; then
-            success "Redis command completed in ${duration_ms}ms (< 500ms threshold)"
-            return 0
-        else
-            warn "Redis command took ${duration_ms}ms (exceeds 500ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ info: success"; then
+    # Redis should be very fast
+    if [ $duration_ms -lt 500 ]; then
+      success "Redis command completed in ${duration_ms}ms (< 500ms threshold)"
+      return 0
     else
-        fail "Redis command failed"
-        return 1
+      warn "Redis command took ${duration_ms}ms (exceeds 500ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "Redis command failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -444,35 +444,35 @@ test_redis_response_time() {
 #   - Includes connection establishment time in measurement
 ################################################################################
 test_rabbitmq_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 6: RabbitMQ operation response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 6: RabbitMQ operation response time"
 
-    if ! is_container_running "dev-rabbitmq"; then
-        warn "RabbitMQ container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-rabbitmq"; then
+    warn "RabbitMQ container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local start=$(date +%s%N)
-    local result=$(run_python lib/rabbitmq_client.py --test version 2>&1)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local result=$(run_python lib/rabbitmq_client.py --test version 2>&1)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
-        if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
-            success "RabbitMQ operation completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "RabbitMQ operation took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$result" | grep -q "✓ version: success"; then
+    if [ $duration_ms -lt $DB_QUERY_THRESHOLD ]; then
+      success "RabbitMQ operation completed in ${duration_ms}ms (< ${DB_QUERY_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "RabbitMQ operation failed"
-        return 1
+      warn "RabbitMQ operation took ${duration_ms}ms (exceeds ${DB_QUERY_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "RabbitMQ operation failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -504,37 +504,37 @@ test_rabbitmq_response_time() {
 #   - Validates response is valid JSON with expected structure
 ################################################################################
 test_fastapi_response_time() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 7: FastAPI endpoint response time"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 7: FastAPI endpoint response time"
 
-    if ! is_container_running "dev-reference-api"; then
-        warn "FastAPI container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-reference-api"; then
+    warn "FastAPI container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local url="http://localhost:8000/"
+  local url="http://localhost:8000/"
 
-    local start=$(date +%s%N)
-    local response=$(curl -sf "$url" 2>/dev/null)
-    local exit_code=$?
-    local end=$(date +%s%N)
+  local start=$(date +%s%N)
+  local response=$(curl -sf "$url" 2> /dev/null)
+  local exit_code=$?
+  local end=$(date +%s%N)
 
-    local duration_ms=$(( (end - start) / 1000000 ))
+  local duration_ms=$(((end - start) / 1000000))
 
-    if [ $exit_code -eq 0 ] && echo "$response" | jq -e '.name' &>/dev/null; then
-        if [ $duration_ms -lt $API_THRESHOLD ]; then
-            success "FastAPI endpoint responded in ${duration_ms}ms (< ${API_THRESHOLD}ms threshold)"
-            return 0
-        else
-            warn "FastAPI endpoint took ${duration_ms}ms (exceeds ${API_THRESHOLD}ms threshold)"
-            success "Performance test completed (slow)"
-            return 0
-        fi
+  if [ $exit_code -eq 0 ] && echo "$response" | jq -e '.name' &> /dev/null; then
+    if [ $duration_ms -lt $API_THRESHOLD ]; then
+      success "FastAPI endpoint responded in ${duration_ms}ms (< ${API_THRESHOLD}ms threshold)"
+      return 0
     else
-        fail "FastAPI endpoint failed"
-        return 1
+      warn "FastAPI endpoint took ${duration_ms}ms (exceeds ${API_THRESHOLD}ms threshold)"
+      success "Performance test completed (slow)"
+      return 0
     fi
+  else
+    fail "FastAPI endpoint failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -566,42 +566,42 @@ test_fastapi_response_time() {
 #   - Reports timing for complete concurrent operation set
 ################################################################################
 test_concurrent_connections() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 8: Concurrent database connections (10 parallel)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 8: Concurrent database connections (10 parallel)"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
+
+  local start=$(date +%s%N)
+
+  # Run 10 concurrent connections
+  local pids=()
+  for i in {1..10}; do
+    run_python lib/postgres_client.py --test connection > /dev/null 2>&1 &
+    pids+=($!)
+  done
+
+  # Wait for all to complete
+  local failed=0
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then
+      failed=$((failed + 1))
     fi
+  done
 
-    local start=$(date +%s%N)
+  local end=$(date +%s%N)
+  local duration_ms=$(((end - start) / 1000000))
 
-    # Run 10 concurrent connections
-    local pids=()
-    for i in {1..10}; do
-        run_python lib/postgres_client.py --test connection >/dev/null 2>&1 &
-        pids+=($!)
-    done
-
-    # Wait for all to complete
-    local failed=0
-    for pid in "${pids[@]}"; do
-        if ! wait "$pid"; then
-            failed=$((failed + 1))
-        fi
-    done
-
-    local end=$(date +%s%N)
-    local duration_ms=$(( (end - start) / 1000000 ))
-
-    if [ $failed -eq 0 ]; then
-        success "Handled 10 concurrent connections in ${duration_ms}ms (0 failures)"
-        return 0
-    else
-        fail "Failed $failed/10 concurrent connections"
-        return 1
-    fi
+  if [ $failed -eq 0 ]; then
+    success "Handled 10 concurrent connections in ${duration_ms}ms (0 failures)"
+    return 0
+  else
+    fail "Failed $failed/10 concurrent connections"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -633,38 +633,38 @@ test_concurrent_connections() {
 #   - Reports both aggregate and average timing metrics
 ################################################################################
 test_vault_under_load() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 9: Vault under load (20 sequential requests)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 9: Vault under load (20 sequential requests)"
 
-    local vault_addr="http://localhost:8200"
-    local vault_token=$(cat ~/.config/vault/root-token 2>/dev/null)
+  local vault_addr="http://localhost:8200"
+  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    if [ -z "$vault_token" ]; then
-        warn "Vault token not found, skipping test"
-        success "Test skipped (no Vault token)"
-        return 0
+  if [ -z "$vault_token" ]; then
+    warn "Vault token not found, skipping test"
+    success "Test skipped (no Vault token)"
+    return 0
+  fi
+
+  local start=$(date +%s%N)
+  local failed=0
+
+  for i in {1..20}; do
+    if ! curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" > /dev/null 2>&1; then
+      failed=$((failed + 1))
     fi
+  done
 
-    local start=$(date +%s%N)
-    local failed=0
+  local end=$(date +%s%N)
+  local duration_ms=$(((end - start) / 1000000))
+  local avg_ms=$((duration_ms / 20))
 
-    for i in {1..20}; do
-        if ! curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" >/dev/null 2>&1; then
-            failed=$((failed + 1))
-        fi
-    done
-
-    local end=$(date +%s%N)
-    local duration_ms=$(( (end - start) / 1000000 ))
-    local avg_ms=$((duration_ms / 20))
-
-    if [ $failed -eq 0 ]; then
-        success "Vault handled 20 requests in ${duration_ms}ms (avg: ${avg_ms}ms per request, 0 failures)"
-        return 0
-    else
-        fail "Vault failed $failed/20 requests"
-        return 1
-    fi
+  if [ $failed -eq 0 ]; then
+    success "Vault handled 20 requests in ${duration_ms}ms (avg: ${avg_ms}ms per request, 0 failures)"
+    return 0
+  else
+    fail "Vault failed $failed/20 requests"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -696,36 +696,36 @@ test_vault_under_load() {
 #   - Reports both aggregate and average timing metrics
 ################################################################################
 test_api_under_load() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Performance Test 10: FastAPI under load (50 sequential requests)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Performance Test 10: FastAPI under load (50 sequential requests)"
 
-    if ! is_container_running "dev-reference-api"; then
-        warn "FastAPI container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
+  if ! is_container_running "dev-reference-api"; then
+    warn "FastAPI container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
+
+  local url="http://localhost:8000/"
+  local start=$(date +%s%N)
+  local failed=0
+
+  for i in {1..50}; do
+    if ! curl -sf "$url" > /dev/null 2>&1; then
+      failed=$((failed + 1))
     fi
+  done
 
-    local url="http://localhost:8000/"
-    local start=$(date +%s%N)
-    local failed=0
+  local end=$(date +%s%N)
+  local duration_ms=$(((end - start) / 1000000))
+  local avg_ms=$((duration_ms / 50))
 
-    for i in {1..50}; do
-        if ! curl -sf "$url" >/dev/null 2>&1; then
-            failed=$((failed + 1))
-        fi
-    done
-
-    local end=$(date +%s%N)
-    local duration_ms=$(( (end - start) / 1000000 ))
-    local avg_ms=$((duration_ms / 50))
-
-    if [ $failed -eq 0 ]; then
-        success "FastAPI handled 50 requests in ${duration_ms}ms (avg: ${avg_ms}ms per request, 0 failures)"
-        return 0
-    else
-        fail "FastAPI failed $failed/50 requests"
-        return 1
-    fi
+  if [ $failed -eq 0 ]; then
+    success "FastAPI handled 50 requests in ${duration_ms}ms (avg: ${avg_ms}ms per request, 0 failures)"
+    return 0
+  else
+    fail "FastAPI failed $failed/50 requests"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -764,28 +764,28 @@ test_api_under_load() {
 #   - Uses test_suite_setup and test_suite_teardown from common.sh
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  Performance Test Suite"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  Performance Test Suite"
+  echo "========================================="
+  echo
 
-    test_suite_setup "Performance"
+  test_suite_setup "Performance"
 
-    test_vault_response_time || true
-    test_postgres_response_time || true
-    test_mysql_response_time || true
-    test_mongodb_response_time || true
-    test_redis_response_time || true
-    test_rabbitmq_response_time || true
-    test_fastapi_response_time || true
-    test_concurrent_connections || true
-    test_vault_under_load || true
-    test_api_under_load || true
+  test_vault_response_time || true
+  test_postgres_response_time || true
+  test_mysql_response_time || true
+  test_mongodb_response_time || true
+  test_redis_response_time || true
+  test_rabbitmq_response_time || true
+  test_fastapi_response_time || true
+  test_concurrent_connections || true
+  test_vault_under_load || true
+  test_api_under_load || true
 
-    print_test_results "Performance"
+  print_test_results "Performance"
 
-    test_suite_teardown
+  test_suite_teardown
 }
 
 # Main

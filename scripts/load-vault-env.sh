@@ -111,29 +111,29 @@ error() { echo -e "${RED}[Vault Env]${NC} $1"; }
 #   - Uses curl to check Vault health endpoint
 #######################################
 check_vault() {
-    local vault_addr="${VAULT_ADDR:-http://localhost:8200}"
-    local vault_token="${VAULT_TOKEN:-}"
+  local vault_addr="${VAULT_ADDR:-http://localhost:8200}"
+  local vault_token="${VAULT_TOKEN:-}"
 
-    if [ -z "$vault_token" ]; then
-        # Try to read from file
-        local token_file="$HOME/.config/vault/root-token"
-        if [ -f "$token_file" ]; then
-            vault_token=$(cat "$token_file")
-            export VAULT_TOKEN="$vault_token"
-            info "Loaded VAULT_TOKEN from $token_file"
-        else
-            error "VAULT_TOKEN not set and $token_file not found"
-            return 1
-        fi
+  if [ -z "$vault_token" ]; then
+    # Try to read from file
+    local token_file="$HOME/.config/vault/root-token"
+    if [ -f "$token_file" ]; then
+      vault_token=$(cat "$token_file")
+      export VAULT_TOKEN="$vault_token"
+      info "Loaded VAULT_TOKEN from $token_file"
+    else
+      error "VAULT_TOKEN not set and $token_file not found"
+      return 1
     fi
+  fi
 
-    # Check if Vault is accessible
-    if ! curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/sys/health" > /dev/null 2>&1; then
-        error "Vault is not accessible at $vault_addr"
-        return 1
-    fi
+  # Check if Vault is accessible
+  if ! curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/sys/health" > /dev/null 2>&1; then
+    error "Vault is not accessible at $vault_addr"
+    return 1
+  fi
 
-    success "Vault is accessible at $vault_addr"
+  success "Vault is accessible at $vault_addr"
 }
 
 #######################################
@@ -153,21 +153,21 @@ check_vault() {
 #   - Requires jq for JSON parsing
 #######################################
 read_vault_secret() {
-    local path="$1"
-    local field="$2"
-    local vault_addr="${VAULT_ADDR:-http://localhost:8200}"
-    local vault_token="${VAULT_TOKEN:-}"
+  local path="$1"
+  local field="$2"
+  local vault_addr="${VAULT_ADDR:-http://localhost:8200}"
+  local vault_token="${VAULT_TOKEN:-}"
 
-    # Fetch secret from Vault and extract specific field
-    local value=$(curl -sf -H "X-Vault-Token: $vault_token" \
-        "$vault_addr/v1/secret/data/$path" | \
-        jq -r ".data.data.${field}" 2>/dev/null)
+  # Fetch secret from Vault and extract specific field
+  local value=$(curl -sf -H "X-Vault-Token: $vault_token" \
+    "$vault_addr/v1/secret/data/$path" |
+    jq -r ".data.data.${field}" 2> /dev/null)
 
-    if [ "$value" == "null" ] || [ -z "$value" ]; then
-        return 1
-    fi
+  if [ "$value" == "null" ] || [ -z "$value" ]; then
+    return 1
+  fi
 
-    echo "$value"
+  echo "$value"
 }
 
 #######################################
@@ -186,47 +186,47 @@ read_vault_secret() {
 #   - All secrets are exported for use by docker-compose
 #######################################
 main() {
-    info "Loading environment variables from Vault..."
-    info ""
+  info "Loading environment variables from Vault..."
+  info ""
 
-    # Check Vault accessibility
-    if ! check_vault; then
-        error "Failed to connect to Vault"
-        return 1
-    fi
+  # Check Vault accessibility
+  if ! check_vault; then
+    error "Failed to connect to Vault"
+    return 1
+  fi
 
-    # Read PostgreSQL password from Vault
-    info "Reading PostgreSQL credentials from Vault..."
-    POSTGRES_PASSWORD=$(read_vault_secret postgres password)
-    if [ -z "$POSTGRES_PASSWORD" ]; then
-        error "Failed to read PostgreSQL password from Vault"
-        return 1
-    fi
-    export POSTGRES_PASSWORD
-    success "PostgreSQL password loaded from Vault"
+  # Read PostgreSQL password from Vault
+  info "Reading PostgreSQL credentials from Vault..."
+  POSTGRES_PASSWORD=$(read_vault_secret postgres password)
+  if [ -z "$POSTGRES_PASSWORD" ]; then
+    error "Failed to read PostgreSQL password from Vault"
+    return 1
+  fi
+  export POSTGRES_PASSWORD
+  success "PostgreSQL password loaded from Vault"
 
-    # Read MySQL password from Vault
-    info "Reading MySQL credentials from Vault..."
-    MYSQL_ROOT_PASSWORD=$(read_vault_secret mysql password)
-    if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
-        error "Failed to read MySQL password from Vault"
-        return 1
-    fi
-    export MYSQL_ROOT_PASSWORD
-    success "MySQL password loaded from Vault"
+  # Read MySQL password from Vault
+  info "Reading MySQL credentials from Vault..."
+  MYSQL_ROOT_PASSWORD=$(read_vault_secret mysql password)
+  if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+    error "Failed to read MySQL password from Vault"
+    return 1
+  fi
+  export MYSQL_ROOT_PASSWORD
+  success "MySQL password loaded from Vault"
 
-    info ""
-    success "All secrets loaded from Vault"
-    info ""
-    info "You can now run: docker compose up -d"
-    info ""
+  info ""
+  success "All secrets loaded from Vault"
+  info ""
+  info "You can now run: docker compose up -d"
+  info ""
 }
 
 # Only run main if script is sourced (not executed)
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
-    error "This script must be sourced, not executed"
-    error "Usage: source $0"
-    exit 1
+  error "This script must be sourced, not executed"
+  error "Usage: source $0"
+  exit 1
 fi
 
 main

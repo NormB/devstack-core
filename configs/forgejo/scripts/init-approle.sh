@@ -67,7 +67,7 @@ set -e
 # Configuration
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-/vault-approles/forgejo}"
-VAULT_TOKEN=""  # Will be obtained via AppRole auth
+VAULT_TOKEN="" # Will be obtained via AppRole auth
 
 # Colors
 RED='\033[0;31m'
@@ -94,40 +94,43 @@ warn() { echo -e "${YELLOW}[Forgejo Init]${NC} $1"; }
 #######################################
 # Prints error message to stderr and exits with code 1
 #######################################
-error() { echo -e "${RED}[Forgejo Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[Forgejo Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Install jq if not present
 #######################################
 install_jq() {
-    if ! command -v jq >/dev/null 2>&1; then
-        info "Installing jq..."
-        apk add --no-cache jq >/dev/null 2>&1 || {
-            error "Failed to install jq"
-        }
-        success "jq installed"
-    fi
+  if ! command -v jq > /dev/null 2>&1; then
+    info "Installing jq..."
+    apk add --no-cache jq > /dev/null 2>&1 || {
+      error "Failed to install jq"
+    }
+    success "jq installed"
+  fi
 }
 
 #######################################
 # Wait for Vault service to become ready
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -142,24 +145,24 @@ wait_for_vault() {
 #   SECRET_ID - AppRole secret identifier
 #######################################
 read_approle_credentials() {
-    info "Reading AppRole credentials from $VAULT_APPROLE_DIR..."
+  info "Reading AppRole credentials from $VAULT_APPROLE_DIR..."
 
-    if [ ! -f "$VAULT_APPROLE_DIR/role-id" ]; then
-        error "AppRole role-id file not found: $VAULT_APPROLE_DIR/role-id"
-    fi
+  if [ ! -f "$VAULT_APPROLE_DIR/role-id" ]; then
+    error "AppRole role-id file not found: $VAULT_APPROLE_DIR/role-id"
+  fi
 
-    if [ ! -f "$VAULT_APPROLE_DIR/secret-id" ]; then
-        error "AppRole secret-id file not found: $VAULT_APPROLE_DIR/secret-id"
-    fi
+  if [ ! -f "$VAULT_APPROLE_DIR/secret-id" ]; then
+    error "AppRole secret-id file not found: $VAULT_APPROLE_DIR/secret-id"
+  fi
 
-    ROLE_ID=$(cat "$VAULT_APPROLE_DIR/role-id")
-    SECRET_ID=$(cat "$VAULT_APPROLE_DIR/secret-id")
+  ROLE_ID=$(cat "$VAULT_APPROLE_DIR/role-id")
+  SECRET_ID=$(cat "$VAULT_APPROLE_DIR/secret-id")
 
-    if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
-        error "AppRole credentials are empty"
-    fi
+  if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
+    error "AppRole credentials are empty"
+  fi
 
-    success "AppRole credentials loaded (role_id: ${ROLE_ID:0:20}...)"
+  success "AppRole credentials loaded (role_id: ${ROLE_ID:0:20}...)"
 }
 
 #######################################
@@ -176,26 +179,26 @@ read_approle_credentials() {
 #   Sets VAULT_TOKEN environment variable with temporary client token
 #######################################
 authenticate_approle() {
-    info "Authenticating to Vault with AppRole..."
+  info "Authenticating to Vault with AppRole..."
 
-    local auth_response
-    auth_response=$(wget -qO- \
-        --header="Content-Type: application/json" \
-        --post-data="{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}" \
-        "$VAULT_ADDR/v1/auth/approle/login" 2>/dev/null)
+  local auth_response
+  auth_response=$(wget -qO- \
+    --header="Content-Type: application/json" \
+    --post-data="{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}" \
+    "$VAULT_ADDR/v1/auth/approle/login" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$auth_response" ]; then
-        error "Failed to authenticate with AppRole"
-    fi
+  if [ $? -ne 0 ] || [ -z "$auth_response" ]; then
+    error "Failed to authenticate with AppRole"
+  fi
 
-    VAULT_TOKEN=$(echo "$auth_response" | jq -r '.auth.client_token')
+  VAULT_TOKEN=$(echo "$auth_response" | jq -r '.auth.client_token')
 
-    if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
-        error "Failed to obtain token from AppRole authentication"
-    fi
+  if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
+    error "Failed to obtain token from AppRole authentication"
+  fi
 
-    success "AppRole authentication successful (token: ${VAULT_TOKEN:0:20}...)"
-    export VAULT_TOKEN
+  success "AppRole authentication successful (token: ${VAULT_TOKEN:0:20}...)"
+  export VAULT_TOKEN
 }
 
 #######################################
@@ -203,79 +206,79 @@ authenticate_approle() {
 # Uses the token obtained via AppRole authentication
 #######################################
 fetch_credentials() {
-    info "Fetching PostgreSQL credentials from Vault..."
+  info "Fetching PostgreSQL credentials from Vault..."
 
-    local response
-    response=$(wget -qO- \
-        --header="X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/postgres" 2>/dev/null) || {
-        error "Failed to fetch credentials from Vault"
-    }
+  local response
+  response=$(wget -qO- \
+    --header="X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/postgres" 2> /dev/null) || {
+    error "Failed to fetch credentials from Vault"
+  }
 
-    if [ -z "$response" ]; then
-        error "Empty response from Vault"
-    fi
+  if [ -z "$response" ]; then
+    error "Empty response from Vault"
+  fi
 
-    DB_USER=$(echo "$response" | jq -r '.data.data.user')
-    DB_PASSWD=$(echo "$response" | jq -r '.data.data.password')
+  DB_USER=$(echo "$response" | jq -r '.data.data.user')
+  DB_PASSWD=$(echo "$response" | jq -r '.data.data.password')
 
-    if [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ]; then
-        error "Invalid username received from Vault"
-    fi
+  if [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ]; then
+    error "Invalid username received from Vault"
+  fi
 
-    if [ -z "$DB_PASSWD" ] || [ "$DB_PASSWD" = "null" ]; then
-        error "Invalid password received from Vault"
-    fi
+  if [ -z "$DB_PASSWD" ] || [ "$DB_PASSWD" = "null" ]; then
+    error "Invalid password received from Vault"
+  fi
 
-    success "Credentials fetched successfully"
+  success "Credentials fetched successfully"
 }
 
 #######################################
 # Configure database credentials in app.ini
 #######################################
 configure_database() {
-    info "Configuring database credentials..."
+  info "Configuring database credentials..."
 
-    # Forgejo reads environment variables and generates /data/gitea/conf/app.ini
-    # We'll set environment variables for the original entrypoint to use
-    export FORGEJO__database__USER="$DB_USER"
-    export FORGEJO__database__PASSWD="$DB_PASSWD"
+  # Forgejo reads environment variables and generates /data/gitea/conf/app.ini
+  # We'll set environment variables for the original entrypoint to use
+  export FORGEJO__database__USER="$DB_USER"
+  export FORGEJO__database__PASSWD="$DB_PASSWD"
 
-    success "Database configuration prepared"
+  success "Database configuration prepared"
 }
 
 #######################################
 # Main execution function
 #######################################
 main() {
-    info "Starting Forgejo initialization with Vault AppRole integration..."
-    info ""
+  info "Starting Forgejo initialization with Vault AppRole integration..."
+  info ""
 
-    # Install jq if needed
-    install_jq
+  # Install jq if needed
+  install_jq
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Read AppRole credentials from mounted volume
-    read_approle_credentials
+  # Read AppRole credentials from mounted volume
+  read_approle_credentials
 
-    # Authenticate to Vault using AppRole
-    authenticate_approle
+  # Authenticate to Vault using AppRole
+  authenticate_approle
 
-    # Fetch credentials from Vault
-    fetch_credentials
+  # Fetch credentials from Vault
+  fetch_credentials
 
-    # Configure database
-    configure_database
+  # Configure database
+  configure_database
 
-    info ""
-    success "Initialization complete, starting Forgejo..."
-    info ""
+  info ""
+  success "Initialization complete, starting Forgejo..."
+  info ""
 
-    # Start Forgejo using original entrypoint
-    # Pass through all original environment variables and command args
-    exec /usr/bin/entrypoint "$@"
+  # Start Forgejo using original entrypoint
+  # Pass through all original environment variables and command args
+  exec /usr/bin/entrypoint "$@"
 }
 
 # Run main function

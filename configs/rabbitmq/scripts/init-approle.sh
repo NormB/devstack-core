@@ -31,15 +31,15 @@ CERT_DIR="/etc/rabbitmq/certs"
 
 # Source common library
 if [ -f "/scripts/lib/service-init-common.sh" ]; then
-    source /scripts/lib/service-init-common.sh
+  source /scripts/lib/service-init-common.sh
 else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
-        source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
-    else
-        echo "[RabbitMQ Init] ERROR: Cannot find service-init-common.sh library"
-        exit 1
-    fi
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
+    source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
+  else
+    echo "[RabbitMQ Init] ERROR: Cannot find service-init-common.sh library"
+    exit 1
+  fi
 fi
 
 ################################################################################
@@ -52,54 +52,54 @@ fi
 #          RABBITMQ_DEFAULT_VHOST, ENABLE_TLS
 #######################################
 fetch_credentials() {
-    log_info "Fetching credentials and TLS setting from Vault..."
+  log_info "Fetching credentials and TLS setting from Vault..."
 
-    local response
-    response=$(fetch_vault_secret "$SERVICE_NAME")
+  local response
+  response=$(fetch_vault_secret "$SERVICE_NAME")
 
-    # Now using jq for proper JSON parsing (fixed from grep/sed)
-    export RABBITMQ_DEFAULT_USER=$(extract_vault_field "$response" "user")
-    export RABBITMQ_DEFAULT_PASS=$(extract_vault_field "$response" "password")
-    export RABBITMQ_DEFAULT_VHOST=$(extract_vault_field "$response" "vhost")
-    export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  # Now using jq for proper JSON parsing (fixed from grep/sed)
+  export RABBITMQ_DEFAULT_USER=$(extract_vault_field "$response" "user")
+  export RABBITMQ_DEFAULT_PASS=$(extract_vault_field "$response" "password")
+  export RABBITMQ_DEFAULT_VHOST=$(extract_vault_field "$response" "vhost")
+  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
 
-    if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then
-        log_error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then
+    log_error "Invalid credentials received from Vault"
+  fi
 
-    log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
 # Validate RabbitMQ TLS certificates
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    log_info "Validating pre-generated TLS certificates..."
+  log_info "Validating pre-generated TLS certificates..."
 
-    validate_cert_file "$CERT_DIR/server.pem" "server.pem"
-    validate_cert_file "$CERT_DIR/key.pem" "key.pem"
-    validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
+  validate_cert_file "$CERT_DIR/server.pem" "server.pem"
+  validate_cert_file "$CERT_DIR/key.pem" "key.pem"
+  validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
 
-    log_success "TLS certificates validated (pre-generated)"
+  log_success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
 # Configure RabbitMQ TLS via configuration file
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    log_info "Configuring RabbitMQ for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  log_info "Configuring RabbitMQ for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create RabbitMQ SSL config
-    cat > /etc/rabbitmq/rabbitmq.conf <<EOF
+  # Create RabbitMQ SSL config
+  cat > /etc/rabbitmq/rabbitmq.conf << EOF
 # Dual-Mode TLS Configuration
 # Accepts both encrypted (port 5671) and unencrypted (port 5672) connections
 listeners.tcp.default = 5672
@@ -116,7 +116,7 @@ ssl_options.versions.1 = tlsv1.2
 ssl_options.versions.2 = tlsv1.3
 EOF
 
-    log_success "TLS dual-mode configuration prepared (accepts both SSL on 5671 and non-SSL on 5672)"
+  log_success "TLS dual-mode configuration prepared (accepts both SSL on 5671 and non-SSL on 5672)"
 }
 
 ################################################################################
@@ -124,20 +124,20 @@ EOF
 ################################################################################
 
 main() {
-    # Run common Vault initialization
-    vault_init_common
+  # Run common Vault initialization
+  vault_init_common
 
-    # RabbitMQ-specific initialization
-    fetch_credentials
-    validate_certificates
-    configure_tls
+  # RabbitMQ-specific initialization
+  fetch_credentials
+  validate_certificates
+  configure_tls
 
-    log_info ""
-    log_success "Initialization complete, starting RabbitMQ..."
-    log_info ""
+  log_info ""
+  log_success "Initialization complete, starting RabbitMQ..."
+  log_info ""
 
-    # Start RabbitMQ with the original docker-entrypoint
-    exec docker-entrypoint.sh "$@"
+  # Start RabbitMQ with the original docker-entrypoint
+  exec docker-entrypoint.sh "$@"
 }
 
 main "$@"

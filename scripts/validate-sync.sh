@@ -38,9 +38,9 @@
 #     scripts/regenerate-api-first.sh - Rebuild API-first from spec
 #
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
-set -o pipefail  # Exit if any command in pipe fails
+set -e          # Exit on error
+set -u          # Exit on undefined variable
+set -o pipefail # Exit if any command in pipe fails
 
 #######################################
 # Configuration and Constants
@@ -71,7 +71,7 @@ readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m'  # No Color
+readonly NC='\033[0m' # No Color
 
 #######################################
 # Print informational message to stdout.
@@ -90,7 +90,7 @@ readonly NC='\033[0m'  # No Color
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -110,7 +110,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -131,8 +131,8 @@ success() {
 #   Writes formatted error message to stderr
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-    exit "${2:-1}"
+  echo -e "${RED}[ERROR]${NC} $1" >&2
+  exit "${2:-1}"
 }
 
 #######################################
@@ -152,7 +152,7 @@ error() {
 #   Writes formatted warning message to stdout
 #######################################
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+  echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 #######################################
@@ -172,16 +172,16 @@ warn() {
 #   Progress messages to stdout
 #######################################
 check_api_reachable() {
-    local url="$1"
-    local name="$2"
+  local url="$1"
+  local name="$2"
 
-    if curl -sf "${url}/health" >/dev/null 2>&1; then
-        info "${name} API is reachable at ${url}"
-        return 0
-    else
-        warn "${name} API is not reachable at ${url}"
-        return 1
-    fi
+  if curl -sf "${url}/health" > /dev/null 2>&1; then
+    info "${name} API is reachable at ${url}"
+    return 0
+  else
+    warn "${name} API is not reachable at ${url}"
+    return 1
+  fi
 }
 
 #######################################
@@ -204,26 +204,26 @@ check_api_reachable() {
 #   Extracted spec to output file
 #######################################
 extract_spec() {
-    local url="$1"
-    local output="$2"
-    local name="$3"
+  local url="$1"
+  local output="$2"
+  local name="$3"
 
-    info "Extracting OpenAPI spec from ${name}..."
+  info "Extracting OpenAPI spec from ${name}..."
 
-    # Download JSON spec
-    local json_file="${TEMP_DIR}/${name}.json"
-    if ! curl -sf "${url}/openapi.json" -o "$json_file"; then
-        error "Failed to extract spec from ${name}" 2
-        return 1
-    fi
+  # Download JSON spec
+  local json_file="${TEMP_DIR}/${name}.json"
+  if ! curl -sf "${url}/openapi.json" -o "$json_file"; then
+    error "Failed to extract spec from ${name}" 2
+    return 1
+  fi
 
-    # Convert to YAML for comparison
-    if ! yq eval -P . "$json_file" > "$output"; then
-        error "Failed to convert spec to YAML" 1
-        return 1
-    fi
+  # Convert to YAML for comparison
+  if ! yq eval -P . "$json_file" > "$output"; then
+    error "Failed to convert spec to YAML" 1
+    return 1
+  fi
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -243,12 +243,12 @@ extract_spec() {
 #   1 - Normalization failed
 #######################################
 normalize_spec() {
-    local input="$1"
-    local output="$2"
+  local input="$1"
+  local output="$2"
 
-    # Remove servers, operationIds, and implementation-specific info
-    yq eval 'del(.servers) | del(.info.description) | walk(if type == "object" then del(.operationId) else . end)' \
-        "$input" > "$output"
+  # Remove servers, operationIds, and implementation-specific info
+  yq eval 'del(.servers) | del(.info.description) | walk(if type == "object" then del(.operationId) else . end)' \
+    "$input" > "$output"
 }
 
 #######################################
@@ -270,34 +270,34 @@ normalize_spec() {
 #   Comparison results to stdout
 #######################################
 compare_specs() {
-    local spec1="$1"
-    local spec2="$2"
-    local name1="$3"
-    local name2="$4"
+  local spec1="$1"
+  local spec2="$2"
+  local name1="$3"
+  local name2="$4"
 
-    # Normalize both specs
-    local norm1="${TEMP_DIR}/norm1.yaml"
-    local norm2="${TEMP_DIR}/norm2.yaml"
+  # Normalize both specs
+  local norm1="${TEMP_DIR}/norm1.yaml"
+  local norm2="${TEMP_DIR}/norm2.yaml"
 
-    normalize_spec "$spec1" "$norm1"
-    normalize_spec "$spec2" "$norm2"
+  normalize_spec "$spec1" "$norm1"
+  normalize_spec "$spec2" "$norm2"
 
-    # Compare normalized specs
-    if diff -u "$norm1" "$norm2" > "${TEMP_DIR}/diff.txt" 2>&1; then
-        success "${name1} and ${name2} specifications match!"
-        return 0
-    else
-        error "${name1} and ${name2} specifications differ!" 1
-        echo ""
-        echo "Differences found:"
-        head -50 "${TEMP_DIR}/diff.txt"
-        if [ "$(wc -l < "${TEMP_DIR}/diff.txt")" -gt 50 ]; then
-            echo ""
-            echo "... (showing first 50 lines of diff)"
-            echo "Run './scripts/sync-report.sh' for full details"
-        fi
-        return 1
+  # Compare normalized specs
+  if diff -u "$norm1" "$norm2" > "${TEMP_DIR}/diff.txt" 2>&1; then
+    success "${name1} and ${name2} specifications match!"
+    return 0
+  else
+    error "${name1} and ${name2} specifications differ!" 1
+    echo ""
+    echo "Differences found:"
+    head -50 "${TEMP_DIR}/diff.txt"
+    if [ "$(wc -l < "${TEMP_DIR}/diff.txt")" -gt 50 ]; then
+      echo ""
+      echo "... (showing first 50 lines of diff)"
+      echo "Run './scripts/sync-report.sh' for full details"
     fi
+    return 1
+  fi
 }
 
 #######################################
@@ -314,32 +314,32 @@ compare_specs() {
 #   1 - Spec is invalid
 #######################################
 validate_spec_schema() {
-    local spec="$1"
-    local name="$2"
+  local spec="$1"
+  local name="$2"
 
-    info "Validating ${name} spec schema..."
+  info "Validating ${name} spec schema..."
 
-    # Basic YAML validation
-    if ! yq eval . "$spec" >/dev/null 2>&1; then
-        error "${name} spec has invalid YAML syntax" 1
-        return 1
-    fi
+  # Basic YAML validation
+  if ! yq eval . "$spec" > /dev/null 2>&1; then
+    error "${name} spec has invalid YAML syntax" 1
+    return 1
+  fi
 
-    # Check required OpenAPI fields
-    local openapi_version=$(yq eval '.openapi' "$spec")
-    if [[ ! "$openapi_version" =~ ^3\. ]]; then
-        error "${name} spec has invalid OpenAPI version: $openapi_version" 1
-        return 1
-    fi
+  # Check required OpenAPI fields
+  local openapi_version=$(yq eval '.openapi' "$spec")
+  if [[ ! "$openapi_version" =~ ^3\. ]]; then
+    error "${name} spec has invalid OpenAPI version: $openapi_version" 1
+    return 1
+  fi
 
-    local title=$(yq eval '.info.title' "$spec")
-    if [ "$title" == "null" ] || [ -z "$title" ]; then
-        error "${name} spec missing required field: info.title" 1
-        return 1
-    fi
+  local title=$(yq eval '.info.title' "$spec")
+  if [ "$title" == "null" ] || [ -z "$title" ]; then
+    error "${name} spec missing required field: info.title" 1
+    return 1
+  fi
 
-    success "${name} spec schema is valid"
-    return 0
+  success "${name} spec schema is valid"
+  return 0
 }
 
 #######################################
@@ -358,100 +358,100 @@ validate_spec_schema() {
 #   2 - Cannot reach APIs
 #######################################
 main() {
-    info "Starting API synchronization validation..."
-    info "Code-first: ${CODE_FIRST_URL}"
-    info "API-first: ${API_FIRST_URL}"
-    info "Shared spec: ${SHARED_SPEC}"
+  info "Starting API synchronization validation..."
+  info "Code-first: ${CODE_FIRST_URL}"
+  info "API-first: ${API_FIRST_URL}"
+  info "Shared spec: ${SHARED_SPEC}"
+  echo ""
+
+  # Check prerequisites
+  if ! command -v curl &> /dev/null; then
+    error "curl is not installed"
+  fi
+
+  if ! command -v yq &> /dev/null; then
+    error "yq is not installed. Install: brew install yq"
+  fi
+
+  # Check if shared spec exists
+  if [ ! -f "$SHARED_SPEC" ]; then
+    error "Shared OpenAPI spec not found: $SHARED_SPEC"
+  fi
+
+  # Validate shared spec
+  validate_spec_schema "$SHARED_SPEC" "shared"
+  echo ""
+
+  # Check API reachability
+  local code_first_reachable=false
+  local api_first_reachable=false
+
+  if check_api_reachable "$CODE_FIRST_URL" "code-first"; then
+    code_first_reachable=true
+  fi
+
+  if check_api_reachable "$API_FIRST_URL" "API-first"; then
+    api_first_reachable=true
+  fi
+
+  if [ "$code_first_reachable" = false ] && [ "$api_first_reachable" = false ]; then
+    error "Neither API is reachable. Start them with 'make start-code-first' and 'make start-api-first'" 2
+  fi
+
+  echo ""
+
+  # Extract specs from running APIs
+  if [ "$code_first_reachable" = true ]; then
+    extract_spec "$CODE_FIRST_URL" "${TEMP_DIR}/code-first.yaml" "code-first"
+  fi
+
+  if [ "$api_first_reachable" = true ]; then
+    extract_spec "$API_FIRST_URL" "${TEMP_DIR}/api-first.yaml" "API-first"
+  fi
+
+  echo ""
+
+  # Compare specs
+  local sync_status=0
+
+  if [ "$code_first_reachable" = true ] && [ "$api_first_reachable" = true ]; then
+    info "Comparing code-first and API-first implementations..."
+    if ! compare_specs "${TEMP_DIR}/code-first.yaml" "${TEMP_DIR}/api-first.yaml" "code-first" "API-first"; then
+      sync_status=1
+    fi
     echo ""
+  fi
 
-    # Check prerequisites
-    if ! command -v curl &> /dev/null; then
-        error "curl is not installed"
+  # Compare against shared spec
+  if [ "$code_first_reachable" = true ]; then
+    info "Comparing code-first against shared spec..."
+    if ! compare_specs "${TEMP_DIR}/code-first.yaml" "$SHARED_SPEC" "code-first" "shared"; then
+      sync_status=1
     fi
-
-    if ! command -v yq &> /dev/null; then
-        error "yq is not installed. Install: brew install yq"
-    fi
-
-    # Check if shared spec exists
-    if [ ! -f "$SHARED_SPEC" ]; then
-        error "Shared OpenAPI spec not found: $SHARED_SPEC"
-    fi
-
-    # Validate shared spec
-    validate_spec_schema "$SHARED_SPEC" "shared"
     echo ""
+  fi
 
-    # Check API reachability
-    local code_first_reachable=false
-    local api_first_reachable=false
-
-    if check_api_reachable "$CODE_FIRST_URL" "code-first"; then
-        code_first_reachable=true
+  if [ "$api_first_reachable" = true ]; then
+    info "Comparing API-first against shared spec..."
+    if ! compare_specs "${TEMP_DIR}/api-first.yaml" "$SHARED_SPEC" "API-first" "shared"; then
+      sync_status=1
     fi
-
-    if check_api_reachable "$API_FIRST_URL" "API-first"; then
-        api_first_reachable=true
-    fi
-
-    if [ "$code_first_reachable" = false ] && [ "$api_first_reachable" = false ]; then
-        error "Neither API is reachable. Start them with 'make start-code-first' and 'make start-api-first'" 2
-    fi
-
     echo ""
+  fi
 
-    # Extract specs from running APIs
-    if [ "$code_first_reachable" = true ]; then
-        extract_spec "$CODE_FIRST_URL" "${TEMP_DIR}/code-first.yaml" "code-first"
-    fi
-
-    if [ "$api_first_reachable" = true ]; then
-        extract_spec "$API_FIRST_URL" "${TEMP_DIR}/api-first.yaml" "API-first"
-    fi
-
+  # Final verdict
+  if [ $sync_status -eq 0 ]; then
+    success "✓ All API implementations are synchronized!"
+    return 0
+  else
+    error "✗ API implementations are OUT OF SYNC!" 1
     echo ""
-
-    # Compare specs
-    local sync_status=0
-
-    if [ "$code_first_reachable" = true ] && [ "$api_first_reachable" = true ]; then
-        info "Comparing code-first and API-first implementations..."
-        if ! compare_specs "${TEMP_DIR}/code-first.yaml" "${TEMP_DIR}/api-first.yaml" "code-first" "API-first"; then
-            sync_status=1
-        fi
-        echo ""
-    fi
-
-    # Compare against shared spec
-    if [ "$code_first_reachable" = true ]; then
-        info "Comparing code-first against shared spec..."
-        if ! compare_specs "${TEMP_DIR}/code-first.yaml" "$SHARED_SPEC" "code-first" "shared"; then
-            sync_status=1
-        fi
-        echo ""
-    fi
-
-    if [ "$api_first_reachable" = true ]; then
-        info "Comparing API-first against shared spec..."
-        if ! compare_specs "${TEMP_DIR}/api-first.yaml" "$SHARED_SPEC" "API-first" "shared"; then
-            sync_status=1
-        fi
-        echo ""
-    fi
-
-    # Final verdict
-    if [ $sync_status -eq 0 ]; then
-        success "✓ All API implementations are synchronized!"
-        return 0
-    else
-        error "✗ API implementations are OUT OF SYNC!" 1
-        echo ""
-        echo "To fix synchronization:"
-        echo "  1. Update shared spec: ${SHARED_SPEC}"
-        echo "  2. Regenerate API-first: make regenerate"
-        echo "  3. Run validation again: make sync-check"
-        return 1
-    fi
+    echo "To fix synchronization:"
+    echo "  1. Update shared spec: ${SHARED_SPEC}"
+    echo "  2. Regenerate API-first: make regenerate"
+    echo "  3. Run validation again: make sync-check"
+    return 1
+  fi
 }
 
 # Execute main function

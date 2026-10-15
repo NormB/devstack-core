@@ -89,7 +89,7 @@ SERVICE_NAME="rabbitmq"
 SERVICE_IP="${RABBITMQ_IP:-172.20.0.14}"
 PKI_ROLE="rabbitmq-role"
 CERT_DIR="/etc/rabbitmq/certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 
 # Colors
 RED='\033[0;31m'
@@ -152,7 +152,10 @@ warn() { echo -e "${YELLOW}[RabbitMQ Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout and terminates script
 #######################################
-error() { echo -e "${RED}[RabbitMQ Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[RabbitMQ Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Waits for Vault service to become available and ready
@@ -173,21 +176,21 @@ error() { echo -e "${RED}[RabbitMQ Init]${NC} $1"; exit 1; }
 #   - Uses wget with spider mode for lightweight health checks
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -217,30 +220,30 @@ wait_for_vault() {
 #   - Defaults tls_enabled to false if not present in Vault
 #######################################
 fetch_credentials() {
-    info "Fetching credentials and TLS setting from Vault..."
+  info "Fetching credentials and TLS setting from Vault..."
 
-    local response=$(wget -qO- --no-check-certificate \
-        --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null)
+  local response=$(wget -qO- --no-check-certificate \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    # Parse JSON using grep/sed (no jq required)
-    export RABBITMQ_DEFAULT_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-    export RABBITMQ_DEFAULT_PASS=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-    export RABBITMQ_DEFAULT_VHOST=$(echo "$response" | grep -o '"vhost":"[^"]*"' | cut -d'"' -f4)
+  # Parse JSON using grep/sed (no jq required)
+  export RABBITMQ_DEFAULT_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
+  export RABBITMQ_DEFAULT_PASS=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  export RABBITMQ_DEFAULT_VHOST=$(echo "$response" | grep -o '"vhost":"[^"]*"' | cut -d'"' -f4)
 
-    # Extract tls_enabled (default to false if not present)
-    local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
-    export ENABLE_TLS="${tls_value:-false}"
+  # Extract tls_enabled (default to false if not present)
+  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  export ENABLE_TLS="${tls_value:-false}"
 
-    if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then
-        error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then
+    error "Invalid credentials received from Vault"
+  fi
 
-    success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
@@ -264,27 +267,27 @@ fetch_credentials() {
 #   - Exits with error if TLS enabled but certificates unavailable
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    info "Validating pre-generated TLS certificates..."
+  info "Validating pre-generated TLS certificates..."
 
-    # Check if certificates exist and are readable
-    if [ ! -f "$CERT_DIR/server.pem" ] || [ ! -r "$CERT_DIR/server.pem" ]; then
-        error "TLS enabled but server.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  # Check if certificates exist and are readable
+  if [ ! -f "$CERT_DIR/server.pem" ] || [ ! -r "$CERT_DIR/server.pem" ]; then
+    error "TLS enabled but server.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/key.pem" ] || [ ! -r "$CERT_DIR/key.pem" ]; then
-        error "TLS enabled but key.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/key.pem" ] || [ ! -r "$CERT_DIR/key.pem" ]; then
+    error "TLS enabled but key.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
-        error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
+    error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    success "TLS certificates validated (pre-generated)"
+  success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
@@ -310,14 +313,14 @@ validate_certificates() {
 #   - Configuration includes cacertfile, certfile, and keyfile paths
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    info "Configuring RabbitMQ for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  info "Configuring RabbitMQ for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create RabbitMQ SSL config
-    cat > /etc/rabbitmq/rabbitmq.conf <<EOF
+  # Create RabbitMQ SSL config
+  cat > /etc/rabbitmq/rabbitmq.conf << EOF
 # Dual-Mode TLS Configuration
 # Accepts both encrypted (port 5671) and unencrypted (port 5672) connections
 listeners.tcp.default = 5672
@@ -334,7 +337,7 @@ ssl_options.versions.1 = tlsv1.2
 ssl_options.versions.2 = tlsv1.3
 EOF
 
-    success "TLS dual-mode configuration prepared (accepts both SSL on 5671 and non-SSL on 5672)"
+  success "TLS dual-mode configuration prepared (accepts both SSL on 5671 and non-SSL on 5672)"
 }
 
 #######################################
@@ -363,36 +366,36 @@ EOF
 #   - When TLS enabled, both ports 5672 (TCP) and 5671 (SSL) are available
 #######################################
 main() {
-    info "Starting RabbitMQ initialization with Vault integration..."
-    info ""
+  info "Starting RabbitMQ initialization with Vault integration..."
+  info ""
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch credentials and TLS setting from Vault
-    fetch_credentials
+  # Fetch credentials and TLS setting from Vault
+  fetch_credentials
 
-    # Validate pre-generated certificates if TLS is enabled
-    validate_certificates
+  # Validate pre-generated certificates if TLS is enabled
+  validate_certificates
 
-    # Configure TLS if enabled
-    configure_tls
+  # Configure TLS if enabled
+  configure_tls
 
-    info ""
-    success "Initialization complete, starting RabbitMQ..."
-    info ""
+  info ""
+  success "Initialization complete, starting RabbitMQ..."
+  info ""
 
-    # Start RabbitMQ with the original docker-entrypoint
-    exec docker-entrypoint.sh "$@"
+  # Start RabbitMQ with the original docker-entrypoint
+  exec docker-entrypoint.sh "$@"
 }
 
 # Run main function

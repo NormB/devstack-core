@@ -88,7 +88,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 #   run_python lib/redis_client.py --test connection
 ################################################################################
 run_python() {
-    (cd "$SCRIPT_DIR" && uv run python "$@")
+  (cd "$SCRIPT_DIR" && uv run python "$@")
 }
 
 REDIS_CLIENT="lib/redis_client.py"
@@ -125,7 +125,10 @@ info() { echo -e "${BLUE}[TEST]${NC} $1"; }
 # SIDE EFFECTS:
 #   Increments TESTS_PASSED counter
 ################################################################################
-success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1)); }
+success() {
+  echo -e "${GREEN}[PASS]${NC} $1"
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
 ################################################################################
 # Prints a failure message in red and tracks failed test
@@ -137,7 +140,11 @@ success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1))
 #   Increments TESTS_FAILED counter
 #   Appends message to FAILED_TESTS array
 ################################################################################
-fail() { echo -e "${RED}[FAIL]${NC} $1"; TESTS_FAILED=$((TESTS_FAILED + 1)); FAILED_TESTS+=("$1"); }
+fail() {
+  echo -e "${RED}[FAIL]${NC} $1"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  FAILED_TESTS+=("$1")
+}
 
 ################################################################################
 # Prints a warning message in yellow
@@ -168,22 +175,22 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   tls_status=$(get_tls_status_from_vault "redis-1")
 ################################################################################
 get_tls_status_from_vault() {
-    local service_name="$1"
-    # Always use localhost for tests running on host machine
-    local vault_addr="http://localhost:8200"
-    local vault_token=$(cat ~/.config/vault/root-token 2>/dev/null)
+  local service_name="$1"
+  # Always use localhost for tests running on host machine
+  local vault_addr="http://localhost:8200"
+  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    if [ -z "$vault_token" ]; then
-        echo "false"
-        return 1
-    fi
+  if [ -z "$vault_token" ]; then
+    echo "false"
+    return 1
+  fi
 
-    local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2>/dev/null)
-    if [ $? -eq 0 ]; then
-        echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
-    else
-        echo "false"
-    fi
+  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
+  if [ $? -eq 0 ]; then
+    echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
+  else
+    echo "false"
+  fi
 }
 
 ################################################################################
@@ -202,23 +209,23 @@ get_tls_status_from_vault() {
 #   1 - One or more containers are not running
 ################################################################################
 test_redis_running() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 1: Redis containers are running"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 1: Redis containers are running"
 
-    local running=0
-    for node in 1 2 3; do
-        if docker ps | grep -q "dev-redis-$node"; then
-            running=$((running + 1))
-        fi
-    done
-
-    if [ $running -eq 3 ]; then
-        success "All 3 Redis nodes are running"
-        return 0
-    else
-        fail "Only $running/3 Redis nodes are running"
-        return 1
+  local running=0
+  for node in 1 2 3; do
+    if docker ps | grep -q "dev-redis-$node"; then
+      running=$((running + 1))
     fi
+  done
+
+  if [ $running -eq 3 ]; then
+    success "All 3 Redis nodes are running"
+    return 0
+  else
+    fail "Only $running/3 Redis nodes are running"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -238,24 +245,24 @@ test_redis_running() {
 #   1 - One or more containers are unhealthy
 ################################################################################
 test_redis_healthy() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 2: Redis nodes are healthy"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 2: Redis nodes are healthy"
 
-    local healthy=0
-    for node in 1 2 3; do
-        local health=$(docker inspect "dev-redis-$node" --format='{{.State.Health.Status}}' 2>/dev/null)
-        if [ "$health" = "healthy" ]; then
-            healthy=$((healthy + 1))
-        fi
-    done
-
-    if [ $healthy -eq 3 ]; then
-        success "All 3 Redis nodes are healthy"
-        return 0
-    else
-        fail "Only $healthy/3 Redis nodes are healthy"
-        return 1
+  local healthy=0
+  for node in 1 2 3; do
+    local health=$(docker inspect "dev-redis-$node" --format='{{.State.Health.Status}}' 2> /dev/null)
+    if [ "$health" = "healthy" ]; then
+      healthy=$((healthy + 1))
     fi
+  done
+
+  if [ $healthy -eq 3 ]; then
+    success "All 3 Redis nodes are healthy"
+    return 0
+  else
+    fail "Only $healthy/3 Redis nodes are healthy"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -276,26 +283,26 @@ test_redis_healthy() {
 #   1 - One or more containers failed Vault initialization
 ################################################################################
 test_redis_vault_integration() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 3: Redis initialized with Vault credentials"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 3: Redis initialized with Vault credentials"
 
-    local vault_init=0
-    for node in 1 2 3; do
-        local logs=$(docker logs "dev-redis-$node" 2>&1)
-        if echo "$logs" | grep -q "Vault is ready" && \
-           echo "$logs" | grep -q "Credentials fetched"; then
-            vault_init=$((vault_init + 1))
-        fi
-    done
-
-    if [ $vault_init -eq 3 ]; then
-        success "All Redis nodes initialized with Vault credentials"
-        return 0
-    else
-        fail "Only $vault_init/3 Redis nodes initialized with Vault"
-        warn "Check logs: docker logs dev-redis-{1,2,3}"
-        return 1
+  local vault_init=0
+  for node in 1 2 3; do
+    local logs=$(docker logs "dev-redis-$node" 2>&1)
+    if echo "$logs" | grep -q "Vault is ready" &&
+      echo "$logs" | grep -q "Credentials fetched"; then
+      vault_init=$((vault_init + 1))
     fi
+  done
+
+  if [ $vault_init -eq 3 ]; then
+    success "All Redis nodes initialized with Vault credentials"
+    return 0
+  else
+    fail "Only $vault_init/3 Redis nodes initialized with Vault"
+    warn "Check logs: docker logs dev-redis-{1,2,3}"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -318,26 +325,26 @@ test_redis_vault_integration() {
 #   This is a real external connection test, not using docker exec
 ################################################################################
 test_redis_connections() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 4: Can connect to all Redis nodes with Vault password (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 4: Can connect to all Redis nodes with Vault password (real client)"
 
-    local connected=0
-    for node in 1 2 3; do
-        local port=$((6378 + node))
-        local result=$(run_python "$REDIS_CLIENT" --port $port --service "redis-$node" --test connection 2>&1)
+  local connected=0
+  for node in 1 2 3; do
+    local port=$((6378 + node))
+    local result=$(run_python "$REDIS_CLIENT" --port $port --service "redis-$node" --test connection 2>&1)
 
-        if echo "$result" | grep -q "✓ connection: success"; then
-            connected=$((connected + 1))
-        fi
-    done
-
-    if [ $connected -eq 3 ]; then
-        success "All Redis nodes connected successfully with Vault password (verified from outside container)"
-        return 0
-    else
-        fail "Only $connected/3 Redis nodes connected successfully"
-        return 1
+    if echo "$result" | grep -q "✓ connection: success"; then
+      connected=$((connected + 1))
     fi
+  done
+
+  if [ $connected -eq 3 ]; then
+    success "All Redis nodes connected successfully with Vault password (verified from outside container)"
+    return 0
+  else
+    fail "Only $connected/3 Redis nodes connected successfully"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -359,20 +366,20 @@ test_redis_connections() {
 #   Only tests redis-1 since INFO is node-specific and not cluster-wide
 ################################################################################
 test_redis_info() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 5: Redis INFO command works (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 5: Redis INFO command works (real client)"
 
-    # Test redis-1 as representative
-    local result=$(run_python "$REDIS_CLIENT" --test info 2>&1)
+  # Test redis-1 as representative
+  local result=$(run_python "$REDIS_CLIENT" --test info 2>&1)
 
-    if echo "$result" | grep -q "✓ info: success"; then
-        local version=$(echo "$result" | grep "Redis version:" | head -1)
-        success "$version"
-        return 0
-    else
-        fail "Could not query Redis INFO"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ info: success"; then
+    local version=$(echo "$result" | grep "Redis version:" | head -1)
+    success "$version"
+    return 0
+  else
+    fail "Could not query Redis INFO"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -396,24 +403,24 @@ test_redis_info() {
 #   In cluster mode, requires cluster to be initialized first
 ################################################################################
 test_redis_operations() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 6: Can perform SET/GET operations (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 6: Can perform SET/GET operations (real client)"
 
-    # Test redis-1 as representative
-    local result=$(run_python "$REDIS_CLIENT" --test operations 2>&1)
+  # Test redis-1 as representative
+  local result=$(run_python "$REDIS_CLIENT" --test operations 2>&1)
 
-    if echo "$result" | grep -q "✓ operations: success"; then
-        success "SET/GET operations successful (verified from outside container)"
-        return 0
-    elif echo "$result" | grep -q "⚠ operations: skipped"; then
-        warn "Cluster not initialized (run redis-cli --cluster create to initialize)"
-        success "Operations test skipped (cluster mode requires initialization)"
-        return 0
-    else
-        fail "Could not perform SET/GET operations"
-        warn "Error: $result"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ operations: success"; then
+    success "SET/GET operations successful (verified from outside container)"
+    return 0
+  elif echo "$result" | grep -q "⚠ operations: skipped"; then
+    warn "Cluster not initialized (run redis-cli --cluster create to initialize)"
+    success "Operations test skipped (cluster mode requires initialization)"
+    return 0
+  else
+    fail "Could not perform SET/GET operations"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -443,54 +450,54 @@ test_redis_operations() {
 #   Requires CA certificate at ~/.config/vault/ca/ca-chain.pem when TLS enabled
 ################################################################################
 test_redis_tls_available() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 7: SSL/TLS connection verification (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 7: SSL/TLS connection verification (real client)"
 
-    # Check if TLS is enabled in Vault
-    local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  # Check if TLS is enabled in Vault
+  local tls_enabled=$(get_tls_status_from_vault "redis-1")
 
-    if [ "$tls_enabled" = "true" ]; then
-        # TLS is enabled - test SSL connection on TLS port with CA certificate
-        local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
-        local redis_tls_port=6390
+  if [ "$tls_enabled" = "true" ]; then
+    # TLS is enabled - test SSL connection on TLS port with CA certificate
+    local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
+    local redis_tls_port=6390
 
-        if [ ! -f "$ca_file" ]; then
-            fail "TLS enabled but CA certificate not found at $ca_file"
-            return 1
-        fi
-
-        local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
-
-        if echo "$result" | grep -q "✓ ssl: success"; then
-            if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                success "SSL connection verified from external client (port $redis_tls_port)"
-            else
-                warn "SSL test succeeded but connection not encrypted (unexpected)"
-                return 1
-            fi
-            return 0
-        else
-            fail "SSL connection test failed on TLS port $redis_tls_port"
-            warn "Error: $result"
-            return 1
-        fi
-    else
-        # TLS is disabled - test plain connection on standard port
-        local result=$(run_python "$REDIS_CLIENT" --test ssl 2>&1)
-
-        if echo "$result" | grep -q "✓ ssl: success"; then
-            if echo "$result" | grep -q '"connection_type": "plain"'; then
-                success "Connection successful on standard port (TLS disabled in Vault)"
-            else
-                warn "Unexpected connection type when TLS disabled"
-            fi
-            return 0
-        else
-            fail "Connection test failed"
-            warn "Error: $result"
-            return 1
-        fi
+    if [ ! -f "$ca_file" ]; then
+      fail "TLS enabled but CA certificate not found at $ca_file"
+      return 1
     fi
+
+    local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+
+    if echo "$result" | grep -q "✓ ssl: success"; then
+      if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+        success "SSL connection verified from external client (port $redis_tls_port)"
+      else
+        warn "SSL test succeeded but connection not encrypted (unexpected)"
+        return 1
+      fi
+      return 0
+    else
+      fail "SSL connection test failed on TLS port $redis_tls_port"
+      warn "Error: $result"
+      return 1
+    fi
+  else
+    # TLS is disabled - test plain connection on standard port
+    local result=$(run_python "$REDIS_CLIENT" --test ssl 2>&1)
+
+    if echo "$result" | grep -q "✓ ssl: success"; then
+      if echo "$result" | grep -q '"connection_type": "plain"'; then
+        success "Connection successful on standard port (TLS disabled in Vault)"
+      else
+        warn "Unexpected connection type when TLS disabled"
+      fi
+      return 0
+    else
+      fail "Connection test failed"
+      warn "Error: $result"
+      return 1
+    fi
+  fi
 }
 
 ################################################################################
@@ -516,53 +523,53 @@ test_redis_tls_available() {
 #   Tests on dedicated TLS port (6390) separate from standard port
 ################################################################################
 test_redis_ssl_connection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 8: SSL certificate verification with CA (if TLS enabled)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 8: SSL certificate verification with CA (if TLS enabled)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "redis-1")
 
-    if [ "$tls_enabled" = "true" ]; then
-        # Verify Redis actually supports TLS before attempting SSL connection
-        # Test on TLS port (6390) with SSL enabled
-        local redis_tls_port=6390
-        local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
+  if [ "$tls_enabled" = "true" ]; then
+    # Verify Redis actually supports TLS before attempting SSL connection
+    # Test on TLS port (6390) with SSL enabled
+    local redis_tls_port=6390
+    local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
 
-        if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
-            # Both Vault claims TLS AND Redis actually supports it
-            local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
+    if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
+      # Both Vault claims TLS AND Redis actually supports it
+      local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
 
-            if [ -f "$ca_file" ]; then
-                # Test with SSL enabled and CA verification on TLS port
-                local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+      if [ -f "$ca_file" ]; then
+        # Test with SSL enabled and CA verification on TLS port
+        local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
 
-                if echo "$result" | grep -q "✓ ssl: success"; then
-                    if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                        success "SSL certificate validation successful"
-                        return 0
-                    else
-                        fail "SSL not enabled despite TLS configuration"
-                        return 1
-                    fi
-                else
-                    fail "SSL certificate verification failed"
-                    warn "Error: $result"
-                    return 1
-                fi
-            else
-                fail "CA certificate not found at $ca_file"
-                return 1
-            fi
-        else
-            warn "TLS not actually configured on Redis (Vault says enabled but Redis not accepting TLS)"
-            success "SSL certificate test skipped (TLS configuration mismatch)"
+        if echo "$result" | grep -q "✓ ssl: success"; then
+          if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+            success "SSL certificate validation successful"
             return 0
+          else
+            fail "SSL not enabled despite TLS configuration"
+            return 1
+          fi
+        else
+          fail "SSL certificate verification failed"
+          warn "Error: $result"
+          return 1
         fi
+      else
+        fail "CA certificate not found at $ca_file"
+        return 1
+      fi
     else
-        warn "TLS not enabled, skipping certificate verification test"
-        success "SSL certificate test skipped (TLS not enabled)"
-        return 0
+      warn "TLS not actually configured on Redis (Vault says enabled but Redis not accepting TLS)"
+      success "SSL certificate test skipped (TLS configuration mismatch)"
+      return 0
     fi
+  else
+    warn "TLS not enabled, skipping certificate verification test"
+    success "SSL certificate test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -588,60 +595,60 @@ test_redis_ssl_connection() {
 #   Verifies connection_type is SSL/TLS in response
 ################################################################################
 test_redis_encrypted_operations() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "redis-1")
 
-    if [ "$tls_enabled" = "true" ]; then
-        # Verify Redis actually supports TLS before attempting SSL connection
-        # Test on TLS port (6390) with SSL enabled
-        local redis_tls_port=6390
-        local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
+  if [ "$tls_enabled" = "true" ]; then
+    # Verify Redis actually supports TLS before attempting SSL connection
+    # Test on TLS port (6390) with SSL enabled
+    local redis_tls_port=6390
+    local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
 
-        if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
-            # Both Vault claims TLS AND Redis actually supports it
-            local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
+    if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
+      # Both Vault claims TLS AND Redis actually supports it
+      local ca_file="${HOME}/.config/vault/ca/ca-chain.pem"
 
-            if [ -f "$ca_file" ]; then
-                # Test Redis operations with SSL enabled on TLS port
-                local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test operations --ssl --ca-cert "$ca_file" 2>&1)
+      if [ -f "$ca_file" ]; then
+        # Test Redis operations with SSL enabled on TLS port
+        local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test operations --ssl --ca-cert "$ca_file" 2>&1)
 
-                if echo "$result" | grep -q "✓ operations: success"; then
-                    # Verify connection was encrypted
-                    if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                        success "Redis operations successful over encrypted connection (SSL/TLS verified)"
-                        info "  Performed: SET, GET, DEL over TLS"
-                        return 0
-                    else
-                        fail "Operations succeeded but connection was not encrypted"
-                        return 1
-                    fi
-                elif echo "$result" | grep -q "⚠ operations: skipped"; then
-                    warn "Cluster not initialized (run redis-cli --cluster create to initialize)"
-                    success "Encrypted operations test skipped (cluster mode requires initialization)"
-                    return 0
-                else
-                    fail "Redis operations failed over encrypted connection"
-                    warn "Error: $result"
-                    return 1
-                fi
-            else
-                warn "CA certificate not found at $ca_file"
-                success "Encrypted operations test skipped (no CA certificate)"
-                return 0
-            fi
-        else
-            warn "TLS not actually configured on Redis (Vault says enabled but Redis not accepting TLS)"
-            success "Encrypted operations test skipped (TLS configuration mismatch)"
+        if echo "$result" | grep -q "✓ operations: success"; then
+          # Verify connection was encrypted
+          if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+            success "Redis operations successful over encrypted connection (SSL/TLS verified)"
+            info "  Performed: SET, GET, DEL over TLS"
             return 0
+          else
+            fail "Operations succeeded but connection was not encrypted"
+            return 1
+          fi
+        elif echo "$result" | grep -q "⚠ operations: skipped"; then
+          warn "Cluster not initialized (run redis-cli --cluster create to initialize)"
+          success "Encrypted operations test skipped (cluster mode requires initialization)"
+          return 0
+        else
+          fail "Redis operations failed over encrypted connection"
+          warn "Error: $result"
+          return 1
         fi
-    else
-        info "TLS not enabled, skipping encrypted operations test"
-        success "Encrypted operations test skipped (TLS not enabled)"
+      else
+        warn "CA certificate not found at $ca_file"
+        success "Encrypted operations test skipped (no CA certificate)"
         return 0
+      fi
+    else
+      warn "TLS not actually configured on Redis (Vault says enabled but Redis not accepting TLS)"
+      success "Encrypted operations test skipped (TLS configuration mismatch)"
+      return 0
     fi
+  else
+    info "TLS not enabled, skipping encrypted operations test"
+    success "Encrypted operations test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -665,23 +672,23 @@ test_redis_encrypted_operations() {
 #   Tests redis-1 as representative of cluster configuration
 ################################################################################
 test_redis_cluster_info() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 10: Redis cluster configuration"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 10: Redis cluster configuration"
 
-    # Test redis-1 cluster info
-    local result=$(run_python "$REDIS_CLIENT" --test cluster 2>&1)
+  # Test redis-1 cluster info
+  local result=$(run_python "$REDIS_CLIENT" --test cluster 2>&1)
 
-    if echo "$result" | grep -q "✓ cluster:"; then
-        if echo "$result" | grep -q "enabled"; then
-            success "Redis cluster mode is enabled"
-        else
-            success "Redis in standalone mode (cluster disabled)"
-        fi
-        return 0
+  if echo "$result" | grep -q "✓ cluster:"; then
+    if echo "$result" | grep -q "enabled"; then
+      success "Redis cluster mode is enabled"
     else
-        fail "Could not query cluster information"
-        return 1
+      success "Redis in standalone mode (cluster disabled)"
     fi
+    return 0
+  else
+    fail "Could not query cluster information"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -706,26 +713,26 @@ test_redis_cluster_info() {
 #   Looks for REDIS_PASSWORD variable specifically
 ################################################################################
 test_no_plaintext_passwords() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 11: No plaintext Redis password in .env"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 11: No plaintext Redis password in .env"
 
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        # Check if old REDIS_PASSWORD variable exists with a value
-        local old_password=$(grep "^REDIS_PASSWORD=" "$PROJECT_ROOT/.env" 2>/dev/null | grep -v "^#" | cut -d= -f2)
+  if [ -f "$PROJECT_ROOT/.env" ]; then
+    # Check if old REDIS_PASSWORD variable exists with a value
+    local old_password=$(grep "^REDIS_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
 
-        if [ -z "$old_password" ]; then
-            success "No plaintext Redis password in .env"
-            return 0
-        else
-            warn "Found REDIS_PASSWORD in .env (should be removed)"
-            fail "Plaintext password still in .env"
-            return 1
-        fi
+    if [ -z "$old_password" ]; then
+      success "No plaintext Redis password in .env"
+      return 0
     else
-        warn ".env file not found"
-        success "Test skipped (.env not created yet)"
-        return 0
+      warn "Found REDIS_PASSWORD in .env (should be removed)"
+      fail "Plaintext password still in .env"
+      return 1
     fi
+  else
+    warn ".env file not found"
+    success "Test skipped (.env not created yet)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -752,48 +759,48 @@ test_no_plaintext_passwords() {
 #   Final summary always displays even if tests fail
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  Redis Vault Integration Tests"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  Redis Vault Integration Tests"
+  echo "========================================="
+  echo
 
-    test_redis_running || true
-    test_redis_healthy || true
-    test_redis_vault_integration || true
-    test_redis_connections || true
-    test_redis_info || true
-    test_redis_operations || true
-    test_redis_tls_available || true
-    test_redis_ssl_connection || true
-    test_redis_encrypted_operations || true
-    test_redis_cluster_info || true
-    test_no_plaintext_passwords || true
+  test_redis_running || true
+  test_redis_healthy || true
+  test_redis_vault_integration || true
+  test_redis_connections || true
+  test_redis_info || true
+  test_redis_operations || true
+  test_redis_tls_available || true
+  test_redis_ssl_connection || true
+  test_redis_encrypted_operations || true
+  test_redis_cluster_info || true
+  test_no_plaintext_passwords || true
 
+  echo
+  echo "========================================="
+  echo "  Test Results"
+  echo "========================================="
+  echo "Total tests: $TESTS_RUN"
+  echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
+  if [ $TESTS_FAILED -gt 0 ]; then
+    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
     echo
-    echo "========================================="
-    echo "  Test Results"
-    echo "========================================="
-    echo "Total tests: $TESTS_RUN"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    if [ $TESTS_FAILED -gt 0 ]; then
-        echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-        echo
-        echo "Failed tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo -e "  ${RED}✗${NC} $test"
-        done
-    fi
-    echo "========================================="
-    echo
+    echo "Failed tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo -e "  ${RED}✗${NC} $test"
+    done
+  fi
+  echo "========================================="
+  echo
 
-    if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}✓ All Redis tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Some tests failed${NC}"
-        return 1
-    fi
+  if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All Redis tests passed!${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ Some tests failed${NC}"
+    return 1
+  fi
 }
 
 # Main

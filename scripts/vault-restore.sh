@@ -27,67 +27,70 @@ VAULT_CONFIG_DIR="${HOME}/.config/vault"
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+  exit 1
+}
 
 main() {
-    local archive="$1"
+  local archive="$1"
 
-    if [ -z "$archive" ]; then
-        error "Usage: $0 <backup_archive.tar.gz>"
-    fi
+  if [ -z "$archive" ]; then
+    error "Usage: $0 <backup_archive.tar.gz>"
+  fi
 
-    if [ ! -f "$archive" ]; then
-        error "Backup archive not found: $archive"
-    fi
+  if [ ! -f "$archive" ]; then
+    error "Backup archive not found: $archive"
+  fi
 
-    echo ""
-    echo "════════════════════════════════════════════════════════════════════════════════"
-    echo "                        VAULT RESTORE"
-    echo "════════════════════════════════════════════════════════════════════════════════"
-    echo ""
+  echo ""
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo "                        VAULT RESTORE"
+  echo "════════════════════════════════════════════════════════════════════════════════"
+  echo ""
 
-    # Create temp directory for extraction
-    local temp_dir=$(mktemp -d)
-    info "Extracting backup archive to: $temp_dir"
-    tar -xzf "$archive" -C "$temp_dir"
+  # Create temp directory for extraction
+  local temp_dir=$(mktemp -d)
+  info "Extracting backup archive to: $temp_dir"
+  tar -xzf "$archive" -C "$temp_dir"
 
-    # Find backup directory (should be only one)
-    local backup_dir=$(find "$temp_dir" -maxdepth 1 -type d ! -path "$temp_dir" | head -1)
+  # Find backup directory (should be only one)
+  local backup_dir=$(find "$temp_dir" -maxdepth 1 -type d ! -path "$temp_dir" | head -1)
 
-    if [ -z "$backup_dir" ]; then
-        rm -rf "$temp_dir"
-        error "No backup directory found in archive"
-    fi
-
-    # Backup current config
-    if [ -d "$VAULT_CONFIG_DIR" ]; then
-        warn "Backing up current Vault config to ${VAULT_CONFIG_DIR}.backup"
-        mv "$VAULT_CONFIG_DIR" "${VAULT_CONFIG_DIR}.backup"
-    fi
-
-    # Restore from backup
-    info "Restoring Vault configuration..."
-    mkdir -p "$VAULT_CONFIG_DIR"
-    cp -r "$backup_dir"/* "$VAULT_CONFIG_DIR/"
-
-    # Set proper permissions
-    chmod 700 "$VAULT_CONFIG_DIR"
-    chmod 600 "$VAULT_CONFIG_DIR"/keys.json "$VAULT_CONFIG_DIR"/root-token 2>/dev/null || true
-    if [ -d "$VAULT_CONFIG_DIR/approles" ]; then
-        chmod 700 "$VAULT_CONFIG_DIR/approles"/*
-        chmod 600 "$VAULT_CONFIG_DIR/approles"/*/*
-    fi
-
-    # Cleanup
+  if [ -z "$backup_dir" ]; then
     rm -rf "$temp_dir"
+    error "No backup directory found in archive"
+  fi
 
-    success "Vault configuration restored successfully!"
-    echo ""
-    echo "Restored files in $VAULT_CONFIG_DIR"
-    ls -lh "$VAULT_CONFIG_DIR"
-    echo ""
-    echo "To use restored Vault, restart services: ./devstack restart"
-    echo ""
+  # Backup current config
+  if [ -d "$VAULT_CONFIG_DIR" ]; then
+    warn "Backing up current Vault config to ${VAULT_CONFIG_DIR}.backup"
+    mv "$VAULT_CONFIG_DIR" "${VAULT_CONFIG_DIR}.backup"
+  fi
+
+  # Restore from backup
+  info "Restoring Vault configuration..."
+  mkdir -p "$VAULT_CONFIG_DIR"
+  cp -r "$backup_dir"/* "$VAULT_CONFIG_DIR/"
+
+  # Set proper permissions
+  chmod 700 "$VAULT_CONFIG_DIR"
+  chmod 600 "$VAULT_CONFIG_DIR"/keys.json "$VAULT_CONFIG_DIR"/root-token 2> /dev/null || true
+  if [ -d "$VAULT_CONFIG_DIR/approles" ]; then
+    chmod 700 "$VAULT_CONFIG_DIR/approles"/*
+    chmod 600 "$VAULT_CONFIG_DIR/approles"/*/*
+  fi
+
+  # Cleanup
+  rm -rf "$temp_dir"
+
+  success "Vault configuration restored successfully!"
+  echo ""
+  echo "Restored files in $VAULT_CONFIG_DIR"
+  ls -lh "$VAULT_CONFIG_DIR"
+  echo ""
+  echo "To use restored Vault, restart services: ./devstack restart"
+  echo ""
 }
 
 main "$@"

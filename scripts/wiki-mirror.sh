@@ -43,12 +43,12 @@ README.md                   wiki/Home.md
 
 mode="copy"
 case "${1:-}" in
-    "") ;;
-    --check) mode="check" ;;
-    *)
-        echo "Usage: $0 [--check]" >&2
-        exit 2
-        ;;
+  "") ;;
+  --check) mode="check" ;;
+  *)
+    echo "Usage: $0 [--check]" >&2
+    exit 2
+    ;;
 esac
 
 cd "$PROJECT_ROOT"
@@ -59,37 +59,37 @@ copied=0
 current=0
 
 while read -r src dest; do
-    [ -n "$src" ] || continue
+  [ -n "$src" ] || continue
 
-    if [ ! -f "$src" ]; then
-        echo "missing source: $src"
-        missing=$((missing + 1))
-        continue
-    fi
+  if [ ! -f "$src" ]; then
+    echo "missing source: $src"
+    missing=$((missing + 1))
+    continue
+  fi
 
-    if cmp -s "$src" "$dest" 2>/dev/null; then
-        current=$((current + 1))
-        continue
-    fi
+  if cmp -s "$src" "$dest" 2> /dev/null; then
+    current=$((current + 1))
+    continue
+  fi
 
-    if [ "$mode" = "check" ]; then
-        echo "out of date: $dest (source: $src)"
-        stale=$((stale + 1))
-    else
-        cp "$src" "$dest"
-        echo "copied: $src -> $dest"
-        copied=$((copied + 1))
-    fi
+  if [ "$mode" = "check" ]; then
+    echo "out of date: $dest (source: $src)"
+    stale=$((stale + 1))
+  else
+    cp "$src" "$dest"
+    echo "copied: $src -> $dest"
+    copied=$((copied + 1))
+  fi
 done <<< "$MIRROR_MAP"
 
 if [ "$mode" = "check" ]; then
-    if [ "$stale" -eq 0 ] && [ "$missing" -eq 0 ]; then
-        echo "wiki mirror is current ($current files)"
-        exit 0
-    fi
-    echo "wiki mirror check failed: $stale out of date, $missing missing"
-    echo "Run ./scripts/wiki-mirror.sh and commit the wiki/ changes."
-    exit 1
+  if [ "$stale" -eq 0 ] && [ "$missing" -eq 0 ]; then
+    echo "wiki mirror is current ($current files)"
+    exit 0
+  fi
+  echo "wiki mirror check failed: $stale out of date, $missing missing"
+  echo "Run ./scripts/wiki-mirror.sh and commit the wiki/ changes."
+  exit 1
 fi
 
 echo "wiki mirror: $copied copied, $current already current, $missing missing"

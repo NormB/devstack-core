@@ -44,25 +44,25 @@ echo ""
 ##############################################################################
 
 if git diff --cached --name-only | grep -q "openapi.yaml"; then
-    info "OpenAPI spec is being committed - validating..."
+  info "OpenAPI spec is being committed - validating..."
 
-    if command -v yq >/dev/null 2>&1; then
-        if yq eval . "$SHARED_SPEC" >/dev/null 2>&1; then
-            success "✓ OpenAPI spec is valid YAML"
-        else
-            error "✗ OpenAPI spec has invalid YAML syntax"
-            echo ""
-            echo "Fix the spec before committing:"
-            echo "  $SHARED_SPEC"
-            echo ""
-            echo "To bypass this check (NOT recommended):"
-            echo "  git commit --no-verify"
-            exit 1
-        fi
+  if command -v yq > /dev/null 2>&1; then
+    if yq eval . "$SHARED_SPEC" > /dev/null 2>&1; then
+      success "✓ OpenAPI spec is valid YAML"
     else
-        warn "yq not installed - skipping YAML validation"
-        echo "Install: brew install yq"
+      error "✗ OpenAPI spec has invalid YAML syntax"
+      echo ""
+      echo "Fix the spec before committing:"
+      echo "  $SHARED_SPEC"
+      echo ""
+      echo "To bypass this check (NOT recommended):"
+      echo "  git commit --no-verify"
+      exit 1
     fi
+  else
+    warn "yq not installed - skipping YAML validation"
+    echo "Install: brew install yq"
+  fi
 fi
 
 ##############################################################################
@@ -71,52 +71,52 @@ fi
 
 # Check if any API implementation files are being committed
 if git diff --cached --name-only | grep -qE "(fastapi|fastapi-api-first)/app/.*\.py"; then
-    info "API implementation files modified - checking synchronization..."
+  info "API implementation files modified - checking synchronization..."
 
-    # Check if both APIs are running
-    CODE_FIRST_RUNNING=false
-    API_FIRST_RUNNING=false
+  # Check if both APIs are running
+  CODE_FIRST_RUNNING=false
+  API_FIRST_RUNNING=false
 
-    if curl -sf "http://localhost:8000/health" >/dev/null 2>&1; then
-        CODE_FIRST_RUNNING=true
-    fi
+  if curl -sf "http://localhost:8000/health" > /dev/null 2>&1; then
+    CODE_FIRST_RUNNING=true
+  fi
 
-    if curl -sf "http://localhost:8001/health" >/dev/null 2>&1; then
-        API_FIRST_RUNNING=true
-    fi
+  if curl -sf "http://localhost:8001/health" > /dev/null 2>&1; then
+    API_FIRST_RUNNING=true
+  fi
 
-    # If both are running, validate sync
-    if [ "$CODE_FIRST_RUNNING" = true ] && [ "$API_FIRST_RUNNING" = true ]; then
-        info "Both APIs are running - validating synchronization..."
+  # If both are running, validate sync
+  if [ "$CODE_FIRST_RUNNING" = true ] && [ "$API_FIRST_RUNNING" = true ]; then
+    info "Both APIs are running - validating synchronization..."
 
-        # Run sync check with output capture
-        if "${PROJECT_ROOT}/scripts/validate-sync.sh" 2>&1 | tee /tmp/sync-check.log; then
-            success "✓ API implementations are synchronized"
-        else
-            error "✗ API implementations are OUT OF SYNC"
-            echo ""
-            echo "Synchronization check failed!"
-            echo ""
-            echo "To fix:"
-            echo "  1. Review differences: make sync-report"
-            echo "  2. Update shared spec if needed: ./scripts/extract-openapi.sh"
-            echo "  3. Regenerate API-first: make regenerate"
-            echo "  4. Try commit again"
-            echo ""
-            echo "To bypass this check (NOT recommended):"
-            echo "  git commit --no-verify"
-            exit 1
-        fi
+    # Run sync check with output capture
+    if "${PROJECT_ROOT}/scripts/validate-sync.sh" 2>&1 | tee /tmp/sync-check.log; then
+      success "✓ API implementations are synchronized"
     else
-        warn "Skipping sync check - APIs not running"
-        echo ""
-        echo "For full validation, start both APIs:"
-        echo "  Terminal 1: make start-code-first"
-        echo "  Terminal 2: make start-api-first"
-        echo "  Then commit again"
-        echo ""
-        echo "Or run: make validate"
+      error "✗ API implementations are OUT OF SYNC"
+      echo ""
+      echo "Synchronization check failed!"
+      echo ""
+      echo "To fix:"
+      echo "  1. Review differences: make sync-report"
+      echo "  2. Update shared spec if needed: ./scripts/extract-openapi.sh"
+      echo "  3. Regenerate API-first: make regenerate"
+      echo "  4. Try commit again"
+      echo ""
+      echo "To bypass this check (NOT recommended):"
+      echo "  git commit --no-verify"
+      exit 1
     fi
+  else
+    warn "Skipping sync check - APIs not running"
+    echo ""
+    echo "For full validation, start both APIs:"
+    echo "  Terminal 1: make start-code-first"
+    echo "  Terminal 2: make start-api-first"
+    echo "  Then commit again"
+    echo ""
+    echo "Or run: make validate"
+  fi
 fi
 
 ##############################################################################
@@ -124,26 +124,26 @@ fi
 ##############################################################################
 
 if git diff --cached --name-only | grep -qE "fastapi/app/routers/.*\.py"; then
-    warn "Code-first routers modified"
-    echo ""
-    echo "After committing, remember to:"
-    echo "  1. Extract updated spec: make extract-openapi"
-    echo "  2. Update shared spec: edit reference-apps/shared/openapi.yaml"
-    echo "  3. Regenerate API-first: make regenerate"
-    echo "  4. Validate: make sync-check"
-    echo ""
+  warn "Code-first routers modified"
+  echo ""
+  echo "After committing, remember to:"
+  echo "  1. Extract updated spec: make extract-openapi"
+  echo "  2. Update shared spec: edit reference-apps/shared/openapi.yaml"
+  echo "  3. Regenerate API-first: make regenerate"
+  echo "  4. Validate: make sync-check"
+  echo ""
 fi
 
 if git diff --cached --name-only | grep -qE "fastapi-api-first/app/routers/.*\.py"; then
-    warn "API-first routers modified"
-    echo ""
-    echo "Manual router changes should be avoided!"
-    echo "API-first routers should be generated from OpenAPI spec."
-    echo ""
-    echo "If you need to add functionality:"
-    echo "  1. Update shared OpenAPI spec"
-    echo "  2. Regenerate: make regenerate"
-    echo ""
+  warn "API-first routers modified"
+  echo ""
+  echo "Manual router changes should be avoided!"
+  echo "API-first routers should be generated from OpenAPI spec."
+  echo ""
+  echo "If you need to add functionality:"
+  echo "  1. Update shared OpenAPI spec"
+  echo "  2. Regenerate: make regenerate"
+  echo ""
 fi
 
 ##############################################################################

@@ -28,8 +28,8 @@ echo -e "${BLUE}📝 Syncing wiki to GitHub...${NC}\n"
 
 # Validate wiki directory exists
 if [ ! -d "$WIKI_DIR" ]; then
-    echo -e "${RED}❌ Error: Wiki directory not found at $WIKI_DIR${NC}"
-    exit 1
+  echo -e "${RED}❌ Error: Wiki directory not found at $WIKI_DIR${NC}"
+  exit 1
 fi
 
 # Count local wiki files
@@ -37,22 +37,22 @@ LOCAL_COUNT=$(find "$WIKI_DIR" -maxdepth 1 -name "*.md" | wc -l | tr -d ' ')
 echo -e "${BLUE}📊 Found $LOCAL_COUNT wiki files locally${NC}"
 
 if [ "$LOCAL_COUNT" -eq 0 ]; then
-    echo -e "${YELLOW}⚠️  Warning: No .md files found in wiki directory${NC}"
-    exit 1
+  echo -e "${YELLOW}⚠️  Warning: No .md files found in wiki directory${NC}"
+  exit 1
 fi
 
 # Clone wiki repo
 echo -e "${BLUE}1/5 Cloning wiki repository...${NC}"
 if ! git clone "$WIKI_REPO" "$TEMP_DIR" --depth 1 --quiet; then
-    echo -e "${RED}❌ Error: Failed to clone wiki repository${NC}"
-    echo -e "${YELLOW}💡 Make sure the wiki is initialized on GitHub${NC}"
-    echo -e "${YELLOW}   Visit: https://github.com/NormB/devstack-core/wiki${NC}"
-    exit 1
+  echo -e "${RED}❌ Error: Failed to clone wiki repository${NC}"
+  echo -e "${YELLOW}💡 Make sure the wiki is initialized on GitHub${NC}"
+  echo -e "${YELLOW}   Visit: https://github.com/NormB/devstack-core/wiki${NC}"
+  exit 1
 fi
 
 # Copy files
 echo -e "${BLUE}2/5 Copying wiki files...${NC}"
-cp -r "$WIKI_DIR"/*.md "$TEMP_DIR/" 2>/dev/null || true
+cp -r "$WIKI_DIR"/*.md "$TEMP_DIR/" 2> /dev/null || true
 
 # Count copied files
 COPIED_COUNT=$(find "$TEMP_DIR" -maxdepth 1 -name "*.md" | wc -l | tr -d ' ')
@@ -66,8 +66,8 @@ echo -e "${BLUE}3/5 Checking for changes...${NC}"
 git add .
 
 if git diff --quiet HEAD; then
-    echo -e "${YELLOW}ℹ️  No changes to sync - wiki is already up to date${NC}"
-    exit 0
+  echo -e "${YELLOW}ℹ️  No changes to sync - wiki is already up to date${NC}"
+  exit 0
 fi
 
 # Show changes summary
@@ -98,13 +98,13 @@ git commit -m "$COMMIT_MSG" --quiet
 # Push to GitHub
 echo -e "${BLUE}5/5 Pushing to GitHub Wiki...${NC}"
 if git push origin master --quiet; then
-    echo ""
-    echo -e "${GREEN}✅ Wiki synced successfully!${NC}"
-    echo -e "${GREEN}   View at: https://github.com/NormB/devstack-core/wiki${NC}"
+  echo ""
+  echo -e "${GREEN}✅ Wiki synced successfully!${NC}"
+  echo -e "${GREEN}   View at: https://github.com/NormB/devstack-core/wiki${NC}"
 else
-    echo -e "${RED}❌ Error: Failed to push to GitHub${NC}"
-    echo -e "${YELLOW}💡 Check your network connection and GitHub credentials${NC}"
-    exit 1
+  echo -e "${RED}❌ Error: Failed to push to GitHub${NC}"
+  echo -e "${YELLOW}💡 Check your network connection and GitHub credentials${NC}"
+  exit 1
 fi
 
 # Verification

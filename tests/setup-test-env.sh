@@ -84,7 +84,10 @@ success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 #   Always exits with code 1
 #   Does not return to caller
 #######################################
-error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+  exit 1
+}
 
 echo
 echo "==========================================="
@@ -95,7 +98,7 @@ echo
 # Check if uv is installed
 info "Checking for uv..."
 if ! command -v uv &> /dev/null; then
-    error "uv is not installed. Install it with: brew install uv"
+  error "uv is not installed. Install it with: brew install uv"
 fi
 
 UV_VERSION=$(uv --version)
@@ -104,7 +107,7 @@ info "Found: $UV_VERSION"
 # Check Python version
 info "Checking Python version..."
 if ! command -v python3 &> /dev/null; then
-    error "Python 3 is required but not installed"
+  error "Python 3 is required but not installed"
 fi
 
 PYTHON_VERSION=$(python3 --version)

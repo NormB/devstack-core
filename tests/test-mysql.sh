@@ -90,7 +90,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 #   Exit code from the Python command
 ################################################################################
 run_python() {
-    (cd "$SCRIPT_DIR" && uv run python "$@")
+  (cd "$SCRIPT_DIR" && uv run python "$@")
 }
 
 MYSQL_CLIENT="lib/mysql_client.py"
@@ -124,7 +124,10 @@ info() { echo -e "${BLUE}[TEST]${NC} $1"; }
 # Arguments:
 #   $1 - Success message to display
 ################################################################################
-success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1)); }
+success() {
+  echo -e "${GREEN}[PASS]${NC} $1"
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
 ################################################################################
 # Prints a failure message and increments failed counter.
@@ -132,7 +135,11 @@ success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1))
 # Arguments:
 #   $1 - Failure message to display
 ################################################################################
-fail() { echo -e "${RED}[FAIL]${NC} $1"; TESTS_FAILED=$((TESTS_FAILED + 1)); FAILED_TESTS+=("$1"); }
+fail() {
+  echo -e "${RED}[FAIL]${NC} $1"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  FAILED_TESTS+=("$1")
+}
 
 ################################################################################
 # Prints a warning message in yellow.
@@ -156,22 +163,22 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   Writes "true" or "false" to stdout
 ################################################################################
 get_tls_status_from_vault() {
-    local service_name="$1"
-    # Always use localhost for tests running on host machine
-    local vault_addr="http://localhost:8200"
-    local vault_token=$(cat ~/.config/vault/root-token 2>/dev/null)
+  local service_name="$1"
+  # Always use localhost for tests running on host machine
+  local vault_addr="http://localhost:8200"
+  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    if [ -z "$vault_token" ]; then
-        echo "false"
-        return 1
-    fi
+  if [ -z "$vault_token" ]; then
+    echo "false"
+    return 1
+  fi
 
-    local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2>/dev/null)
-    if [ $? -eq 0 ]; then
-        echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
-    else
-        echo "false"
-    fi
+  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
+  if [ $? -eq 0 ]; then
+    echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
+  else
+    echo "false"
+  fi
 }
 
 ################################################################################
@@ -185,16 +192,16 @@ get_tls_status_from_vault() {
 #   1 - MySQL container is not running
 ################################################################################
 test_mysql_running() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 1: MySQL container is running"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 1: MySQL container is running"
 
-    if docker ps | grep -q dev-mysql; then
-        success "MySQL container is running"
-        return 0
-    else
-        fail "MySQL container is not running"
-        return 1
-    fi
+  if docker ps | grep -q dev-mysql; then
+    success "MySQL container is running"
+    return 0
+  else
+    fail "MySQL container is not running"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -208,18 +215,18 @@ test_mysql_running() {
 #   1 - MySQL is not healthy
 ################################################################################
 test_mysql_healthy() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 2: MySQL is healthy"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 2: MySQL is healthy"
 
-    local health=$(docker inspect dev-mysql --format='{{.State.Health.Status}}' 2>/dev/null)
+  local health=$(docker inspect dev-mysql --format='{{.State.Health.Status}}' 2> /dev/null)
 
-    if [ "$health" = "healthy" ]; then
-        success "MySQL is healthy"
-        return 0
-    else
-        fail "MySQL is not healthy (status: $health)"
-        return 1
-    fi
+  if [ "$health" = "healthy" ]; then
+    success "MySQL is healthy"
+    return 0
+  else
+    fail "MySQL is not healthy (status: $health)"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -233,21 +240,21 @@ test_mysql_healthy() {
 #   1 - MySQL did not fetch credentials from Vault
 ################################################################################
 test_mysql_vault_integration() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 3: MySQL initialized with Vault credentials"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 3: MySQL initialized with Vault credentials"
 
-    # Check logs for Vault integration messages
-    local logs=$(docker logs dev-mysql 2>&1)
+  # Check logs for Vault integration messages
+  local logs=$(docker logs dev-mysql 2>&1)
 
-    if echo "$logs" | grep -q "Vault is ready" && \
-       echo "$logs" | grep -q "Credentials fetched"; then
-        success "MySQL initialized with Vault credentials"
-        return 0
-    else
-        fail "MySQL did not fetch credentials from Vault"
-        warn "Check logs: docker logs dev-mysql"
-        return 1
-    fi
+  if echo "$logs" | grep -q "Vault is ready" &&
+    echo "$logs" | grep -q "Credentials fetched"; then
+    success "MySQL initialized with Vault credentials"
+    return 0
+  else
+    fail "MySQL did not fetch credentials from Vault"
+    warn "Check logs: docker logs dev-mysql"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -262,20 +269,20 @@ test_mysql_vault_integration() {
 #   1 - Connection failed
 ################################################################################
 test_mysql_connection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 4: Can connect to MySQL with Vault password (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 4: Can connect to MySQL with Vault password (real client)"
 
-    # Test connection using Python client (real external connection, not docker exec)
-    local result=$(run_python "$MYSQL_CLIENT" --test connection 2>&1)
+  # Test connection using Python client (real external connection, not docker exec)
+  local result=$(run_python "$MYSQL_CLIENT" --test connection 2>&1)
 
-    if echo "$result" | grep -q "✓ connection: success"; then
-        success "Connection successful with Vault password (verified from outside container)"
-        return 0
-    else
-        fail "Could not connect to MySQL"
-        warn "Error: $result"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ connection: success"; then
+    success "Connection successful with Vault password (verified from outside container)"
+    return 0
+  else
+    fail "Could not connect to MySQL"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -290,20 +297,20 @@ test_mysql_connection() {
 #   1 - Version query failed
 ################################################################################
 test_mysql_version() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 5: MySQL version query works (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 5: MySQL version query works (real client)"
 
-    # Test version query using Python client
-    local result=$(run_python "$MYSQL_CLIENT" --test version 2>&1)
+  # Test version query using Python client
+  local result=$(run_python "$MYSQL_CLIENT" --test version 2>&1)
 
-    if echo "$result" | grep -q "✓ version: success"; then
-        local version=$(echo "$result" | grep "MySQL version:" | head -1)
-        success "$version"
-        return 0
-    else
-        fail "Could not query MySQL version"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ version: success"; then
+    local version=$(echo "$result" | grep "MySQL version:" | head -1)
+    success "$version"
+    return 0
+  else
+    fail "Could not query MySQL version"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -320,20 +327,20 @@ test_mysql_version() {
 #   1 - Table operations failed
 ################################################################################
 test_mysql_create_table() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 6: Can create table and insert data (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 6: Can create table and insert data (real client)"
 
-    # Test table operations using Python client
-    local result=$(run_python "$MYSQL_CLIENT" --test table 2>&1)
+  # Test table operations using Python client
+  local result=$(run_python "$MYSQL_CLIENT" --test table 2>&1)
 
-    if echo "$result" | grep -q "✓ table: success"; then
-        success "Created table and inserted data successfully (verified from outside container)"
-        return 0
-    else
-        fail "Could not create table or insert data"
-        warn "Error: $result"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ table: success"; then
+    success "Created table and inserted data successfully (verified from outside container)"
+    return 0
+  else
+    fail "Could not create table or insert data"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -350,31 +357,31 @@ test_mysql_create_table() {
 #   1 - SSL connection test failed
 ################################################################################
 test_mysql_tls_available() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 7: SSL/TLS connection verification (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 7: SSL/TLS connection verification (real client)"
 
-    # Test SSL connection using Python client - this is the REAL test
-    # It connects from outside the container and verifies SSL status
-    local result=$(run_python "$MYSQL_CLIENT" --test ssl 2>&1)
+  # Test SSL connection using Python client - this is the REAL test
+  # It connects from outside the container and verifies SSL status
+  local result=$(run_python "$MYSQL_CLIENT" --test ssl 2>&1)
 
-    if echo "$result" | grep -q "✓ ssl: success"; then
-        # Check if SSL is actually enabled
-        if echo "$result" | grep -q '"ssl_enabled": true'; then
-            local ssl_version=$(echo "$result" | grep "ssl_version" | head -1)
-            local ssl_cipher=$(echo "$result" | grep "ssl_cipher" | head -1)
-            success "SSL connection verified from external client"
-            info "  $ssl_version"
-            info "  $ssl_cipher"
-        else
-            warn "TLS not enabled (MYSQL_ENABLE_TLS=false)"
-            success "SSL test passed (not enabled, connection unencrypted)"
-        fi
-        return 0
+  if echo "$result" | grep -q "✓ ssl: success"; then
+    # Check if SSL is actually enabled
+    if echo "$result" | grep -q '"ssl_enabled": true'; then
+      local ssl_version=$(echo "$result" | grep "ssl_version" | head -1)
+      local ssl_cipher=$(echo "$result" | grep "ssl_cipher" | head -1)
+      success "SSL connection verified from external client"
+      info "  $ssl_version"
+      info "  $ssl_cipher"
     else
-        fail "SSL connection test failed"
-        warn "Error: $result"
-        return 1
+      warn "TLS not enabled (MYSQL_ENABLE_TLS=false)"
+      success "SSL test passed (not enabled, connection unencrypted)"
     fi
+    return 0
+  else
+    fail "SSL connection test failed"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -393,24 +400,24 @@ test_mysql_tls_available() {
 #   1 - Never returns failure
 ################################################################################
 test_mysql_ssl_connection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 8: SSL certificate verification with verify-full mode (if TLS enabled)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 8: SSL certificate verification with verify-full mode (if TLS enabled)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "mysql")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "mysql")
 
-    if [ "$tls_enabled" = "true" ]; then
-        # Note: mysql.connector has limitations with self-signed certificate chain verification
-        # Test 7 already confirms SSL/TLS is working properly with TLSv1.3
-        # Full certificate verification (verify-full mode) is not supported with self-signed certs in mysql.connector
-        warn "MySQL connector does not support full certificate chain verification with self-signed CAs"
-        success "SSL certificate test skipped (mysql.connector limitation with self-signed certificates)"
-        return 0
-    else
-        warn "TLS not enabled, skipping certificate verification test"
-        success "SSL certificate test skipped (TLS not enabled)"
-        return 0
-    fi
+  if [ "$tls_enabled" = "true" ]; then
+    # Note: mysql.connector has limitations with self-signed certificate chain verification
+    # Test 7 already confirms SSL/TLS is working properly with TLSv1.3
+    # Full certificate verification (verify-full mode) is not supported with self-signed certs in mysql.connector
+    warn "MySQL connector does not support full certificate chain verification with self-signed CAs"
+    success "SSL certificate test skipped (mysql.connector limitation with self-signed certificates)"
+    return 0
+  else
+    warn "TLS not enabled, skipping certificate verification test"
+    success "SSL certificate test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -428,44 +435,44 @@ test_mysql_ssl_connection() {
 #   1 - Encrypted operations failed
 ################################################################################
 test_mysql_encrypted_operations() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "mysql")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "mysql")
 
-    if [ "$tls_enabled" = "true" ]; then
-        local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
+  if [ "$tls_enabled" = "true" ]; then
+    local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
-        if [ -f "$ca_file" ]; then
-            # Test table operations with SSL enabled
-            local result=$(run_python "$MYSQL_CLIENT" --test table --ssl --ca-cert "$ca_file" 2>&1)
+    if [ -f "$ca_file" ]; then
+      # Test table operations with SSL enabled
+      local result=$(run_python "$MYSQL_CLIENT" --test table --ssl --ca-cert "$ca_file" 2>&1)
 
-            if echo "$result" | grep -q "✓ table: success"; then
-                # Verify connection was encrypted
-                if echo "$result" | grep -q '"ssl_enabled": true'; then
-                    success "Table operations successful over encrypted connection (SSL/TLS verified)"
-                    info "  Performed: CREATE TABLE, INSERT, SELECT, DROP over TLS"
-                    return 0
-                else
-                    fail "Operations succeeded but connection was not encrypted"
-                    return 1
-                fi
-            else
-                fail "Table operations failed over encrypted connection"
-                warn "Error: $result"
-                return 1
-            fi
+      if echo "$result" | grep -q "✓ table: success"; then
+        # Verify connection was encrypted
+        if echo "$result" | grep -q '"ssl_enabled": true'; then
+          success "Table operations successful over encrypted connection (SSL/TLS verified)"
+          info "  Performed: CREATE TABLE, INSERT, SELECT, DROP over TLS"
+          return 0
         else
-            warn "CA certificate not found at $ca_file"
-            success "Encrypted operations test skipped (no CA certificate)"
-            return 0
+          fail "Operations succeeded but connection was not encrypted"
+          return 1
         fi
+      else
+        fail "Table operations failed over encrypted connection"
+        warn "Error: $result"
+        return 1
+      fi
     else
-        info "TLS not enabled, skipping encrypted operations test"
-        success "Encrypted operations test skipped (TLS not enabled)"
-        return 0
+      warn "CA certificate not found at $ca_file"
+      success "Encrypted operations test skipped (no CA certificate)"
+      return 0
     fi
+  else
+    info "TLS not enabled, skipping encrypted operations test"
+    success "Encrypted operations test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -487,27 +494,27 @@ test_mysql_encrypted_operations() {
 #   1 - Plaintext password found in .env
 ################################################################################
 test_no_plaintext_passwords() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 10: No plaintext MySQL passwords in .env"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 10: No plaintext MySQL passwords in .env"
 
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        # Check if old MYSQL_PASSWORD or MYSQL_ROOT_PASSWORD variables exist with values
-        local old_password=$(grep "^MYSQL_PASSWORD=" "$PROJECT_ROOT/.env" 2>/dev/null | grep -v "^#" | cut -d= -f2)
-        local old_root_password=$(grep "^MYSQL_ROOT_PASSWORD=" "$PROJECT_ROOT/.env" 2>/dev/null | grep -v "^#" | cut -d= -f2)
+  if [ -f "$PROJECT_ROOT/.env" ]; then
+    # Check if old MYSQL_PASSWORD or MYSQL_ROOT_PASSWORD variables exist with values
+    local old_password=$(grep "^MYSQL_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
+    local old_root_password=$(grep "^MYSQL_ROOT_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
 
-        if [ -z "$old_password" ] && [ -z "$old_root_password" ]; then
-            success "No plaintext MySQL passwords in .env"
-            return 0
-        else
-            warn "Found MYSQL_PASSWORD or MYSQL_ROOT_PASSWORD in .env (should be removed)"
-            fail "Plaintext passwords still in .env"
-            return 1
-        fi
+    if [ -z "$old_password" ] && [ -z "$old_root_password" ]; then
+      success "No plaintext MySQL passwords in .env"
+      return 0
     else
-        warn ".env file not found"
-        success "Test skipped (.env not created yet)"
-        return 0
+      warn "Found MYSQL_PASSWORD or MYSQL_ROOT_PASSWORD in .env (should be removed)"
+      fail "Plaintext passwords still in .env"
+      return 1
     fi
+  else
+    warn ".env file not found"
+    success "Test skipped (.env not created yet)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -525,47 +532,47 @@ test_no_plaintext_passwords() {
 #   1 - One or more tests failed
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  MySQL Vault Integration Tests"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  MySQL Vault Integration Tests"
+  echo "========================================="
+  echo
 
-    test_mysql_running || true
-    test_mysql_healthy || true
-    test_mysql_vault_integration || true
-    test_mysql_connection || true
-    test_mysql_version || true
-    test_mysql_create_table || true
-    test_mysql_tls_available || true
-    test_mysql_ssl_connection || true
-    test_mysql_encrypted_operations || true
-    test_no_plaintext_passwords || true
+  test_mysql_running || true
+  test_mysql_healthy || true
+  test_mysql_vault_integration || true
+  test_mysql_connection || true
+  test_mysql_version || true
+  test_mysql_create_table || true
+  test_mysql_tls_available || true
+  test_mysql_ssl_connection || true
+  test_mysql_encrypted_operations || true
+  test_no_plaintext_passwords || true
 
+  echo
+  echo "========================================="
+  echo "  Test Results"
+  echo "========================================="
+  echo "Total tests: $TESTS_RUN"
+  echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
+  if [ $TESTS_FAILED -gt 0 ]; then
+    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
     echo
-    echo "========================================="
-    echo "  Test Results"
-    echo "========================================="
-    echo "Total tests: $TESTS_RUN"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    if [ $TESTS_FAILED -gt 0 ]; then
-        echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-        echo
-        echo "Failed tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo -e "  ${RED}✗${NC} $test"
-        done
-    fi
-    echo "========================================="
-    echo
+    echo "Failed tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo -e "  ${RED}✗${NC} $test"
+    done
+  fi
+  echo "========================================="
+  echo
 
-    if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}✓ All MySQL tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Some tests failed${NC}"
-        return 1
-    fi
+  if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All MySQL tests passed!${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ Some tests failed${NC}"
+    return 1
+  fi
 }
 
 # Main

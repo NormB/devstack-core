@@ -89,41 +89,41 @@ PASSED_SUITES=0
 FAILED_SUITES=0
 
 # Parallel execution configuration
-PARALLEL_JOBS=${PARALLEL_JOBS:-4}  # Default 4 parallel jobs
+PARALLEL_JOBS=${PARALLEL_JOBS:-4} # Default 4 parallel jobs
 PARALLEL_MODE=false
 PARALLEL_LOG_DIR="/tmp/devstack-tests-$$"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --parallel|-p)
-            PARALLEL_MODE=true
-            shift
-            ;;
-        --jobs|-j)
-            PARALLEL_JOBS="$2"
-            PARALLEL_MODE=true
-            shift 2
-            ;;
-        --help|-h)
-            echo "Usage: $0 [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --parallel, -p     Run independent tests in parallel"
-            echo "  --jobs N, -j N     Number of parallel jobs (default: 4)"
-            echo "  --help, -h         Show this help message"
-            echo ""
-            echo "Examples:"
-            echo "  $0                  # Run all tests sequentially"
-            echo "  $0 --parallel       # Run independent tests in parallel"
-            echo "  $0 -p -j 8          # Run with 8 parallel jobs"
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1"
-            exit 1
-            ;;
-    esac
+  case $1 in
+    --parallel | -p)
+      PARALLEL_MODE=true
+      shift
+      ;;
+    --jobs | -j)
+      PARALLEL_JOBS="$2"
+      PARALLEL_MODE=true
+      shift 2
+      ;;
+    --help | -h)
+      echo "Usage: $0 [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --parallel, -p     Run independent tests in parallel"
+      echo "  --jobs N, -j N     Number of parallel jobs (default: 4)"
+      echo "  --help, -h         Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0                  # Run all tests sequentially"
+      echo "  $0 --parallel       # Run independent tests in parallel"
+      echo "  $0 -p -j 8          # Run with 8 parallel jobs"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
 done
 
 #######################################
@@ -136,10 +136,10 @@ done
 #   Writes formatted header to stdout with border lines
 #######################################
 header() {
-    echo
-    echo -e "${CYAN}=========================================${NC}"
-    echo -e "${CYAN}  $1${NC}"
-    echo -e "${CYAN}=========================================${NC}"
+  echo
+  echo -e "${CYAN}=========================================${NC}"
+  echo -e "${CYAN}  $1${NC}"
+  echo -e "${CYAN}=========================================${NC}"
 }
 
 #######################################
@@ -207,22 +207,22 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   Always updates global tracking variables
 #######################################
 run_test_suite() {
-    local test_script=$1
-    local test_name=$2
+  local test_script=$1
+  local test_name=$2
 
-    TOTAL_SUITES=$((TOTAL_SUITES + 1))
+  TOTAL_SUITES=$((TOTAL_SUITES + 1))
 
-    header "Running: $test_name"
+  header "Running: $test_name"
 
-    if bash "$test_script"; then
-        TEST_RESULTS+=("$test_name:PASSED")
-        PASSED_SUITES=$((PASSED_SUITES + 1))
-        return 0
-    else
-        TEST_RESULTS+=("$test_name:FAILED")
-        FAILED_SUITES=$((FAILED_SUITES + 1))
-        return 1
-    fi
+  if bash "$test_script"; then
+    TEST_RESULTS+=("$test_name:PASSED")
+    PASSED_SUITES=$((PASSED_SUITES + 1))
+    return 0
+  else
+    TEST_RESULTS+=("$test_name:FAILED")
+    FAILED_SUITES=$((FAILED_SUITES + 1))
+    return 1
+  fi
 }
 
 #######################################
@@ -235,18 +235,18 @@ run_test_suite() {
 #   Writes exit code to PARALLEL_LOG_DIR/{test_name}.status
 #######################################
 run_test_background() {
-    local test_script="$1"
-    local test_name="$2"
-    local log_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.log"
-    local status_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.status"
+  local test_script="$1"
+  local test_name="$2"
+  local log_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.log"
+  local status_file="$PARALLEL_LOG_DIR/${test_name//[^a-zA-Z0-9_]/_}.status"
 
-    {
-        if bash "$test_script" > "$log_file" 2>&1; then
-            echo "PASSED" > "$status_file"
-        else
-            echo "FAILED" > "$status_file"
-        fi
-    } &
+  {
+    if bash "$test_script" > "$log_file" 2>&1; then
+      echo "PASSED" > "$status_file"
+    else
+      echo "FAILED" > "$status_file"
+    fi
+  } &
 }
 
 #######################################
@@ -255,43 +255,43 @@ run_test_background() {
 #   TEST_RESULTS, TOTAL_SUITES, PASSED_SUITES, FAILED_SUITES
 #######################################
 wait_and_collect_results() {
-    local test_names=("$@")
+  local test_names=("$@")
 
-    # Wait for all background jobs
-    wait
+  # Wait for all background jobs
+  wait
 
-    # Collect results
-    for test_name in "${test_names[@]}"; do
-        local safe_name="${test_name//[^a-zA-Z0-9_]/_}"
-        local status_file="$PARALLEL_LOG_DIR/${safe_name}.status"
-        local log_file="$PARALLEL_LOG_DIR/${safe_name}.log"
+  # Collect results
+  for test_name in "${test_names[@]}"; do
+    local safe_name="${test_name//[^a-zA-Z0-9_]/_}"
+    local status_file="$PARALLEL_LOG_DIR/${safe_name}.status"
+    local log_file="$PARALLEL_LOG_DIR/${safe_name}.log"
 
-        TOTAL_SUITES=$((TOTAL_SUITES + 1))
+    TOTAL_SUITES=$((TOTAL_SUITES + 1))
 
-        if [ -f "$status_file" ]; then
-            local status
-            status=$(cat "$status_file")
+    if [ -f "$status_file" ]; then
+      local status
+      status=$(cat "$status_file")
 
-            if [ "$status" = "PASSED" ]; then
-                TEST_RESULTS+=("$test_name:PASSED")
-                PASSED_SUITES=$((PASSED_SUITES + 1))
-                echo -e "  ${GREEN}✓${NC} $test_name"
-            else
-                TEST_RESULTS+=("$test_name:FAILED")
-                FAILED_SUITES=$((FAILED_SUITES + 1))
-                echo -e "  ${RED}✗${NC} $test_name"
-                # Show last few lines of error
-                if [ -f "$log_file" ]; then
-                    echo -e "    ${YELLOW}Last 5 lines of output:${NC}"
-                    tail -5 "$log_file" | sed 's/^/    /'
-                fi
-            fi
-        else
-            TEST_RESULTS+=("$test_name:FAILED")
-            FAILED_SUITES=$((FAILED_SUITES + 1))
-            echo -e "  ${RED}✗${NC} $test_name (no status)"
+      if [ "$status" = "PASSED" ]; then
+        TEST_RESULTS+=("$test_name:PASSED")
+        PASSED_SUITES=$((PASSED_SUITES + 1))
+        echo -e "  ${GREEN}✓${NC} $test_name"
+      else
+        TEST_RESULTS+=("$test_name:FAILED")
+        FAILED_SUITES=$((FAILED_SUITES + 1))
+        echo -e "  ${RED}✗${NC} $test_name"
+        # Show last few lines of error
+        if [ -f "$log_file" ]; then
+          echo -e "    ${YELLOW}Last 5 lines of output:${NC}"
+          tail -5 "$log_file" | sed 's/^/    /'
         fi
-    done
+      fi
+    else
+      TEST_RESULTS+=("$test_name:FAILED")
+      FAILED_SUITES=$((FAILED_SUITES + 1))
+      echo -e "  ${RED}✗${NC} $test_name (no status)"
+    fi
+  done
 }
 
 #######################################
@@ -300,32 +300,32 @@ wait_and_collect_results() {
 #   Array of "script:name" pairs
 #######################################
 run_parallel_batch() {
-    local -a tests=("$@")
-    local -a running_names=()
-    local count=0
+  local -a tests=("$@")
+  local -a running_names=()
+  local count=0
 
-    info "Running ${#tests[@]} tests in parallel (max $PARALLEL_JOBS jobs)..."
+  info "Running ${#tests[@]} tests in parallel (max $PARALLEL_JOBS jobs)..."
 
-    for test_pair in "${tests[@]}"; do
-        local test_script="${test_pair%%:*}"
-        local test_name="${test_pair#*:}"
+  for test_pair in "${tests[@]}"; do
+    local test_script="${test_pair%%:*}"
+    local test_name="${test_pair#*:}"
 
-        run_test_background "$test_script" "$test_name"
-        running_names+=("$test_name")
-        count=$((count + 1))
+    run_test_background "$test_script" "$test_name"
+    running_names+=("$test_name")
+    count=$((count + 1))
 
-        # Wait when we hit the job limit
-        if [ $count -ge "$PARALLEL_JOBS" ]; then
-            wait_and_collect_results "${running_names[@]}"
-            running_names=()
-            count=0
-        fi
-    done
-
-    # Wait for remaining jobs
-    if [ ${#running_names[@]} -gt 0 ]; then
-        wait_and_collect_results "${running_names[@]}"
+    # Wait when we hit the job limit
+    if [ $count -ge "$PARALLEL_JOBS" ]; then
+      wait_and_collect_results "${running_names[@]}"
+      running_names=()
+      count=0
     fi
+  done
+
+  # Wait for remaining jobs
+  if [ ${#running_names[@]} -gt 0 ]; then
+    wait_and_collect_results "${running_names[@]}"
+  fi
 }
 
 #######################################
@@ -353,59 +353,59 @@ run_parallel_batch() {
 #   Skipped tests don't count as failures
 #######################################
 print_summary() {
-    header "Test Summary"
+  header "Test Summary"
 
-    # Count skipped tests
-    local skipped_suites=0
-    for result_pair in "${TEST_RESULTS[@]}"; do
-        local status="${result_pair##*:}"
-        if [ "$status" = "SKIPPED" ]; then
-            skipped_suites=$((skipped_suites + 1))
-        fi
-    done
-
-    echo
-    echo "Test Suites Run: $TOTAL_SUITES"
-    echo -e "${GREEN}Passed: $PASSED_SUITES${NC}"
-
-    if [ $FAILED_SUITES -gt 0 ]; then
-        echo -e "${RED}Failed: $FAILED_SUITES${NC}"
+  # Count skipped tests
+  local skipped_suites=0
+  for result_pair in "${TEST_RESULTS[@]}"; do
+    local status="${result_pair##*:}"
+    if [ "$status" = "SKIPPED" ]; then
+      skipped_suites=$((skipped_suites + 1))
     fi
+  done
 
-    if [ $skipped_suites -gt 0 ]; then
-        echo -e "${YELLOW}Skipped: $skipped_suites${NC}"
-    fi
+  echo
+  echo "Test Suites Run: $TOTAL_SUITES"
+  echo -e "${GREEN}Passed: $PASSED_SUITES${NC}"
 
-    echo
-    echo "Results by suite:"
-    for result_pair in "${TEST_RESULTS[@]}"; do
-        local suite="${result_pair%%:*}"
-        local status="${result_pair##*:}"
+  if [ $FAILED_SUITES -gt 0 ]; then
+    echo -e "${RED}Failed: $FAILED_SUITES${NC}"
+  fi
 
-        if [ "$status" = "PASSED" ]; then
-            echo -e "  ${GREEN}✓${NC} $suite"
-        elif [ "$status" = "SKIPPED" ]; then
-            echo -e "  ${YELLOW}⊘${NC} $suite (skipped)"
-        else
-            echo -e "  ${RED}✗${NC} $suite"
-        fi
-    done
+  if [ $skipped_suites -gt 0 ]; then
+    echo -e "${YELLOW}Skipped: $skipped_suites${NC}"
+  fi
 
-    echo
-    echo -e "${CYAN}=========================================${NC}"
+  echo
+  echo "Results by suite:"
+  for result_pair in "${TEST_RESULTS[@]}"; do
+    local suite="${result_pair%%:*}"
+    local status="${result_pair##*:}"
 
-    if [ $FAILED_SUITES -eq 0 ]; then
-        echo -e "${GREEN}✓ ALL TESTS PASSED!${NC}"
-        if [ $skipped_suites -gt 0 ]; then
-            echo -e "${YELLOW}  ($skipped_suites suite(s) skipped)${NC}"
-        fi
-        echo -e "${CYAN}=========================================${NC}"
-        return 0
+    if [ "$status" = "PASSED" ]; then
+      echo -e "  ${GREEN}✓${NC} $suite"
+    elif [ "$status" = "SKIPPED" ]; then
+      echo -e "  ${YELLOW}⊘${NC} $suite (skipped)"
     else
-        echo -e "${RED}✗ SOME TESTS FAILED${NC}"
-        echo -e "${CYAN}=========================================${NC}"
-        return 1
+      echo -e "  ${RED}✗${NC} $suite"
     fi
+  done
+
+  echo
+  echo -e "${CYAN}=========================================${NC}"
+
+  if [ $FAILED_SUITES -eq 0 ]; then
+    echo -e "${GREEN}✓ ALL TESTS PASSED!${NC}"
+    if [ $skipped_suites -gt 0 ]; then
+      echo -e "${YELLOW}  ($skipped_suites suite(s) skipped)${NC}"
+    fi
+    echo -e "${CYAN}=========================================${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ SOME TESTS FAILED${NC}"
+    echo -e "${CYAN}=========================================${NC}"
+    return 1
+  fi
 }
 
 #######################################
@@ -427,182 +427,182 @@ print_summary() {
 #   Order: Infrastructure -> Databases -> Cache -> Messaging -> Apps
 #######################################
 main() {
-    header "DevStack Core - Test Suite"
+  header "DevStack Core - Test Suite"
 
-    if [ "$PARALLEL_MODE" = true ]; then
-        info "PARALLEL MODE enabled with $PARALLEL_JOBS jobs"
-        mkdir -p "$PARALLEL_LOG_DIR"
-        trap 'rm -rf "$PARALLEL_LOG_DIR"' EXIT
-    fi
+  if [ "$PARALLEL_MODE" = true ]; then
+    info "PARALLEL MODE enabled with $PARALLEL_JOBS jobs"
+    mkdir -p "$PARALLEL_LOG_DIR"
+    trap 'rm -rf "$PARALLEL_LOG_DIR"' EXIT
+  fi
 
-    info "Starting all test suites..."
-    echo
+  info "Starting all test suites..."
+  echo
 
-    if [ "$PARALLEL_MODE" = true ]; then
-        # Parallel Mode: Run independent tests concurrently
-        header "Phase 1: Infrastructure Tests"
-        run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
+  if [ "$PARALLEL_MODE" = true ]; then
+    # Parallel Mode: Run independent tests concurrently
+    header "Phase 1: Infrastructure Tests"
+    run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
 
-        header "Phase 2: Database Tests (Parallel)"
-        # Database tests can run in parallel - they use different services
-        run_parallel_batch \
-            "$SCRIPT_DIR/test-postgres.sh:PostgreSQL Vault Integration" \
-            "$SCRIPT_DIR/test-mysql.sh:MySQL Vault Integration" \
-            "$SCRIPT_DIR/test-mongodb.sh:MongoDB Vault Integration" \
-            "$SCRIPT_DIR/test-redis.sh:Redis Vault Integration"
+    header "Phase 2: Database Tests (Parallel)"
+    # Database tests can run in parallel - they use different services
+    run_parallel_batch \
+      "$SCRIPT_DIR/test-postgres.sh:PostgreSQL Vault Integration" \
+      "$SCRIPT_DIR/test-mysql.sh:MySQL Vault Integration" \
+      "$SCRIPT_DIR/test-mongodb.sh:MongoDB Vault Integration" \
+      "$SCRIPT_DIR/test-redis.sh:Redis Vault Integration"
 
-        header "Phase 3: Service Tests (Parallel)"
-        run_parallel_batch \
-            "$SCRIPT_DIR/test-redis-cluster.sh:Redis Cluster" \
-            "$SCRIPT_DIR/test-rabbitmq.sh:RabbitMQ Integration" \
-            "$SCRIPT_DIR/test-tls-certificate-automation.sh:TLS Certificate Automation"
+    header "Phase 3: Service Tests (Parallel)"
+    run_parallel_batch \
+      "$SCRIPT_DIR/test-redis-cluster.sh:Redis Cluster" \
+      "$SCRIPT_DIR/test-rabbitmq.sh:RabbitMQ Integration" \
+      "$SCRIPT_DIR/test-tls-certificate-automation.sh:TLS Certificate Automation"
 
-        header "Phase 4: Extended Tests (Parallel)"
-        run_parallel_batch \
-            "$SCRIPT_DIR/test-vault-extended.sh:Vault Extended Tests" \
-            "$SCRIPT_DIR/test-postgres-extended.sh:PostgreSQL Extended Tests" \
-            "$SCRIPT_DIR/test-pgbouncer.sh:PgBouncer Tests" \
-            "$SCRIPT_DIR/test-performance.sh:Performance & Load Testing" \
-            "$SCRIPT_DIR/test-negative.sh:Negative Testing & Error Handling"
+    header "Phase 4: Extended Tests (Parallel)"
+    run_parallel_batch \
+      "$SCRIPT_DIR/test-vault-extended.sh:Vault Extended Tests" \
+      "$SCRIPT_DIR/test-postgres-extended.sh:PostgreSQL Extended Tests" \
+      "$SCRIPT_DIR/test-pgbouncer.sh:PgBouncer Tests" \
+      "$SCRIPT_DIR/test-performance.sh:Performance & Load Testing" \
+      "$SCRIPT_DIR/test-negative.sh:Negative Testing & Error Handling"
 
+  else
+    # Sequential Mode (Default)
+    # Infrastructure Tests
+    run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
+
+    # TLS Certificate Automation Tests
+    run_test_suite "$SCRIPT_DIR/test-tls-certificate-automation.sh" "TLS Certificate Automation" || true
+
+    # Database Tests
+    run_test_suite "$SCRIPT_DIR/test-postgres.sh" "PostgreSQL Vault Integration" || true
+    run_test_suite "$SCRIPT_DIR/test-mysql.sh" "MySQL Vault Integration" || true
+    run_test_suite "$SCRIPT_DIR/test-mongodb.sh" "MongoDB Vault Integration" || true
+
+    # Cache Tests
+    run_test_suite "$SCRIPT_DIR/test-redis.sh" "Redis Vault Integration" || true
+    run_test_suite "$SCRIPT_DIR/test-redis-cluster.sh" "Redis Cluster" || true
+
+    # Messaging Tests
+    run_test_suite "$SCRIPT_DIR/test-rabbitmq.sh" "RabbitMQ Integration" || true
+
+    # Performance Tests
+    run_test_suite "$SCRIPT_DIR/test-performance.sh" "Performance & Load Testing" || true
+
+    # Negative Tests
+    run_test_suite "$SCRIPT_DIR/test-negative.sh" "Negative Testing & Error Handling" || true
+
+    # Extended Test Suites
+    header "Running: Extended Test Suites"
+    info "Running additional comprehensive tests for all services..."
+    run_test_suite "$SCRIPT_DIR/test-vault-extended.sh" "Vault Extended Tests" || true
+    run_test_suite "$SCRIPT_DIR/test-postgres-extended.sh" "PostgreSQL Extended Tests" || true
+    run_test_suite "$SCRIPT_DIR/test-pgbouncer.sh" "PgBouncer Tests" || true
+  fi
+
+  # Application Tests (bash) - Only run if reference API services are available
+  if docker ps --format '{{.Names}}' | grep -q "reference-api\|api-first\|golang-api\|nodejs-api\|rust-api"; then
+    info "Reference API services detected - running FastAPI tests..."
+    run_test_suite "$SCRIPT_DIR/test-fastapi.sh" "FastAPI Reference App" || true
+  else
+    warn "Reference API services not running - skipping FastAPI tests"
+    info "To run FastAPI tests, start with:../devstack start --profile reference"
+    TEST_RESULTS+=("FastAPI Reference App:SKIPPED")
+    TOTAL_SUITES=$((TOTAL_SUITES + 1))
+  fi
+
+  # Observability Stack Tests - Only run if services are available
+  if docker ps --format '{{.Names}}' | grep -q "prometheus\|grafana\|loki"; then
+    info "Observability services detected - running observability tests..."
+    run_test_suite "$SCRIPT_DIR/test-observability.sh" "Observability Stack Tests" || true
+  else
+    warn "Observability services not running - skipping observability tests"
+    info "To run observability tests, start with:../devstack start --profile full"
+    TEST_RESULTS+=("Observability Stack Tests:SKIPPED")
+    TOTAL_SUITES=$((TOTAL_SUITES + 1))
+  fi
+
+  # Python Unit Tests (pytest) - Run in Docker container (BEST APPROACH)
+  # This avoids Python version compatibility issues and uses the production environment
+  header "Running: FastAPI Unit Tests (pytest)"
+  info "Best approach: Running pytest inside dev-reference-api Docker container"
+
+  if ! docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$"; then
+    warn "dev-reference-api container not running"
+    info "Attempting to start container..."
+    docker compose up -d reference-api > /dev/null 2>&1 || true
+    sleep 5
+  fi
+
+  if docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$"; then
+    info "Container running - executing pytest (178 tests)..."
+    if docker exec dev-reference-api pytest tests/ -v --tb=short 2>&1 |
+      grep -E "PASSED|FAILED|SKIPPED|passed|failed|skipped|====="; then
+      TEST_RESULTS+=("FastAPI Unit Tests (pytest):PASSED")
+      PASSED_SUITES=$((PASSED_SUITES + 1))
+      TOTAL_SUITES=$((TOTAL_SUITES + 1))
     else
-        # Sequential Mode (Default)
-        # Infrastructure Tests
-        run_test_suite "$SCRIPT_DIR/test-vault.sh" "Vault Integration" || true
-
-        # TLS Certificate Automation Tests
-        run_test_suite "$SCRIPT_DIR/test-tls-certificate-automation.sh" "TLS Certificate Automation" || true
-
-        # Database Tests
-        run_test_suite "$SCRIPT_DIR/test-postgres.sh" "PostgreSQL Vault Integration" || true
-        run_test_suite "$SCRIPT_DIR/test-mysql.sh" "MySQL Vault Integration" || true
-        run_test_suite "$SCRIPT_DIR/test-mongodb.sh" "MongoDB Vault Integration" || true
-
-        # Cache Tests
-        run_test_suite "$SCRIPT_DIR/test-redis.sh" "Redis Vault Integration" || true
-        run_test_suite "$SCRIPT_DIR/test-redis-cluster.sh" "Redis Cluster" || true
-
-        # Messaging Tests
-        run_test_suite "$SCRIPT_DIR/test-rabbitmq.sh" "RabbitMQ Integration" || true
-
-        # Performance Tests
-        run_test_suite "$SCRIPT_DIR/test-performance.sh" "Performance & Load Testing" || true
-
-        # Negative Tests
-        run_test_suite "$SCRIPT_DIR/test-negative.sh" "Negative Testing & Error Handling" || true
-
-        # Extended Test Suites
-        header "Running: Extended Test Suites"
-        info "Running additional comprehensive tests for all services..."
-        run_test_suite "$SCRIPT_DIR/test-vault-extended.sh" "Vault Extended Tests" || true
-        run_test_suite "$SCRIPT_DIR/test-postgres-extended.sh" "PostgreSQL Extended Tests" || true
-        run_test_suite "$SCRIPT_DIR/test-pgbouncer.sh" "PgBouncer Tests" || true
+      TEST_RESULTS+=("FastAPI Unit Tests (pytest):FAILED")
+      FAILED_SUITES=$((FAILED_SUITES + 1))
+      TOTAL_SUITES=$((TOTAL_SUITES + 1))
     fi
+  else
+    fail "Could not start dev-reference-api container"
+    warn "Start manually with: docker compose up -d reference-api"
+    TEST_RESULTS+=("FastAPI Unit Tests (pytest):SKIPPED")
+    TOTAL_SUITES=$((TOTAL_SUITES + 1))
+  fi
 
-    # Application Tests (bash) - Only run if reference API services are available
-    if docker ps --format '{{.Names}}' | grep -q "reference-api\|api-first\|golang-api\|nodejs-api\|rust-api"; then
-        info "Reference API services detected - running FastAPI tests..."
-        run_test_suite "$SCRIPT_DIR/test-fastapi.sh" "FastAPI Reference App" || true
-    else
-        warn "Reference API services not running - skipping FastAPI tests"
-        info "To run FastAPI tests, start with:../devstack start --profile reference"
-        TEST_RESULTS+=("FastAPI Reference App:SKIPPED")
-        TOTAL_SUITES=$((TOTAL_SUITES + 1))
-    fi
+  # Python Parity Tests (pytest) - Run from host with uv (BEST APPROACH)
+  # These tests must run from host to access both APIs at localhost:8000 and localhost:8001
+  header "Running: API Parity Tests (pytest)"
+  info "Best approach: Running from host to test both API containers"
 
-    # Observability Stack Tests - Only run if services are available
-    if docker ps --format '{{.Names}}' | grep -q "prometheus\|grafana\|loki"; then
-        info "Observability services detected - running observability tests..."
-        run_test_suite "$SCRIPT_DIR/test-observability.sh" "Observability Stack Tests" || true
-    else
-        warn "Observability services not running - skipping observability tests"
-        info "To run observability tests, start with:../devstack start --profile full"
-        TEST_RESULTS+=("Observability Stack Tests:SKIPPED")
-        TOTAL_SUITES=$((TOTAL_SUITES + 1))
-    fi
-
-    # Python Unit Tests (pytest) - Run in Docker container (BEST APPROACH)
-    # This avoids Python version compatibility issues and uses the production environment
-    header "Running: FastAPI Unit Tests (pytest)"
-    info "Best approach: Running pytest inside dev-reference-api Docker container"
-
+  # Check uv is available
+  if ! command -v uv > /dev/null 2>&1; then
+    fail "uv not found - required for parity tests"
+    warn "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    warn "Or: brew install uv"
+    TEST_RESULTS+=("API Parity Tests (pytest):SKIPPED")
+    TOTAL_SUITES=$((TOTAL_SUITES + 1))
+  else
+    # Check both containers are running
     if ! docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$"; then
-        warn "dev-reference-api container not running"
-        info "Attempting to start container..."
-        docker compose up -d reference-api >/dev/null 2>&1 || true
-        sleep 5
+      info "Starting dev-reference-api container..."
+      docker compose up -d reference-api > /dev/null 2>&1 || true
+      sleep 5
     fi
 
-    if docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$"; then
-        info "Container running - executing pytest (178 tests)..."
-        if docker exec dev-reference-api pytest tests/ -v --tb=short 2>&1 | \
-           grep -E "PASSED|FAILED|SKIPPED|passed|failed|skipped|====="; then
-            TEST_RESULTS+=("FastAPI Unit Tests (pytest):PASSED")
-            PASSED_SUITES=$((PASSED_SUITES + 1))
-            TOTAL_SUITES=$((TOTAL_SUITES + 1))
-        else
-            TEST_RESULTS+=("FastAPI Unit Tests (pytest):FAILED")
-            FAILED_SUITES=$((FAILED_SUITES + 1))
-            TOTAL_SUITES=$((TOTAL_SUITES + 1))
-        fi
-    else
-        fail "Could not start dev-reference-api container"
-        warn "Start manually with: docker compose up -d reference-api"
-        TEST_RESULTS+=("FastAPI Unit Tests (pytest):SKIPPED")
+    if ! docker ps --format '{{.Names}}' | grep -q "^dev-api-first$"; then
+      info "Starting dev-api-first container..."
+      docker compose up -d api-first > /dev/null 2>&1 || true
+      sleep 5
+    fi
+
+    if docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$" &&
+      docker ps --format '{{.Names}}' | grep -q "^dev-api-first$"; then
+      info "Both containers running - executing parity tests (64 tests from 38 unique)..."
+      if (cd "$SCRIPT_DIR/../reference-apps/shared/test-suite" &&
+        uv venv --quiet 2> /dev/null &&
+        uv pip install --quiet -r requirements.txt 2> /dev/null &&
+        uv run pytest -v --tb=short 2>&1 | grep -E "PASSED|FAILED|passed|failed|====="); then
+        TEST_RESULTS+=("API Parity Tests (pytest):PASSED")
+        PASSED_SUITES=$((PASSED_SUITES + 1))
         TOTAL_SUITES=$((TOTAL_SUITES + 1))
-    fi
-
-    # Python Parity Tests (pytest) - Run from host with uv (BEST APPROACH)
-    # These tests must run from host to access both APIs at localhost:8000 and localhost:8001
-    header "Running: API Parity Tests (pytest)"
-    info "Best approach: Running from host to test both API containers"
-
-    # Check uv is available
-    if ! command -v uv >/dev/null 2>&1; then
-        fail "uv not found - required for parity tests"
-        warn "Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
-        warn "Or: brew install uv"
-        TEST_RESULTS+=("API Parity Tests (pytest):SKIPPED")
+      else
+        TEST_RESULTS+=("API Parity Tests (pytest):FAILED")
+        FAILED_SUITES=$((FAILED_SUITES + 1))
         TOTAL_SUITES=$((TOTAL_SUITES + 1))
+      fi
     else
-        # Check both containers are running
-        if ! docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$"; then
-            info "Starting dev-reference-api container..."
-            docker compose up -d reference-api >/dev/null 2>&1 || true
-            sleep 5
-        fi
-
-        if ! docker ps --format '{{.Names}}' | grep -q "^dev-api-first$"; then
-            info "Starting dev-api-first container..."
-            docker compose up -d api-first >/dev/null 2>&1 || true
-            sleep 5
-        fi
-
-        if docker ps --format '{{.Names}}' | grep -q "^dev-reference-api$" && \
-           docker ps --format '{{.Names}}' | grep -q "^dev-api-first$"; then
-            info "Both containers running - executing parity tests (64 tests from 38 unique)..."
-            if (cd "$SCRIPT_DIR/../reference-apps/shared/test-suite" && \
-                uv venv --quiet 2>/dev/null && \
-                uv pip install --quiet -r requirements.txt 2>/dev/null && \
-                uv run pytest -v --tb=short 2>&1 | grep -E "PASSED|FAILED|passed|failed|====="); then
-                TEST_RESULTS+=("API Parity Tests (pytest):PASSED")
-                PASSED_SUITES=$((PASSED_SUITES + 1))
-                TOTAL_SUITES=$((TOTAL_SUITES + 1))
-            else
-                TEST_RESULTS+=("API Parity Tests (pytest):FAILED")
-                FAILED_SUITES=$((FAILED_SUITES + 1))
-                TOTAL_SUITES=$((TOTAL_SUITES + 1))
-            fi
-        else
-            fail "Both API containers required but not running"
-            warn "Start with: docker compose up -d reference-api api-first"
-            TEST_RESULTS+=("API Parity Tests (pytest):SKIPPED")
-            TOTAL_SUITES=$((TOTAL_SUITES + 1))
-        fi
+      fail "Both API containers required but not running"
+      warn "Start with: docker compose up -d reference-api api-first"
+      TEST_RESULTS+=("API Parity Tests (pytest):SKIPPED")
+      TOTAL_SUITES=$((TOTAL_SUITES + 1))
     fi
+  fi
 
-    # Print summary
-    print_summary
+  # Print summary
+  print_summary
 }
 
 # Run main

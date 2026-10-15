@@ -88,7 +88,7 @@ VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="mysql"
 SERVICE_IP="${MYSQL_IP:-172.20.0.12}"
 CERT_DIR="/var/lib/mysql-certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 
 # Colors
 RED='\033[0;31m'
@@ -151,7 +151,10 @@ warn() { echo -e "${YELLOW}[MySQL Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout and terminates script
 #######################################
-error() { echo -e "${RED}[MySQL Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[MySQL Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Waits for Vault service to become available and ready
@@ -172,21 +175,21 @@ error() { echo -e "${RED}[MySQL Init]${NC} $1"; exit 1; }
 #   - Uses curl with silent and fail flags for health checks
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -217,31 +220,31 @@ wait_for_vault() {
 #   - Defaults tls_enabled to false if not present in Vault
 #######################################
 fetch_credentials() {
-    info "Fetching credentials and TLS setting from Vault..."
+  info "Fetching credentials and TLS setting from Vault..."
 
-    local response=$(curl -sf \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME")
+  local response=$(curl -sf \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME")
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    # Parse JSON using grep/sed (no jq required)
-    export MYSQL_ROOT_PASSWORD=$(echo "$response" | grep -o '"root_password":"[^"]*"' | cut -d'"' -f4)
-    export MYSQL_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-    export MYSQL_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-    export MYSQL_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+  # Parse JSON using grep/sed (no jq required)
+  export MYSQL_ROOT_PASSWORD=$(echo "$response" | grep -o '"root_password":"[^"]*"' | cut -d'"' -f4)
+  export MYSQL_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
+  export MYSQL_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  export MYSQL_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
 
-    # Extract tls_enabled (default to false if not present)
-    local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
-    export ENABLE_TLS="${tls_value:-false}"
+  # Extract tls_enabled (default to false if not present)
+  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  export ENABLE_TLS="${tls_value:-false}"
 
-    if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then
-        error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then
+    error "Invalid credentials received from Vault"
+  fi
 
-    success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
@@ -265,27 +268,27 @@ fetch_credentials() {
 #   - Exits with error if TLS enabled but certificates unavailable
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    info "Validating pre-generated TLS certificates..."
+  info "Validating pre-generated TLS certificates..."
 
-    # Check if certificates exist and are readable
-    if [ ! -f "$CERT_DIR/server-cert.pem" ] || [ ! -r "$CERT_DIR/server-cert.pem" ]; then
-        error "TLS enabled but server-cert.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  # Check if certificates exist and are readable
+  if [ ! -f "$CERT_DIR/server-cert.pem" ] || [ ! -r "$CERT_DIR/server-cert.pem" ]; then
+    error "TLS enabled but server-cert.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/server-key.pem" ] || [ ! -r "$CERT_DIR/server-key.pem" ]; then
-        error "TLS enabled but server-key.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/server-key.pem" ] || [ ! -r "$CERT_DIR/server-key.pem" ]; then
+    error "TLS enabled but server-key.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
-        error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
+    error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    success "TLS certificates validated (pre-generated)"
+  success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
@@ -310,14 +313,14 @@ validate_certificates() {
 #   - Accepts both encrypted and unencrypted connections
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    info "Configuring MySQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  info "Configuring MySQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create custom MySQL configuration for TLS
-    cat > /etc/my.cnf.d/tls.cnf <<EOF
+  # Create custom MySQL configuration for TLS
+  cat > /etc/my.cnf.d/tls.cnf << EOF
 [mysqld]
 # SSL/TLS Configuration (Dual-Mode)
 # Accepts both encrypted and unencrypted connections
@@ -328,7 +331,7 @@ require_secure_transport=OFF
 tls_version=TLSv1.2,TLSv1.3
 EOF
 
-    success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
+  success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
 }
 
 #######################################
@@ -356,36 +359,36 @@ EOF
 #   - Both TLS and non-TLS modes use same docker-entrypoint.sh execution path
 #######################################
 main() {
-    info "Starting MySQL initialization with Vault integration..."
-    info ""
+  info "Starting MySQL initialization with Vault integration..."
+  info ""
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch credentials and TLS setting from Vault
-    fetch_credentials
+  # Fetch credentials and TLS setting from Vault
+  fetch_credentials
 
-    # Validate pre-generated certificates if TLS is enabled
-    validate_certificates
+  # Validate pre-generated certificates if TLS is enabled
+  validate_certificates
 
-    # Configure TLS if enabled
-    configure_tls
+  # Configure TLS if enabled
+  configure_tls
 
-    info ""
-    success "Initialization complete, starting MySQL..."
-    info ""
+  info ""
+  success "Initialization complete, starting MySQL..."
+  info ""
 
-    # Start MySQL with the original docker-entrypoint
-    exec docker-entrypoint.sh "$@"
+  # Start MySQL with the original docker-entrypoint
+  exec docker-entrypoint.sh "$@"
 }
 
 # Run main function

@@ -89,7 +89,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 #   run_python lib/rabbitmq_client.py --test connection
 ################################################################################
 run_python() {
-    (cd "$SCRIPT_DIR" && uv run python "$@")
+  (cd "$SCRIPT_DIR" && uv run python "$@")
 }
 
 RABBITMQ_CLIENT="lib/rabbitmq_client.py"
@@ -126,7 +126,10 @@ info() { echo -e "${BLUE}[TEST]${NC} $1"; }
 # SIDE EFFECTS:
 #   Increments TESTS_PASSED counter
 ################################################################################
-success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1)); }
+success() {
+  echo -e "${GREEN}[PASS]${NC} $1"
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
 ################################################################################
 # Prints a failure message in red and tracks failed test
@@ -138,7 +141,11 @@ success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1))
 #   Increments TESTS_FAILED counter
 #   Appends message to FAILED_TESTS array
 ################################################################################
-fail() { echo -e "${RED}[FAIL]${NC} $1"; TESTS_FAILED=$((TESTS_FAILED + 1)); FAILED_TESTS+=("$1"); }
+fail() {
+  echo -e "${RED}[FAIL]${NC} $1"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  FAILED_TESTS+=("$1")
+}
 
 ################################################################################
 # Prints a warning message in yellow
@@ -169,22 +176,22 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   tls_status=$(get_tls_status_from_vault "rabbitmq")
 ################################################################################
 get_tls_status_from_vault() {
-    local service_name="$1"
-    # Always use localhost for tests running on host machine
-    local vault_addr="http://localhost:8200"
-    local vault_token=$(cat ~/.config/vault/root-token 2>/dev/null)
+  local service_name="$1"
+  # Always use localhost for tests running on host machine
+  local vault_addr="http://localhost:8200"
+  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    if [ -z "$vault_token" ]; then
-        echo "false"
-        return 1
-    fi
+  if [ -z "$vault_token" ]; then
+    echo "false"
+    return 1
+  fi
 
-    local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2>/dev/null)
-    if [ $? -eq 0 ]; then
-        echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
-    else
-        echo "false"
-    fi
+  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
+  if [ $? -eq 0 ]; then
+    echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
+  else
+    echo "false"
+  fi
 }
 
 ################################################################################
@@ -203,16 +210,16 @@ get_tls_status_from_vault() {
 #   1 - Container is not running
 ################################################################################
 test_rabbitmq_running() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 1: RabbitMQ container is running"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 1: RabbitMQ container is running"
 
-    if docker ps | grep -q dev-rabbitmq; then
-        success "RabbitMQ container is running"
-        return 0
-    else
-        fail "RabbitMQ container is not running"
-        return 1
-    fi
+  if docker ps | grep -q dev-rabbitmq; then
+    success "RabbitMQ container is running"
+    return 0
+  else
+    fail "RabbitMQ container is not running"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -232,18 +239,18 @@ test_rabbitmq_running() {
 #   1 - Container is unhealthy or health check failing
 ################################################################################
 test_rabbitmq_healthy() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 2: RabbitMQ is healthy"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 2: RabbitMQ is healthy"
 
-    local health=$(docker inspect dev-rabbitmq --format='{{.State.Health.Status}}' 2>/dev/null)
+  local health=$(docker inspect dev-rabbitmq --format='{{.State.Health.Status}}' 2> /dev/null)
 
-    if [ "$health" = "healthy" ]; then
-        success "RabbitMQ is healthy"
-        return 0
-    else
-        fail "RabbitMQ is not healthy (status: $health)"
-        return 1
-    fi
+  if [ "$health" = "healthy" ]; then
+    success "RabbitMQ is healthy"
+    return 0
+  else
+    fail "RabbitMQ is not healthy (status: $health)"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -264,21 +271,21 @@ test_rabbitmq_healthy() {
 #   1 - Container failed Vault initialization
 ################################################################################
 test_rabbitmq_vault_integration() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 3: RabbitMQ initialized with Vault credentials"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 3: RabbitMQ initialized with Vault credentials"
 
-    # Check logs for Vault integration messages
-    local logs=$(docker logs dev-rabbitmq 2>&1)
+  # Check logs for Vault integration messages
+  local logs=$(docker logs dev-rabbitmq 2>&1)
 
-    if echo "$logs" | grep -q "Vault is ready" && \
-       echo "$logs" | grep -q "Credentials fetched"; then
-        success "RabbitMQ initialized with Vault credentials"
-        return 0
-    else
-        fail "RabbitMQ did not fetch credentials from Vault"
-        warn "Check logs: docker logs dev-rabbitmq"
-        return 1
-    fi
+  if echo "$logs" | grep -q "Vault is ready" &&
+    echo "$logs" | grep -q "Credentials fetched"; then
+    success "RabbitMQ initialized with Vault credentials"
+    return 0
+  else
+    fail "RabbitMQ did not fetch credentials from Vault"
+    warn "Check logs: docker logs dev-rabbitmq"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -302,20 +309,20 @@ test_rabbitmq_vault_integration() {
 #   This is a real external connection test, not using docker exec
 ################################################################################
 test_rabbitmq_connection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 4: Can connect to RabbitMQ with Vault password (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 4: Can connect to RabbitMQ with Vault password (real client)"
 
-    # Test connection using Python client (real external connection, not docker exec)
-    local result=$(run_python "$RABBITMQ_CLIENT" --test connection 2>&1)
+  # Test connection using Python client (real external connection, not docker exec)
+  local result=$(run_python "$RABBITMQ_CLIENT" --test connection 2>&1)
 
-    if echo "$result" | grep -q "✓ connection: success"; then
-        success "Connection successful with Vault password (verified from outside container)"
-        return 0
-    else
-        fail "Could not connect to RabbitMQ"
-        warn "Error: $result"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ connection: success"; then
+    success "Connection successful with Vault password (verified from outside container)"
+    return 0
+  else
+    fail "Could not connect to RabbitMQ"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -338,20 +345,20 @@ test_rabbitmq_connection() {
 #   Uses RabbitMQ management API to retrieve version
 ################################################################################
 test_rabbitmq_version() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 5: RabbitMQ version query works (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 5: RabbitMQ version query works (real client)"
 
-    # Test version query using Python client
-    local result=$(run_python "$RABBITMQ_CLIENT" --test version 2>&1)
+  # Test version query using Python client
+  local result=$(run_python "$RABBITMQ_CLIENT" --test version 2>&1)
 
-    if echo "$result" | grep -q "✓ version: success"; then
-        local version=$(echo "$result" | grep "RabbitMQ version:" | head -1)
-        success "$version"
-        return 0
-    else
-        fail "Could not query RabbitMQ version"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ version: success"; then
+    local version=$(echo "$result" | grep "RabbitMQ version:" | head -1)
+    success "$version"
+    return 0
+  else
+    fail "Could not query RabbitMQ version"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -376,20 +383,20 @@ test_rabbitmq_version() {
 #   Verifies message can be published and consumed
 ################################################################################
 test_rabbitmq_operations() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 6: Can perform queue operations (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 6: Can perform queue operations (real client)"
 
-    # Test queue operations using Python client
-    local result=$(run_python "$RABBITMQ_CLIENT" --test operations 2>&1)
+  # Test queue operations using Python client
+  local result=$(run_python "$RABBITMQ_CLIENT" --test operations 2>&1)
 
-    if echo "$result" | grep -q "✓ operations: success"; then
-        success "Queue declare, publish, and consume successful (verified from outside container)"
-        return 0
-    else
-        fail "Could not perform queue operations"
-        warn "Error: $result"
-        return 1
-    fi
+  if echo "$result" | grep -q "✓ operations: success"; then
+    success "Queue declare, publish, and consume successful (verified from outside container)"
+    return 0
+  else
+    fail "Could not perform queue operations"
+    warn "Error: $result"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -414,41 +421,41 @@ test_rabbitmq_operations() {
 #   Requires CA certificate at ~/.config/vault/ca/ca-bundle.pem
 ################################################################################
 test_rabbitmq_tls_available() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 7: SSL/TLS connection verification (real client)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 7: SSL/TLS connection verification (real client)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
 
-    if [ "$tls_enabled" = "true" ]; then
-        local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
+  if [ "$tls_enabled" = "true" ]; then
+    local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
-        if [ -f "$ca_file" ]; then
-            # Test SSL connection on SSL port with SSL enabled
-            local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+    if [ -f "$ca_file" ]; then
+      # Test SSL connection on SSL port with SSL enabled
+      local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test ssl --ssl --ca-cert "$ca_file" 2>&1)
 
-            if echo "$result" | grep -q "✓ ssl: success"; then
-                if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                    success "SSL/TLS connection verified from external client"
-                    return 0
-                else
-                    fail "SSL not enabled despite TLS configuration"
-                    return 1
-                fi
-            else
-                fail "SSL connection test failed"
-                warn "Error: $result"
-                return 1
-            fi
+      if echo "$result" | grep -q "✓ ssl: success"; then
+        if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+          success "SSL/TLS connection verified from external client"
+          return 0
         else
-            fail "CA certificate not found at $ca_file"
-            return 1
+          fail "SSL not enabled despite TLS configuration"
+          return 1
         fi
+      else
+        fail "SSL connection test failed"
+        warn "Error: $result"
+        return 1
+      fi
     else
-        warn "TLS not enabled in Vault - skipping SSL/TLS test"
-        success "SSL test skipped (TLS not enabled)"
-        return 0
+      fail "CA certificate not found at $ca_file"
+      return 1
     fi
+  else
+    warn "TLS not enabled in Vault - skipping SSL/TLS test"
+    success "SSL test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -473,41 +480,41 @@ test_rabbitmq_tls_available() {
 #   Requires CA certificate at ~/.config/vault/ca/ca-bundle.pem
 ################################################################################
 test_rabbitmq_ssl_connection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 8: SSL certificate verification with CA (if TLS enabled)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 8: SSL certificate verification with CA (if TLS enabled)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
 
-    if [ "$tls_enabled" = "true" ]; then
-        local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
+  if [ "$tls_enabled" = "true" ]; then
+    local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
-        if [ -f "$ca_file" ]; then
-            # Test with SSL enabled and CA verification on SSL port (5671)
-            local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+    if [ -f "$ca_file" ]; then
+      # Test with SSL enabled and CA verification on SSL port (5671)
+      local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test ssl --ssl --ca-cert "$ca_file" 2>&1)
 
-            if echo "$result" | grep -q "✓ ssl: success"; then
-                if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                    success "SSL certificate validation successful"
-                    return 0
-                else
-                    fail "SSL not enabled despite TLS configuration"
-                    return 1
-                fi
-            else
-                fail "SSL certificate verification failed"
-                warn "Error: $result"
-                return 1
-            fi
+      if echo "$result" | grep -q "✓ ssl: success"; then
+        if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+          success "SSL certificate validation successful"
+          return 0
         else
-            fail "CA certificate not found at $ca_file"
-            return 1
+          fail "SSL not enabled despite TLS configuration"
+          return 1
         fi
+      else
+        fail "SSL certificate verification failed"
+        warn "Error: $result"
+        return 1
+      fi
     else
-        warn "TLS not enabled, skipping certificate verification test"
-        success "SSL certificate test skipped (TLS not enabled)"
-        return 0
+      fail "CA certificate not found at $ca_file"
+      return 1
     fi
+  else
+    warn "TLS not enabled, skipping certificate verification test"
+    success "SSL certificate test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -534,44 +541,44 @@ test_rabbitmq_ssl_connection() {
 #   Verifies connection_type is SSL/TLS in response
 ################################################################################
 test_rabbitmq_encrypted_operations() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
 
-    # Check if TLS is enabled from Vault
-    local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
+  # Check if TLS is enabled from Vault
+  local tls_enabled=$(get_tls_status_from_vault "rabbitmq")
 
-    if [ "$tls_enabled" = "true" ]; then
-        local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
+  if [ "$tls_enabled" = "true" ]; then
+    local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
-        if [ -f "$ca_file" ]; then
-            # Test queue operations with SSL enabled on SSL port (5671)
-            local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test operations --ssl --ca-cert "$ca_file" 2>&1)
+    if [ -f "$ca_file" ]; then
+      # Test queue operations with SSL enabled on SSL port (5671)
+      local result=$(run_python "$RABBITMQ_CLIENT" --port 5671 --test operations --ssl --ca-cert "$ca_file" 2>&1)
 
-            if echo "$result" | grep -q "✓ operations: success"; then
-                # Verify connection was encrypted
-                if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
-                    success "Queue operations successful over encrypted connection (SSL/TLS verified)"
-                    info "  Performed: declare, publish, consume over TLS"
-                    return 0
-                else
-                    fail "Operations succeeded but connection was not encrypted"
-                    return 1
-                fi
-            else
-                fail "Queue operations failed over encrypted connection"
-                warn "Error: $result"
-                return 1
-            fi
+      if echo "$result" | grep -q "✓ operations: success"; then
+        # Verify connection was encrypted
+        if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
+          success "Queue operations successful over encrypted connection (SSL/TLS verified)"
+          info "  Performed: declare, publish, consume over TLS"
+          return 0
         else
-            warn "CA certificate not found at $ca_file"
-            success "Encrypted operations test skipped (no CA certificate)"
-            return 0
+          fail "Operations succeeded but connection was not encrypted"
+          return 1
         fi
+      else
+        fail "Queue operations failed over encrypted connection"
+        warn "Error: $result"
+        return 1
+      fi
     else
-        info "TLS not enabled, skipping encrypted operations test"
-        success "Encrypted operations test skipped (TLS not enabled)"
-        return 0
+      warn "CA certificate not found at $ca_file"
+      success "Encrypted operations test skipped (no CA certificate)"
+      return 0
     fi
+  else
+    info "TLS not enabled, skipping encrypted operations test"
+    success "Encrypted operations test skipped (TLS not enabled)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -596,26 +603,26 @@ test_rabbitmq_encrypted_operations() {
 #   Looks for RABBITMQ_PASSWORD variable specifically
 ################################################################################
 test_no_plaintext_passwords() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 10: No plaintext RabbitMQ password in .env"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 10: No plaintext RabbitMQ password in .env"
 
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        # Check if old RABBITMQ_PASSWORD variable exists with a value
-        local old_password=$(grep "^RABBITMQ_PASSWORD=" "$PROJECT_ROOT/.env" 2>/dev/null | grep -v "^#" | cut -d= -f2)
+  if [ -f "$PROJECT_ROOT/.env" ]; then
+    # Check if old RABBITMQ_PASSWORD variable exists with a value
+    local old_password=$(grep "^RABBITMQ_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
 
-        if [ -z "$old_password" ]; then
-            success "No plaintext RabbitMQ password in .env"
-            return 0
-        else
-            warn "Found RABBITMQ_PASSWORD in .env (should be removed)"
-            fail "Plaintext password still in .env"
-            return 1
-        fi
+    if [ -z "$old_password" ]; then
+      success "No plaintext RabbitMQ password in .env"
+      return 0
     else
-        warn ".env file not found"
-        success "Test skipped (.env not created yet)"
-        return 0
+      warn "Found RABBITMQ_PASSWORD in .env (should be removed)"
+      fail "Plaintext password still in .env"
+      return 1
     fi
+  else
+    warn ".env file not found"
+    success "Test skipped (.env not created yet)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -642,47 +649,47 @@ test_no_plaintext_passwords() {
 #   Final summary always displays even if tests fail
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  RabbitMQ Vault Integration Tests"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  RabbitMQ Vault Integration Tests"
+  echo "========================================="
+  echo
 
-    test_rabbitmq_running || true
-    test_rabbitmq_healthy || true
-    test_rabbitmq_vault_integration || true
-    test_rabbitmq_connection || true
-    test_rabbitmq_version || true
-    test_rabbitmq_operations || true
-    test_rabbitmq_tls_available || true
-    test_rabbitmq_ssl_connection || true
-    test_rabbitmq_encrypted_operations || true
-    test_no_plaintext_passwords || true
+  test_rabbitmq_running || true
+  test_rabbitmq_healthy || true
+  test_rabbitmq_vault_integration || true
+  test_rabbitmq_connection || true
+  test_rabbitmq_version || true
+  test_rabbitmq_operations || true
+  test_rabbitmq_tls_available || true
+  test_rabbitmq_ssl_connection || true
+  test_rabbitmq_encrypted_operations || true
+  test_no_plaintext_passwords || true
 
+  echo
+  echo "========================================="
+  echo "  Test Results"
+  echo "========================================="
+  echo "Total tests: $TESTS_RUN"
+  echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
+  if [ $TESTS_FAILED -gt 0 ]; then
+    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
     echo
-    echo "========================================="
-    echo "  Test Results"
-    echo "========================================="
-    echo "Total tests: $TESTS_RUN"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    if [ $TESTS_FAILED -gt 0 ]; then
-        echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-        echo
-        echo "Failed tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo -e "  ${RED}✗${NC} $test"
-        done
-    fi
-    echo "========================================="
-    echo
+    echo "Failed tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo -e "  ${RED}✗${NC} $test"
+    done
+  fi
+  echo "========================================="
+  echo
 
-    if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}✓ All RabbitMQ tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Some tests failed${NC}"
-        return 1
-    fi
+  if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All RabbitMQ tests passed!${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ Some tests failed${NC}"
+    return 1
+  fi
 }
 
 # Main

@@ -92,7 +92,7 @@ VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="postgres"
 SERVICE_IP="${POSTGRES_IP:-172.20.0.10}"
 CERT_DIR="/var/lib/postgresql/certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 TLS_CONFIG_DIR="/tmp/postgres-tls"
 
 # Colors
@@ -156,7 +156,10 @@ warn() { echo -e "${YELLOW}[PostgreSQL Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout and terminates script
 #######################################
-error() { echo -e "${RED}[PostgreSQL Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[PostgreSQL Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Waits for Vault service to become available and ready
@@ -177,21 +180,21 @@ error() { echo -e "${RED}[PostgreSQL Init]${NC} $1"; exit 1; }
 #   - Uses curl for lightweight health checks
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -220,26 +223,26 @@ wait_for_vault() {
 #   - Defaults tls_enabled to false if not present in Vault
 #######################################
 fetch_credentials() {
-    info "Fetching credentials and TLS setting from Vault..."
+  info "Fetching credentials and TLS setting from Vault..."
 
-    local response=$(curl -sf \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null)
+  local response=$(curl -sf \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    export POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user')
-    export POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
-    export POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database')
-    export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  export POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user')
+  export POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
+  export POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database')
+  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
 
-    if [ -z "$POSTGRES_USER" ] || [ "$POSTGRES_USER" = "null" ]; then
-        error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$POSTGRES_USER" ] || [ "$POSTGRES_USER" = "null" ]; then
+    error "Invalid credentials received from Vault"
+  fi
 
-    success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
@@ -263,27 +266,27 @@ fetch_credentials() {
 #   - Exits with error if TLS enabled but certificates unavailable
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    info "Validating pre-generated TLS certificates..."
+  info "Validating pre-generated TLS certificates..."
 
-    # Check if certificates exist and are readable
-    if [ ! -f "$CERT_DIR/server.crt" ] || [ ! -r "$CERT_DIR/server.crt" ]; then
-        error "TLS enabled but server.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  # Check if certificates exist and are readable
+  if [ ! -f "$CERT_DIR/server.crt" ] || [ ! -r "$CERT_DIR/server.crt" ]; then
+    error "TLS enabled but server.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/server.key" ] || [ ! -r "$CERT_DIR/server.key" ]; then
-        error "TLS enabled but server.key not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/server.key" ] || [ ! -r "$CERT_DIR/server.key" ]; then
+    error "TLS enabled but server.key not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -r "$CERT_DIR/ca.crt" ]; then
-        error "TLS enabled but ca.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -r "$CERT_DIR/ca.crt" ]; then
+    error "TLS enabled but ca.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    success "TLS certificates validated (pre-generated)"
+  success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
@@ -311,21 +314,21 @@ validate_certificates() {
 #   - Dual-mode configuration accepts both SSL and non-SSL connections
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    info "Configuring PostgreSQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  info "Configuring PostgreSQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Set environment variables for TLS config
-    # These will be passed to postgres via command line options
-    export POSTGRES_SSL="on"
-    export POSTGRES_SSL_CERT_FILE="$CERT_DIR/server.crt"
-    export POSTGRES_SSL_KEY_FILE="$CERT_DIR/server.key"
-    export POSTGRES_SSL_CA_FILE="$CERT_DIR/ca.crt"
-    export POSTGRES_SSL_MIN_PROTOCOL_VERSION="TLSv1.2"
+  # Set environment variables for TLS config
+  # These will be passed to postgres via command line options
+  export POSTGRES_SSL="on"
+  export POSTGRES_SSL_CERT_FILE="$CERT_DIR/server.crt"
+  export POSTGRES_SSL_KEY_FILE="$CERT_DIR/server.key"
+  export POSTGRES_SSL_CA_FILE="$CERT_DIR/ca.crt"
+  export POSTGRES_SSL_MIN_PROTOCOL_VERSION="TLSv1.2"
 
-    success "TLS configuration environment variables set"
+  success "TLS configuration environment variables set"
 }
 
 #######################################
@@ -356,54 +359,54 @@ configure_tls() {
 #   - SSL server ciphers preferred when TLS enabled
 #######################################
 main() {
-    info "Starting PostgreSQL initialization with Vault integration..."
-    info ""
+  info "Starting PostgreSQL initialization with Vault integration..."
+  info ""
 
-    # Install required tools if not present
-    if ! command -v curl &> /dev/null || ! command -v jq &> /dev/null; then
-        info "Installing curl and jq..."
-        apt-get update > /dev/null 2>&1 && apt-get install -y curl jq > /dev/null 2>&1
-    fi
+  # Install required tools if not present
+  if ! command -v curl &> /dev/null || ! command -v jq &> /dev/null; then
+    info "Installing curl and jq..."
+    apt-get update > /dev/null 2>&1 && apt-get install -y curl jq > /dev/null 2>&1
+  fi
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch credentials and TLS setting from Vault
-    fetch_credentials
+  # Fetch credentials and TLS setting from Vault
+  fetch_credentials
 
-    # Validate pre-generated certificates if TLS is enabled
-    validate_certificates
+  # Validate pre-generated certificates if TLS is enabled
+  validate_certificates
 
-    # Configure TLS if enabled
-    configure_tls
+  # Configure TLS if enabled
+  configure_tls
 
-    info ""
-    success "Initialization complete, starting PostgreSQL..."
-    info ""
+  info ""
+  success "Initialization complete, starting PostgreSQL..."
+  info ""
 
-    # Start PostgreSQL with the original docker-entrypoint
-    # Pass TLS configuration via command line if enabled
-    if [ "$ENABLE_TLS" = "true" ]; then
-        exec docker-entrypoint.sh "$@" \
-            -c ssl=on \
-            -c ssl_cert_file="$CERT_DIR/server.crt" \
-            -c ssl_key_file="$CERT_DIR/server.key" \
-            -c ssl_ca_file="$CERT_DIR/ca.crt" \
-            -c ssl_min_protocol_version=TLSv1.2 \
-            -c ssl_prefer_server_ciphers=on \
-            -c "ssl_ciphers=HIGH:MEDIUM:+3DES:!aNULL"
-    else
-        exec docker-entrypoint.sh "$@"
-    fi
+  # Start PostgreSQL with the original docker-entrypoint
+  # Pass TLS configuration via command line if enabled
+  if [ "$ENABLE_TLS" = "true" ]; then
+    exec docker-entrypoint.sh "$@" \
+      -c ssl=on \
+      -c ssl_cert_file="$CERT_DIR/server.crt" \
+      -c ssl_key_file="$CERT_DIR/server.key" \
+      -c ssl_ca_file="$CERT_DIR/ca.crt" \
+      -c ssl_min_protocol_version=TLSv1.2 \
+      -c ssl_prefer_server_ciphers=on \
+      -c "ssl_ciphers=HIGH:MEDIUM:+3DES:!aNULL"
+  else
+    exec docker-entrypoint.sh "$@"
+  fi
 }
 
 # Run main function

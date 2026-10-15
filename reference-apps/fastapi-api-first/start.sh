@@ -79,7 +79,7 @@ NC='\033[0m' # No Color
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -92,7 +92,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -105,7 +105,7 @@ success() {
 #   Writes formatted warning message to stdout
 #######################################
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+  echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 #######################################
@@ -125,11 +125,11 @@ warn() {
 #   - Does not check file permissions or ownership
 #######################################
 check_tls_certs() {
-    if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
-        return 0
-    else
-        return 1
-    fi
+  if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 #######################################
@@ -153,13 +153,13 @@ check_tls_certs() {
 #   - PID stored in HTTP_PID for shutdown coordination
 #######################################
 start_http() {
-    info "Starting HTTP server on port $HTTP_PORT..."
-    uvicorn app.main:app \
-        --host 0.0.0.0 \
-        --port "$HTTP_PORT" \
-        --reload &
-    HTTP_PID=$!
-    success "HTTP server started (PID: $HTTP_PID)"
+  info "Starting HTTP server on port $HTTP_PORT..."
+  uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port "$HTTP_PORT" \
+    --reload &
+  HTTP_PID=$!
+  success "HTTP server started (PID: $HTTP_PID)"
 }
 
 #######################################
@@ -186,15 +186,15 @@ start_http() {
 #   - Certificate files must exist and be readable by process
 #######################################
 start_https() {
-    info "Starting HTTPS server on port $HTTPS_PORT..."
-    uvicorn app.main:app \
-        --host 0.0.0.0 \
-        --port "$HTTPS_PORT" \
-        --ssl-keyfile "$KEY_FILE" \
-        --ssl-certfile "$CERT_FILE" \
-        --reload &
-    HTTPS_PID=$!
-    success "HTTPS server started (PID: $HTTPS_PID)"
+  info "Starting HTTPS server on port $HTTPS_PORT..."
+  uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port "$HTTPS_PORT" \
+    --ssl-keyfile "$KEY_FILE" \
+    --ssl-certfile "$CERT_FILE" \
+    --reload &
+  HTTPS_PID=$!
+  success "HTTPS server started (PID: $HTTPS_PID)"
 }
 
 #######################################
@@ -225,57 +225,57 @@ start_https() {
 #   - Suppresses kill errors (2>/dev/null) for already-terminated processes
 #######################################
 main() {
-    echo ""
-    echo "========================================="
-    echo "  FastAPI API-First Implementation"
-    echo "========================================="
-    echo ""
+  echo ""
+  echo "========================================="
+  echo "  FastAPI API-First Implementation"
+  echo "========================================="
+  echo ""
 
-    info "Configuration:"
-    echo "  HTTP Port: $HTTP_PORT"
-    echo "  HTTPS Port: $HTTPS_PORT"
-    echo "  TLS Enabled: $TLS_ENABLED"
-    echo "  Certificate Directory: $CERT_DIR"
-    echo ""
+  info "Configuration:"
+  echo "  HTTP Port: $HTTP_PORT"
+  echo "  HTTPS Port: $HTTPS_PORT"
+  echo "  TLS Enabled: $TLS_ENABLED"
+  echo "  Certificate Directory: $CERT_DIR"
+  echo ""
 
-    # Always start HTTP server
-    start_http
+  # Always start HTTP server
+  start_http
 
-    # Start HTTPS server if enabled and certificates are available
-    if [ "$TLS_ENABLED" = "true" ]; then
-        if check_tls_certs; then
-            start_https
-            echo ""
-            success "Both HTTP and HTTPS servers are running"
-            info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
-            info "  HTTPS: https://0.0.0.0:$HTTPS_PORT"
-        else
-            warn "TLS is enabled but certificates not found at $CERT_DIR"
-            warn "Only HTTP server is running"
-            info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
-        fi
+  # Start HTTPS server if enabled and certificates are available
+  if [ "$TLS_ENABLED" = "true" ]; then
+    if check_tls_certs; then
+      start_https
+      echo ""
+      success "Both HTTP and HTTPS servers are running"
+      info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
+      info "  HTTPS: https://0.0.0.0:$HTTPS_PORT"
     else
-        info "TLS is disabled, only HTTP server is running"
-        info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
+      warn "TLS is enabled but certificates not found at $CERT_DIR"
+      warn "Only HTTP server is running"
+      info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
     fi
+  else
+    info "TLS is disabled, only HTTP server is running"
+    info "  HTTP:  http://0.0.0.0:$HTTP_PORT"
+  fi
 
-    echo ""
-    info "Application is ready!"
-    echo ""
+  echo ""
+  info "Application is ready!"
+  echo ""
 
-    # Wait for any process to exit
-    wait -n
+  # Wait for any process to exit
+  wait -n
 
-    # If one process exits, kill the other
-    if [ -n "$HTTP_PID" ]; then
-        kill $HTTP_PID 2>/dev/null || true
-    fi
-    if [ -n "$HTTPS_PID" ]; then
-        kill $HTTPS_PID 2>/dev/null || true
-    fi
+  # If one process exits, kill the other
+  if [ -n "$HTTP_PID" ]; then
+    kill $HTTP_PID 2> /dev/null || true
+  fi
+  if [ -n "$HTTPS_PID" ]; then
+    kill $HTTPS_PID 2> /dev/null || true
+  fi
 
-    # Wait for all processes to finish
-    wait
+  # Wait for all processes to finish
+  wait
 }
 
 # Run main function

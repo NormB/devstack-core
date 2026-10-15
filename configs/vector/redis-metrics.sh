@@ -58,7 +58,7 @@ REDIS_PASSWORD="${REDIS_PASSWORD}"
 # Build redis-cli command
 REDIS_CLI="redis-cli -h $REDIS_HOST -p $REDIS_PORT"
 if [ -n "$REDIS_PASSWORD" ]; then
-    REDIS_CLI="$REDIS_CLI -a $REDIS_PASSWORD --no-auth-warning"
+  REDIS_CLI="$REDIS_CLI -a $REDIS_PASSWORD --no-auth-warning"
 fi
 
 # Collect INFO stats

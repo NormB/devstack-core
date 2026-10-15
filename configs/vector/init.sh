@@ -109,50 +109,50 @@ VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-}"
 # to obtain a client token. Sets VAULT_TOKEN global variable on success.
 ################################################################################
 login_with_approle() {
-    echo -e "${BLUE}[Vector Init]${NC} Authenticating with Vault using AppRole..."
+  echo -e "${BLUE}[Vector Init]${NC} Authenticating with Vault using AppRole..."
 
-    if [ ! -d "$VAULT_APPROLE_DIR" ]; then
-        echo -e "${RED}[Vector Init]${NC} AppRole directory not found: $VAULT_APPROLE_DIR"
-        exit 1
-    fi
+  if [ ! -d "$VAULT_APPROLE_DIR" ]; then
+    echo -e "${RED}[Vector Init]${NC} AppRole directory not found: $VAULT_APPROLE_DIR"
+    exit 1
+  fi
 
-    local role_id_file="$VAULT_APPROLE_DIR/role-id"
-    local secret_id_file="$VAULT_APPROLE_DIR/secret-id"
+  local role_id_file="$VAULT_APPROLE_DIR/role-id"
+  local secret_id_file="$VAULT_APPROLE_DIR/secret-id"
 
-    if [ ! -f "$role_id_file" ] || [ ! -f "$secret_id_file" ]; then
-        echo -e "${RED}[Vector Init]${NC} AppRole credentials not found in $VAULT_APPROLE_DIR"
-        exit 1
-    fi
+  if [ ! -f "$role_id_file" ] || [ ! -f "$secret_id_file" ]; then
+    echo -e "${RED}[Vector Init]${NC} AppRole credentials not found in $VAULT_APPROLE_DIR"
+    exit 1
+  fi
 
-    local role_id secret_id
-    role_id=$(cat "$role_id_file")
-    secret_id=$(cat "$secret_id_file")
+  local role_id secret_id
+  role_id=$(cat "$role_id_file")
+  secret_id=$(cat "$secret_id_file")
 
-    if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
-        echo -e "${RED}[Vector Init]${NC} Empty AppRole credentials"
-        exit 1
-    fi
+  if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
+    echo -e "${RED}[Vector Init]${NC} Empty AppRole credentials"
+    exit 1
+  fi
 
-    # Login with AppRole
-    local response
-    response=$(curl -sf -X POST \
-        -H "Content-Type: application/json" \
-        -d "{\"role_id\":\"$role_id\",\"secret_id\":\"$secret_id\"}" \
-        "$VAULT_ADDR/v1/auth/approle/login" 2>/dev/null)
+  # Login with AppRole
+  local response
+  response=$(curl -sf -X POST \
+    -H "Content-Type: application/json" \
+    -d "{\"role_id\":\"$role_id\",\"secret_id\":\"$secret_id\"}" \
+    "$VAULT_ADDR/v1/auth/approle/login" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        echo -e "${RED}[Vector Init]${NC} AppRole login failed"
-        exit 1
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    echo -e "${RED}[Vector Init]${NC} AppRole login failed"
+    exit 1
+  fi
 
-    VAULT_TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
+  VAULT_TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 
-    if [ -z "$VAULT_TOKEN" ]; then
-        echo -e "${RED}[Vector Init]${NC} Failed to obtain token from AppRole login"
-        exit 1
-    fi
+  if [ -z "$VAULT_TOKEN" ]; then
+    echo -e "${RED}[Vector Init]${NC} Failed to obtain token from AppRole login"
+    exit 1
+  fi
 
-    echo -e "${GREEN}[Vector Init]${NC} Successfully authenticated with AppRole"
+  echo -e "${GREEN}[Vector Init]${NC} Successfully authenticated with AppRole"
 }
 
 ################################################################################
@@ -160,29 +160,29 @@ login_with_approle() {
 # Priority: VAULT_APPROLE_DIR > VAULT_TOKEN > root-token file
 ################################################################################
 if [ -n "$VAULT_APPROLE_DIR" ] && [ -d "$VAULT_APPROLE_DIR" ]; then
-    login_with_approle
+  login_with_approle
 elif [ -n "$VAULT_TOKEN" ]; then
-    echo -e "${BLUE}[Vector Init]${NC} Using VAULT_TOKEN from environment"
+  echo -e "${BLUE}[Vector Init]${NC} Using VAULT_TOKEN from environment"
 elif [ -f "${HOME}/.config/vault/root-token" ]; then
-    # Validate token file permissions before reading
-    token_file="${HOME}/.config/vault/root-token"
-    perms=$(stat -f "%OLp" "$token_file" 2>/dev/null || stat -c "%a" "$token_file" 2>/dev/null)
+  # Validate token file permissions before reading
+  token_file="${HOME}/.config/vault/root-token"
+  perms=$(stat -f "%OLp" "$token_file" 2> /dev/null || stat -c "%a" "$token_file" 2> /dev/null)
 
-    if [ -z "$perms" ]; then
-        echo -e "${RED}[Vector Init]${NC} Failed to read token file permissions"
-        exit 1
-    fi
-
-    if [ "$perms" != "600" ] && [ "$perms" != "400" ]; then
-        echo -e "${RED}[Vector Init]${NC} Token file has insecure permissions: $perms (expected 600 or 400)"
-        exit 1
-    fi
-
-    VAULT_TOKEN=$(cat "$token_file")
-    echo -e "${BLUE}[Vector Init]${NC} Loaded VAULT_TOKEN from $token_file (permissions: $perms)"
-else
-    echo -e "${RED}[Vector Init]${NC} No authentication method available (need VAULT_APPROLE_DIR, VAULT_TOKEN, or root-token file)"
+  if [ -z "$perms" ]; then
+    echo -e "${RED}[Vector Init]${NC} Failed to read token file permissions"
     exit 1
+  fi
+
+  if [ "$perms" != "600" ] && [ "$perms" != "400" ]; then
+    echo -e "${RED}[Vector Init]${NC} Token file has insecure permissions: $perms (expected 600 or 400)"
+    exit 1
+  fi
+
+  VAULT_TOKEN=$(cat "$token_file")
+  echo -e "${BLUE}[Vector Init]${NC} Loaded VAULT_TOKEN from $token_file (permissions: $perms)"
+else
+  echo -e "${RED}[Vector Init]${NC} No authentication method available (need VAULT_APPROLE_DIR, VAULT_TOKEN, or root-token file)"
+  exit 1
 fi
 
 #######################################
@@ -209,23 +209,23 @@ fi
 #   - On failure, prints curl exit code and output for debugging
 #######################################
 fetch_credentials() {
-    local service=$1
-    local response
-    local curl_exit
+  local service=$1
+  local response
+  local curl_exit
 
-    echo -e "${BLUE}[Vector Init]${NC} Attempting to fetch $service credentials from $VAULT_ADDR..."
+  echo -e "${BLUE}[Vector Init]${NC} Attempting to fetch $service credentials from $VAULT_ADDR..."
 
-    response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$service" 2>&1)
-    curl_exit=$?
+  response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$service" 2>&1)
+  curl_exit=$?
 
-    if [ $curl_exit -ne 0 ]; then
-        echo -e "${RED}[Vector Init]${NC} Failed to fetch credentials for $service (curl exit code: $curl_exit)"
-        echo -e "${RED}[Vector Init]${NC} curl output: $response"
-        return 1
-    fi
+  if [ $curl_exit -ne 0 ]; then
+    echo -e "${RED}[Vector Init]${NC} Failed to fetch credentials for $service (curl exit code: $curl_exit)"
+    echo -e "${RED}[Vector Init]${NC} curl output: $response"
+    return 1
+  fi
 
-    echo "$response"
+  echo "$response"
 }
 
 ################################################################################
@@ -270,18 +270,18 @@ export REDIS_3_PASSWORD=$(echo "$REDIS_3_CREDS" | grep -o '"password":"[^"]*"' |
 # error if any credential is missing or empty.
 ################################################################################
 if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$POSTGRES_DB" ]; then
-    echo -e "${RED}[Vector Init]${NC} Failed to parse PostgreSQL credentials"
-    exit 1
+  echo -e "${RED}[Vector Init]${NC} Failed to parse PostgreSQL credentials"
+  exit 1
 fi
 
 if [ -z "$MONGO_USER" ] || [ -z "$MONGO_PASSWORD" ]; then
-    echo -e "${RED}[Vector Init]${NC} Failed to parse MongoDB credentials"
-    exit 1
+  echo -e "${RED}[Vector Init]${NC} Failed to parse MongoDB credentials"
+  exit 1
 fi
 
 if [ -z "$REDIS_1_PASSWORD" ] || [ -z "$REDIS_2_PASSWORD" ] || [ -z "$REDIS_3_PASSWORD" ]; then
-    echo -e "${RED}[Vector Init]${NC} Failed to parse Redis credentials"
-    exit 1
+  echo -e "${RED}[Vector Init]${NC} Failed to parse Redis credentials"
+  exit 1
 fi
 
 echo -e "${GREEN}[Vector Init]${NC} Credentials loaded successfully"

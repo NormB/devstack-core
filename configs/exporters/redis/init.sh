@@ -119,7 +119,10 @@ success() { echo -e "${GREEN}[Redis Exporter]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout, then exits
 #######################################
-error() { echo -e "${RED}[Redis Exporter]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[Redis Exporter]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Wait for Vault service to become ready and responsive
@@ -140,20 +143,20 @@ error() { echo -e "${RED}[Redis Exporter]${NC} $1"; exit 1; }
 #   - Sleep interval: 2 seconds between attempts
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
-    local max_attempts=60
-    local attempt=0
+  info "Waiting for Vault to be ready..."
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -161,44 +164,44 @@ wait_for_vault() {
 # Sets VAULT_TOKEN global variable
 #######################################
 login_with_approle() {
-    info "Authenticating with Vault using AppRole..."
+  info "Authenticating with Vault using AppRole..."
 
-    if [ ! -d "$VAULT_APPROLE_DIR" ]; then
-        error "AppRole directory not found: $VAULT_APPROLE_DIR"
-    fi
+  if [ ! -d "$VAULT_APPROLE_DIR" ]; then
+    error "AppRole directory not found: $VAULT_APPROLE_DIR"
+  fi
 
-    local role_id_file="$VAULT_APPROLE_DIR/role-id"
-    local secret_id_file="$VAULT_APPROLE_DIR/secret-id"
+  local role_id_file="$VAULT_APPROLE_DIR/role-id"
+  local secret_id_file="$VAULT_APPROLE_DIR/secret-id"
 
-    if [ ! -f "$role_id_file" ] || [ ! -f "$secret_id_file" ]; then
-        error "AppRole credentials not found in $VAULT_APPROLE_DIR"
-    fi
+  if [ ! -f "$role_id_file" ] || [ ! -f "$secret_id_file" ]; then
+    error "AppRole credentials not found in $VAULT_APPROLE_DIR"
+  fi
 
-    local role_id secret_id
-    role_id=$(cat "$role_id_file")
-    secret_id=$(cat "$secret_id_file")
+  local role_id secret_id
+  role_id=$(cat "$role_id_file")
+  secret_id=$(cat "$secret_id_file")
 
-    if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
-        error "Empty AppRole credentials"
-    fi
+  if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
+    error "Empty AppRole credentials"
+  fi
 
-    # Login with AppRole
-    local response
-    response=$(wget -qO- \
-        --header "Content-Type: application/json" \
-        --post-data "{\"role_id\":\"$role_id\",\"secret_id\":\"$secret_id\"}" \
-        "$VAULT_ADDR/v1/auth/approle/login" 2>/dev/null) || {
-        error "AppRole login failed"
-    }
+  # Login with AppRole
+  local response
+  response=$(wget -qO- \
+    --header "Content-Type: application/json" \
+    --post-data "{\"role_id\":\"$role_id\",\"secret_id\":\"$secret_id\"}" \
+    "$VAULT_ADDR/v1/auth/approle/login" 2> /dev/null) || {
+    error "AppRole login failed"
+  }
 
-    # Parse token from response using grep/cut (no jq dependency)
-    VAULT_TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
+  # Parse token from response using grep/cut (no jq dependency)
+  VAULT_TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "Failed to obtain token from AppRole login"
-    fi
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "Failed to obtain token from AppRole login"
+  fi
 
-    success "Successfully authenticated with AppRole"
+  success "Successfully authenticated with AppRole"
 }
 
 #######################################
@@ -225,24 +228,24 @@ login_with_approle() {
 #   - REDIS_PASSWORD is exported for redis_exporter to use
 #######################################
 fetch_credentials() {
-    info "Fetching credentials from Vault (service: $REDIS_NODE)..."
+  info "Fetching credentials from Vault (service: $REDIS_NODE)..."
 
-    local response=$(wget -qO- \
-        --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2>/dev/null)
+  local response=$(wget -qO- \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    # Parse JSON using grep/sed (no jq required)
-    export REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  # Parse JSON using grep/sed (no jq required)
+  export REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
 
-    if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
-        error "Invalid password received from Vault"
-    fi
+  if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
+    error "Invalid password received from Vault"
+  fi
 
-    success "Credentials fetched successfully"
+  success "Credentials fetched successfully"
 }
 
 #######################################
@@ -267,28 +270,28 @@ fetch_credentials() {
 #     → exec redis_exporter
 #######################################
 main() {
-    info "Starting Redis Exporter initialization with Vault integration..."
+  info "Starting Redis Exporter initialization with Vault integration..."
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Authenticate with Vault (AppRole or token)
-    if [ -n "$VAULT_APPROLE_DIR" ] && [ -d "$VAULT_APPROLE_DIR" ]; then
-        login_with_approle
-    elif [ -n "$VAULT_TOKEN" ]; then
-        info "Using provided VAULT_TOKEN for authentication"
-    else
-        error "Either VAULT_APPROLE_DIR or VAULT_TOKEN must be provided"
-    fi
+  # Authenticate with Vault (AppRole or token)
+  if [ -n "$VAULT_APPROLE_DIR" ] && [ -d "$VAULT_APPROLE_DIR" ]; then
+    login_with_approle
+  elif [ -n "$VAULT_TOKEN" ]; then
+    info "Using provided VAULT_TOKEN for authentication"
+  else
+    error "Either VAULT_APPROLE_DIR or VAULT_TOKEN must be provided"
+  fi
 
-    # Fetch password from Vault
-    fetch_credentials
+  # Fetch password from Vault
+  fetch_credentials
 
-    success "Initialization complete, starting redis_exporter..."
-    info ""
+  success "Initialization complete, starting redis_exporter..."
+  info ""
 
-    # Start redis_exporter with the password from Vault
-    exec /redis_exporter "$@"
+  # Start redis_exporter with the password from Vault
+  exec /redis_exporter "$@"
 }
 
 # Run main function

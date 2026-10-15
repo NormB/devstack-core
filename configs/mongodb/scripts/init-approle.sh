@@ -31,15 +31,15 @@ CERT_DIR="/etc/mongodb/certs"
 
 # Source common library
 if [ -f "/scripts/lib/service-init-common.sh" ]; then
-    source /scripts/lib/service-init-common.sh
+  source /scripts/lib/service-init-common.sh
 else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
-        source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
-    else
-        echo "[MongoDB Init] ERROR: Cannot find service-init-common.sh library"
-        exit 1
-    fi
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
+    source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
+  else
+    echo "[MongoDB Init] ERROR: Cannot find service-init-common.sh library"
+    exit 1
+  fi
 fi
 
 ################################################################################
@@ -52,55 +52,55 @@ fi
 #          MONGO_INITDB_DATABASE, ENABLE_TLS
 #######################################
 fetch_credentials() {
-    log_info "Fetching credentials and TLS setting from Vault..."
+  log_info "Fetching credentials and TLS setting from Vault..."
 
-    local response
-    response=$(fetch_vault_secret "$SERVICE_NAME")
+  local response
+  response=$(fetch_vault_secret "$SERVICE_NAME")
 
-    # Now using jq for proper JSON parsing (fixed from grep/sed)
-    export MONGO_INITDB_ROOT_USERNAME=$(extract_vault_field "$response" "user")
-    export MONGO_INITDB_ROOT_PASSWORD=$(extract_vault_field "$response" "password")
-    export MONGO_INITDB_DATABASE=$(extract_vault_field "$response" "database")
-    export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  # Now using jq for proper JSON parsing (fixed from grep/sed)
+  export MONGO_INITDB_ROOT_USERNAME=$(extract_vault_field "$response" "user")
+  export MONGO_INITDB_ROOT_PASSWORD=$(extract_vault_field "$response" "password")
+  export MONGO_INITDB_DATABASE=$(extract_vault_field "$response" "database")
+  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
 
-    if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then
-        log_error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then
+    log_error "Invalid credentials received from Vault"
+  fi
 
-    log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
 # Validate MongoDB TLS certificates
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    log_info "Validating pre-generated TLS certificates..."
+  log_info "Validating pre-generated TLS certificates..."
 
-    # MongoDB requires combined cert+key file
-    validate_cert_file "$CERT_DIR/mongodb.pem" "mongodb.pem"
-    validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
+  # MongoDB requires combined cert+key file
+  validate_cert_file "$CERT_DIR/mongodb.pem" "mongodb.pem"
+  validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
 
-    log_success "TLS certificates validated (pre-generated)"
+  log_success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
 # Configure MongoDB TLS via configuration file
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    log_info "Configuring MongoDB for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  log_info "Configuring MongoDB for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create MongoDB SSL config directory and file
-    mkdir -p /etc/mongod.conf.d
-    cat > /etc/mongod.conf.d/ssl.conf <<EOF
+  # Create MongoDB SSL config directory and file
+  mkdir -p /etc/mongod.conf.d
+  cat > /etc/mongod.conf.d/ssl.conf << EOF
 # SSL/TLS Configuration (Dual-Mode)
 # Accepts both encrypted and unencrypted connections
 net:
@@ -111,7 +111,7 @@ net:
     allowConnectionsWithoutCertificates: true
 EOF
 
-    log_success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
+  log_success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
 }
 
 ################################################################################
@@ -119,28 +119,28 @@ EOF
 ################################################################################
 
 main() {
-    # Run common Vault initialization
-    vault_init_common
+  # Run common Vault initialization
+  vault_init_common
 
-    # MongoDB-specific initialization
-    fetch_credentials
-    validate_certificates
-    configure_tls
+  # MongoDB-specific initialization
+  fetch_credentials
+  validate_certificates
+  configure_tls
 
-    log_info ""
-    log_success "Initialization complete, starting MongoDB..."
-    log_info ""
+  log_info ""
+  log_success "Initialization complete, starting MongoDB..."
+  log_info ""
 
-    # Start MongoDB with TLS configuration if enabled
-    if [ "$ENABLE_TLS" = "true" ]; then
-        exec docker-entrypoint.sh "$@" \
-            --tlsMode preferTLS \
-            --tlsCertificateKeyFile "$CERT_DIR/mongodb.pem" \
-            --tlsCAFile "$CERT_DIR/ca.pem" \
-            --tlsAllowConnectionsWithoutCertificates
-    else
-        exec docker-entrypoint.sh "$@"
-    fi
+  # Start MongoDB with TLS configuration if enabled
+  if [ "$ENABLE_TLS" = "true" ]; then
+    exec docker-entrypoint.sh "$@" \
+      --tlsMode preferTLS \
+      --tlsCertificateKeyFile "$CERT_DIR/mongodb.pem" \
+      --tlsCAFile "$CERT_DIR/ca.pem" \
+      --tlsAllowConnectionsWithoutCertificates
+  else
+    exec docker-entrypoint.sh "$@"
+  fi
 }
 
 main "$@"

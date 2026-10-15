@@ -99,7 +99,10 @@ info() { echo -e "${BLUE}[TEST]${NC} $1"; }
 # SIDE EFFECTS:
 #   Increments TESTS_PASSED counter
 ################################################################################
-success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1)); }
+success() {
+  echo -e "${GREEN}[PASS]${NC} $1"
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
 ################################################################################
 # Prints a failure message in red and tracks failed test
@@ -111,7 +114,11 @@ success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1))
 #   Increments TESTS_FAILED counter
 #   Appends message to FAILED_TESTS array
 ################################################################################
-fail() { echo -e "${RED}[FAIL]${NC} $1"; TESTS_FAILED=$((TESTS_FAILED + 1)); FAILED_TESTS+=("$1"); }
+fail() {
+  echo -e "${RED}[FAIL]${NC} $1"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  FAILED_TESTS+=("$1")
+}
 
 ################################################################################
 # Prints a warning message in yellow
@@ -140,12 +147,12 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   Uses redis-1 secret path as all nodes share same password
 ################################################################################
 get_redis_password() {
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/redis-1" 2>/dev/null | \
-        jq -r '.data.data.password // empty'
+  curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/redis-1" 2> /dev/null |
+    jq -r '.data.data.password // empty'
 }
 
 REDIS_PASSWORD=$(get_redis_password)
@@ -166,24 +173,24 @@ REDIS_PASSWORD=$(get_redis_password)
 #   1 - One or more containers are not running
 ################################################################################
 test_containers_running() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 1: All 3 Redis containers are running"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 1: All 3 Redis containers are running"
 
-    local running_count=0
+  local running_count=0
 
-    for i in 1 2 3; do
-        if docker ps | grep -q "dev-redis-$i"; then
-            running_count=$((running_count + 1))
-        fi
-    done
-
-    if [ $running_count -eq 3 ]; then
-        success "All 3 Redis containers are running"
-        return 0
-    else
-        fail "Only $running_count/3 Redis containers are running"
-        return 1
+  for i in 1 2 3; do
+    if docker ps | grep -q "dev-redis-$i"; then
+      running_count=$((running_count + 1))
     fi
+  done
+
+  if [ $running_count -eq 3 ]; then
+    success "All 3 Redis containers are running"
+    return 0
+  else
+    fail "Only $running_count/3 Redis containers are running"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -206,24 +213,24 @@ test_containers_running() {
 #   Uses Vault-sourced password for authentication
 ################################################################################
 test_nodes_reachable() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 2: All Redis nodes are reachable"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 2: All Redis nodes are reachable"
 
-    local reachable_count=0
+  local reachable_count=0
 
-    for i in 1 2 3; do
-        if docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q "PONG"; then
-            reachable_count=$((reachable_count + 1))
-        fi
-    done
-
-    if [ $reachable_count -eq 3 ]; then
-        success "All 3 Redis nodes are reachable"
-        return 0
-    else
-        fail "Only $reachable_count/3 Redis nodes are reachable"
-        return 1
+  for i in 1 2 3; do
+    if docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" ping 2> /dev/null | grep -q "PONG"; then
+      reachable_count=$((reachable_count + 1))
     fi
+  done
+
+  if [ $reachable_count -eq 3 ]; then
+    success "All 3 Redis nodes are reachable"
+    return 0
+  else
+    fail "Only $reachable_count/3 Redis nodes are reachable"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -245,27 +252,27 @@ test_nodes_reachable() {
 #   Cluster mode must be enabled in redis.conf for cluster to function
 ################################################################################
 test_cluster_enabled() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 3: Cluster mode is enabled on all nodes"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 3: Cluster mode is enabled on all nodes"
 
-    local enabled_count=0
+  local enabled_count=0
 
-    for i in 1 2 3; do
-        local cluster_enabled=$(docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" \
-            INFO cluster 2>/dev/null | grep "cluster_enabled:1" || echo "")
+  for i in 1 2 3; do
+    local cluster_enabled=$(docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" \
+      INFO cluster 2> /dev/null | grep "cluster_enabled:1" || echo "")
 
-        if [ -n "$cluster_enabled" ]; then
-            enabled_count=$((enabled_count + 1))
-        fi
-    done
-
-    if [ $enabled_count -eq 3 ]; then
-        success "Cluster mode is enabled on all 3 nodes"
-        return 0
-    else
-        fail "Cluster mode only enabled on $enabled_count/3 nodes"
-        return 1
+    if [ -n "$cluster_enabled" ]; then
+      enabled_count=$((enabled_count + 1))
     fi
+  done
+
+  if [ $enabled_count -eq 3 ]; then
+    success "Cluster mode is enabled on all 3 nodes"
+    return 0
+  else
+    fail "Cluster mode only enabled on $enabled_count/3 nodes"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -289,21 +296,21 @@ test_cluster_enabled() {
 #   Cluster initialization requires redis-cli --cluster create
 ################################################################################
 test_cluster_initialized() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 4: Cluster is initialized"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 4: Cluster is initialized"
 
-    local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-        CLUSTER INFO 2>/dev/null)
+  local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER INFO 2> /dev/null)
 
-    local cluster_state=$(echo "$cluster_info" | grep "cluster_state:" | cut -d: -f2 | tr -d '\r')
+  local cluster_state=$(echo "$cluster_info" | grep "cluster_state:" | cut -d: -f2 | tr -d '\r')
 
-    if [ "$cluster_state" = "ok" ]; then
-        success "Cluster is initialized and state is OK"
-        return 0
-    else
-        fail "Cluster state is: $cluster_state (expected: ok)"
-        return 1
-    fi
+  if [ "$cluster_state" = "ok" ]; then
+    success "Cluster is initialized and state is OK"
+    return 0
+  else
+    fail "Cluster state is: $cluster_state (expected: ok)"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -327,22 +334,22 @@ test_cluster_initialized() {
 #   Slots are assigned during cluster initialization
 ################################################################################
 test_all_slots_assigned() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 5: All 16384 slots are assigned"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 5: All 16384 slots are assigned"
 
-    local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-        CLUSTER INFO 2>/dev/null)
+  local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER INFO 2> /dev/null)
 
-    local slots_assigned=$(echo "$cluster_info" | grep "cluster_slots_assigned:" | \
-        cut -d: -f2 | tr -d '\r')
+  local slots_assigned=$(echo "$cluster_info" | grep "cluster_slots_assigned:" |
+    cut -d: -f2 | tr -d '\r')
 
-    if [ "$slots_assigned" = "16384" ]; then
-        success "All 16384 hash slots are assigned"
-        return 0
-    else
-        fail "Only $slots_assigned/16384 slots assigned"
-        return 1
-    fi
+  if [ "$slots_assigned" = "16384" ]; then
+    success "All 16384 hash slots are assigned"
+    return 0
+  else
+    fail "Only $slots_assigned/16384 slots assigned"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -365,21 +372,21 @@ test_all_slots_assigned() {
 #   Production clusters typically include replica nodes
 ################################################################################
 test_three_masters() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 6: Cluster has 3 master nodes"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 6: Cluster has 3 master nodes"
 
-    local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-        CLUSTER NODES 2>/dev/null)
+  local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER NODES 2> /dev/null)
 
-    local master_count=$(echo "$cluster_nodes" | grep -c "master" || echo "0")
+  local master_count=$(echo "$cluster_nodes" | grep -c "master" || echo "0")
 
-    if [ "$master_count" = "3" ]; then
-        success "Cluster has 3 master nodes"
-        return 0
-    else
-        fail "Cluster has $master_count master nodes (expected: 3)"
-        return 1
-    fi
+  if [ "$master_count" = "3" ]; then
+    success "Cluster has 3 master nodes"
+    return 0
+  else
+    fail "Cluster has $master_count master nodes (expected: 3)"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -403,31 +410,31 @@ test_three_masters() {
 #   Balanced distribution is approximately 5461 slots per node
 ################################################################################
 test_slot_distribution() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 7: Slots are distributed across all masters"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 7: Slots are distributed across all masters"
 
-    local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-        CLUSTER NODES 2>/dev/null)
+  local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER NODES 2> /dev/null)
 
-    local masters_with_slots=0
+  local masters_with_slots=0
 
-    # Count masters that have slot ranges assigned
-    while IFS= read -r line; do
-        if echo "$line" | grep -q "master"; then
-            # Check if this line contains slot ranges (pattern like "0-5460" or single slots)
-            if echo "$line" | grep -qE '[0-9]+-[0-9]+'; then
-                masters_with_slots=$((masters_with_slots + 1))
-            fi
-        fi
-    done <<< "$cluster_nodes"
-
-    if [ $masters_with_slots -eq 3 ]; then
-        success "All 3 masters have slots assigned"
-        return 0
-    else
-        fail "Only $masters_with_slots/3 masters have slots assigned"
-        return 1
+  # Count masters that have slot ranges assigned
+  while IFS= read -r line; do
+    if echo "$line" | grep -q "master"; then
+      # Check if this line contains slot ranges (pattern like "0-5460" or single slots)
+      if echo "$line" | grep -qE '[0-9]+-[0-9]+'; then
+        masters_with_slots=$((masters_with_slots + 1))
+      fi
     fi
+  done <<< "$cluster_nodes"
+
+  if [ $masters_with_slots -eq 3 ]; then
+    success "All 3 masters have slots assigned"
+    return 0
+  else
+    fail "Only $masters_with_slots/3 masters have slots assigned"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -452,36 +459,36 @@ test_slot_distribution() {
 #   Tests actual data distribution across cluster nodes
 ################################################################################
 test_data_sharding() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 8: Data sharding works correctly"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 8: Data sharding works correctly"
 
-    # Set test keys and check they're distributed
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        SET test_key_1 "value1" &>/dev/null
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        SET test_key_2 "value2" &>/dev/null
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        SET test_key_3 "value3" &>/dev/null
+  # Set test keys and check they're distributed
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    SET test_key_1 "value1" &> /dev/null
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    SET test_key_2 "value2" &> /dev/null
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    SET test_key_3 "value3" &> /dev/null
 
-    # Retrieve values
-    local val1=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        GET test_key_1 2>/dev/null)
-    local val2=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        GET test_key_2 2>/dev/null)
-    local val3=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        GET test_key_3 2>/dev/null)
+  # Retrieve values
+  local val1=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_1 2> /dev/null)
+  local val2=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_2 2> /dev/null)
+  local val3=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_3 2> /dev/null)
 
-    # Cleanup
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        DEL test_key_1 test_key_2 test_key_3 &>/dev/null
+  # Cleanup
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    DEL test_key_1 test_key_2 test_key_3 &> /dev/null
 
-    if [ "$val1" = "value1" ] && [ "$val2" = "value2" ] && [ "$val3" = "value3" ]; then
-        success "Data sharding works - keys distributed and retrievable"
-        return 0
-    else
-        fail "Data sharding failed - keys not retrievable"
-        return 1
-    fi
+  if [ "$val1" = "value1" ] && [ "$val2" = "value2" ] && [ "$val3" = "value3" ]; then
+    success "Data sharding works - keys distributed and retrievable"
+    return 0
+  else
+    fail "Data sharding failed - keys not retrievable"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -507,28 +514,28 @@ test_data_sharding() {
 #   Redirection is transparent to the client
 ################################################################################
 test_automatic_redirection() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 9: Automatic redirection works with -c flag"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 9: Automatic redirection works with -c flag"
 
-    # Set a key on node 1
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        SET redirect_test "test_value" &>/dev/null
+  # Set a key on node 1
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    SET redirect_test "test_value" &> /dev/null
 
-    # Try to get it from node 2 (should redirect automatically)
-    local value=$(docker exec dev-redis-2 redis-cli -c -a "$REDIS_PASSWORD" \
-        GET redirect_test 2>/dev/null)
+  # Try to get it from node 2 (should redirect automatically)
+  local value=$(docker exec dev-redis-2 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET redirect_test 2> /dev/null)
 
-    # Cleanup
-    docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-        DEL redirect_test &>/dev/null
+  # Cleanup
+  docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    DEL redirect_test &> /dev/null
 
-    if [ "$value" = "test_value" ]; then
-        success "Automatic redirection works across nodes"
-        return 0
-    else
-        fail "Automatic redirection failed"
-        return 1
-    fi
+  if [ "$value" = "test_value" ]; then
+    success "Automatic redirection works across nodes"
+    return 0
+  else
+    fail "Automatic redirection failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -551,22 +558,22 @@ test_automatic_redirection() {
 #   Auth may already be established, so "already authenticated" is success
 ################################################################################
 test_vault_password_integration() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 10: Vault password integration works"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 10: Vault password integration works"
 
-    if [ -n "$REDIS_PASSWORD" ]; then
-        # Try to authenticate with the password
-        local auth_result=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-            AUTH "$REDIS_PASSWORD" 2>&1)
+  if [ -n "$REDIS_PASSWORD" ]; then
+    # Try to authenticate with the password
+    local auth_result=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+      AUTH "$REDIS_PASSWORD" 2>&1)
 
-        if echo "$auth_result" | grep -qE "OK|already authenticated"; then
-            success "Vault password authentication works"
-            return 0
-        fi
+    if echo "$auth_result" | grep -qE "OK|already authenticated"; then
+      success "Vault password authentication works"
+      return 0
     fi
+  fi
 
-    fail "Vault password integration failed"
-    return 1
+  fail "Vault password integration failed"
+  return 1
 }
 
 ################################################################################
@@ -591,20 +598,20 @@ test_vault_password_integration() {
 #   Checks all 16384 slots are properly covered
 ################################################################################
 test_cluster_health_check() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 11: Cluster health check comprehensive test"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 11: Cluster health check comprehensive test"
 
-    local check_output=$(docker exec dev-redis-1 redis-cli --cluster check \
-        172.20.2.13:6379 -a "$REDIS_PASSWORD" 2>&1)
+  local check_output=$(docker exec dev-redis-1 redis-cli --cluster check \
+    172.20.2.13:6379 -a "$REDIS_PASSWORD" 2>&1)
 
-    if echo "$check_output" | grep -q "\[OK\] All 16384 slots covered"; then
-        success "Comprehensive cluster health check passed"
-        return 0
-    else
-        warn "Cluster check output: $check_output"
-        fail "Comprehensive cluster health check failed"
-        return 1
-    fi
+  if echo "$check_output" | grep -q "\[OK\] All 16384 slots covered"; then
+    success "Comprehensive cluster health check passed"
+    return 0
+  else
+    warn "Cluster check output: $check_output"
+    fail "Comprehensive cluster health check failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -628,20 +635,20 @@ test_cluster_health_check() {
 #   Keyslot determines which master node owns the key
 ################################################################################
 test_cluster_keyslot() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 12: Keyslot calculation works"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 12: Keyslot calculation works"
 
-    local keyslot=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-        CLUSTER KEYSLOT "test_key" 2>/dev/null)
+  local keyslot=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER KEYSLOT "test_key" 2> /dev/null)
 
-    # Keyslot should be a number between 0 and 16383
-    if [ "$keyslot" -ge 0 ] && [ "$keyslot" -le 16383 ] 2>/dev/null; then
-        success "Keyslot calculation works (test_key -> slot $keyslot)"
-        return 0
-    else
-        fail "Keyslot calculation failed"
-        return 1
-    fi
+  # Keyslot should be a number between 0 and 16383
+  if [ "$keyslot" -ge 0 ] && [ "$keyslot" -le 16383 ] 2> /dev/null; then
+    success "Keyslot calculation works (test_key -> slot $keyslot)"
+    return 0
+  else
+    fail "Keyslot calculation failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -669,49 +676,49 @@ test_cluster_keyslot() {
 #   Tests focus on cluster-specific functionality
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  Redis Cluster Test Suite"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  Redis Cluster Test Suite"
+  echo "========================================="
+  echo
 
-    test_containers_running || true
-    test_nodes_reachable || true
-    test_cluster_enabled || true
-    test_cluster_initialized || true
-    test_all_slots_assigned || true
-    test_three_masters || true
-    test_slot_distribution || true
-    test_data_sharding || true
-    test_automatic_redirection || true
-    test_vault_password_integration || true
-    test_cluster_health_check || true
-    test_cluster_keyslot || true
+  test_containers_running || true
+  test_nodes_reachable || true
+  test_cluster_enabled || true
+  test_cluster_initialized || true
+  test_all_slots_assigned || true
+  test_three_masters || true
+  test_slot_distribution || true
+  test_data_sharding || true
+  test_automatic_redirection || true
+  test_vault_password_integration || true
+  test_cluster_health_check || true
+  test_cluster_keyslot || true
 
+  echo
+  echo "========================================="
+  echo "  Test Results"
+  echo "========================================="
+  echo "Total tests: $TESTS_RUN"
+  echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
+  if [ $TESTS_FAILED -gt 0 ]; then
+    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
     echo
-    echo "========================================="
-    echo "  Test Results"
-    echo "========================================="
-    echo "Total tests: $TESTS_RUN"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    if [ $TESTS_FAILED -gt 0 ]; then
-        echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-        echo
-        echo "Failed tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo -e "  ${RED}✗${NC} $test"
-        done
-    fi
-    echo "========================================="
-    echo
+    echo "Failed tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo -e "  ${RED}✗${NC} $test"
+    done
+  fi
+  echo "========================================="
+  echo
 
-    if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}✓ All Redis Cluster tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Some tests failed${NC}"
-        return 1
-    fi
+  if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All Redis Cluster tests passed!${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ Some tests failed${NC}"
+    return 1
+  fi
 }
 
 # Main
