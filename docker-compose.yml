@@ -336,7 +336,7 @@ services:
 
   mysql:
     <<: *default-platform
-    image: mysql:8.0.46
+    image: mysql:9.7.1
     container_name: dev-mysql
     restart: unless-stopped
 
