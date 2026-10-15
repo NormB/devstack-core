@@ -37,7 +37,7 @@ repos:
     rev: v3.7.0-1
     hooks:
       - id: shfmt
-        args: [-w, -i, 2, -ci, -sr]
+        args: [-w, -i, "2", -ci, -sr]
 
   # Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
