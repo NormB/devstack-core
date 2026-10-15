@@ -31,15 +31,15 @@ CERT_DIR="/var/lib/mysql-certs"
 
 # Source common library
 if [ -f "/scripts/lib/service-init-common.sh" ]; then
-    source /scripts/lib/service-init-common.sh
+  source /scripts/lib/service-init-common.sh
 else
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
-        source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
-    else
-        echo "[MySQL Init] ERROR: Cannot find service-init-common.sh library"
-        exit 1
-    fi
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh" ]; then
+    source "${SCRIPT_DIR}/../../../scripts/lib/service-init-common.sh"
+  else
+    echo "[MySQL Init] ERROR: Cannot find service-init-common.sh library"
+    exit 1
+  fi
 fi
 
 ################################################################################
@@ -51,56 +51,56 @@ fi
 # Exports: MYSQL_ROOT_PASSWORD, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, ENABLE_TLS
 #######################################
 fetch_credentials() {
-    log_info "Fetching credentials and TLS setting from Vault..."
+  log_info "Fetching credentials and TLS setting from Vault..."
 
-    local response
-    response=$(fetch_vault_secret "$SERVICE_NAME")
+  local response
+  response=$(fetch_vault_secret "$SERVICE_NAME")
 
-    # Now using jq for proper JSON parsing (fixed from grep/sed)
-    export MYSQL_ROOT_PASSWORD=$(extract_vault_field "$response" "root_password")
-    export MYSQL_USER=$(extract_vault_field "$response" "user")
-    export MYSQL_PASSWORD=$(extract_vault_field "$response" "password")
-    export MYSQL_DATABASE=$(extract_vault_field "$response" "database")
-    export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  # Now using jq for proper JSON parsing (fixed from grep/sed)
+  export MYSQL_ROOT_PASSWORD=$(extract_vault_field "$response" "root_password")
+  export MYSQL_USER=$(extract_vault_field "$response" "user")
+  export MYSQL_PASSWORD=$(extract_vault_field "$response" "password")
+  export MYSQL_DATABASE=$(extract_vault_field "$response" "database")
+  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
 
-    if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then
-        log_error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then
+    log_error "Invalid credentials received from Vault"
+  fi
 
-    log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  log_success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
 # Validate MySQL TLS certificates
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    log_info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    log_info "Validating pre-generated TLS certificates..."
+  log_info "Validating pre-generated TLS certificates..."
 
-    validate_cert_file "$CERT_DIR/server-cert.pem" "server-cert.pem"
-    validate_cert_file "$CERT_DIR/server-key.pem" "server-key.pem"
-    validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
+  validate_cert_file "$CERT_DIR/server-cert.pem" "server-cert.pem"
+  validate_cert_file "$CERT_DIR/server-key.pem" "server-key.pem"
+  validate_cert_file "$CERT_DIR/ca.pem" "ca.pem"
 
-    log_success "TLS certificates validated (pre-generated)"
+  log_success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
 # Configure MySQL TLS via configuration file
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    log_info "Configuring MySQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  log_info "Configuring MySQL for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create custom MySQL configuration for TLS
-    mkdir -p /etc/my.cnf.d
-    cat > /etc/my.cnf.d/tls.cnf <<EOF
+  # Create custom MySQL configuration for TLS
+  mkdir -p /etc/my.cnf.d
+  cat > /etc/my.cnf.d/tls.cnf << EOF
 [mysqld]
 # SSL/TLS Configuration (Dual-Mode)
 # Accepts both encrypted and unencrypted connections
@@ -111,7 +111,7 @@ require_secure_transport=OFF
 tls_version=TLSv1.2,TLSv1.3
 EOF
 
-    log_success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
+  log_success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
 }
 
 ################################################################################
@@ -119,20 +119,20 @@ EOF
 ################################################################################
 
 main() {
-    # Run common Vault initialization
-    vault_init_common
+  # Run common Vault initialization
+  vault_init_common
 
-    # MySQL-specific initialization
-    fetch_credentials
-    validate_certificates
-    configure_tls
+  # MySQL-specific initialization
+  fetch_credentials
+  validate_certificates
+  configure_tls
 
-    log_info ""
-    log_success "Initialization complete, starting MySQL..."
-    log_info ""
+  log_info ""
+  log_success "Initialization complete, starting MySQL..."
+  log_info ""
 
-    # Start MySQL with the original docker-entrypoint
-    exec docker-entrypoint.sh "$@"
+  # Start MySQL with the original docker-entrypoint
+  exec docker-entrypoint.sh "$@"
 }
 
 main "$@"

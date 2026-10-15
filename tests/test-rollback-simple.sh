@@ -21,10 +21,10 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 cleanup() {
-    echo -e "${YELLOW}Cleaning up...${NC}"
-    rm -f "$ENV_FILE" 2>/dev/null || true
-    rm -f docker-compose.yml.bak 2>/dev/null || true
-    rm -f configs/postgres/scripts/init.sh.tmp 2>/dev/null || true
+  echo -e "${YELLOW}Cleaning up...${NC}"
+  rm -f "$ENV_FILE" 2> /dev/null || true
+  rm -f docker-compose.yml.bak 2> /dev/null || true
+  rm -f configs/postgres/scripts/init.sh.tmp 2> /dev/null || true
 }
 
 trap cleanup EXIT
@@ -38,22 +38,22 @@ echo -e "${BLUE}Phase 1: Verify Current State (AppRole)${NC}"
 
 # Check AppRole credentials exist
 if [ ! -f "$HOME/.config/vault/approles/postgres/role-id" ]; then
-    echo -e "${RED}✗ AppRole credentials not found${NC}"
-    exit 1
+  echo -e "${RED}✗ AppRole credentials not found${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ AppRole credentials exist${NC}"
 
 # Check postgres is healthy
 if ! docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
-    echo -e "${RED}✗ PostgreSQL not healthy${NC}"
-    exit 1
+  echo -e "${RED}✗ PostgreSQL not healthy${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ PostgreSQL is healthy${NC}"
 
 # Check no VAULT_TOKEN in container
-if docker exec dev-postgres env 2>/dev/null | grep -q "^VAULT_TOKEN="; then
-    echo -e "${RED}✗ VAULT_TOKEN found (should not exist with AppRole)${NC}"
-    exit 1
+if docker exec dev-postgres env 2> /dev/null | grep -q "^VAULT_TOKEN="; then
+  echo -e "${RED}✗ VAULT_TOKEN found (should not exist with AppRole)${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ No VAULT_TOKEN in container (AppRole mode confirmed)${NC}"
 
@@ -188,9 +188,9 @@ echo -e "${GREEN}✓ Modified docker-compose.yml${NC}"
 
 # Verify the changes
 if ! grep -A 30 "postgres:" docker-compose.yml | grep -q 'entrypoint: \["/init/init.sh"\]'; then
-    echo -e "${RED}✗ Entrypoint not changed correctly${NC}"
-    cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
-    exit 1
+  echo -e "${RED}✗ Entrypoint not changed correctly${NC}"
+  cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+  exit 1
 fi
 echo -e "${GREEN}✓ Verified entrypoint changed to /init/init.sh${NC}"
 
@@ -205,37 +205,37 @@ echo -e "${GREEN}✓ Created environment file with VAULT_TOKEN${NC}"
 # Start postgres with root token
 echo "Starting PostgreSQL with root token..."
 if ! docker compose --env-file "$ENV_FILE" up -d postgres 2>&1 | tee /tmp/docker-start.log; then
-    echo -e "${RED}✗ Failed to start PostgreSQL${NC}"
-    cat /tmp/docker-start.log
-    echo "Restoring from backup..."
-    cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
-    cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
-    docker compose up -d postgres
-    exit 1
+  echo -e "${RED}✗ Failed to start PostgreSQL${NC}"
+  cat /tmp/docker-start.log
+  echo "Restoring from backup..."
+  cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+  cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
+  docker compose up -d postgres
+  exit 1
 fi
 
 # Wait for healthy
 echo "Waiting for PostgreSQL to become healthy..."
 for i in {1..60}; do
-    if docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
-        echo -e "${GREEN}✓ PostgreSQL is healthy after ${i} seconds${NC}"
-        break
-    fi
-    sleep 1
-    echo -n "."
+  if docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
+    echo -e "${GREEN}✓ PostgreSQL is healthy after ${i} seconds${NC}"
+    break
+  fi
+  sleep 1
+  echo -n "."
 done
 echo ""
 
 # Verify it's actually healthy
 if ! docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
-    echo -e "${RED}✗ PostgreSQL did not become healthy${NC}"
-    echo "Container logs:"
-    docker logs dev-postgres 2>&1 | tail -50
-    echo "Restoring from backup..."
-    cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
-    cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
-    docker compose up -d postgres
-    exit 1
+  echo -e "${RED}✗ PostgreSQL did not become healthy${NC}"
+  echo "Container logs:"
+  docker logs dev-postgres 2>&1 | tail -50
+  echo "Restoring from backup..."
+  cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+  cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
+  docker compose up -d postgres
+  exit 1
 fi
 
 echo ""
@@ -248,22 +248,22 @@ echo -e "${BLUE}Phase 4: Validate Root Token Authentication${NC}"
 
 # Check VAULT_TOKEN in container
 if ! docker exec dev-postgres env | grep -q "^VAULT_TOKEN="; then
-    echo -e "${RED}✗ VAULT_TOKEN not found in container${NC}"
-    exit 1
+  echo -e "${RED}✗ VAULT_TOKEN not found in container${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ VAULT_TOKEN present in container${NC}"
 
 # Check PostgreSQL is accepting connections
 if ! docker exec dev-postgres pg_isready -U devuser > /dev/null 2>&1; then
-    echo -e "${RED}✗ PostgreSQL not accepting connections${NC}"
-    exit 1
+  echo -e "${RED}✗ PostgreSQL not accepting connections${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ PostgreSQL accepting connections${NC}"
 
 # Try to connect and query
 if ! docker exec dev-postgres psql -U devuser -d devdb -c "SELECT 1" > /dev/null 2>&1; then
-    echo -e "${RED}✗ PostgreSQL query failed${NC}"
-    exit 1
+  echo -e "${RED}✗ PostgreSQL query failed${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ PostgreSQL queries working${NC}"
 
@@ -285,7 +285,7 @@ echo -e "${GREEN}✓ Restored docker-compose.yml${NC}"
 
 # Restore init-approle.sh (it's still there, but make sure)
 if [ ! -f configs/postgres/scripts/init-approle.sh ]; then
-    cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
+  cp "$BACKUP_DIR/init-approle-postgres.sh" configs/postgres/scripts/init-approle.sh
 fi
 echo -e "${GREEN}✓ Restored init-approle.sh${NC}"
 
@@ -296,32 +296,32 @@ docker compose up -d postgres
 # Wait for healthy
 echo "Waiting for PostgreSQL to become healthy..."
 for i in {1..60}; do
-    if docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
-        echo -e "${GREEN}✓ PostgreSQL is healthy after ${i} seconds${NC}"
-        break
-    fi
-    sleep 1
-    echo -n "."
+  if docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
+    echo -e "${GREEN}✓ PostgreSQL is healthy after ${i} seconds${NC}"
+    break
+  fi
+  sleep 1
+  echo -n "."
 done
 echo ""
 
 if ! docker ps --filter "name=dev-postgres" --format "{{.Status}}" | grep -q "healthy"; then
-    echo -e "${RED}✗ PostgreSQL did not become healthy after AppRole restoration${NC}"
-    docker logs dev-postgres 2>&1 | tail -50
-    exit 1
+  echo -e "${RED}✗ PostgreSQL did not become healthy after AppRole restoration${NC}"
+  docker logs dev-postgres 2>&1 | tail -50
+  exit 1
 fi
 
 # Verify no VAULT_TOKEN
-if docker exec dev-postgres env 2>/dev/null | grep -q "^VAULT_TOKEN="; then
-    echo -e "${RED}✗ VAULT_TOKEN still present (should be removed)${NC}"
-    exit 1
+if docker exec dev-postgres env 2> /dev/null | grep -q "^VAULT_TOKEN="; then
+  echo -e "${RED}✗ VAULT_TOKEN still present (should be removed)${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ No VAULT_TOKEN in container (AppRole restored)${NC}"
 
 # Verify AppRole credentials mounted
-if ! docker exec dev-postgres test -f /vault-approles/postgres/role-id 2>/dev/null; then
-    echo -e "${RED}✗ AppRole credentials not mounted${NC}"
-    exit 1
+if ! docker exec dev-postgres test -f /vault-approles/postgres/role-id 2> /dev/null; then
+  echo -e "${RED}✗ AppRole credentials not mounted${NC}"
+  exit 1
 fi
 echo -e "${GREEN}✓ AppRole credentials mounted${NC}"
 

@@ -61,7 +61,7 @@ SERVICE_NAME="api-first"
 SERVICE_IP="${API_FIRST_IP:-172.20.0.31}"
 CERT_DIR="/app/certs"
 VAULT_CERT_DIR="${HOME}/.config/vault/certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 
 # Colors
 RED='\033[0;31m'
@@ -114,7 +114,10 @@ warn() { echo -e "${YELLOW}[API-First Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout before exit
 #######################################
-error() { echo -e "${RED}[API-First Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[API-First Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Wait for Vault service to become ready
@@ -135,21 +138,21 @@ error() { echo -e "${RED}[API-First Init]${NC} $1"; exit 1; }
 #   - Silent mode (-q) suppresses wget output noise
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -174,21 +177,21 @@ wait_for_vault() {
 #   - Exports ENABLE_TLS for use by subsequent functions
 #######################################
 fetch_tls_config() {
-    info "Fetching TLS configuration from Vault..."
+  info "Fetching TLS configuration from Vault..."
 
-    local response=$(wget -qO- --no-check-certificate \
-        --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null)
+  local response=$(wget -qO- --no-check-certificate \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        warn "Failed to fetch configuration from Vault, using defaults"
-        export ENABLE_TLS="false"
-        return 0
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    warn "Failed to fetch configuration from Vault, using defaults"
+    export ENABLE_TLS="false"
+    return 0
+  fi
 
-    export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
 
-    success "Configuration fetched: tls_enabled=$ENABLE_TLS"
+  success "Configuration fetched: tls_enabled=$ENABLE_TLS"
 }
 
 #######################################
@@ -215,34 +218,34 @@ fetch_tls_config() {
 #   - Exports API_FIRST_ENABLE_TLS for consumption by start.sh
 #######################################
 setup_tls_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS is disabled"
-        export API_FIRST_ENABLE_TLS="false"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS is disabled"
+    export API_FIRST_ENABLE_TLS="false"
+    return 0
+  fi
 
-    info "Setting up TLS certificates..."
+  info "Setting up TLS certificates..."
 
-    # Create certificate directory
-    mkdir -p "$CERT_DIR"
+  # Create certificate directory
+  mkdir -p "$CERT_DIR"
 
-    # Check if pre-generated certificates exist in Vault cert directory
-    local vault_cert="${VAULT_CERT_DIR}/${SERVICE_NAME}.crt"
-    local vault_key="${VAULT_CERT_DIR}/${SERVICE_NAME}.key"
+  # Check if pre-generated certificates exist in Vault cert directory
+  local vault_cert="${VAULT_CERT_DIR}/${SERVICE_NAME}.crt"
+  local vault_key="${VAULT_CERT_DIR}/${SERVICE_NAME}.key"
 
-    if [ -f "$vault_cert" ] && [ -f "$vault_key" ]; then
-        info "Copying pre-generated certificates from Vault..."
-        cp "$vault_cert" "$CERT_DIR/server.crt"
-        cp "$vault_key" "$CERT_DIR/server.key"
-        chmod 644 "$CERT_DIR/server.crt"
-        chmod 600 "$CERT_DIR/server.key"
-        success "Certificates copied successfully"
-        export API_FIRST_ENABLE_TLS="true"
-    else
-        warn "Pre-generated certificates not found at $VAULT_CERT_DIR"
-        warn "TLS will be disabled"
-        export API_FIRST_ENABLE_TLS="false"
-    fi
+  if [ -f "$vault_cert" ] && [ -f "$vault_key" ]; then
+    info "Copying pre-generated certificates from Vault..."
+    cp "$vault_cert" "$CERT_DIR/server.crt"
+    cp "$vault_key" "$CERT_DIR/server.key"
+    chmod 644 "$CERT_DIR/server.crt"
+    chmod 600 "$CERT_DIR/server.key"
+    success "Certificates copied successfully"
+    export API_FIRST_ENABLE_TLS="true"
+  else
+    warn "Pre-generated certificates not found at $VAULT_CERT_DIR"
+    warn "TLS will be disabled"
+    export API_FIRST_ENABLE_TLS="false"
+  fi
 }
 
 #######################################
@@ -264,22 +267,22 @@ setup_tls_certificates() {
 #   - All configuration is exported via environment variables
 #######################################
 main() {
-    echo ""
-    echo "========================================="
-    echo "  FastAPI API-First Initialization"
-    echo "========================================="
-    echo ""
+  echo ""
+  echo "========================================="
+  echo "  FastAPI API-First Initialization"
+  echo "========================================="
+  echo ""
 
-    wait_for_vault
-    fetch_tls_config
-    setup_tls_certificates
+  wait_for_vault
+  fetch_tls_config
+  setup_tls_certificates
 
-    echo ""
-    success "Initialization complete, starting FastAPI..."
-    echo ""
+  echo ""
+  success "Initialization complete, starting FastAPI..."
+  echo ""
 
-    # Start the FastAPI application
-    exec /app/start.sh
+  # Start the FastAPI application
+  exec /app/start.sh
 }
 
 # Run main function

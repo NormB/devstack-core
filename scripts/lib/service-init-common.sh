@@ -70,17 +70,17 @@ SECRET_ID=""
 
 # Colors (can be disabled by setting NO_COLOR=1)
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    NC='\033[0m'
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m'
 else
-    RED=''
-    GREEN=''
-    YELLOW=''
-    BLUE=''
-    NC=''
+  RED=''
+  GREEN=''
+  YELLOW=''
+  BLUE=''
+  NC=''
 fi
 
 ################################################################################
@@ -93,7 +93,7 @@ fi
 #   $1 - Message to print
 #######################################
 log_info() {
-    echo -e "${BLUE}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
+  echo -e "${BLUE}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
 }
 
 #######################################
@@ -102,7 +102,7 @@ log_info() {
 #   $1 - Message to print
 #######################################
 log_success() {
-    echo -e "${GREEN}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
+  echo -e "${GREEN}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
 }
 
 #######################################
@@ -111,7 +111,7 @@ log_success() {
 #   $1 - Message to print
 #######################################
 log_warn() {
-    echo -e "${YELLOW}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
+  echo -e "${YELLOW}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1"
 }
 
 #######################################
@@ -121,8 +121,8 @@ log_warn() {
 #   $2 - Exit code (default: 1)
 #######################################
 log_error() {
-    echo -e "${RED}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1" >&2
-    exit "${2:-1}"
+  echo -e "${RED}[${SERVICE_DISPLAY_NAME:-Service} Init]${NC} $1" >&2
+  exit "${2:-1}"
 }
 
 ################################################################################
@@ -138,17 +138,17 @@ log_error() {
 #   1 - No supported package manager found
 #######################################
 _detect_package_manager() {
-    if command -v apt-get &>/dev/null; then
-        echo "apt"
-    elif command -v apk &>/dev/null; then
-        echo "apk"
-    elif command -v microdnf &>/dev/null; then
-        echo "microdnf"
-    elif command -v yum &>/dev/null; then
-        echo "yum"
-    else
-        return 1
-    fi
+  if command -v apt-get &> /dev/null; then
+    echo "apt"
+  elif command -v apk &> /dev/null; then
+    echo "apk"
+  elif command -v microdnf &> /dev/null; then
+    echo "microdnf"
+  elif command -v yum &> /dev/null; then
+    echo "yum"
+  else
+    return 1
+  fi
 }
 
 #######################################
@@ -160,27 +160,27 @@ _detect_package_manager() {
 #   1 - Installation failed
 #######################################
 _install_package() {
-    local pkg_mgr
-    pkg_mgr=$(_detect_package_manager) || {
-        log_warn "No supported package manager found"
-        return 1
-    }
+  local pkg_mgr
+  pkg_mgr=$(_detect_package_manager) || {
+    log_warn "No supported package manager found"
+    return 1
+  }
 
-    case "$pkg_mgr" in
-        apt)
-            apt-get update -qq >/dev/null 2>&1
-            apt-get install -y -qq "$@" >/dev/null 2>&1
-            ;;
-        apk)
-            apk add --no-cache "$@" >/dev/null 2>&1
-            ;;
-        microdnf)
-            microdnf install -y "$@" >/dev/null 2>&1
-            ;;
-        yum)
-            yum install -y "$@" >/dev/null 2>&1
-            ;;
-    esac
+  case "$pkg_mgr" in
+    apt)
+      apt-get update -qq > /dev/null 2>&1
+      apt-get install -y -qq "$@" > /dev/null 2>&1
+      ;;
+    apk)
+      apk add --no-cache "$@" > /dev/null 2>&1
+      ;;
+    microdnf)
+      microdnf install -y "$@" > /dev/null 2>&1
+      ;;
+    yum)
+      yum install -y "$@" > /dev/null 2>&1
+      ;;
+  esac
 }
 
 #######################################
@@ -190,15 +190,15 @@ _install_package() {
 #   1 - Failed to install jq
 #######################################
 ensure_jq() {
-    if command -v jq &>/dev/null; then
-        return 0
-    fi
-    log_info "Installing jq..."
-    if _install_package jq; then
-        log_success "jq installed"
-    else
-        log_error "Failed to install jq"
-    fi
+  if command -v jq &> /dev/null; then
+    return 0
+  fi
+  log_info "Installing jq..."
+  if _install_package jq; then
+    log_success "jq installed"
+  else
+    log_error "Failed to install jq"
+  fi
 }
 
 #######################################
@@ -208,23 +208,23 @@ ensure_jq() {
 #   1 - Failed to install curl
 #######################################
 ensure_curl() {
-    if command -v curl &>/dev/null; then
-        return 0
-    fi
-    log_info "Installing curl..."
-    if _install_package curl; then
-        log_success "curl installed"
-    else
-        log_error "Failed to install curl"
-    fi
+  if command -v curl &> /dev/null; then
+    return 0
+  fi
+  log_info "Installing curl..."
+  if _install_package curl; then
+    log_success "curl installed"
+  else
+    log_error "Failed to install curl"
+  fi
 }
 
 #######################################
 # Ensure both curl and jq are installed
 #######################################
 ensure_dependencies() {
-    ensure_curl
-    ensure_jq
+  ensure_curl
+  ensure_jq
 }
 
 ################################################################################
@@ -242,32 +242,32 @@ ensure_dependencies() {
 #   1 - Vault did not become ready in time
 #######################################
 wait_for_vault() {
-    log_info "Waiting for Vault to be ready..."
+  log_info "Waiting for Vault to be ready..."
 
-    local attempt=0
-    local health_url="${VAULT_ADDR}/v1/sys/health?standbyok=true"
+  local attempt=0
+  local health_url="${VAULT_ADDR}/v1/sys/health?standbyok=true"
 
-    while [ $attempt -lt "$VAULT_MAX_ATTEMPTS" ]; do
-        # Try curl first, fall back to wget
-        if command -v curl &>/dev/null; then
-            if curl -sf "$health_url" >/dev/null 2>&1; then
-                log_success "Vault is ready"
-                return 0
-            fi
-        elif command -v wget &>/dev/null; then
-            if wget -q -O - "$health_url" >/dev/null 2>&1; then
-                log_success "Vault is ready"
-                return 0
-            fi
-        else
-            log_error "Neither curl nor wget available for health check"
-        fi
+  while [ $attempt -lt "$VAULT_MAX_ATTEMPTS" ]; do
+    # Try curl first, fall back to wget
+    if command -v curl &> /dev/null; then
+      if curl -sf "$health_url" > /dev/null 2>&1; then
+        log_success "Vault is ready"
+        return 0
+      fi
+    elif command -v wget &> /dev/null; then
+      if wget -q -O - "$health_url" > /dev/null 2>&1; then
+        log_success "Vault is ready"
+        return 0
+      fi
+    else
+      log_error "Neither curl nor wget available for health check"
+    fi
 
-        attempt=$((attempt + 1))
-        sleep "$VAULT_RETRY_DELAY"
-    done
+    attempt=$((attempt + 1))
+    sleep "$VAULT_RETRY_DELAY"
+  done
 
-    log_error "Vault did not become ready in time (waited $((VAULT_MAX_ATTEMPTS * VAULT_RETRY_DELAY)) seconds)"
+  log_error "Vault did not become ready in time (waited $((VAULT_MAX_ATTEMPTS * VAULT_RETRY_DELAY)) seconds)"
 }
 
 #######################################
@@ -281,29 +281,29 @@ wait_for_vault() {
 #   1 - Credentials not found or empty
 #######################################
 read_approle_credentials() {
-    log_info "Reading AppRole credentials from $VAULT_APPROLE_DIR..."
+  log_info "Reading AppRole credentials from $VAULT_APPROLE_DIR..."
 
-    local role_id_file="${VAULT_APPROLE_DIR}/role-id"
-    local secret_id_file="${VAULT_APPROLE_DIR}/secret-id"
+  local role_id_file="${VAULT_APPROLE_DIR}/role-id"
+  local secret_id_file="${VAULT_APPROLE_DIR}/secret-id"
 
-    if [ ! -f "$role_id_file" ]; then
-        log_error "AppRole role-id file not found: $role_id_file"
-    fi
+  if [ ! -f "$role_id_file" ]; then
+    log_error "AppRole role-id file not found: $role_id_file"
+  fi
 
-    if [ ! -f "$secret_id_file" ]; then
-        log_error "AppRole secret-id file not found: $secret_id_file"
-    fi
+  if [ ! -f "$secret_id_file" ]; then
+    log_error "AppRole secret-id file not found: $secret_id_file"
+  fi
 
-    ROLE_ID=$(cat "$role_id_file")
-    SECRET_ID=$(cat "$secret_id_file")
+  ROLE_ID=$(cat "$role_id_file")
+  SECRET_ID=$(cat "$secret_id_file")
 
-    if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
-        log_error "AppRole credentials are empty"
-    fi
+  if [ -z "$ROLE_ID" ] || [ -z "$SECRET_ID" ]; then
+    log_error "AppRole credentials are empty"
+  fi
 
-    # Show truncated role_id for debugging (first 20 chars)
-    local truncated_role_id="${ROLE_ID:0:20}"
-    log_success "AppRole credentials loaded (role_id: ${truncated_role_id}...)"
+  # Show truncated role_id for debugging (first 20 chars)
+  local truncated_role_id="${ROLE_ID:0:20}"
+  log_success "AppRole credentials loaded (role_id: ${truncated_role_id}...)"
 }
 
 #######################################
@@ -320,34 +320,34 @@ read_approle_credentials() {
 #   1 - Authentication failed
 #######################################
 authenticate_approle() {
-    log_info "Authenticating to Vault with AppRole..."
+  log_info "Authenticating to Vault with AppRole..."
 
-    local auth_response
-    local login_url="${VAULT_ADDR}/v1/auth/approle/login"
-    local payload="{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}"
+  local auth_response
+  local login_url="${VAULT_ADDR}/v1/auth/approle/login"
+  local payload="{\"role_id\":\"$ROLE_ID\",\"secret_id\":\"$SECRET_ID\"}"
 
-    # Use curl for authentication
-    auth_response=$(curl -sf \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -d "$payload" \
-        "$login_url" 2>/dev/null)
+  # Use curl for authentication
+  auth_response=$(curl -sf \
+    -X POST \
+    -H "Content-Type: application/json" \
+    -d "$payload" \
+    "$login_url" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$auth_response" ]; then
-        log_error "Failed to authenticate with AppRole"
-    fi
+  if [ $? -ne 0 ] || [ -z "$auth_response" ]; then
+    log_error "Failed to authenticate with AppRole"
+  fi
 
-    VAULT_TOKEN=$(echo "$auth_response" | jq -r '.auth.client_token')
+  VAULT_TOKEN=$(echo "$auth_response" | jq -r '.auth.client_token')
 
-    if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
-        log_error "Failed to obtain token from AppRole authentication"
-    fi
+  if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
+    log_error "Failed to obtain token from AppRole authentication"
+  fi
 
-    export VAULT_TOKEN
+  export VAULT_TOKEN
 
-    # Show truncated token for debugging
-    local truncated_token="${VAULT_TOKEN:0:20}"
-    log_success "AppRole authentication successful (token: ${truncated_token}...)"
+  # Show truncated token for debugging
+  local truncated_token="${VAULT_TOKEN:0:20}"
+  log_success "AppRole authentication successful (token: ${truncated_token}...)"
 }
 
 #######################################
@@ -364,19 +364,19 @@ authenticate_approle() {
 #   1 - Failed to fetch secret
 #######################################
 fetch_vault_secret() {
-    local secret_path="$1"
-    local secret_url="${VAULT_ADDR}/v1/secret/data/${secret_path}"
+  local secret_path="$1"
+  local secret_url="${VAULT_ADDR}/v1/secret/data/${secret_path}"
 
-    local response
-    response=$(curl -sf \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$secret_url" 2>/dev/null)
+  local response
+  response=$(curl -sf \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$secret_url" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        log_error "Failed to fetch credentials from Vault path: $secret_path"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    log_error "Failed to fetch credentials from Vault path: $secret_path"
+  fi
 
-    echo "$response"
+  echo "$response"
 }
 
 #######################################
@@ -389,14 +389,14 @@ fetch_vault_secret() {
 #   Writes field value to stdout
 #######################################
 extract_vault_field() {
-    local json="$1"
-    local field="$2"
-    local default="${3:-}"
+  local json="$1"
+  local field="$2"
+  local default="${3:-}"
 
-    local value
-    value=$(echo "$json" | jq -r ".data.data.${field} // \"${default}\"")
+  local value
+  value=$(echo "$json" | jq -r ".data.data.${field} // \"${default}\"")
 
-    echo "$value"
+  echo "$value"
 }
 
 ################################################################################
@@ -413,16 +413,16 @@ extract_vault_field() {
 #   1 - Certificate not found or not readable
 #######################################
 validate_cert_file() {
-    local cert_file="$1"
-    local description="$2"
+  local cert_file="$1"
+  local description="$2"
 
-    if [ ! -f "$cert_file" ]; then
-        log_error "TLS enabled but $description not found: $cert_file. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$cert_file" ]; then
+    log_error "TLS enabled but $description not found: $cert_file. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -r "$cert_file" ]; then
-        log_error "TLS enabled but $description is not readable: $cert_file. Check file permissions."
-    fi
+  if [ ! -r "$cert_file" ]; then
+    log_error "TLS enabled but $description is not readable: $cert_file. Check file permissions."
+  fi
 }
 
 ################################################################################
@@ -442,18 +442,18 @@ validate_cert_file() {
 #   All globals mentioned above
 #######################################
 vault_init_common() {
-    log_info "Starting ${SERVICE_DISPLAY_NAME:-service} initialization with Vault AppRole integration..."
-    log_info ""
+  log_info "Starting ${SERVICE_DISPLAY_NAME:-service} initialization with Vault AppRole integration..."
+  log_info ""
 
-    # Ensure dependencies
-    ensure_dependencies
+  # Ensure dependencies
+  ensure_dependencies
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Read AppRole credentials
-    read_approle_credentials
+  # Read AppRole credentials
+  read_approle_credentials
 
-    # Authenticate to Vault
-    authenticate_approle
+  # Authenticate to Vault
+  authenticate_approle
 }

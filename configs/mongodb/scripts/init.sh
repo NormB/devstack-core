@@ -90,7 +90,7 @@ SERVICE_NAME="mongodb"
 SERVICE_IP="${MONGODB_IP:-172.20.0.15}"
 PKI_ROLE="mongodb-role"
 CERT_DIR="/etc/mongodb/certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 
 # Colors
 RED='\033[0;31m'
@@ -153,7 +153,10 @@ warn() { echo -e "${YELLOW}[MongoDB Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout and terminates script
 #######################################
-error() { echo -e "${RED}[MongoDB Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[MongoDB Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Installs curl if not already available in the system
@@ -173,12 +176,12 @@ error() { echo -e "${RED}[MongoDB Init]${NC} $1"; exit 1; }
 #   - Suppresses apt-get output for cleaner logs
 #######################################
 install_curl() {
-    if ! command -v curl &> /dev/null; then
-        info "Installing curl..."
-        apt-get update -qq > /dev/null 2>&1
-        apt-get install -y -qq curl > /dev/null 2>&1
-        success "curl installed"
-    fi
+  if ! command -v curl &> /dev/null; then
+    info "Installing curl..."
+    apt-get update -qq > /dev/null 2>&1
+    apt-get install -y -qq curl > /dev/null 2>&1
+    success "curl installed"
+  fi
 }
 
 #######################################
@@ -200,21 +203,21 @@ install_curl() {
 #   - Uses curl with silent and fail flags for health checks
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -244,30 +247,30 @@ wait_for_vault() {
 #   - Defaults tls_enabled to false if not present in Vault
 #######################################
 fetch_credentials() {
-    info "Fetching credentials and TLS setting from Vault..."
+  info "Fetching credentials and TLS setting from Vault..."
 
-    local response=$(curl -sf \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null)
+  local response=$(curl -sf \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    # Parse JSON using grep/sed (no jq required)
-    export MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-    export MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-    export MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+  # Parse JSON using grep/sed (no jq required)
+  export MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
+  export MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  export MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
 
-    # Extract tls_enabled (default to false if not present)
-    local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
-    export ENABLE_TLS="${tls_value:-false}"
+  # Extract tls_enabled (default to false if not present)
+  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  export ENABLE_TLS="${tls_value:-false}"
 
-    if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then
-        error "Invalid credentials received from Vault"
-    fi
+  if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then
+    error "Invalid credentials received from Vault"
+  fi
 
-    success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
+  success "Credentials fetched successfully (tls_enabled=$ENABLE_TLS)"
 }
 
 #######################################
@@ -292,24 +295,24 @@ fetch_credentials() {
 #   - Exits with error if TLS enabled but certificates unavailable
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    info "Validating pre-generated TLS certificates..."
+  info "Validating pre-generated TLS certificates..."
 
-    # Check if certificates exist and are readable
-    # MongoDB requires the combined cert+key file
-    if [ ! -f "$CERT_DIR/mongodb.pem" ] || [ ! -r "$CERT_DIR/mongodb.pem" ]; then
-        error "TLS enabled but mongodb.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  # Check if certificates exist and are readable
+  # MongoDB requires the combined cert+key file
+  if [ ! -f "$CERT_DIR/mongodb.pem" ] || [ ! -r "$CERT_DIR/mongodb.pem" ]; then
+    error "TLS enabled but mongodb.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
-        error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/ca.pem" ] || [ ! -r "$CERT_DIR/ca.pem" ]; then
+    error "TLS enabled but ca.pem not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    success "TLS certificates validated (pre-generated)"
+  success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
@@ -334,15 +337,15 @@ validate_certificates() {
 #   - Creates configuration directory if it doesn't exist
 #######################################
 configure_tls() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    return 0
+  fi
 
-    info "Configuring MongoDB for TLS (dual-mode: accepts both SSL and non-SSL)..."
+  info "Configuring MongoDB for TLS (dual-mode: accepts both SSL and non-SSL)..."
 
-    # Create MongoDB SSL config directory and file
-    mkdir -p /etc/mongod.conf.d
-    cat > /etc/mongod.conf.d/ssl.conf <<EOF
+  # Create MongoDB SSL config directory and file
+  mkdir -p /etc/mongod.conf.d
+  cat > /etc/mongod.conf.d/ssl.conf << EOF
 # SSL/TLS Configuration (Dual-Mode)
 # Accepts both encrypted and unencrypted connections
 net:
@@ -353,7 +356,7 @@ net:
     allowConnectionsWithoutCertificates: true
 EOF
 
-    success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
+  success "TLS dual-mode configuration prepared (accepts both SSL and non-SSL connections)"
 }
 
 #######################################
@@ -385,48 +388,48 @@ EOF
 #     --tlsCAFile, --tlsAllowConnectionsWithoutCertificates
 #######################################
 main() {
-    info "Starting MongoDB initialization with Vault integration..."
-    info ""
+  info "Starting MongoDB initialization with Vault integration..."
+  info ""
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    # Install curl if needed
-    install_curl
+  # Install curl if needed
+  install_curl
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch credentials and TLS setting from Vault
-    fetch_credentials
+  # Fetch credentials and TLS setting from Vault
+  fetch_credentials
 
-    # Validate pre-generated certificates if TLS is enabled
-    validate_certificates
+  # Validate pre-generated certificates if TLS is enabled
+  validate_certificates
 
-    # Configure TLS if enabled
-    configure_tls
+  # Configure TLS if enabled
+  configure_tls
 
-    info ""
-    success "Initialization complete, starting MongoDB..."
-    info ""
+  info ""
+  success "Initialization complete, starting MongoDB..."
+  info ""
 
-    # Start MongoDB with the original docker-entrypoint
-    # Pass TLS configuration via command line if enabled
-    if [ "$ENABLE_TLS" = "true" ]; then
-        exec docker-entrypoint.sh "$@" \
-            --tlsMode preferTLS \
-            --tlsCertificateKeyFile "$CERT_DIR/mongodb.pem" \
-            --tlsCAFile "$CERT_DIR/ca.pem" \
-            --tlsAllowConnectionsWithoutCertificates
-    else
-        exec docker-entrypoint.sh "$@"
-    fi
+  # Start MongoDB with the original docker-entrypoint
+  # Pass TLS configuration via command line if enabled
+  if [ "$ENABLE_TLS" = "true" ]; then
+    exec docker-entrypoint.sh "$@" \
+      --tlsMode preferTLS \
+      --tlsCertificateKeyFile "$CERT_DIR/mongodb.pem" \
+      --tlsCAFile "$CERT_DIR/ca.pem" \
+      --tlsAllowConnectionsWithoutCertificates
+  else
+    exec docker-entrypoint.sh "$@"
+  fi
 }
 
 # Run main function

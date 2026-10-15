@@ -72,19 +72,19 @@ VAULT_KEYS_FILE="${VAULT_KEYS_FILE:-/vault-keys/keys.json}"
 #   - Silent operation except on timeout
 #######################################
 wait_for_vault() {
-    max_attempts=30
-    attempt=0
+  max_attempts=30
+  attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q "${VAULT_ADDR}/v1/sys/health?uninitcode=200&sealedcode=200" 2>/dev/null; then
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 1
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q "${VAULT_ADDR}/v1/sys/health?uninitcode=200&sealedcode=200" 2> /dev/null; then
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
 
-    echo "ERROR: Vault did not become ready"
-    return 1
+  echo "ERROR: Vault did not become ready"
+  return 1
 }
 
 #######################################
@@ -103,8 +103,8 @@ wait_for_vault() {
 #   - Uses wget for BusyBox compatibility instead of curl
 #######################################
 is_sealed() {
-    status=$(wget -qO- "${VAULT_ADDR}/v1/sys/seal-status" 2>/dev/null | grep -o '"sealed":[^,}]*' | cut -d':' -f2)
-    [ "$status" = "true" ]
+  status=$(wget -qO- "${VAULT_ADDR}/v1/sys/seal-status" 2> /dev/null | grep -o '"sealed":[^,}]*' | cut -d':' -f2)
+  [ "$status" = "true" ]
 }
 
 #######################################
@@ -129,42 +129,42 @@ is_sealed() {
 #   - Returns error if Vault not initialized or keys invalid
 #######################################
 unseal_vault() {
-    if [ ! -f "$VAULT_KEYS_FILE" ]; then
-        echo "INFO: Unseal keys file not found: $VAULT_KEYS_FILE"
-        echo "INFO: Vault needs to be initialized first"
-        return 1
+  if [ ! -f "$VAULT_KEYS_FILE" ]; then
+    echo "INFO: Unseal keys file not found: $VAULT_KEYS_FILE"
+    echo "INFO: Vault needs to be initialized first"
+    return 1
+  fi
+
+  echo "INFO: Unsealing Vault..."
+
+  # Extract unseal keys (we need 3 out of 5)
+  keys=$(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3)
+
+  count=$(echo "$keys" | wc -l)
+  if [ "$count" -lt 3 ]; then
+    echo "ERROR: Could not extract enough unseal keys from $VAULT_KEYS_FILE"
+    return 1
+  fi
+
+  # Unseal with first 3 keys
+  echo "$keys" | while read -r key; do
+    if [ -n "$key" ]; then
+      wget -qO- --header='Content-Type: application/json' \
+        --post-data="{\"key\": \"$key\"}" \
+        "${VAULT_ADDR}/v1/sys/unseal" > /dev/null
     fi
+  done
 
-    echo "INFO: Unsealing Vault..."
+  # Wait a moment for unseal to complete
+  sleep 1
 
-    # Extract unseal keys (we need 3 out of 5)
-    keys=$(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3)
+  if is_sealed; then
+    echo "ERROR: Failed to unseal Vault"
+    return 1
+  fi
 
-    count=$(echo "$keys" | wc -l)
-    if [ "$count" -lt 3 ]; then
-        echo "ERROR: Could not extract enough unseal keys from $VAULT_KEYS_FILE"
-        return 1
-    fi
-
-    # Unseal with first 3 keys
-    echo "$keys" | while read -r key; do
-        if [ -n "$key" ]; then
-            wget -qO- --header='Content-Type: application/json' \
-                --post-data="{\"key\": \"$key\"}" \
-                "${VAULT_ADDR}/v1/sys/unseal" > /dev/null
-        fi
-    done
-
-    # Wait a moment for unseal to complete
-    sleep 1
-
-    if is_sealed; then
-        echo "ERROR: Failed to unseal Vault"
-        return 1
-    fi
-
-    echo "SUCCESS: Vault unsealed successfully"
-    return 0
+  echo "SUCCESS: Vault unsealed successfully"
+  return 0
 }
 
 #######################################
@@ -188,31 +188,31 @@ unseal_vault() {
 #   - For continuous monitoring, use a proper init system or supervisor
 #######################################
 main() {
-    echo "Starting Vault auto-unseal..."
+  echo "Starting Vault auto-unseal..."
 
-    # Wait for Vault to be ready
-    if ! wait_for_vault; then
-        echo "ERROR: Vault not ready, exiting"
-        exit 1
-    fi
+  # Wait for Vault to be ready
+  if ! wait_for_vault; then
+    echo "ERROR: Vault not ready, exiting"
+    exit 1
+  fi
 
-    echo "Vault is ready"
+  echo "Vault is ready"
 
-    # Check and unseal if needed
-    if is_sealed; then
-        echo "Vault is sealed, attempting to unseal..."
-        unseal_vault || exit 1
-    else
-        echo "Vault is already unsealed"
-    fi
+  # Check and unseal if needed
+  if is_sealed; then
+    echo "Vault is sealed, attempting to unseal..."
+    unseal_vault || exit 1
+  else
+    echo "Vault is already unsealed"
+  fi
 
-    echo "Auto-unseal complete, keeping process alive..."
+  echo "Auto-unseal complete, keeping process alive..."
 
-    # Keep process alive but do nothing (minimal CPU usage)
-    # This prevents container from exiting
-    while true; do
-        sleep 3600
-    done
+  # Keep process alive but do nothing (minimal CPU usage)
+  # This prevents container from exiting
+  while true; do
+    sleep 3600
+  done
 }
 
 main "$@"

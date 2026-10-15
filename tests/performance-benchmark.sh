@@ -36,8 +36,8 @@ benchmark_endpoint() {
   local url=$2
 
   # Warmup
-  for ((i=1; i<=$WARMUP; i++)); do
-    curl -s -o /dev/null "$url" 2>/dev/null || true
+  for ((i = 1; i <= $WARMUP; i++)); do
+    curl -s -o /dev/null "$url" 2> /dev/null || true
   done
 
   # Benchmark
@@ -45,11 +45,11 @@ benchmark_endpoint() {
   local successful=0
   local failed=0
 
-  for ((i=1; i<=$ITERATIONS; i++)); do
-    local start=$(date +%s%N 2>/dev/null || gdate +%s%N)
-    if curl -s -f -o /dev/null "$url" 2>/dev/null; then
-      local end=$(date +%s%N 2>/dev/null || gdate +%s%N)
-      local duration=$(( (end - start) / 1000000 ))  # Convert to ms
+  for ((i = 1; i <= $ITERATIONS; i++)); do
+    local start=$(date +%s%N 2> /dev/null || gdate +%s%N)
+    if curl -s -f -o /dev/null "$url" 2> /dev/null; then
+      local end=$(date +%s%N 2> /dev/null || gdate +%s%N)
+      local duration=$(((end - start) / 1000000)) # Convert to ms
       total_time=$((total_time + duration))
       ((successful++))
     else

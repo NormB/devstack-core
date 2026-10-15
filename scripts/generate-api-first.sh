@@ -51,9 +51,9 @@
 #     - yq (for YAML validation)
 #
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
-set -o pipefail  # Exit if any command in pipe fails
+set -e          # Exit on error
+set -u          # Exit on undefined variable
+set -o pipefail # Exit if any command in pipe fails
 
 #######################################
 # Configuration and Constants
@@ -78,7 +78,7 @@ readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
-readonly NC='\033[0m'  # No Color
+readonly NC='\033[0m' # No Color
 
 #######################################
 # Print informational message to stdout.
@@ -97,7 +97,7 @@ readonly NC='\033[0m'  # No Color
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -117,7 +117,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -138,8 +138,8 @@ success() {
 #   Writes formatted error message to stderr
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-    exit "${2:-1}"
+  echo -e "${RED}[ERROR]${NC} $1" >&2
+  exit "${2:-1}"
 }
 
 #######################################
@@ -159,7 +159,7 @@ error() {
 #   Writes formatted warning message to stdout
 #######################################
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+  echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 #######################################
@@ -188,42 +188,42 @@ warn() {
 #   fi
 #######################################
 validate_openapi_spec() {
-    info "Validating OpenAPI specification..."
+  info "Validating OpenAPI specification..."
 
-    # Check if file exists
-    if [ ! -f "$OPENAPI_SPEC" ]; then
-        error "OpenAPI spec not found: $OPENAPI_SPEC"
-        return 1
-    fi
+  # Check if file exists
+  if [ ! -f "$OPENAPI_SPEC" ]; then
+    error "OpenAPI spec not found: $OPENAPI_SPEC"
+    return 1
+  fi
 
-    # Validate YAML syntax
-    if ! yq eval . "$OPENAPI_SPEC" >/dev/null 2>&1; then
-        error "Invalid YAML syntax in $OPENAPI_SPEC"
-        return 1
-    fi
+  # Validate YAML syntax
+  if ! yq eval . "$OPENAPI_SPEC" > /dev/null 2>&1; then
+    error "Invalid YAML syntax in $OPENAPI_SPEC"
+    return 1
+  fi
 
-    # Check OpenAPI version
-    local openapi_version=$(yq eval '.openapi' "$OPENAPI_SPEC")
-    if [[ ! "$openapi_version" =~ ^3\. ]]; then
-        error "Unsupported OpenAPI version: $openapi_version (requires 3.x)"
-        return 1
-    fi
+  # Check OpenAPI version
+  local openapi_version=$(yq eval '.openapi' "$OPENAPI_SPEC")
+  if [[ ! "$openapi_version" =~ ^3\. ]]; then
+    error "Unsupported OpenAPI version: $openapi_version (requires 3.x)"
+    return 1
+  fi
 
-    # Check required fields
-    local title=$(yq eval '.info.title' "$OPENAPI_SPEC")
-    local paths_count=$(yq eval '.paths | length' "$OPENAPI_SPEC")
+  # Check required fields
+  local title=$(yq eval '.info.title' "$OPENAPI_SPEC")
+  local paths_count=$(yq eval '.paths | length' "$OPENAPI_SPEC")
 
-    if [ "$title" == "null" ]; then
-        error "OpenAPI spec missing required field: info.title"
-        return 1
-    fi
+  if [ "$title" == "null" ]; then
+    error "OpenAPI spec missing required field: info.title"
+    return 1
+  fi
 
-    if [ "$paths_count" == "0" ]; then
-        warn "OpenAPI spec has no paths defined"
-    fi
+  if [ "$paths_count" == "0" ]; then
+    warn "OpenAPI spec has no paths defined"
+  fi
 
-    success "OpenAPI spec is valid (version: $openapi_version, paths: $paths_count)"
-    return 0
+  success "OpenAPI spec is valid (version: $openapi_version, paths: $paths_count)"
+  return 0
 }
 
 #######################################
@@ -248,40 +248,40 @@ validate_openapi_spec() {
 #   Error messages for missing tools
 #######################################
 check_prerequisites() {
-    info "Checking prerequisites..."
+  info "Checking prerequisites..."
 
-    # Check Python
-    if ! command -v python3 &> /dev/null; then
-        error "python3 is not installed. Please install Python 3.11+"
+  # Check Python
+  if ! command -v python3 &> /dev/null; then
+    error "python3 is not installed. Please install Python 3.11+"
+  fi
+
+  local python_version=$(python3 --version | awk '{print $2}')
+  info "Found Python $python_version"
+
+  # Check yq
+  if ! command -v yq &> /dev/null; then
+    error "yq is not installed. Please install it first."
+  fi
+
+  # Check if datamodel-code-generator is available via pipx or pip
+  if ! command -v datamodel-codegen &> /dev/null &&
+    ! python3 -c "import datamodel_code_generator" 2> /dev/null; then
+    warn "datamodel-code-generator not found"
+
+    # Try pipx first (recommended for externally-managed Python)
+    if command -v pipx &> /dev/null; then
+      info "Installing datamodel-code-generator via pipx..."
+      pipx install "datamodel-code-generator[http]>=0.25.0" ||
+        error "Failed to install datamodel-code-generator via pipx"
+    else
+      info "Installing datamodel-code-generator (may require --break-system-packages)..."
+      pip3 install --break-system-packages -q "datamodel-code-generator[http]>=0.25.0" ||
+        error "Failed to install datamodel-code-generator. Try: brew install pipx && pipx install datamodel-code-generator"
     fi
+  fi
 
-    local python_version=$(python3 --version | awk '{print $2}')
-    info "Found Python $python_version"
-
-    # Check yq
-    if ! command -v yq &> /dev/null; then
-        error "yq is not installed. Please install it first."
-    fi
-
-    # Check if datamodel-code-generator is available via pipx or pip
-    if ! command -v datamodel-codegen &> /dev/null && \
-       ! python3 -c "import datamodel_code_generator" 2>/dev/null; then
-        warn "datamodel-code-generator not found"
-
-        # Try pipx first (recommended for externally-managed Python)
-        if command -v pipx &> /dev/null; then
-            info "Installing datamodel-code-generator via pipx..."
-            pipx install "datamodel-code-generator[http]>=0.25.0" || \
-                error "Failed to install datamodel-code-generator via pipx"
-        else
-            info "Installing datamodel-code-generator (may require --break-system-packages)..."
-            pip3 install --break-system-packages -q "datamodel-code-generator[http]>=0.25.0" || \
-                error "Failed to install datamodel-code-generator. Try: brew install pipx && pipx install datamodel-code-generator"
-        fi
-    fi
-
-    success "All prerequisites met"
-    return 0
+  success "All prerequisites met"
+  return 0
 }
 
 #######################################
@@ -304,19 +304,19 @@ check_prerequisites() {
 #   Progress messages to stdout
 #######################################
 clean_output_dir() {
-    if [ "$CLEAN" != "true" ]; then
-        return 0
-    fi
-
-    info "Cleaning output directory..."
-
-    if [ -d "$OUTPUT_DIR/app/models" ]; then
-        rm -rf "$OUTPUT_DIR/app/models"
-        info "Removed generated models"
-    fi
-
-    success "Output directory cleaned"
+  if [ "$CLEAN" != "true" ]; then
     return 0
+  fi
+
+  info "Cleaning output directory..."
+
+  if [ -d "$OUTPUT_DIR/app/models" ]; then
+    rm -rf "$OUTPUT_DIR/app/models"
+    info "Removed generated models"
+  fi
+
+  success "Output directory cleaned"
+  return 0
 }
 
 #######################################
@@ -341,32 +341,32 @@ clean_output_dir() {
 #   Progress messages to stdout
 #######################################
 generate_models() {
-    info "Generating Pydantic models from OpenAPI schemas..."
+  info "Generating Pydantic models from OpenAPI schemas..."
 
-    local models_dir="$OUTPUT_DIR/app/models"
-    mkdir -p "$models_dir"
+  local models_dir="$OUTPUT_DIR/app/models"
+  mkdir -p "$models_dir"
 
-    # Generate models using datamodel-code-generator
-    datamodel-codegen \
-        --input "$OPENAPI_SPEC" \
-        --input-file-type openapi \
-        --output "$models_dir/generated.py" \
-        --use-standard-collections \
-        --use-schema-description \
-        --target-python-version 3.11 \
-        --field-constraints \
-        --use-annotated \
-        --collapse-root-models \
-        --enable-faux-immutability \
-        2>&1 || error "Failed to generate models"
+  # Generate models using datamodel-code-generator
+  datamodel-codegen \
+    --input "$OPENAPI_SPEC" \
+    --input-file-type openapi \
+    --output "$models_dir/generated.py" \
+    --use-standard-collections \
+    --use-schema-description \
+    --target-python-version 3.11 \
+    --field-constraints \
+    --use-annotated \
+    --collapse-root-models \
+    --enable-faux-immutability \
+    2>&1 || error "Failed to generate models"
 
-    # Create __init__.py
-    echo '"""Generated Pydantic models from OpenAPI specification."""' > "$models_dir/__init__.py"
+  # Create __init__.py
+  echo '"""Generated Pydantic models from OpenAPI specification."""' > "$models_dir/__init__.py"
 
-    local model_count=$(grep -c "^class " "$models_dir/generated.py" || echo "0")
-    success "Generated $model_count Pydantic models"
+  local model_count=$(grep -c "^class " "$models_dir/generated.py" || echo "0")
+  success "Generated $model_count Pydantic models"
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -392,28 +392,28 @@ generate_models() {
 #   Progress messages to stdout
 #######################################
 generate_routers() {
-    info "Generating FastAPI router stubs..."
+  info "Generating FastAPI router stubs..."
 
-    local routers_dir="$OUTPUT_DIR/app/routers"
-    mkdir -p "$routers_dir"
+  local routers_dir="$OUTPUT_DIR/app/routers"
+  mkdir -p "$routers_dir"
 
-    # Extract tags from OpenAPI spec
-    local tags=$(yq eval '.tags[].name' "$OPENAPI_SPEC" | sort -u)
+  # Extract tags from OpenAPI spec
+  local tags=$(yq eval '.tags[].name' "$OPENAPI_SPEC" | sort -u)
 
-    # Create router stub for each tag
-    while IFS= read -r tag; do
-        if [ -z "$tag" ] || [ "$tag" == "null" ]; then
-            continue
-        fi
+  # Create router stub for each tag
+  while IFS= read -r tag; do
+    if [ -z "$tag" ] || [ "$tag" == "null" ]; then
+      continue
+    fi
 
-        # Convert tag to valid Python module name (lowercase, replace spaces with underscores)
-        local router_name=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_')
-        local router_file="$routers_dir/${router_name}.py"
+    # Convert tag to valid Python module name (lowercase, replace spaces with underscores)
+    local router_name=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_')
+    local router_file="$routers_dir/${router_name}.py"
 
-        info "  Creating router: $router_name"
+    info "  Creating router: $router_name"
 
-        # Create router file with stub
-        cat > "$router_file" << EOF
+    # Create router file with stub
+    cat > "$router_file" << EOF
 """
 ${tag} Router
 
@@ -433,15 +433,15 @@ router = APIRouter(
 # Add your endpoint implementations here
 EOF
 
-    done <<< "$tags"
+  done <<< "$tags"
 
-    # Create __init__.py
-    echo '"""API routers generated from OpenAPI specification."""' > "$routers_dir/__init__.py"
+  # Create __init__.py
+  echo '"""API routers generated from OpenAPI specification."""' > "$routers_dir/__init__.py"
 
-    local router_count=$(ls -1 "$routers_dir"/*.py 2>/dev/null | grep -v __init__ | wc -l || echo "0")
-    success "Generated $router_count router stubs"
+  local router_count=$(ls -1 "$routers_dir"/*.py 2> /dev/null | grep -v __init__ | wc -l || echo "0")
+  success "Generated $router_count router stubs"
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -469,16 +469,16 @@ EOF
 #   Progress messages to stdout
 #######################################
 generate_main_app() {
-    info "Generating main FastAPI application..."
+  info "Generating main FastAPI application..."
 
-    local app_file="$OUTPUT_DIR/app/main.py"
+  local app_file="$OUTPUT_DIR/app/main.py"
 
-    # Extract API metadata from spec
-    local api_title=$(yq eval '.info.title' "$OPENAPI_SPEC")
-    local api_version=$(yq eval '.info.version' "$OPENAPI_SPEC")
-    local api_description=$(yq eval '.info.description' "$OPENAPI_SPEC")
+  # Extract API metadata from spec
+  local api_title=$(yq eval '.info.title' "$OPENAPI_SPEC")
+  local api_version=$(yq eval '.info.version' "$OPENAPI_SPEC")
+  local api_description=$(yq eval '.info.description' "$OPENAPI_SPEC")
 
-    cat > "$app_file" << 'EOF'
+  cat > "$app_file" << 'EOF'
 """
 Main FastAPI Application (API-First Implementation)
 
@@ -551,8 +551,8 @@ async def health_check():
     return {"status": "healthy", "implementation": "api-first"}
 EOF
 
-    success "Generated main application file"
-    return 0
+  success "Generated main application file"
+  return 0
 }
 
 #######################################
@@ -578,10 +578,10 @@ EOF
 #   Progress messages to stdout
 #######################################
 generate_config_files() {
-    info "Generating project configuration files..."
+  info "Generating project configuration files..."
 
-    # Generate requirements.txt
-    cat > "$OUTPUT_DIR/requirements.txt" << 'EOF'
+  # Generate requirements.txt
+  cat > "$OUTPUT_DIR/requirements.txt" << 'EOF'
 # API-First Implementation Dependencies
 # Generated from OpenAPI specification
 
@@ -609,8 +609,8 @@ pytest-asyncio==0.24.0
 httpx==0.28.0
 EOF
 
-    # Generate minimal README
-    cat > "$OUTPUT_DIR/README.md" << 'EOF'
+  # Generate minimal README
+  cat > "$OUTPUT_DIR/README.md" << 'EOF'
 # API-First FastAPI Implementation
 
 This implementation is **generated from the OpenAPI specification** in
@@ -658,8 +658,8 @@ See `reference-apps/API_PATTERNS.md` for details on how this implementation
 is kept synchronized with the code-first implementation.
 EOF
 
-    # Generate pytest.ini
-    cat > "$OUTPUT_DIR/pytest.ini" << 'EOF'
+  # Generate pytest.ini
+  cat > "$OUTPUT_DIR/pytest.ini" << 'EOF'
 [pytest]
 testpaths = tests
 python_files = test_*.py
@@ -668,15 +668,15 @@ python_functions = test_*
 asyncio_mode = auto
 EOF
 
-    # Create empty __init__.py files
-    touch "$OUTPUT_DIR/app/__init__.py"
-    touch "$OUTPUT_DIR/app/routers/__init__.py"
-    touch "$OUTPUT_DIR/app/services/__init__.py"
-    touch "$OUTPUT_DIR/app/models/__init__.py"
-    touch "$OUTPUT_DIR/tests/__init__.py"
+  # Create empty __init__.py files
+  touch "$OUTPUT_DIR/app/__init__.py"
+  touch "$OUTPUT_DIR/app/routers/__init__.py"
+  touch "$OUTPUT_DIR/app/services/__init__.py"
+  touch "$OUTPUT_DIR/app/models/__init__.py"
+  touch "$OUTPUT_DIR/tests/__init__.py"
 
-    success "Generated project configuration files"
-    return 0
+  success "Generated project configuration files"
+  return 0
 }
 
 #######################################
@@ -698,27 +698,27 @@ EOF
 #   Summary information to stdout
 #######################################
 display_summary() {
-    info "Generation Summary:"
+  info "Generation Summary:"
 
-    echo "  Specification: $OPENAPI_SPEC"
-    echo "  Output Directory: $OUTPUT_DIR"
-    echo ""
-    echo "  Generated Files:"
-    echo "    - Pydantic models: app/models/generated.py"
-    echo "    - Router stubs: app/routers/*.py"
-    echo "    - Main application: app/main.py"
-    echo "    - Configuration: requirements.txt, README.md, pytest.ini"
-    echo ""
-    echo "  Next Steps:"
-    echo "    1. Review generated code in $OUTPUT_DIR"
-    echo "    2. Implement business logic in router files"
-    echo "    3. Add service layer implementations"
-    echo "    4. Run: cd $OUTPUT_DIR && pip install -r requirements.txt"
-    echo "    5. Run: uvicorn app.main:app --port 8001 --reload"
-    echo "    6. Test: pytest tests/"
-    echo ""
+  echo "  Specification: $OPENAPI_SPEC"
+  echo "  Output Directory: $OUTPUT_DIR"
+  echo ""
+  echo "  Generated Files:"
+  echo "    - Pydantic models: app/models/generated.py"
+  echo "    - Router stubs: app/routers/*.py"
+  echo "    - Main application: app/main.py"
+  echo "    - Configuration: requirements.txt, README.md, pytest.ini"
+  echo ""
+  echo "  Next Steps:"
+  echo "    1. Review generated code in $OUTPUT_DIR"
+  echo "    2. Implement business logic in router files"
+  echo "    3. Add service layer implementations"
+  echo "    4. Run: cd $OUTPUT_DIR && pip install -r requirements.txt"
+  echo "    5. Run: uvicorn app.main:app --port 8001 --reload"
+  echo "    6. Test: pytest tests/"
+  echo ""
 
-    return 0
+  return 0
 }
 
 #######################################
@@ -749,62 +749,62 @@ display_summary() {
 #   Progress messages and summary to stdout
 #######################################
 main() {
-    info "Starting API-First code generation..."
-    info "Specification: $OPENAPI_SPEC"
-    info "Output: $OUTPUT_DIR"
-    echo ""
+  info "Starting API-First code generation..."
+  info "Specification: $OPENAPI_SPEC"
+  info "Output: $OUTPUT_DIR"
+  echo ""
 
-    # Check prerequisites
-    check_prerequisites
+  # Check prerequisites
+  check_prerequisites
 
-    echo ""
+  echo ""
 
-    # Validate OpenAPI spec
-    if ! validate_openapi_spec; then
-        error "OpenAPI spec validation failed"
-    fi
+  # Validate OpenAPI spec
+  if ! validate_openapi_spec; then
+    error "OpenAPI spec validation failed"
+  fi
 
-    echo ""
+  echo ""
 
-    # Clean if requested
-    clean_output_dir
+  # Clean if requested
+  clean_output_dir
 
-    echo ""
+  echo ""
 
-    # Generate models
-    if ! generate_models; then
-        error "Model generation failed"
-    fi
+  # Generate models
+  if ! generate_models; then
+    error "Model generation failed"
+  fi
 
-    echo ""
+  echo ""
 
-    # Generate routers
-    if ! generate_routers; then
-        error "Router generation failed"
-    fi
+  # Generate routers
+  if ! generate_routers; then
+    error "Router generation failed"
+  fi
 
-    echo ""
+  echo ""
 
-    # Generate main app
-    if ! generate_main_app; then
-        error "Main app generation failed"
-    fi
+  # Generate main app
+  if ! generate_main_app; then
+    error "Main app generation failed"
+  fi
 
-    echo ""
+  echo ""
 
-    # Generate config files
-    if ! generate_config_files; then
-        error "Config file generation failed"
-    fi
+  # Generate config files
+  if ! generate_config_files; then
+    error "Config file generation failed"
+  fi
 
-    echo ""
+  echo ""
 
-    # Display summary
-    display_summary
+  # Display summary
+  display_summary
 
-    success "API-First code generation complete!"
+  success "API-First code generation complete!"
 
-    return 0
+  return 0
 }
 
 # Execute main function

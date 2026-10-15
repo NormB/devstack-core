@@ -65,7 +65,10 @@ readonly NC='\033[0m'
 #######################################
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit "${2:-1}"; }
+error() {
+  echo -e "${RED}[ERROR]${NC} $1" >&2
+  exit "${2:-1}"
+}
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
 #######################################
@@ -75,17 +78,17 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   0 - Backup created successfully
 #######################################
 create_backup() {
-    if [ "$BACKUP" != "true" ]; then
-        return 0
-    fi
+  if [ "$BACKUP" != "true" ]; then
+    return 0
+  fi
 
-    local backup_dir="${OUTPUT_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
-    info "Creating backup: $backup_dir"
+  local backup_dir="${OUTPUT_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+  info "Creating backup: $backup_dir"
 
-    if [ -d "$OUTPUT_DIR" ]; then
-        cp -r "$OUTPUT_DIR" "$backup_dir"
-        success "Backup created"
-    fi
+  if [ -d "$OUTPUT_DIR" ]; then
+    cp -r "$OUTPUT_DIR" "$backup_dir"
+    success "Backup created"
+  fi
 }
 
 #######################################
@@ -95,26 +98,26 @@ create_backup() {
 #   0 - Models regenerated successfully
 #######################################
 regenerate_models() {
-    info "Regenerating Pydantic models..."
+  info "Regenerating Pydantic models..."
 
-    local models_dir="${OUTPUT_DIR}/app/models"
+  local models_dir="${OUTPUT_DIR}/app/models"
 
-    # Regenerate generated.py
-    datamodel-codegen \
-        --input "$SHARED_SPEC" \
-        --input-file-type openapi \
-        --output "${models_dir}/generated.py" \
-        --use-standard-collections \
-        --use-schema-description \
-        --target-python-version 3.11 \
-        --field-constraints \
-        --use-annotated \
-        --collapse-root-models \
-        --enable-faux-immutability \
-        2>&1 || error "Failed to regenerate models"
+  # Regenerate generated.py
+  datamodel-codegen \
+    --input "$SHARED_SPEC" \
+    --input-file-type openapi \
+    --output "${models_dir}/generated.py" \
+    --use-standard-collections \
+    --use-schema-description \
+    --target-python-version 3.11 \
+    --field-constraints \
+    --use-annotated \
+    --collapse-root-models \
+    --enable-faux-immutability \
+    2>&1 || error "Failed to regenerate models"
 
-    local model_count=$(grep -c "^class " "${models_dir}/generated.py" || echo "0")
-    success "Regenerated $model_count Pydantic models"
+  local model_count=$(grep -c "^class " "${models_dir}/generated.py" || echo "0")
+  success "Regenerated $model_count Pydantic models"
 }
 
 #######################################
@@ -126,22 +129,22 @@ regenerate_models() {
 #   0 - Success
 #######################################
 check_main_app() {
-    info "Checking main application..."
+  info "Checking main application..."
 
-    local main_file="${OUTPUT_DIR}/app/main.py"
+  local main_file="${OUTPUT_DIR}/app/main.py"
 
-    if [ ! -f "$main_file" ]; then
-        warn "main.py not found - may need manual creation"
-        return 0
-    fi
+  if [ ! -f "$main_file" ]; then
+    warn "main.py not found - may need manual creation"
+    return 0
+  fi
 
-    # Extract routers from OpenAPI tags
-    local tags=$(yq eval '.tags[].name' "$SHARED_SPEC" | sort -u)
+  # Extract routers from OpenAPI tags
+  local tags=$(yq eval '.tags[].name' "$SHARED_SPEC" | sort -u)
 
-    info "Expected routers based on OpenAPI tags:"
-    echo "$tags" | sed 's/^/  - /'
+  info "Expected routers based on OpenAPI tags:"
+  echo "$tags" | sed 's/^/  - /'
 
-    success "Main application check complete"
+  success "Main application check complete"
 }
 
 #######################################
@@ -152,84 +155,84 @@ check_main_app() {
 #   1 - Validation failed
 #######################################
 validate_regeneration() {
-    info "Validating regenerated implementation..."
+  info "Validating regenerated implementation..."
 
-    # Check if models file exists
-    if [ ! -f "${OUTPUT_DIR}/app/models/generated.py" ]; then
-        error "Models file not generated"
-        return 1
+  # Check if models file exists
+  if [ ! -f "${OUTPUT_DIR}/app/models/generated.py" ]; then
+    error "Models file not generated"
+    return 1
+  fi
+
+  # Check if models file has content
+  if [ ! -s "${OUTPUT_DIR}/app/models/generated.py" ]; then
+    error "Models file is empty"
+    return 1
+  fi
+
+  # Try to parse Python files
+  if command -v python3 > /dev/null 2>&1; then
+    if ! python3 -m py_compile "${OUTPUT_DIR}/app/models/generated.py" 2> /dev/null; then
+      error "Generated models have syntax errors"
+      return 1
     fi
+  fi
 
-    # Check if models file has content
-    if [ ! -s "${OUTPUT_DIR}/app/models/generated.py" ]; then
-        error "Models file is empty"
-        return 1
-    fi
-
-    # Try to parse Python files
-    if command -v python3 >/dev/null 2>&1; then
-        if ! python3 -m py_compile "${OUTPUT_DIR}/app/models/generated.py" 2>/dev/null; then
-            error "Generated models have syntax errors"
-            return 1
-        fi
-    fi
-
-    success "Regenerated implementation is valid"
-    return 0
+  success "Regenerated implementation is valid"
+  return 0
 }
 
 #######################################
 # Main execution.
 #######################################
 main() {
-    info "Starting API-first regeneration..."
-    info "Spec: ${SHARED_SPEC}"
-    info "Output: ${OUTPUT_DIR}"
-    echo ""
+  info "Starting API-first regeneration..."
+  info "Spec: ${SHARED_SPEC}"
+  info "Output: ${OUTPUT_DIR}"
+  echo ""
 
-    # Verify shared spec exists
-    if [ ! -f "$SHARED_SPEC" ]; then
-        error "Shared OpenAPI spec not found: $SHARED_SPEC"
-    fi
+  # Verify shared spec exists
+  if [ ! -f "$SHARED_SPEC" ]; then
+    error "Shared OpenAPI spec not found: $SHARED_SPEC"
+  fi
 
-    # Verify output directory exists
-    if [ ! -d "$OUTPUT_DIR" ]; then
-        error "Output directory not found: $OUTPUT_DIR"
-    fi
+  # Verify output directory exists
+  if [ ! -d "$OUTPUT_DIR" ]; then
+    error "Output directory not found: $OUTPUT_DIR"
+  fi
 
-    # Check prerequisites
-    if ! command -v datamodel-codegen >/dev/null 2>&1; then
-        error "datamodel-code-generator not found. Install: pipx install datamodel-code-generator"
-    fi
+  # Check prerequisites
+  if ! command -v datamodel-codegen > /dev/null 2>&1; then
+    error "datamodel-code-generator not found. Install: pipx install datamodel-code-generator"
+  fi
 
-    if ! command -v yq >/dev/null 2>&1; then
-        error "yq not found. Install: brew install yq"
-    fi
+  if ! command -v yq > /dev/null 2>&1; then
+    error "yq not found. Install: brew install yq"
+  fi
 
-    # Create backup
-    create_backup
-    echo ""
+  # Create backup
+  create_backup
+  echo ""
 
-    # Regenerate models
-    regenerate_models
-    echo ""
+  # Regenerate models
+  regenerate_models
+  echo ""
 
-    # Check main app
-    check_main_app
-    echo ""
+  # Check main app
+  check_main_app
+  echo ""
 
-    # Validate
-    if ! validate_regeneration; then
-        error "Validation failed"
-    fi
+  # Validate
+  if ! validate_regeneration; then
+    error "Validation failed"
+  fi
 
-    echo ""
-    success "✓ API-first implementation regenerated successfully!"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Review changes: git diff ${OUTPUT_DIR}"
-    echo "  2. Run tests: make test-api-first"
-    echo "  3. Validate sync: make sync-check"
+  echo ""
+  success "✓ API-first implementation regenerated successfully!"
+  echo ""
+  echo "Next steps:"
+  echo "  1. Review changes: git diff ${OUTPUT_DIR}"
+  echo "  2. Run tests: make test-api-first"
+  echo "  3. Validate sync: make sync-check"
 }
 
 main "$@"

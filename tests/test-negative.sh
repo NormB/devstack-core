@@ -114,7 +114,7 @@ source "$SCRIPT_DIR/lib/common.sh"
 #   Exit code from the Python script
 ################################################################################
 run_python() {
-    (cd "$SCRIPT_DIR" && uv run python "$@")
+  (cd "$SCRIPT_DIR" && uv run python "$@")
 }
 
 # Test counters
@@ -150,23 +150,23 @@ declare -a FAILED_TESTS=()
 #   - This is a critical security validation test
 ################################################################################
 test_postgres_wrong_password() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 1: PostgreSQL rejects wrong password"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 1: PostgreSQL rejects wrong password"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to connect with wrong password (this should fail)
-    if PGPASSWORD="wrong_password" psql -h localhost -U dev_admin -d dev_database -c "SELECT 1" >/dev/null 2>&1; then
-        fail "Did not reject wrong password"
-        return 1
-    else
-        success "Correctly rejected wrong password"
-        return 0
-    fi
+  # Try to connect with wrong password (this should fail)
+  if PGPASSWORD="wrong_password" psql -h localhost -U dev_admin -d dev_database -c "SELECT 1" > /dev/null 2>&1; then
+    fail "Did not reject wrong password"
+    return 1
+  else
+    success "Correctly rejected wrong password"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -196,23 +196,23 @@ test_postgres_wrong_password() {
 #   - This is a critical security validation test
 ################################################################################
 test_mysql_wrong_password() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 2: MySQL rejects wrong password"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 2: MySQL rejects wrong password"
 
-    if ! is_container_running "dev-mysql"; then
-        warn "MySQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-mysql"; then
+    warn "MySQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to connect with wrong password (this should fail)
-    if mysql -h 127.0.0.1 -u dev_admin -pwrong_password -D dev_database -e "SELECT 1" >/dev/null 2>&1; then
-        fail "Did not reject wrong password"
-        return 1
-    else
-        success "Correctly rejected wrong password"
-        return 0
-    fi
+  # Try to connect with wrong password (this should fail)
+  if mysql -h 127.0.0.1 -u dev_admin -pwrong_password -D dev_database -e "SELECT 1" > /dev/null 2>&1; then
+    fail "Did not reject wrong password"
+    return 1
+  else
+    success "Correctly rejected wrong password"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -244,25 +244,25 @@ test_mysql_wrong_password() {
 #   - This is a critical security validation test
 ################################################################################
 test_mongodb_wrong_password() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 3: MongoDB rejects wrong password"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 3: MongoDB rejects wrong password"
 
-    if ! is_container_running "dev-mongodb"; then
-        warn "MongoDB container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-mongodb"; then
+    warn "MongoDB container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to connect with wrong password via docker exec (this should fail)
-    local result=$(docker exec dev-mongodb mongosh -u dev_admin -p wrong_password --authenticationDatabase admin --eval "db.version()" 2>&1)
+  # Try to connect with wrong password via docker exec (this should fail)
+  local result=$(docker exec dev-mongodb mongosh -u dev_admin -p wrong_password --authenticationDatabase admin --eval "db.version()" 2>&1)
 
-    if echo "$result" | grep -qE "(Authentication failed|auth.*failed)"; then
-        success "Correctly rejected wrong password"
-        return 0
-    else
-        fail "Did not reject wrong password"
-        return 1
-    fi
+  if echo "$result" | grep -qE "(Authentication failed|auth.*failed)"; then
+    success "Correctly rejected wrong password"
+    return 0
+  else
+    fail "Did not reject wrong password"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -294,25 +294,25 @@ test_mongodb_wrong_password() {
 #   - This is a critical security validation test
 ################################################################################
 test_redis_wrong_password() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 4: Redis rejects wrong password"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 4: Redis rejects wrong password"
 
-    if ! is_container_running "dev-redis-1"; then
-        warn "Redis container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-redis-1"; then
+    warn "Redis container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to connect with wrong password (this should fail)
-    local result=$(docker exec dev-redis-1 redis-cli -a "wrong_password" PING 2>&1)
+  # Try to connect with wrong password (this should fail)
+  local result=$(docker exec dev-redis-1 redis-cli -a "wrong_password" PING 2>&1)
 
-    if echo "$result" | grep -qE "(WRONGPASS|invalid password|Authentication failed)"; then
-        success "Correctly rejected wrong password"
-        return 0
-    else
-        fail "Did not reject wrong password"
-        return 1
-    fi
+  if echo "$result" | grep -qE "(WRONGPASS|invalid password|Authentication failed)"; then
+    success "Correctly rejected wrong password"
+    return 0
+  else
+    fail "Did not reject wrong password"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -343,23 +343,23 @@ test_redis_wrong_password() {
 #   - This is a critical security validation test
 ################################################################################
 test_rabbitmq_wrong_password() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 5: RabbitMQ rejects wrong password"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 5: RabbitMQ rejects wrong password"
 
-    if ! is_container_running "dev-rabbitmq"; then
-        warn "RabbitMQ container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-rabbitmq"; then
+    warn "RabbitMQ container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to connect with wrong password via management API (this should fail)
-    if curl -sf -u dev_admin:wrong_password http://localhost:15672/api/overview >/dev/null 2>&1; then
-        fail "Did not reject wrong password"
-        return 1
-    else
-        success "Correctly rejected wrong password"
-        return 0
-    fi
+  # Try to connect with wrong password via management API (this should fail)
+  if curl -sf -u dev_admin:wrong_password http://localhost:15672/api/overview > /dev/null 2>&1; then
+    fail "Did not reject wrong password"
+    return 1
+  else
+    success "Correctly rejected wrong password"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -390,19 +390,19 @@ test_rabbitmq_wrong_password() {
 #   - This is a critical security validation test
 ################################################################################
 test_vault_invalid_token() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 6: Vault rejects invalid token"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 6: Vault rejects invalid token"
 
-    local vault_addr="http://localhost:8200"
+  local vault_addr="http://localhost:8200"
 
-    # Try to access Vault with invalid token (this should fail)
-    if curl -sf -H "X-Vault-Token: invalid_token_12345" "$vault_addr/v1/secret/data/postgres" >/dev/null 2>&1; then
-        fail "Did not reject invalid token"
-        return 1
-    else
-        success "Correctly rejected invalid token"
-        return 0
-    fi
+  # Try to access Vault with invalid token (this should fail)
+  if curl -sf -H "X-Vault-Token: invalid_token_12345" "$vault_addr/v1/secret/data/postgres" > /dev/null 2>&1; then
+    fail "Did not reject invalid token"
+    return 1
+  else
+    success "Correctly rejected invalid token"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -433,31 +433,31 @@ test_vault_invalid_token() {
 #   - Success means database existence is properly validated
 ################################################################################
 test_nonexistent_database() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 7: PostgreSQL rejects connection to non-existent database"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 7: PostgreSQL rejects connection to non-existent database"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local password=$(get_password_from_vault "postgres")
+  local password=$(get_password_from_vault "postgres")
 
-    if [ -z "$password" ]; then
-        warn "Could not get password from Vault, skipping test"
-        success "Test skipped (no password)"
-        return 0
-    fi
+  if [ -z "$password" ]; then
+    warn "Could not get password from Vault, skipping test"
+    success "Test skipped (no password)"
+    return 0
+  fi
 
-    # Try to connect to non-existent database (this should fail)
-    if PGPASSWORD="$password" psql -h localhost -U dev_admin -d nonexistent_db -c "SELECT 1" >/dev/null 2>&1; then
-        fail "Did not reject connection to non-existent database"
-        return 1
-    else
-        success "Correctly rejected connection to non-existent database"
-        return 0
-    fi
+  # Try to connect to non-existent database (this should fail)
+  if PGPASSWORD="$password" psql -h localhost -U dev_admin -d nonexistent_db -c "SELECT 1" > /dev/null 2>&1; then
+    fail "Did not reject connection to non-existent database"
+    return 1
+  else
+    success "Correctly rejected connection to non-existent database"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -488,31 +488,31 @@ test_nonexistent_database() {
 #   - Success means query validation is working
 ################################################################################
 test_invalid_sql_query() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 8: PostgreSQL rejects invalid SQL syntax"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 8: PostgreSQL rejects invalid SQL syntax"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    local password=$(get_password_from_vault "postgres")
+  local password=$(get_password_from_vault "postgres")
 
-    if [ -z "$password" ]; then
-        warn "Could not get password from Vault, skipping test"
-        success "Test skipped (no password)"
-        return 0
-    fi
+  if [ -z "$password" ]; then
+    warn "Could not get password from Vault, skipping test"
+    success "Test skipped (no password)"
+    return 0
+  fi
 
-    # Try to execute invalid SQL (this should fail)
-    if PGPASSWORD="$password" psql -h localhost -U dev_admin -d dev_database -c "INVALID SQL SYNTAX HERE" >/dev/null 2>&1; then
-        fail "Did not reject invalid SQL syntax"
-        return 1
-    else
-        success "Correctly rejected invalid SQL syntax"
-        return 0
-    fi
+  # Try to execute invalid SQL (this should fail)
+  if PGPASSWORD="$password" psql -h localhost -U dev_admin -d dev_database -c "INVALID SQL SYNTAX HERE" > /dev/null 2>&1; then
+    fail "Did not reject invalid SQL syntax"
+    return 1
+  else
+    success "Correctly rejected invalid SQL syntax"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -545,40 +545,40 @@ test_invalid_sql_query() {
 #   - Success means at least one connection worked
 ################################################################################
 test_connection_limit() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 9: Database handles connection limit gracefully"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 9: Database handles connection limit gracefully"
 
-    if ! is_container_running "dev-postgres"; then
-        warn "PostgreSQL container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
+  if ! is_container_running "dev-postgres"; then
+    warn "PostgreSQL container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
+
+  # Try to open many connections (some may fail if limit is reached)
+  local pids=()
+  local max_connections=50
+
+  for i in $(seq 1 $max_connections); do
+    run_python lib/postgres_client.py --test connection > /dev/null 2>&1 &
+    pids+=($!)
+  done
+
+  # Wait for all to complete
+  local failed=0
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid" 2> /dev/null; then
+      failed=$((failed + 1))
     fi
+  done
 
-    # Try to open many connections (some may fail if limit is reached)
-    local pids=()
-    local max_connections=50
-
-    for i in $(seq 1 $max_connections); do
-        run_python lib/postgres_client.py --test connection >/dev/null 2>&1 &
-        pids+=($!)
-    done
-
-    # Wait for all to complete
-    local failed=0
-    for pid in "${pids[@]}"; do
-        if ! wait "$pid" 2>/dev/null; then
-            failed=$((failed + 1))
-        fi
-    done
-
-    # Some connections may fail due to limits, but we should handle it gracefully
-    if [ $failed -lt $max_connections ]; then
-        success "Handled $((max_connections - failed))/$max_connections connections ($failed hit limits)"
-        return 0
-    else
-        fail "All $max_connections connections failed"
-        return 1
-    fi
+  # Some connections may fail due to limits, but we should handle it gracefully
+  if [ $failed -lt $max_connections ]; then
+    success "Handled $((max_connections - failed))/$max_connections connections ($failed hit limits)"
+    return 0
+  else
+    fail "All $max_connections connections failed"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -609,27 +609,27 @@ test_connection_limit() {
 #   - Some APIs may have default behavior instead of explicit error
 ################################################################################
 test_api_invalid_parameters() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 10: FastAPI rejects invalid parameters"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 10: FastAPI rejects invalid parameters"
 
-    if ! is_container_running "dev-reference-api"; then
-        warn "FastAPI container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-reference-api"; then
+    warn "FastAPI container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Try to access non-existent node (this should return error)
-    local response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1)
+  # Try to access non-existent node (this should return error)
+  local response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1)
 
-    # This should fail or return an error response
-    if [ $? -ne 0 ] || echo "$response" | jq -e '.status == "error"' &>/dev/null; then
-        success "Correctly rejected invalid node parameter"
-        return 0
-    else
-        warn "API did not explicitly reject invalid parameter (may have default behavior)"
-        success "Test completed (no explicit rejection)"
-        return 0
-    fi
+  # This should fail or return an error response
+  if [ $? -ne 0 ] || echo "$response" | jq -e '.status == "error"' &> /dev/null; then
+    success "Correctly rejected invalid node parameter"
+    return 0
+  else
+    warn "API did not explicitly reject invalid parameter (may have default behavior)"
+    success "Test completed (no explicit rejection)"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -659,17 +659,17 @@ test_api_invalid_parameters() {
 #   - Success means failure detection is working
 ################################################################################
 test_vault_connection_failure() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 11: Services handle Vault unavailability"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 11: Services handle Vault unavailability"
 
-    # Try to connect to Vault on wrong port (this should fail)
-    if curl --max-time 2 -sf "http://localhost:9999/v1/sys/health" >/dev/null 2>&1; then
-        fail "Did not detect Vault connection failure"
-        return 1
-    else
-        success "Correctly handled Vault connection failure"
-        return 0
-    fi
+  # Try to connect to Vault on wrong port (this should fail)
+  if curl --max-time 2 -sf "http://localhost:9999/v1/sys/health" > /dev/null 2>&1; then
+    fail "Did not detect Vault connection failure"
+    return 1
+  else
+    success "Correctly handled Vault connection failure"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -700,33 +700,33 @@ test_vault_connection_failure() {
 #   - 4xx status codes indicate proper error handling
 ################################################################################
 test_api_invalid_json() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Negative Test 12: API rejects malformed JSON"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Negative Test 12: API rejects malformed JSON"
 
-    if ! is_container_running "dev-reference-api"; then
-        warn "FastAPI container not running, skipping test"
-        success "Test skipped (container not running)"
-        return 0
-    fi
+  if ! is_container_running "dev-reference-api"; then
+    warn "FastAPI container not running, skipping test"
+    success "Test skipped (container not running)"
+    return 0
+  fi
 
-    # Test with malformed JSON to cache endpoint (accepts POST)
-    # Use -w to capture HTTP status code, -o to suppress body output
-    local http_code=$(curl -s -o /dev/null -w "%{http_code}" \
-        -X POST -H "Content-Type: application/json" \
-        -d '{invalid json}' "http://localhost:8000/examples/cache/test-key")
+  # Test with malformed JSON to cache endpoint (accepts POST)
+  # Use -w to capture HTTP status code, -o to suppress body output
+  local http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST -H "Content-Type: application/json" \
+    -d '{invalid json}' "http://localhost:8000/examples/cache/test-key")
 
-    # Should return 4xx error (400 Bad Request, 422 Unprocessable Entity, etc.)
-    if [ "$http_code" -ge 400 ] && [ "$http_code" -lt 500 ]; then
-        success "Correctly rejected malformed JSON (HTTP $http_code)"
-        return 0
-    elif [ "$http_code" -eq 200 ]; then
-        fail "API accepted malformed JSON (HTTP 200)"
-        return 1
-    else
-        warn "Unexpected HTTP status code: $http_code"
-        success "Test completed with status $http_code"
-        return 0
-    fi
+  # Should return 4xx error (400 Bad Request, 422 Unprocessable Entity, etc.)
+  if [ "$http_code" -ge 400 ] && [ "$http_code" -lt 500 ]; then
+    success "Correctly rejected malformed JSON (HTTP $http_code)"
+    return 0
+  elif [ "$http_code" -eq 200 ]; then
+    fail "API accepted malformed JSON (HTTP 200)"
+    return 1
+  else
+    warn "Unexpected HTTP status code: $http_code"
+    success "Test completed with status $http_code"
+    return 0
+  fi
 }
 
 ################################################################################
@@ -768,30 +768,30 @@ test_api_invalid_json() {
 #   - Failed tests may indicate security vulnerabilities
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  Negative Test Suite"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  Negative Test Suite"
+  echo "========================================="
+  echo
 
-    test_suite_setup "Negative"
+  test_suite_setup "Negative"
 
-    test_postgres_wrong_password || true
-    test_mysql_wrong_password || true
-    test_mongodb_wrong_password || true
-    test_redis_wrong_password || true
-    test_rabbitmq_wrong_password || true
-    test_vault_invalid_token || true
-    test_nonexistent_database || true
-    test_invalid_sql_query || true
-    test_connection_limit || true
-    test_api_invalid_parameters || true
-    test_vault_connection_failure || true
-    test_api_invalid_json || true
+  test_postgres_wrong_password || true
+  test_mysql_wrong_password || true
+  test_mongodb_wrong_password || true
+  test_redis_wrong_password || true
+  test_rabbitmq_wrong_password || true
+  test_vault_invalid_token || true
+  test_nonexistent_database || true
+  test_invalid_sql_query || true
+  test_connection_limit || true
+  test_api_invalid_parameters || true
+  test_vault_connection_failure || true
+  test_api_invalid_json || true
 
-    print_test_results "Negative"
+  print_test_results "Negative"
 
-    test_suite_teardown
+  test_suite_teardown
 }
 
 # Main

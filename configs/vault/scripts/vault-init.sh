@@ -75,7 +75,7 @@ VAULT_ROOT_TOKEN_FILE="${HOME}/.config/vault/root-token"
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -90,7 +90,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -105,7 +105,7 @@ success() {
 #   Writes formatted warning message to stdout
 #######################################
 warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+  echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 #######################################
@@ -122,8 +122,8 @@ warning() {
 #   Always exits with status code 1
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    exit 1
+  echo -e "${RED}[ERROR]${NC} $1"
+  exit 1
 }
 
 #######################################
@@ -143,20 +143,20 @@ error() {
 #   - Exits script if Vault doesn't respond within timeout
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
-    local max_attempts=60
-    local attempt=0
+  info "Waiting for Vault to be ready..."
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "${VAULT_ADDR}/v1/sys/health?uninitcode=200&sealedcode=200" > /dev/null 2>&1; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 1
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "${VAULT_ADDR}/v1/sys/health?uninitcode=200&sealedcode=200" > /dev/null 2>&1; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -174,8 +174,8 @@ wait_for_vault() {
 #   Queries /v1/sys/init endpoint and parses initialized field
 #######################################
 is_initialized() {
-    local status=$(curl -sf "${VAULT_ADDR}/v1/sys/init" | grep -o '"initialized":[^,}]*' | cut -d':' -f2)
-    [ "$status" = "true" ]
+  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/init" | grep -o '"initialized":[^,}]*' | cut -d':' -f2)
+  [ "$status" = "true" ]
 }
 
 #######################################
@@ -198,26 +198,26 @@ is_initialized() {
 #   - WARNING: These files contain sensitive cryptographic material
 #######################################
 initialize_vault() {
-    info "Initializing Vault..."
+  info "Initializing Vault..."
 
-    # Initialize with 5 key shares and 3 key threshold
-    local init_output=$(curl -sf --request POST \
-        --data '{"secret_shares": 5, "secret_threshold": 3}' \
-        "${VAULT_ADDR}/v1/sys/init")
+  # Initialize with 5 key shares and 3 key threshold
+  local init_output=$(curl -sf --request POST \
+    --data '{"secret_shares": 5, "secret_threshold": 3}' \
+    "${VAULT_ADDR}/v1/sys/init")
 
-    # Save keys and root token
-    echo "$init_output" > "$VAULT_KEYS_FILE"
-    chmod 600 "$VAULT_KEYS_FILE"
+  # Save keys and root token
+  echo "$init_output" > "$VAULT_KEYS_FILE"
+  chmod 600 "$VAULT_KEYS_FILE"
 
-    # Extract root token
-    echo "$init_output" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4 > "$VAULT_ROOT_TOKEN_FILE"
-    chmod 600 "$VAULT_ROOT_TOKEN_FILE"
+  # Extract root token
+  echo "$init_output" | grep -o '"root_token":"[^"]*"' | cut -d'"' -f4 > "$VAULT_ROOT_TOKEN_FILE"
+  chmod 600 "$VAULT_ROOT_TOKEN_FILE"
 
-    success "Vault initialized successfully"
-    warning "Unseal keys and root token saved to:"
-    echo "  Keys: $VAULT_KEYS_FILE"
-    echo "  Root token: $VAULT_ROOT_TOKEN_FILE"
-    warning "Keep these files secure and backed up!"
+  success "Vault initialized successfully"
+  warning "Unseal keys and root token saved to:"
+  echo "  Keys: $VAULT_KEYS_FILE"
+  echo "  Root token: $VAULT_ROOT_TOKEN_FILE"
+  warning "Keep these files secure and backed up!"
 }
 
 #######################################
@@ -235,8 +235,8 @@ initialize_vault() {
 #   Queries /v1/sys/seal-status endpoint and parses sealed field
 #######################################
 is_sealed() {
-    local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status" | grep -o '"sealed":[^,}]*' | cut -d':' -f2)
-    [ "$status" = "true" ]
+  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status" | grep -o '"sealed":[^,}]*' | cut -d':' -f2)
+  [ "$status" = "true" ]
 }
 
 #######################################
@@ -259,36 +259,36 @@ is_sealed() {
 #   - Exits on error if keys file missing or unsealing fails
 #######################################
 unseal_vault() {
-    if ! is_sealed; then
-        success "Vault is already unsealed"
-        return 0
-    fi
+  if ! is_sealed; then
+    success "Vault is already unsealed"
+    return 0
+  fi
 
-    info "Unsealing Vault..."
+  info "Unsealing Vault..."
 
-    if [ ! -f "$VAULT_KEYS_FILE" ]; then
-        error "Unseal keys file not found: $VAULT_KEYS_FILE"
-    fi
+  if [ ! -f "$VAULT_KEYS_FILE" ]; then
+    error "Unseal keys file not found: $VAULT_KEYS_FILE"
+  fi
 
-    # Extract unseal keys (we need 3 out of 5)
-    local keys=($(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3))
+  # Extract unseal keys (we need 3 out of 5)
+  local keys=($(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3))
 
-    if [ ${#keys[@]} -lt 3 ]; then
-        error "Could not extract enough unseal keys from $VAULT_KEYS_FILE"
-    fi
+  if [ ${#keys[@]} -lt 3 ]; then
+    error "Could not extract enough unseal keys from $VAULT_KEYS_FILE"
+  fi
 
-    # Unseal with first 3 keys
-    for key in "${keys[@]:0:3}"; do
-        curl -sf --request POST \
-            --data "{\"key\": \"$key\"}" \
-            "${VAULT_ADDR}/v1/sys/unseal" > /dev/null
-    done
+  # Unseal with first 3 keys
+  for key in "${keys[@]:0:3}"; do
+    curl -sf --request POST \
+      --data "{\"key\": \"$key\"}" \
+      "${VAULT_ADDR}/v1/sys/unseal" > /dev/null
+  done
 
-    if is_sealed; then
-        error "Failed to unseal Vault"
-    fi
+  if is_sealed; then
+    error "Failed to unseal Vault"
+  fi
 
-    success "Vault unsealed successfully"
+  success "Vault unsealed successfully"
 }
 
 #######################################
@@ -308,16 +308,16 @@ unseal_vault() {
 #   - Displays root token and export command if token file exists
 #######################################
 show_status() {
-    info "Vault Status:"
-    local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status")
+  info "Vault Status:"
+  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status")
 
-    echo "$status" | python3 -m json.tool 2>/dev/null || echo "$status"
+  echo "$status" | python3 -m json.tool 2> /dev/null || echo "$status"
 
-    if [ -f "$VAULT_ROOT_TOKEN_FILE" ]; then
-        echo
-        info "Root Token: $(cat $VAULT_ROOT_TOKEN_FILE)"
-        warning "Use this token to authenticate: export VAULT_TOKEN=\$(cat $VAULT_ROOT_TOKEN_FILE)"
-    fi
+  if [ -f "$VAULT_ROOT_TOKEN_FILE" ]; then
+    echo
+    info "Root Token: $(cat $VAULT_ROOT_TOKEN_FILE)"
+    warning "Use this token to authenticate: export VAULT_TOKEN=\$(cat $VAULT_ROOT_TOKEN_FILE)"
+  fi
 }
 
 #######################################
@@ -339,33 +339,33 @@ show_status() {
 #   - Displays final status and access instructions
 #######################################
 main() {
-    echo
-    echo "===================================================================="
-    echo "  Vault Initialization and Unseal"
-    echo "===================================================================="
-    echo
+  echo
+  echo "===================================================================="
+  echo "  Vault Initialization and Unseal"
+  echo "===================================================================="
+  echo
 
-    # Wait for Vault to be ready
-    wait_for_vault
+  # Wait for Vault to be ready
+  wait_for_vault
 
-    # Check if initialized
-    if is_initialized; then
-        info "Vault is already initialized"
-    else
-        initialize_vault
-    fi
+  # Check if initialized
+  if is_initialized; then
+    info "Vault is already initialized"
+  else
+    initialize_vault
+  fi
 
-    # Unseal Vault
-    unseal_vault
+  # Unseal Vault
+  unseal_vault
 
-    echo
-    show_status
-    echo
-    success "Vault is ready to use!"
-    echo
-    info "Access Vault UI: ${VAULT_ADDR}/ui"
-    info "Use root token from: $VAULT_ROOT_TOKEN_FILE"
-    echo
+  echo
+  show_status
+  echo
+  success "Vault is ready to use!"
+  echo
+  info "Access Vault UI: ${VAULT_ADDR}/ui"
+  info "Use root token from: $VAULT_ROOT_TOKEN_FILE"
+  echo
 }
 
 # Run main function

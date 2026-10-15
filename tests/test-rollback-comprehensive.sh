@@ -26,12 +26,12 @@ echo -e "${BLUE}═════════════════════�
 echo ""
 
 cleanup() {
-    echo -e "${YELLOW}Cleaning up...${NC}"
-    rm -f "$ENV_FILE" 2>/dev/null || true
-    rm -f docker-compose.yml.bak 2>/dev/null || true
-    for service in "${SERVICES[@]}"; do
-        rm -f "configs/$service/scripts/init.sh.tmp" 2>/dev/null || true
-    done
+  echo -e "${YELLOW}Cleaning up...${NC}"
+  rm -f "$ENV_FILE" 2> /dev/null || true
+  rm -f docker-compose.yml.bak 2> /dev/null || true
+  for service in "${SERVICES[@]}"; do
+    rm -f "configs/$service/scripts/init.sh.tmp" 2> /dev/null || true
+  done
 }
 
 trap cleanup EXIT
@@ -44,30 +44,30 @@ echo -e "${CYAN}Phase 1: Verify Current State (AppRole)${NC}"
 echo ""
 
 for service in "${SERVICES[@]}"; do
-    echo -e "${BLUE}Checking $service...${NC}"
+  echo -e "${BLUE}Checking $service...${NC}"
 
-    # Check AppRole credentials exist
-    if [ ! -f "$HOME/.config/vault/approles/$service/role-id" ]; then
-        echo -e "${RED}✗ AppRole credentials not found for $service${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ AppRole credentials exist for $service${NC}"
+  # Check AppRole credentials exist
+  if [ ! -f "$HOME/.config/vault/approles/$service/role-id" ]; then
+    echo -e "${RED}✗ AppRole credentials not found for $service${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ AppRole credentials exist for $service${NC}"
 
-    # Check service is healthy
-    container="dev-$service"
-    if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
-        echo -e "${RED}✗ $service not healthy${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ $service is healthy${NC}"
+  # Check service is healthy
+  container="dev-$service"
+  if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
+    echo -e "${RED}✗ $service not healthy${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ $service is healthy${NC}"
 
-    # Check no VAULT_TOKEN in container
-    if docker exec "$container" env 2>/dev/null | grep -q "^VAULT_TOKEN="; then
-        echo -e "${RED}✗ VAULT_TOKEN found in $service (should not exist with AppRole)${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ No VAULT_TOKEN in $service (AppRole mode confirmed)${NC}"
-    echo ""
+  # Check no VAULT_TOKEN in container
+  if docker exec "$container" env 2> /dev/null | grep -q "^VAULT_TOKEN="; then
+    echo -e "${RED}✗ VAULT_TOKEN found in $service (should not exist with AppRole)${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ No VAULT_TOKEN in $service (AppRole mode confirmed)${NC}"
+  echo ""
 done
 
 ##############################################################################
@@ -85,8 +85,8 @@ echo -e "${GREEN}✓ Backed up docker-compose.yml${NC}"
 
 # Backup init-approle scripts
 for service in "${SERVICES[@]}"; do
-    cp "configs/$service/scripts/init-approle.sh" "$BACKUP_DIR/init-approle-$service.sh"
-    echo -e "${GREEN}✓ Backed up init-approle.sh for $service${NC}"
+  cp "configs/$service/scripts/init-approle.sh" "$BACKUP_DIR/init-approle-$service.sh"
+  echo -e "${GREEN}✓ Backed up init-approle.sh for $service${NC}"
 done
 
 echo ""
@@ -107,9 +107,9 @@ echo -e "${GREEN}✓ Services stopped${NC}"
 VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 
 for service in "${SERVICES[@]}"; do
-    echo -e "${BLUE}Creating root token init script for $service...${NC}"
+  echo -e "${BLUE}Creating root token init script for $service...${NC}"
 
-    cat > "configs/$service/scripts/init.sh" << 'EOFSCRIPT'
+  cat > "configs/$service/scripts/init.sh" << 'EOFSCRIPT'
 #!/bin/bash
 set -e
 
@@ -176,12 +176,12 @@ echo "[$SERVICE_NAME Init] Starting $SERVICE_NAME..."
 exec docker-entrypoint.sh "$@"
 EOFSCRIPT
 
-    # Replace placeholder with actual service name
-    sed -i.tmp "s/SERVICE_PLACEHOLDER/$service/g" "configs/$service/scripts/init.sh"
-    rm -f "configs/$service/scripts/init.sh.tmp"
+  # Replace placeholder with actual service name
+  sed -i.tmp "s/SERVICE_PLACEHOLDER/$service/g" "configs/$service/scripts/init.sh"
+  rm -f "configs/$service/scripts/init.sh.tmp"
 
-    chmod +x "configs/$service/scripts/init.sh"
-    echo -e "${GREEN}✓ Created init.sh for $service${NC}"
+  chmod +x "configs/$service/scripts/init.sh"
+  echo -e "${GREEN}✓ Created init.sh for $service${NC}"
 done
 
 # Modify docker-compose.yml for all services
@@ -189,22 +189,22 @@ echo "Modifying docker-compose.yml..."
 cp docker-compose.yml docker-compose.yml.bak
 
 for service in "${SERVICES[@]}"; do
-    # Change entrypoint
-    sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|entrypoint: \[\"/init/init-approle.sh\"\]|entrypoint: [\"/init/init.sh\"]|" docker-compose.yml
+  # Change entrypoint
+  sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|entrypoint: \[\"/init/init-approle.sh\"\]|entrypoint: [\"/init/init.sh\"]|" docker-compose.yml
 
-    # Change volume mount for init script
-    sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|./configs/$service/scripts/init-approle.sh:/init/init-approle.sh:ro|./configs/$service/scripts/init.sh:/init/init.sh:ro|" docker-compose.yml
+  # Change volume mount for init script
+  sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|./configs/$service/scripts/init-approle.sh:/init/init-approle.sh:ro|./configs/$service/scripts/init.sh:/init/init.sh:ro|" docker-compose.yml
 
-    # Remove AppRole volume mount
-    sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|.*vault/approles/$service:/vault-approles/$service:ro.*||" docker-compose.yml
+  # Remove AppRole volume mount
+  sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|.*vault/approles/$service:/vault-approles/$service:ro.*||" docker-compose.yml
 
-    # Remove VAULT_APPROLE_DIR
-    sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|.*VAULT_APPROLE_DIR:.*||" docker-compose.yml
+  # Remove VAULT_APPROLE_DIR
+  sed -i.tmp "/$service:/,/mysql:\\|mongodb:\\|redis-1:/ s|.*VAULT_APPROLE_DIR:.*||" docker-compose.yml
 done
 
 # Add VAULT_TOKEN to all services
 for service in "${SERVICES[@]}"; do
-    awk -v svc="$service" '
+  awk -v svc="$service" '
 /^  / && $1 == svc":" { in_service=1 }
 /^  [a-z]/ && $1 != svc":" { in_service=0 }
 in_service && /VAULT_ADDR:/ && !vault_token_added {
@@ -231,44 +231,44 @@ echo -e "${GREEN}✓ Created environment file with VAULT_TOKEN${NC}"
 # Start services with root token
 echo "Starting services with root token..."
 if ! docker compose --env-file "$ENV_FILE" up -d "${SERVICES[@]}" 2>&1 | tee /tmp/docker-start.log; then
-    echo -e "${RED}✗ Failed to start services${NC}"
-    cat /tmp/docker-start.log
-    echo "Restoring from backup..."
-    cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
-    for service in "${SERVICES[@]}"; do
-        cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$service/scripts/init-approle.sh"
-    done
-    docker compose up -d "${SERVICES[@]}"
-    exit 1
+  echo -e "${RED}✗ Failed to start services${NC}"
+  cat /tmp/docker-start.log
+  echo "Restoring from backup..."
+  cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+  for service in "${SERVICES[@]}"; do
+    cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$service/scripts/init-approle.sh"
+  done
+  docker compose up -d "${SERVICES[@]}"
+  exit 1
 fi
 
 # Wait for services to become healthy
 echo "Waiting for services to become healthy..."
 for service in "${SERVICES[@]}"; do
-    container="dev-$service"
-    echo -n "Waiting for $service..."
-    for i in {1..60}; do
-        if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
-            echo -e " ${GREEN}✓ healthy after ${i}s${NC}"
-            break
-        fi
-        sleep 1
-        echo -n "."
-    done
-
-    # Verify it's actually healthy
-    if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
-        echo -e "${RED}✗ $service did not become healthy${NC}"
-        echo "Container logs:"
-        docker logs "$container" 2>&1 | tail -50
-        echo "Restoring from backup..."
-        cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
-        for svc in "${SERVICES[@]}"; do
-            cp "$BACKUP_DIR/init-approle-$svc.sh" "configs/$svc/scripts/init-approle.sh"
-        done
-        docker compose up -d "${SERVICES[@]}"
-        exit 1
+  container="dev-$service"
+  echo -n "Waiting for $service..."
+  for i in {1..60}; do
+    if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
+      echo -e " ${GREEN}✓ healthy after ${i}s${NC}"
+      break
     fi
+    sleep 1
+    echo -n "."
+  done
+
+  # Verify it's actually healthy
+  if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
+    echo -e "${RED}✗ $service did not become healthy${NC}"
+    echo "Container logs:"
+    docker logs "$container" 2>&1 | tail -50
+    echo "Restoring from backup..."
+    cp "$BACKUP_DIR/docker-compose.yml" docker-compose.yml
+    for svc in "${SERVICES[@]}"; do
+      cp "$BACKUP_DIR/init-approle-$svc.sh" "configs/$svc/scripts/init-approle.sh"
+    done
+    docker compose up -d "${SERVICES[@]}"
+    exit 1
+  fi
 done
 
 echo ""
@@ -281,47 +281,47 @@ echo -e "${CYAN}Phase 4: Validate Root Token Authentication${NC}"
 echo ""
 
 for service in "${SERVICES[@]}"; do
-    container="dev-$service"
-    echo -e "${BLUE}Validating $service...${NC}"
+  container="dev-$service"
+  echo -e "${BLUE}Validating $service...${NC}"
 
-    # Check VAULT_TOKEN in container
-    if ! docker exec "$container" env | grep -q "^VAULT_TOKEN="; then
-        echo -e "${RED}✗ VAULT_TOKEN not found in $service${NC}"
+  # Check VAULT_TOKEN in container
+  if ! docker exec "$container" env | grep -q "^VAULT_TOKEN="; then
+    echo -e "${RED}✗ VAULT_TOKEN not found in $service${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ VAULT_TOKEN present in $service${NC}"
+
+  # Service-specific validation
+  case "$service" in
+    postgres)
+      if ! docker exec "$container" pg_isready -U devuser > /dev/null 2>&1; then
+        echo -e "${RED}✗ PostgreSQL not accepting connections${NC}"
         exit 1
-    fi
-    echo -e "${GREEN}✓ VAULT_TOKEN present in $service${NC}"
+      fi
+      echo -e "${GREEN}✓ PostgreSQL accepting connections${NC}"
 
-    # Service-specific validation
-    case "$service" in
-        postgres)
-            if ! docker exec "$container" pg_isready -U devuser > /dev/null 2>&1; then
-                echo -e "${RED}✗ PostgreSQL not accepting connections${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ PostgreSQL accepting connections${NC}"
-
-            if ! docker exec "$container" psql -U devuser -d devdb -c "SELECT 1" > /dev/null 2>&1; then
-                echo -e "${RED}✗ PostgreSQL query failed${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ PostgreSQL queries working${NC}"
-            ;;
-        mysql)
-            if ! docker exec "$container" mysqladmin ping -u devuser -p"$(docker exec -e VAULT_ADDR=http://localhost:8200 -e VAULT_TOKEN=$VAULT_TOKEN dev-vault vault kv get -field=password secret/mysql)" > /dev/null 2>&1; then
-                echo -e "${RED}✗ MySQL not accepting connections${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ MySQL accepting connections${NC}"
-            ;;
-        mongodb)
-            if ! docker exec "$container" mongosh --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
-                echo -e "${RED}✗ MongoDB not accepting connections${NC}"
-                exit 1
-            fi
-            echo -e "${GREEN}✓ MongoDB accepting connections${NC}"
-            ;;
-    esac
-    echo ""
+      if ! docker exec "$container" psql -U devuser -d devdb -c "SELECT 1" > /dev/null 2>&1; then
+        echo -e "${RED}✗ PostgreSQL query failed${NC}"
+        exit 1
+      fi
+      echo -e "${GREEN}✓ PostgreSQL queries working${NC}"
+      ;;
+    mysql)
+      if ! docker exec "$container" mysqladmin ping -u devuser -p"$(docker exec -e VAULT_ADDR=http://localhost:8200 -e VAULT_TOKEN=$VAULT_TOKEN dev-vault vault kv get -field=password secret/mysql)" > /dev/null 2>&1; then
+        echo -e "${RED}✗ MySQL not accepting connections${NC}"
+        exit 1
+      fi
+      echo -e "${GREEN}✓ MySQL accepting connections${NC}"
+      ;;
+    mongodb)
+      if ! docker exec "$container" mongosh --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; then
+        echo -e "${RED}✗ MongoDB not accepting connections${NC}"
+        exit 1
+      fi
+      echo -e "${GREEN}✓ MongoDB accepting connections${NC}"
+      ;;
+  esac
+  echo ""
 done
 
 ##############################################################################
@@ -342,8 +342,8 @@ echo -e "${GREEN}✓ Restored docker-compose.yml${NC}"
 
 # Restore init-approle scripts
 for service in "${SERVICES[@]}"; do
-    cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$service/scripts/init-approle.sh"
-    echo -e "${GREEN}✓ Restored init-approle.sh for $service${NC}"
+  cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$service/scripts/init-approle.sh"
+  echo -e "${GREEN}✓ Restored init-approle.sh for $service${NC}"
 done
 
 # Start services with AppRole
@@ -353,45 +353,45 @@ docker compose up -d "${SERVICES[@]}"
 # Wait for services to become healthy
 echo "Waiting for services to become healthy..."
 for service in "${SERVICES[@]}"; do
-    container="dev-$service"
-    echo -n "Waiting for $service..."
-    for i in {1..60}; do
-        if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
-            echo -e " ${GREEN}✓ healthy after ${i}s${NC}"
-            break
-        fi
-        sleep 1
-        echo -n "."
-    done
-
-    if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
-        echo -e "${RED}✗ $service did not become healthy after AppRole restoration${NC}"
-        docker logs "$container" 2>&1 | tail -50
-        exit 1
+  container="dev-$service"
+  echo -n "Waiting for $service..."
+  for i in {1..60}; do
+    if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
+      echo -e " ${GREEN}✓ healthy after ${i}s${NC}"
+      break
     fi
+    sleep 1
+    echo -n "."
+  done
+
+  if ! docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "healthy"; then
+    echo -e "${RED}✗ $service did not become healthy after AppRole restoration${NC}"
+    docker logs "$container" 2>&1 | tail -50
+    exit 1
+  fi
 done
 
 echo ""
 
 # Verify AppRole authentication
 for service in "${SERVICES[@]}"; do
-    container="dev-$service"
-    echo -e "${BLUE}Validating AppRole for $service...${NC}"
+  container="dev-$service"
+  echo -e "${BLUE}Validating AppRole for $service...${NC}"
 
-    # Verify no VAULT_TOKEN
-    if docker exec "$container" env 2>/dev/null | grep -q "^VAULT_TOKEN="; then
-        echo -e "${RED}✗ VAULT_TOKEN still present in $service (should be removed)${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ No VAULT_TOKEN in $service (AppRole restored)${NC}"
+  # Verify no VAULT_TOKEN
+  if docker exec "$container" env 2> /dev/null | grep -q "^VAULT_TOKEN="; then
+    echo -e "${RED}✗ VAULT_TOKEN still present in $service (should be removed)${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ No VAULT_TOKEN in $service (AppRole restored)${NC}"
 
-    # Verify AppRole credentials mounted
-    if ! docker exec "$container" test -f "/vault-approles/$service/role-id" 2>/dev/null; then
-        echo -e "${RED}✗ AppRole credentials not mounted in $service${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ AppRole credentials mounted in $service${NC}"
-    echo ""
+  # Verify AppRole credentials mounted
+  if ! docker exec "$container" test -f "/vault-approles/$service/role-id" 2> /dev/null; then
+    echo -e "${RED}✗ AppRole credentials not mounted in $service${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ AppRole credentials mounted in $service${NC}"
+  echo ""
 done
 
 ##############################################################################

@@ -22,75 +22,75 @@ echo -e "${BLUE}========================================${NC}"
 echo ""
 
 test_service() {
-    local service=$1
-    local container=$2
-    local test_name=$3
+  local service=$1
+  local container=$2
+  local test_name=$3
 
-    echo -e "${BLUE}Testing: $test_name${NC}"
+  echo -e "${BLUE}Testing: $test_name${NC}"
 
-    # Test 1: Check AppRole credentials exist on host
-    if [ -f "$HOME/.config/vault/approles/$service/role-id" ] && [ -f "$HOME/.config/vault/approles/$service/secret-id" ]; then
-        echo -e "  ${GREEN}✓${NC} AppRole credentials exist on host"
-        ((PASS++))
+  # Test 1: Check AppRole credentials exist on host
+  if [ -f "$HOME/.config/vault/approles/$service/role-id" ] && [ -f "$HOME/.config/vault/approles/$service/secret-id" ]; then
+    echo -e "  ${GREEN}✓${NC} AppRole credentials exist on host"
+    ((PASS++))
+  else
+    echo -e "  ${RED}✗${NC} AppRole credentials NOT found on host"
+    ((FAIL++))
+    return 1
+  fi
+
+  # Test 2: Check container is running
+  if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "Up"; then
+    echo -e "  ${GREEN}✓${NC} Container is running"
+    ((PASS++))
+  else
+    echo -e "  ${RED}✗${NC} Container is NOT running"
+    ((FAIL++))
+    return 1
+  fi
+
+  # Test 3: Check NO VAULT_TOKEN environment variable in container
+  if docker exec $container env 2> /dev/null | grep -q "^VAULT_TOKEN="; then
+    echo -e "  ${RED}✗${NC} VAULT_TOKEN found in container (should not exist!)"
+    ((FAIL++))
+    return 1
+  else
+    echo -e "  ${GREEN}✓${NC} No VAULT_TOKEN in container (AppRole required)"
+    ((PASS++))
+  fi
+
+  # Test 4: Check AppRole credentials are mounted in container
+  if docker exec $container test -f "/vault-approles/$service/role-id" 2> /dev/null; then
+    echo -e "  ${GREEN}✓${NC} AppRole credentials mounted in container"
+    ((PASS++))
+  else
+    echo -e "  ${RED}✗${NC} AppRole credentials NOT mounted in container"
+    ((FAIL++))
+    return 1
+  fi
+
+  # Test 5: Check logs for AppRole authentication success OR verify token type for Python apps
+  if docker logs $container 2>&1 | grep -q "AppRole authentication successful"; then
+    echo -e "  ${GREEN}✓${NC} AppRole authentication successful in logs"
+    ((PASS++))
+  elif [ "$container" = "dev-reference-api" ]; then
+    # For Python apps, verify the token type instead of log message
+    local token_prefix=$(docker exec $container python -c "from app.services.vault import vault_client; print(vault_client.vault_token[:10] if vault_client.vault_token else 'NONE')" 2> /dev/null)
+    if [[ "$token_prefix" == hvs.CAESIE* ]] || [[ "$token_prefix" == hvs.CAESI* ]]; then
+      echo -e "  ${GREEN}✓${NC} AppRole token verified (service token: ${token_prefix})"
+      ((PASS++))
     else
-        echo -e "  ${RED}✗${NC} AppRole credentials NOT found on host"
-        ((FAIL++))
-        return 1
+      echo -e "  ${RED}✗${NC} Token type verification failed: $token_prefix"
+      ((FAIL++))
+      return 1
     fi
+  else
+    echo -e "  ${RED}✗${NC} AppRole authentication NOT found in logs"
+    ((FAIL++))
+    return 1
+  fi
 
-    # Test 2: Check container is running
-    if docker ps --filter "name=$container" --format "{{.Status}}" | grep -q "Up"; then
-        echo -e "  ${GREEN}✓${NC} Container is running"
-        ((PASS++))
-    else
-        echo -e "  ${RED}✗${NC} Container is NOT running"
-        ((FAIL++))
-        return 1
-    fi
-
-    # Test 3: Check NO VAULT_TOKEN environment variable in container
-    if docker exec $container env 2>/dev/null | grep -q "^VAULT_TOKEN="; then
-        echo -e "  ${RED}✗${NC} VAULT_TOKEN found in container (should not exist!)"
-        ((FAIL++))
-        return 1
-    else
-        echo -e "  ${GREEN}✓${NC} No VAULT_TOKEN in container (AppRole required)"
-        ((PASS++))
-    fi
-
-    # Test 4: Check AppRole credentials are mounted in container
-    if docker exec $container test -f "/vault-approles/$service/role-id" 2>/dev/null; then
-        echo -e "  ${GREEN}✓${NC} AppRole credentials mounted in container"
-        ((PASS++))
-    else
-        echo -e "  ${RED}✗${NC} AppRole credentials NOT mounted in container"
-        ((FAIL++))
-        return 1
-    fi
-
-    # Test 5: Check logs for AppRole authentication success OR verify token type for Python apps
-    if docker logs $container 2>&1 | grep -q "AppRole authentication successful"; then
-        echo -e "  ${GREEN}✓${NC} AppRole authentication successful in logs"
-        ((PASS++))
-    elif [ "$container" = "dev-reference-api" ]; then
-        # For Python apps, verify the token type instead of log message
-        local token_prefix=$(docker exec $container python -c "from app.services.vault import vault_client; print(vault_client.vault_token[:10] if vault_client.vault_token else 'NONE')" 2>/dev/null)
-        if [[ "$token_prefix" == hvs.CAESIE* ]] || [[ "$token_prefix" == hvs.CAESI* ]]; then
-            echo -e "  ${GREEN}✓${NC} AppRole token verified (service token: ${token_prefix})"
-            ((PASS++))
-        else
-            echo -e "  ${RED}✗${NC} Token type verification failed: $token_prefix"
-            ((FAIL++))
-            return 1
-        fi
-    else
-        echo -e "  ${RED}✗${NC} AppRole authentication NOT found in logs"
-        ((FAIL++))
-        return 1
-    fi
-
-    echo ""
-    return 0
+  echo ""
+  return 0
 }
 
 # Test all 7 services
@@ -130,11 +130,11 @@ echo -e "Total Failed: ${RED}$FAIL${NC}"
 echo ""
 
 if [ $FAIL -eq 0 ]; then
-    echo -e "${GREEN}✓ ALL SERVICES ARE USING APPROLE AUTHENTICATION${NC}"
-    echo -e "${GREEN}✓ NO ROOT TOKENS FOUND IN CONTAINERS${NC}"
-    echo -e "${GREEN}✓ MIGRATION IS 100% COMPLETE${NC}"
-    exit 0
+  echo -e "${GREEN}✓ ALL SERVICES ARE USING APPROLE AUTHENTICATION${NC}"
+  echo -e "${GREEN}✓ NO ROOT TOKENS FOUND IN CONTAINERS${NC}"
+  echo -e "${GREEN}✓ MIGRATION IS 100% COMPLETE${NC}"
+  exit 0
 else
-    echo -e "${RED}✗ SOME TESTS FAILED${NC}"
-    exit 1
+  echo -e "${RED}✗ SOME TESTS FAILED${NC}"
+  exit 1
 fi

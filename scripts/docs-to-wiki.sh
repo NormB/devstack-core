@@ -24,17 +24,17 @@ NC='\033[0m' # No Color
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        *)
-            echo "Unknown option: $1"
-            echo "Usage: $0 [--dry-run]"
-            exit 1
-            ;;
-    esac
+  case $1 in
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [--dry-run]"
+      exit 1
+      ;;
+  esac
 done
 
 echo -e "${BLUE}📚 DevStack Core: Docs → Wiki Sync${NC}"
@@ -42,169 +42,169 @@ echo -e "${BLUE}===================================${NC}"
 echo ""
 
 if [ "$DRY_RUN" = true ]; then
-    echo -e "${YELLOW}🔍 DRY RUN MODE - No files will be modified${NC}"
-    echo ""
+  echo -e "${YELLOW}🔍 DRY RUN MODE - No files will be modified${NC}"
+  echo ""
 fi
 
 # Create wiki directory if it doesn't exist
 if [ ! -d "$WIKI_DIR" ]; then
-    if [ "$DRY_RUN" = false ]; then
-        mkdir -p "$WIKI_DIR"
-        echo -e "${GREEN}✅ Created wiki directory${NC}"
-    else
-        echo -e "${YELLOW}[DRY RUN] Would create wiki directory${NC}"
-    fi
+  if [ "$DRY_RUN" = false ]; then
+    mkdir -p "$WIKI_DIR"
+    echo -e "${GREEN}✅ Created wiki directory${NC}"
+  else
+    echo -e "${YELLOW}[DRY RUN] Would create wiki directory${NC}"
+  fi
 fi
 
 # Function to transform doc filename to wiki page name
 doc_to_wiki_name() {
-    local file="$1"
-    local basename=$(basename "$file" .md)
+  local file="$1"
+  local basename=$(basename "$file" .md)
 
-    # Special mappings
-    case "$basename" in
-        # Core documentation
-        "README") echo "Documentation-Index" ;;
-        "INSTALLATION") echo "Installation" ;;
-        "USAGE") echo "Quick-Start-Guide" ;;
-        "SERVICES") echo "Service-Overview" ;;
-        "ARCHITECTURE") echo "Architecture-Overview" ;;
-        "SERVICE_PROFILES") echo "Service-Configuration" ;;
-        "MANAGEMENT") echo "Management-Commands" ;;
-        "PYTHON_MANAGEMENT_SCRIPT") echo "CLI-Reference" ;;
-        "PYTHON_CLI_COMPLETE_REFERENCE") echo "Python-CLI-Complete-Reference" ;;
+  # Special mappings
+  case "$basename" in
+    # Core documentation
+    "README") echo "Documentation-Index" ;;
+    "INSTALLATION") echo "Installation" ;;
+    "USAGE") echo "Quick-Start-Guide" ;;
+    "SERVICES") echo "Service-Overview" ;;
+    "ARCHITECTURE") echo "Architecture-Overview" ;;
+    "SERVICE_PROFILES") echo "Service-Configuration" ;;
+    "MANAGEMENT") echo "Management-Commands" ;;
+    "PYTHON_MANAGEMENT_SCRIPT") echo "CLI-Reference" ;;
+    "PYTHON_CLI_COMPLETE_REFERENCE") echo "Python-CLI-Complete-Reference" ;;
 
-        # Infrastructure documentation
-        "VAULT") echo "Vault-Integration" ;;
-        "VAULT_SECURITY") echo "Vault-Security" ;;
-        "REDIS") echo "Redis-Cluster" ;;
-        "OBSERVABILITY") echo "Health-Monitoring" ;;
-        "ENVIRONMENT_VARIABLES") echo "Container-Management" ;;
+    # Infrastructure documentation
+    "VAULT") echo "Vault-Integration" ;;
+    "VAULT_SECURITY") echo "Vault-Security" ;;
+    "REDIS") echo "Redis-Cluster" ;;
+    "OBSERVABILITY") echo "Health-Monitoring" ;;
+    "ENVIRONMENT_VARIABLES") echo "Container-Management" ;;
 
-        # Operations documentation
-        "BEST_PRACTICES") echo "Best-Practices" ;;
-        "TROUBLESHOOTING") echo "Common-Issues" ;;
-        "DISASTER_RECOVERY") echo "Disaster-Recovery" ;;
-        "PERFORMANCE_TUNING") echo "Debugging-Techniques" ;;
-        "PERFORMANCE_BASELINE") echo "Volume-Management" ;;
-        "IDE_SETUP") echo "Local-Development-Setup" ;;
+    # Operations documentation
+    "BEST_PRACTICES") echo "Best-Practices" ;;
+    "TROUBLESHOOTING") echo "Common-Issues" ;;
+    "DISASTER_RECOVERY") echo "Disaster-Recovery" ;;
+    "PERFORMANCE_TUNING") echo "Debugging-Techniques" ;;
+    "PERFORMANCE_BASELINE") echo "Volume-Management" ;;
+    "IDE_SETUP") echo "Local-Development-Setup" ;;
 
-        # Testing documentation
-        "TESTING_APPROACH") echo "Testing-Guide" ;;
-        "TEST_RESULTS") echo "Test-Results" ;;
+    # Testing documentation
+    "TESTING_APPROACH") echo "Testing-Guide" ;;
+    "TEST_RESULTS") echo "Test-Results" ;;
 
-        # Security documentation
-        "SECURITY_ASSESSMENT") echo "Certificate-Management" ;;
+    # Security documentation
+    "SECURITY_ASSESSMENT") echo "Certificate-Management" ;;
 
-        # Project documentation
-        "FAQ") echo "FAQ" ;;
-        "ACKNOWLEDGEMENTS") echo "Acknowledgements" ;;
-        "TASK_PROGRESS") echo "Task-Progress" ;;
+    # Project documentation
+    "FAQ") echo "FAQ" ;;
+    "ACKNOWLEDGEMENTS") echo "Acknowledgements" ;;
+    "TASK_PROGRESS") echo "Task-Progress" ;;
 
-        # Profile documentation
-        "PROFILE_IMPLEMENTATION_GUIDE") echo "Profile-Implementation-Guide" ;;
-        "PROFILE_VALIDATION_RESULTS") echo "Profile-Validation-Results" ;;
-        "PROFILE_TESTING_CHECKLIST") echo "Profile-Testing-Checklist" ;;
+    # Profile documentation
+    "PROFILE_IMPLEMENTATION_GUIDE") echo "Profile-Implementation-Guide" ;;
+    "PROFILE_VALIDATION_RESULTS") echo "Profile-Validation-Results" ;;
+    "PROFILE_TESTING_CHECKLIST") echo "Profile-Testing-Checklist" ;;
 
-        # Rollback documentation
-        "ROLLBACK_PROCEDURES") echo "Rollback-Procedures" ;;
-        "ROLLBACK_PROCEDURES_ACCURACY_REVIEW") echo "Rollback-Procedures-Accuracy-Review" ;;
-        "ROLLBACK_TEST_SUMMARY") echo "Rollback-Test-Summary" ;;
-        "ROLLBACK_DOCUMENTATION_CORRECTIONS_SUMMARY") echo "Rollback-Documentation-Corrections-Summary" ;;
+    # Rollback documentation
+    "ROLLBACK_PROCEDURES") echo "Rollback-Procedures" ;;
+    "ROLLBACK_PROCEDURES_ACCURACY_REVIEW") echo "Rollback-Procedures-Accuracy-Review" ;;
+    "ROLLBACK_TEST_SUMMARY") echo "Rollback-Test-Summary" ;;
+    "ROLLBACK_DOCUMENTATION_CORRECTIONS_SUMMARY") echo "Rollback-Documentation-Corrections-Summary" ;;
 
-        # Infrastructure analysis
-        "AUTOMATION_INFRASTRUCTURE_DESIGN") echo "Migration-Guide" ;;
-        "VOIP_INFRASTRUCTURE_ANALYSIS") echo "Backup-and-Restore" ;;
-        "ANSIBLE_DYNAMIC_INVENTORY_POSTGRESQL") echo "Ansible-Dynamic-Inventory-PostgreSQL" ;;
+    # Infrastructure analysis
+    "AUTOMATION_INFRASTRUCTURE_DESIGN") echo "Migration-Guide" ;;
+    "VOIP_INFRASTRUCTURE_ANALYSIS") echo "Backup-and-Restore" ;;
+    "ANSIBLE_DYNAMIC_INVENTORY_POSTGRESQL") echo "Ansible-Dynamic-Inventory-PostgreSQL" ;;
 
-        # Historical/reference documentation
-        "BASELINE_20251114") echo "Baseline-20251114" ;;
-        "PHASE_VALIDATION_REPORT") echo "Phase-Validation-Report" ;;
-        "REPOSITORY_CLEANUP_SUMMARY") echo "Repository-Cleanup-Summary" ;;
-        "DOCUMENTATION_VERIFICATION_SUMMARY") echo "Documentation-Verification-Summary" ;;
-        "LINK_FIXES_SUMMARY") echo "Link-Fixes-Summary" ;;
-        "RACE_CONDITION_FIX") echo "Race-Condition-Fix" ;;
-        "IMPROVEMENT_TASK_LIST") echo "Improvement-Task-List" ;;
+    # Historical/reference documentation
+    "BASELINE_20251114") echo "Baseline-20251114" ;;
+    "PHASE_VALIDATION_REPORT") echo "Phase-Validation-Report" ;;
+    "REPOSITORY_CLEANUP_SUMMARY") echo "Repository-Cleanup-Summary" ;;
+    "DOCUMENTATION_VERIFICATION_SUMMARY") echo "Documentation-Verification-Summary" ;;
+    "LINK_FIXES_SUMMARY") echo "Link-Fixes-Summary" ;;
+    "RACE_CONDITION_FIX") echo "Race-Condition-Fix" ;;
+    "IMPROVEMENT_TASK_LIST") echo "Improvement-Task-List" ;;
 
-        # Default: convert underscores to hyphens
-        *) echo "$basename" | sed 's/_/-/g' ;;
-    esac
+    # Default: convert underscores to hyphens
+    *) echo "$basename" | sed 's/_/-/g' ;;
+  esac
 }
 
 # Function to transform markdown links for wiki
 transform_links() {
-    local file="$1"
-    local temp_file="${file}.tmp"
+  local file="$1"
+  local temp_file="${file}.tmp"
 
-    # Transform links:
-    # ./docs/FILE.md → FILE (wiki page name)
-    # ./reference-apps/README.md → Development-Workflow
-    # #section → #section (keep anchor links)
-    # External links → unchanged
+  # Transform links:
+  # ./docs/FILE.md → FILE (wiki page name)
+  # ./reference-apps/README.md → Development-Workflow
+  # #section → #section (keep anchor links)
+  # External links → unchanged
 
-    sed -E \
-        -e 's|\./docs/README\.md|Documentation-Index|g' \
-        -e 's|\./docs/INSTALLATION\.md|Installation|g' \
-        -e 's|\./docs/USAGE\.md|Quick-Start-Guide|g' \
-        -e 's|\./docs/SERVICES\.md|Service-Overview|g' \
-        -e 's|\./docs/ARCHITECTURE\.md|Architecture-Overview|g' \
-        -e 's|\./docs/SERVICE_PROFILES\.md|Service-Configuration|g' \
-        -e 's|\./docs/MANAGEMENT\.md|Management-Commands|g' \
-        -e 's|\./docs/PYTHON_MANAGEMENT_SCRIPT\.md|CLI-Reference|g' \
-        -e 's|\./docs/PYTHON_CLI_COMPLETE_REFERENCE\.md|Python-CLI-Complete-Reference|g' \
-        -e 's|\./docs/VAULT\.md|Vault-Integration|g' \
-        -e 's|\./docs/VAULT_SECURITY\.md|Vault-Security|g' \
-        -e 's|\./docs/REDIS\.md|Redis-Cluster|g' \
-        -e 's|\./docs/OBSERVABILITY\.md|Health-Monitoring|g' \
-        -e 's|\./docs/ENVIRONMENT_VARIABLES\.md|Container-Management|g' \
-        -e 's|\./docs/BEST_PRACTICES\.md|Best-Practices|g' \
-        -e 's|\./docs/TROUBLESHOOTING\.md|Common-Issues|g' \
-        -e 's|\./docs/DISASTER_RECOVERY\.md|Disaster-Recovery|g' \
-        -e 's|\./docs/PERFORMANCE_TUNING\.md|Debugging-Techniques|g' \
-        -e 's|\./docs/PERFORMANCE_BASELINE\.md|Volume-Management|g' \
-        -e 's|\./docs/IDE_SETUP\.md|Local-Development-Setup|g' \
-        -e 's|\./docs/TESTING_APPROACH\.md|Testing-Guide|g' \
-        -e 's|\./docs/TEST_RESULTS\.md|Test-Results|g' \
-        -e 's|\./docs/SECURITY_ASSESSMENT\.md|Certificate-Management|g' \
-        -e 's|\./docs/FAQ\.md|FAQ|g' \
-        -e 's|\./docs/ACKNOWLEDGEMENTS\.md|Acknowledgements|g' \
-        -e 's|\./docs/TASK_PROGRESS\.md|Task-Progress|g' \
-        -e 's|\./docs/PROFILE_IMPLEMENTATION_GUIDE\.md|Profile-Implementation-Guide|g' \
-        -e 's|\./docs/PROFILE_VALIDATION_RESULTS\.md|Profile-Validation-Results|g' \
-        -e 's|\./docs/PROFILE_TESTING_CHECKLIST\.md|Profile-Testing-Checklist|g' \
-        -e 's|\./docs/ROLLBACK_PROCEDURES\.md|Rollback-Procedures|g' \
-        -e 's|\./docs/ROLLBACK_PROCEDURES_ACCURACY_REVIEW\.md|Rollback-Procedures-Accuracy-Review|g' \
-        -e 's|\./docs/ROLLBACK_TEST_SUMMARY\.md|Rollback-Test-Summary|g' \
-        -e 's|\./docs/ROLLBACK_DOCUMENTATION_CORRECTIONS_SUMMARY\.md|Rollback-Documentation-Corrections-Summary|g' \
-        -e 's|\./docs/voip/ANSIBLE_DYNAMIC_INVENTORY_POSTGRESQL\.md|Ansible-Dynamic-Inventory-PostgreSQL|g' \
-        -e 's|\./reference-apps/README\.md|Development-Workflow|g' \
-        -e 's|\./reference-apps/API_PATTERNS\.md|API-Patterns|g' \
-        -e 's|\.github/CHANGELOG\.md|Changelog|g' \
-        -e 's|\.github/CONTRIBUTING\.md|Contributing-Guide|g' \
-        -e 's|\.github/SECURITY\.md|Secrets-Rotation|g' \
-        "$file" > "$temp_file"
+  sed -E \
+    -e 's|\./docs/README\.md|Documentation-Index|g' \
+    -e 's|\./docs/INSTALLATION\.md|Installation|g' \
+    -e 's|\./docs/USAGE\.md|Quick-Start-Guide|g' \
+    -e 's|\./docs/SERVICES\.md|Service-Overview|g' \
+    -e 's|\./docs/ARCHITECTURE\.md|Architecture-Overview|g' \
+    -e 's|\./docs/SERVICE_PROFILES\.md|Service-Configuration|g' \
+    -e 's|\./docs/MANAGEMENT\.md|Management-Commands|g' \
+    -e 's|\./docs/PYTHON_MANAGEMENT_SCRIPT\.md|CLI-Reference|g' \
+    -e 's|\./docs/PYTHON_CLI_COMPLETE_REFERENCE\.md|Python-CLI-Complete-Reference|g' \
+    -e 's|\./docs/VAULT\.md|Vault-Integration|g' \
+    -e 's|\./docs/VAULT_SECURITY\.md|Vault-Security|g' \
+    -e 's|\./docs/REDIS\.md|Redis-Cluster|g' \
+    -e 's|\./docs/OBSERVABILITY\.md|Health-Monitoring|g' \
+    -e 's|\./docs/ENVIRONMENT_VARIABLES\.md|Container-Management|g' \
+    -e 's|\./docs/BEST_PRACTICES\.md|Best-Practices|g' \
+    -e 's|\./docs/TROUBLESHOOTING\.md|Common-Issues|g' \
+    -e 's|\./docs/DISASTER_RECOVERY\.md|Disaster-Recovery|g' \
+    -e 's|\./docs/PERFORMANCE_TUNING\.md|Debugging-Techniques|g' \
+    -e 's|\./docs/PERFORMANCE_BASELINE\.md|Volume-Management|g' \
+    -e 's|\./docs/IDE_SETUP\.md|Local-Development-Setup|g' \
+    -e 's|\./docs/TESTING_APPROACH\.md|Testing-Guide|g' \
+    -e 's|\./docs/TEST_RESULTS\.md|Test-Results|g' \
+    -e 's|\./docs/SECURITY_ASSESSMENT\.md|Certificate-Management|g' \
+    -e 's|\./docs/FAQ\.md|FAQ|g' \
+    -e 's|\./docs/ACKNOWLEDGEMENTS\.md|Acknowledgements|g' \
+    -e 's|\./docs/TASK_PROGRESS\.md|Task-Progress|g' \
+    -e 's|\./docs/PROFILE_IMPLEMENTATION_GUIDE\.md|Profile-Implementation-Guide|g' \
+    -e 's|\./docs/PROFILE_VALIDATION_RESULTS\.md|Profile-Validation-Results|g' \
+    -e 's|\./docs/PROFILE_TESTING_CHECKLIST\.md|Profile-Testing-Checklist|g' \
+    -e 's|\./docs/ROLLBACK_PROCEDURES\.md|Rollback-Procedures|g' \
+    -e 's|\./docs/ROLLBACK_PROCEDURES_ACCURACY_REVIEW\.md|Rollback-Procedures-Accuracy-Review|g' \
+    -e 's|\./docs/ROLLBACK_TEST_SUMMARY\.md|Rollback-Test-Summary|g' \
+    -e 's|\./docs/ROLLBACK_DOCUMENTATION_CORRECTIONS_SUMMARY\.md|Rollback-Documentation-Corrections-Summary|g' \
+    -e 's|\./docs/voip/ANSIBLE_DYNAMIC_INVENTORY_POSTGRESQL\.md|Ansible-Dynamic-Inventory-PostgreSQL|g' \
+    -e 's|\./reference-apps/README\.md|Development-Workflow|g' \
+    -e 's|\./reference-apps/API_PATTERNS\.md|API-Patterns|g' \
+    -e 's|\.github/CHANGELOG\.md|Changelog|g' \
+    -e 's|\.github/CONTRIBUTING\.md|Contributing-Guide|g' \
+    -e 's|\.github/SECURITY\.md|Secrets-Rotation|g' \
+    "$file" > "$temp_file"
 
-    mv "$temp_file" "$file"
+  mv "$temp_file" "$file"
 }
 
 # Sync function
 sync_file() {
-    local src="$1"
-    local dest_name="$2"
-    local label="$3"
+  local src="$1"
+  local dest_name="$2"
+  local label="$3"
 
-    local dest="$WIKI_DIR/${dest_name}.md"
+  local dest="$WIKI_DIR/${dest_name}.md"
 
-    if [ "$DRY_RUN" = true ]; then
-        echo -e "${BLUE}  📄 ${label}${NC}"
-        echo -e "     ${YELLOW}[DRY RUN] Would sync: $src → $dest${NC}"
-        return
-    fi
-
+  if [ "$DRY_RUN" = true ]; then
     echo -e "${BLUE}  📄 ${label}${NC}"
-    cp "$src" "$dest"
-    transform_links "$dest"
-    echo -e "     ${GREEN}✅ Synced to: $dest_name.md${NC}"
+    echo -e "     ${YELLOW}[DRY RUN] Would sync: $src → $dest${NC}"
+    return
+  fi
+
+  echo -e "${BLUE}  📄 ${label}${NC}"
+  cp "$src" "$dest"
+  transform_links "$dest"
+  echo -e "     ${GREEN}✅ Synced to: $dest_name.md${NC}"
 }
 
 echo -e "${BLUE}📖 Syncing Core Documentation...${NC}"
@@ -271,7 +271,7 @@ echo -e "${BLUE}🔄 Syncing Rollback Documentation...${NC}"
 sync_file "$DOCS_DIR/ROLLBACK_PROCEDURES.md" "Rollback-Procedures" "Rollback Procedures"
 
 # Count files
-WIKI_COUNT=$(command ls -1 "$WIKI_DIR"/*.md 2>/dev/null | wc -l | tr -d ' ')
+WIKI_COUNT=$(command ls -1 "$WIKI_DIR"/*.md 2> /dev/null | wc -l | tr -d ' ')
 
 echo ""
 echo -e "${GREEN}✅ Sync Complete!${NC}"
@@ -282,11 +282,11 @@ echo -e "   Location: ${BLUE}$WIKI_DIR${NC}"
 echo ""
 
 if [ "$DRY_RUN" = false ]; then
-    echo -e "${YELLOW}📤 Next steps:${NC}"
-    echo -e "   1. Review changes: ${BLUE}git diff wiki/${NC}"
-    echo -e "   2. Sync to GitHub Wiki: ${BLUE}./scripts/sync-wiki.sh${NC}"
-    echo ""
+  echo -e "${YELLOW}📤 Next steps:${NC}"
+  echo -e "   1. Review changes: ${BLUE}git diff wiki/${NC}"
+  echo -e "   2. Sync to GitHub Wiki: ${BLUE}./scripts/sync-wiki.sh${NC}"
+  echo ""
 else
-    echo -e "${YELLOW}[DRY RUN] No files were modified${NC}"
-    echo ""
+  echo -e "${YELLOW}[DRY RUN] No files were modified${NC}"
+  echo ""
 fi

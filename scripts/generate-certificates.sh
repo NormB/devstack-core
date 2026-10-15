@@ -87,21 +87,21 @@ NC='\033[0m' # No Color
 
 # Configuration
 VAULT_ADDR="${VAULT_ADDR:-http://localhost:8200}"
-VAULT_TOKEN="${VAULT_TOKEN:-$(cat ~/.config/vault/root-token 2>/dev/null)}"
+VAULT_TOKEN="${VAULT_TOKEN:-$(cat ~/.config/vault/root-token 2> /dev/null)}"
 CERT_BASE_DIR="${HOME}/.config/vault/certs"
-CERT_TTL="8760h"  # 1 year
+CERT_TTL="8760h" # 1 year
 
 # Service configuration (service:ip pairs)
 SERVICES=(
-    "postgres:172.20.2.10"
-    "mysql:172.20.2.12"
-    "redis-1:172.20.2.13"
-    "redis-2:172.20.2.16"
-    "redis-3:172.20.2.17"
-    "rabbitmq:172.20.2.14"
-    "mongodb:172.20.2.15"
-    "forgejo:172.20.3.20"
-    "reference-api:172.20.3.100"
+  "postgres:172.20.2.10"
+  "mysql:172.20.2.12"
+  "redis-1:172.20.2.13"
+  "redis-2:172.20.2.16"
+  "redis-3:172.20.2.17"
+  "rabbitmq:172.20.2.14"
+  "mongodb:172.20.2.15"
+  "forgejo:172.20.3.20"
+  "reference-api:172.20.3.100"
 )
 
 # Helper functions
@@ -126,7 +126,7 @@ SERVICES=(
 #   info "Vault address: $VAULT_ADDR"
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -150,7 +150,7 @@ info() {
 #   success "Vault is ready"
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -178,7 +178,7 @@ success() {
 #   warn "Retrying certificate request after failure"
 #######################################
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+  echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 #######################################
@@ -207,8 +207,8 @@ warn() {
 #   error "Vault did not become ready in time"
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    exit 1
+  echo -e "${RED}[ERROR]${NC} $1"
+  exit 1
 }
 
 #######################################
@@ -242,21 +242,21 @@ error() {
 #   # Script will wait up to 120 seconds for Vault to be ready
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "$VAULT_ADDR/v1/sys/health?standbyok=true" > /dev/null 2>&1; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -297,54 +297,54 @@ wait_for_vault() {
 #   # Script will wait for PKI to be ready and test certificate issuance
 #######################################
 wait_for_vault_pki() {
-    info "Waiting for Vault PKI to be fully ready..."
+  info "Waiting for Vault PKI to be fully ready..."
 
-    local max_attempts=30
-    local attempt=0
+  local max_attempts=30
+  local attempt=0
 
-    # First, wait for PKI CA endpoint
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -sf "$VAULT_ADDR/v1/pki_int/ca/pem" > /dev/null 2>&1; then
-            break
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  # First, wait for PKI CA endpoint
+  while [ $attempt -lt $max_attempts ]; do
+    if curl -sf "$VAULT_ADDR/v1/pki_int/ca/pem" > /dev/null 2>&1; then
+      break
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    if [ $attempt -ge $max_attempts ]; then
-        error "Vault PKI CA endpoint did not become ready"
+  if [ $attempt -ge $max_attempts ]; then
+    error "Vault PKI CA endpoint did not become ready"
+  fi
+
+  # Additional grace period for issuance endpoints to stabilize
+  info "PKI CA ready, waiting for issuance endpoints to stabilize..."
+  sleep 10
+
+  # Test certificate issuance is actually working
+  info "Testing certificate issuance capability..."
+  local test_attempts=10
+  local test_attempt=0
+
+  while [ $test_attempt -lt $test_attempts ]; do
+    local test_response=$(curl -sf --connect-timeout 5 --max-time 15 \
+      -X POST \
+      -H "X-Vault-Token: $VAULT_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
+      "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>&1)
+
+    if echo "$test_response" | grep -q '"certificate"'; then
+      success "Vault PKI issuance endpoint is ready"
+      return 0
     fi
 
-    # Additional grace period for issuance endpoints to stabilize
-    info "PKI CA ready, waiting for issuance endpoints to stabilize..."
-    sleep 10
+    test_attempt=$((test_attempt + 1))
+    if [ $test_attempt -lt $test_attempts ]; then
+      warn "Test certificate issuance attempt $test_attempt failed, retrying in 5 seconds..."
+      sleep 5
+    fi
+  done
 
-    # Test certificate issuance is actually working
-    info "Testing certificate issuance capability..."
-    local test_attempts=10
-    local test_attempt=0
-
-    while [ $test_attempt -lt $test_attempts ]; do
-        local test_response=$(curl -sf --connect-timeout 5 --max-time 15 \
-            -X POST \
-            -H "X-Vault-Token: $VAULT_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
-            "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>&1)
-
-        if echo "$test_response" | grep -q '"certificate"'; then
-            success "Vault PKI issuance endpoint is ready"
-            return 0
-        fi
-
-        test_attempt=$((test_attempt + 1))
-        if [ $test_attempt -lt $test_attempts ]; then
-            warn "Test certificate issuance attempt $test_attempt failed, retrying in 5 seconds..."
-            sleep 5
-        fi
-    done
-
-    error "Vault PKI issuance endpoint did not become ready after $test_attempts attempts"
+  error "Vault PKI issuance endpoint did not become ready after $test_attempts attempts"
 }
 
 #######################################
@@ -384,27 +384,27 @@ wait_for_vault_pki() {
 #   fi
 #######################################
 is_cert_valid() {
-    local cert_file=$1
+  local cert_file=$1
 
-    if [ ! -f "$cert_file" ]; then
-        return 1  # Certificate doesn't exist
-    fi
+  if [ ! -f "$cert_file" ]; then
+    return 1 # Certificate doesn't exist
+  fi
 
-    # Check if certificate expires in more than 30 days
-    local expiry_date=$(openssl x509 -in "$cert_file" -noout -enddate 2>/dev/null | cut -d= -f2)
-    if [ -z "$expiry_date" ]; then
-        return 1  # Can't parse certificate
-    fi
+  # Check if certificate expires in more than 30 days
+  local expiry_date=$(openssl x509 -in "$cert_file" -noout -enddate 2> /dev/null | cut -d= -f2)
+  if [ -z "$expiry_date" ]; then
+    return 1 # Can't parse certificate
+  fi
 
-    local expiry_epoch=$(date -j -f "%b %d %T %Y %Z" "$expiry_date" +%s 2>/dev/null)
-    local now_epoch=$(date +%s)
-    local days_remaining=$(( ($expiry_epoch - $now_epoch) / 86400 ))
+  local expiry_epoch=$(date -j -f "%b %d %T %Y %Z" "$expiry_date" +%s 2> /dev/null)
+  local now_epoch=$(date +%s)
+  local days_remaining=$((($expiry_epoch - $now_epoch) / 86400))
 
-    if [ $days_remaining -gt 30 ]; then
-        return 0  # Certificate is valid
-    else
-        return 1  # Certificate expiring soon
-    fi
+  if [ $days_remaining -gt 30 ]; then
+    return 0 # Certificate is valid
+  else
+    return 1 # Certificate expiring soon
+  fi
 }
 
 #######################################
@@ -468,96 +468,96 @@ is_cert_valid() {
 #   generate_certificate "redis-1:172.20.0.13"
 #######################################
 generate_certificate() {
-    local service_pair=$1
-    local service="${service_pair%%:*}"
-    local service_ip="${service_pair##*:}"
+  local service_pair=$1
+  local service="${service_pair%%:*}"
+  local service_ip="${service_pair##*:}"
 
-    info "Generating certificate for $service..."
+  info "Generating certificate for $service..."
 
-    # Create service-specific directory
-    local cert_dir="$CERT_BASE_DIR/$service"
-    mkdir -p "$cert_dir"
+  # Create service-specific directory
+  local cert_dir="$CERT_BASE_DIR/$service"
+  mkdir -p "$cert_dir"
 
-    # Check if existing certificate is still valid
-    if is_cert_valid "$cert_dir/server.crt"; then
-        local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
-        success "Certificate for $service is still valid (expires: $expiry), skipping generation"
-        return 0
-    fi
+  # Check if existing certificate is still valid
+  if is_cert_valid "$cert_dir/server.crt"; then
+    local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
+    success "Certificate for $service is still valid (expires: $expiry), skipping generation"
+    return 0
+  fi
 
-    # Request certificate from Vault
-    # Note: Only using allowed alt_names (localhost), roles don't allow bare service names
-    local cert_response=$(curl -s --connect-timeout 10 --max-time 30 \
-        -X POST \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "{
+  # Request certificate from Vault
+  # Note: Only using allowed alt_names (localhost), roles don't allow bare service names
+  local cert_response=$(curl -s --connect-timeout 10 --max-time 30 \
+    -X POST \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
             \"common_name\": \"$service.dev-services.local\",
             \"alt_names\": \"localhost\",
             \"ip_sans\": \"127.0.0.1,$service_ip\",
             \"ttl\": \"$CERT_TTL\"
         }" \
-        "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1)
+    "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1)
 
-    local curl_exit=$?
+  local curl_exit=$?
 
-    if [ $curl_exit -ne 0 ] || ! echo "$cert_response" | grep -q '"certificate"'; then
-        warn "Certificate request failed for $service (curl exit: $curl_exit)"
-        warn "Response: $cert_response"
-        error "Failed to generate certificate for $service"
-    fi
+  if [ $curl_exit -ne 0 ] || ! echo "$cert_response" | grep -q '"certificate"'; then
+    warn "Certificate request failed for $service (curl exit: $curl_exit)"
+    warn "Response: $cert_response"
+    error "Failed to generate certificate for $service"
+  fi
 
-    # Extract and save certificate components
-    echo "$cert_response" | jq -r '.data.certificate' > "$cert_dir/server.crt"
-    echo "$cert_response" | jq -r '.data.private_key' > "$cert_dir/server.key"
-    echo "$cert_response" | jq -r '.data.ca_chain[]' > "$cert_dir/ca.crt"
+  # Extract and save certificate components
+  echo "$cert_response" | jq -r '.data.certificate' > "$cert_dir/server.crt"
+  echo "$cert_response" | jq -r '.data.private_key' > "$cert_dir/server.key"
+  echo "$cert_response" | jq -r '.data.ca_chain[]' > "$cert_dir/ca.crt"
 
-    # Set permissions (restrictive for keys)
-    chmod 600 "$cert_dir/server.key"
-    chmod 644 "$cert_dir/server.crt" "$cert_dir/ca.crt"
+  # Set permissions (restrictive for keys)
+  chmod 600 "$cert_dir/server.key"
+  chmod 644 "$cert_dir/server.crt" "$cert_dir/ca.crt"
 
-    # Service-specific certificate formats
-    case $service in
-        mysql)
-            # MySQL wants separate cert and key files
-            cp "$cert_dir/server.crt" "$cert_dir/server-cert.pem"
-            cp "$cert_dir/server.key" "$cert_dir/server-key.pem"
-            cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
-            chmod 600 "$cert_dir/server-key.pem"
-            chmod 644 "$cert_dir/server-cert.pem" "$cert_dir/ca.pem"
-            ;;
-        redis-*)
-            # Redis wants .crt and .key extensions
-            cp "$cert_dir/server.crt" "$cert_dir/redis.crt"
-            cp "$cert_dir/server.key" "$cert_dir/redis.key"
-            chmod 600 "$cert_dir/redis.key"
-            chmod 644 "$cert_dir/redis.crt"
-            ;;
-        mongodb)
-            # MongoDB wants cert and key in the same file
-            cat "$cert_dir/server.crt" "$cert_dir/server.key" > "$cert_dir/mongodb.pem"
-            cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
-            chmod 600 "$cert_dir/mongodb.pem"
-            chmod 644 "$cert_dir/ca.pem"
-            ;;
-        rabbitmq)
-            # RabbitMQ wants .pem extensions
-            cp "$cert_dir/server.crt" "$cert_dir/server.pem"
-            cp "$cert_dir/server.key" "$cert_dir/key.pem"
-            cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
-            chmod 600 "$cert_dir/key.pem"
-            chmod 644 "$cert_dir/server.pem" "$cert_dir/ca.pem"
-            ;;
-    esac
+  # Service-specific certificate formats
+  case $service in
+    mysql)
+      # MySQL wants separate cert and key files
+      cp "$cert_dir/server.crt" "$cert_dir/server-cert.pem"
+      cp "$cert_dir/server.key" "$cert_dir/server-key.pem"
+      cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
+      chmod 600 "$cert_dir/server-key.pem"
+      chmod 644 "$cert_dir/server-cert.pem" "$cert_dir/ca.pem"
+      ;;
+    redis-*)
+      # Redis wants .crt and .key extensions
+      cp "$cert_dir/server.crt" "$cert_dir/redis.crt"
+      cp "$cert_dir/server.key" "$cert_dir/redis.key"
+      chmod 600 "$cert_dir/redis.key"
+      chmod 644 "$cert_dir/redis.crt"
+      ;;
+    mongodb)
+      # MongoDB wants cert and key in the same file
+      cat "$cert_dir/server.crt" "$cert_dir/server.key" > "$cert_dir/mongodb.pem"
+      cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
+      chmod 600 "$cert_dir/mongodb.pem"
+      chmod 644 "$cert_dir/ca.pem"
+      ;;
+    rabbitmq)
+      # RabbitMQ wants .pem extensions
+      cp "$cert_dir/server.crt" "$cert_dir/server.pem"
+      cp "$cert_dir/server.key" "$cert_dir/key.pem"
+      cp "$cert_dir/ca.crt" "$cert_dir/ca.pem"
+      chmod 600 "$cert_dir/key.pem"
+      chmod 644 "$cert_dir/server.pem" "$cert_dir/ca.pem"
+      ;;
+  esac
 
-    # Display certificate info
-    local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
-    local subject=$(openssl x509 -in "$cert_dir/server.crt" -noout -subject | sed 's/subject=//')
+  # Display certificate info
+  local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
+  local subject=$(openssl x509 -in "$cert_dir/server.crt" -noout -subject | sed 's/subject=//')
 
-    success "Generated certificate for $service"
-    info "  Subject: $subject"
-    info "  Expires: $expiry"
-    info "  Location: $cert_dir/"
+  success "Generated certificate for $service"
+  info "  Subject: $subject"
+  info "  Expires: $expiry"
+  info "  Location: $cert_dir/"
 }
 
 #######################################
@@ -622,50 +622,50 @@ generate_certificate() {
 #   # Processes all services and generates certificates as needed
 #######################################
 main() {
-    echo ""
-    echo "========================================="
-    echo "  Certificate Pre-Generation"
-    echo "========================================="
-    echo ""
+  echo ""
+  echo "========================================="
+  echo "  Certificate Pre-Generation"
+  echo "========================================="
+  echo ""
 
-    # Check required environment variables
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN not set and ~/.config/vault/root-token not found. Run './devstack vault-init' first or export VAULT_TOKEN."
-    fi
+  # Check required environment variables
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN not set and ~/.config/vault/root-token not found. Run './devstack vault-init' first or export VAULT_TOKEN."
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Wait for Vault PKI to be fully ready
-    wait_for_vault_pki
+  # Wait for Vault PKI to be fully ready
+  wait_for_vault_pki
 
-    # Create base certificate directory
-    mkdir -p "$CERT_BASE_DIR"
+  # Create base certificate directory
+  mkdir -p "$CERT_BASE_DIR"
 
-    # Generate certificates for all services
-    info ""
-    info "Generating certificates for all services..."
-    info ""
+  # Generate certificates for all services
+  info ""
+  info "Generating certificates for all services..."
+  info ""
 
-    for service_pair in "${SERVICES[@]}"; do
-        generate_certificate "$service_pair"
-    done
+  for service_pair in "${SERVICES[@]}"; do
+    generate_certificate "$service_pair"
+  done
 
-    echo ""
-    echo "========================================="
-    success "Certificate generation completed!"
-    echo "========================================="
-    echo ""
-    info "Next steps:"
-    echo "  1. Certificates stored in: $CERT_BASE_DIR/"
-    echo "  2. Restart services to use new certificates"
-    echo "  3. Verify TLS connectivity for each service"
-    echo ""
-    info "To rotate certificates:"
-    echo "  1. Delete old certificates: rm -rf $CERT_BASE_DIR/<service>/"
-    echo "  2. Re-run this script"
-    echo "  3. Restart affected services"
-    echo ""
+  echo ""
+  echo "========================================="
+  success "Certificate generation completed!"
+  echo "========================================="
+  echo ""
+  info "Next steps:"
+  echo "  1. Certificates stored in: $CERT_BASE_DIR/"
+  echo "  2. Restart services to use new certificates"
+  echo "  3. Verify TLS connectivity for each service"
+  echo ""
+  info "To rotate certificates:"
+  echo "  1. Delete old certificates: rm -rf $CERT_BASE_DIR/<service>/"
+  echo "  2. Re-run this script"
+  echo "  3. Restart affected services"
+  echo ""
 }
 
 # Run main function

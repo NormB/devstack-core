@@ -39,106 +39,109 @@ NC='\033[0m'
 info() { echo -e "${BLUE}[Forgejo Init]${NC} $1"; }
 success() { echo -e "${GREEN}[Forgejo Init]${NC} $1"; }
 warn() { echo -e "${YELLOW}[Forgejo Init]${NC} $1"; }
-error() { echo -e "${RED}[Forgejo Init]${NC} $1"; exit 1; }
+error() {
+  echo -e "${RED}[Forgejo Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Wait for Vault service to become ready
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  local max_attempts=60
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
 # Fetch PostgreSQL credentials from Vault
 #######################################
 fetch_credentials() {
-    info "Fetching PostgreSQL credentials from Vault..."
+  info "Fetching PostgreSQL credentials from Vault..."
 
-    local response
-    response=$(wget -qO- \
-        --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/postgres" 2>/dev/null) || {
-        error "Failed to fetch credentials from Vault"
-    }
+  local response
+  response=$(wget -qO- \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/postgres" 2> /dev/null) || {
+    error "Failed to fetch credentials from Vault"
+  }
 
-    if [ -z "$response" ]; then
-        error "Empty response from Vault"
-    fi
+  if [ -z "$response" ]; then
+    error "Empty response from Vault"
+  fi
 
-    DB_USER=$(echo "$response" | jq -r '.data.data.user')
-    DB_PASSWD=$(echo "$response" | jq -r '.data.data.password')
+  DB_USER=$(echo "$response" | jq -r '.data.data.user')
+  DB_PASSWD=$(echo "$response" | jq -r '.data.data.password')
 
-    if [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ]; then
-        error "Invalid username received from Vault"
-    fi
+  if [ -z "$DB_USER" ] || [ "$DB_USER" = "null" ]; then
+    error "Invalid username received from Vault"
+  fi
 
-    if [ -z "$DB_PASSWD" ] || [ "$DB_PASSWD" = "null" ]; then
-        error "Invalid password received from Vault"
-    fi
+  if [ -z "$DB_PASSWD" ] || [ "$DB_PASSWD" = "null" ]; then
+    error "Invalid password received from Vault"
+  fi
 
-    success "Credentials fetched successfully"
+  success "Credentials fetched successfully"
 }
 
 #######################################
 # Configure database credentials in app.ini
 #######################################
 configure_database() {
-    info "Configuring database credentials..."
+  info "Configuring database credentials..."
 
-    # Forgejo reads environment variables and generates /data/gitea/conf/app.ini
-    # We'll set environment variables for the original entrypoint to use
-    export FORGEJO__database__USER="$DB_USER"
-    export FORGEJO__database__PASSWD="$DB_PASSWD"
+  # Forgejo reads environment variables and generates /data/gitea/conf/app.ini
+  # We'll set environment variables for the original entrypoint to use
+  export FORGEJO__database__USER="$DB_USER"
+  export FORGEJO__database__PASSWD="$DB_PASSWD"
 
-    success "Database configuration prepared"
+  success "Database configuration prepared"
 }
 
 #######################################
 # Main execution function
 #######################################
 main() {
-    info "Starting Forgejo initialization with Vault integration..."
-    info ""
+  info "Starting Forgejo initialization with Vault integration..."
+  info ""
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch credentials from Vault
-    fetch_credentials
+  # Fetch credentials from Vault
+  fetch_credentials
 
-    # Configure database
-    configure_database
+  # Configure database
+  configure_database
 
-    info ""
-    success "Initialization complete, starting Forgejo..."
-    info ""
+  info ""
+  success "Initialization complete, starting Forgejo..."
+  info ""
 
-    # Start Forgejo using original entrypoint
-    # Pass through all original environment variables and command args
-    exec /usr/bin/entrypoint "$@"
+  # Start Forgejo using original entrypoint
+  # Pass through all original environment variables and command args
+  exec /usr/bin/entrypoint "$@"
 }
 
 # Run main function

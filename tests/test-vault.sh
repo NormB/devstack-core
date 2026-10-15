@@ -116,7 +116,10 @@ info() { echo -e "${BLUE}[TEST]${NC} $1"; }
 # Outputs:
 #   Writes formatted success message to stdout
 ################################################################################
-success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1)); }
+success() {
+  echo -e "${GREEN}[PASS]${NC} $1"
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+}
 
 ################################################################################
 # Prints a failure message in red, increments failed counter, and records failure.
@@ -133,7 +136,11 @@ success() { echo -e "${GREEN}[PASS]${NC} $1"; TESTS_PASSED=$((TESTS_PASSED + 1))
 # Outputs:
 #   Writes formatted failure message to stdout
 ################################################################################
-fail() { echo -e "${RED}[FAIL]${NC} $1"; TESTS_FAILED=$((TESTS_FAILED + 1)); FAILED_TESTS+=("$1"); }
+fail() {
+  echo -e "${RED}[FAIL]${NC} $1"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  FAILED_TESTS+=("$1")
+}
 
 ################################################################################
 # Prints a warning message in yellow.
@@ -168,16 +175,16 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   Test status message via info/success/fail functions
 ################################################################################
 test_vault_running() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 1: Vault container is running"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 1: Vault container is running"
 
-    if docker ps | grep -q dev-vault; then
-        success "Vault container is running"
-        return 0
-    else
-        fail "Vault container is not running"
-        return 1
-    fi
+  if docker ps | grep -q dev-vault; then
+    success "Vault container is running"
+    return 0
+  else
+    fail "Vault container is not running"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -197,18 +204,18 @@ test_vault_running() {
 #   Test status message via info/success/fail functions
 ################################################################################
 test_vault_unsealed() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 2: Vault is unsealed"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 2: Vault is unsealed"
 
-    local status=$(docker exec dev-vault vault status -format=json 2>/dev/null | jq -r '.sealed')
+  local status=$(docker exec dev-vault vault status -format=json 2> /dev/null | jq -r '.sealed')
 
-    if [ "$status" = "false" ]; then
-        success "Vault is unsealed"
-        return 0
-    else
-        fail "Vault is sealed or unreachable"
-        return 1
-    fi
+  if [ "$status" = "false" ]; then
+    success "Vault is unsealed"
+    return 0
+  else
+    fail "Vault is sealed or unreachable"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -232,19 +239,19 @@ test_vault_unsealed() {
 #   Test status message via info/success/fail functions
 ################################################################################
 test_vault_keys_exist() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 3: Vault keys and token files exist"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 3: Vault keys and token files exist"
 
-    local keys_file="${HOME}/.config/vault/keys.json"
-    local token_file="${HOME}/.config/vault/root-token"
+  local keys_file="${HOME}/.config/vault/keys.json"
+  local token_file="${HOME}/.config/vault/root-token"
 
-    if [ -f "$keys_file" ] && [ -f "$token_file" ]; then
-        success "Vault keys and token files exist"
-        return 0
-    else
-        fail "Vault keys or token file missing"
-        return 1
-    fi
+  if [ -f "$keys_file" ] && [ -f "$token_file" ]; then
+    success "Vault keys and token files exist"
+    return 0
+  else
+    fail "Vault keys or token file missing"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -269,26 +276,26 @@ test_vault_keys_exist() {
 #   Suggests running vault-bootstrap if PKI engines are missing
 ################################################################################
 test_vault_bootstrap_pki() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 4: Vault PKI is bootstrapped (Root CA, Intermediate CA)"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 4: Vault PKI is bootstrapped (Root CA, Intermediate CA)"
 
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    # Check if pki and pki_int are enabled
-    local pki_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki/"] // empty')
+  # Check if pki and pki_int are enabled
+  local pki_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki/"] // empty')
 
-    local pki_int_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki_int/"] // empty')
+  local pki_int_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki_int/"] // empty')
 
-    if [ -n "$pki_enabled" ] && [ -n "$pki_int_enabled" ]; then
-        success "PKI engines are enabled"
-        return 0
-    else
-        fail "PKI engines not enabled - run vault-bootstrap"
-        return 1
-    fi
+  if [ -n "$pki_enabled" ] && [ -n "$pki_int_enabled" ]; then
+    success "PKI engines are enabled"
+    return 0
+  else
+    fail "PKI engines not enabled - run vault-bootstrap"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -319,32 +326,32 @@ test_vault_bootstrap_pki() {
 #   Suggests running vault-bootstrap if roles are missing
 ################################################################################
 test_vault_certificate_roles() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 5: Certificate roles exist for all services"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 5: Certificate roles exist for all services"
 
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    local roles=("postgres-role" "mysql-role" "redis-1-role" "rabbitmq-role" "mongodb-role" "forgejo-role")
-    local all_exist=true
+  local roles=("postgres-role" "mysql-role" "redis-1-role" "rabbitmq-role" "mongodb-role" "forgejo-role")
+  local all_exist=true
 
-    for role in "${roles[@]}"; do
-        local role_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-            "$VAULT_ADDR/v1/pki_int/roles/$role" 2>/dev/null | jq -r '.data // empty')
+  for role in "${roles[@]}"; do
+    local role_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/pki_int/roles/$role" 2> /dev/null | jq -r '.data // empty')
 
-        if [ -z "$role_exists" ]; then
-            warn "  Role missing: $role"
-            all_exist=false
-        fi
-    done
-
-    if [ "$all_exist" = true ]; then
-        success "All certificate roles exist"
-        return 0
-    else
-        fail "Some certificate roles missing - run vault-bootstrap"
-        return 1
+    if [ -z "$role_exists" ]; then
+      warn "  Role missing: $role"
+      all_exist=false
     fi
+  done
+
+  if [ "$all_exist" = true ]; then
+    success "All certificate roles exist"
+    return 0
+  else
+    fail "Some certificate roles missing - run vault-bootstrap"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -374,32 +381,32 @@ test_vault_certificate_roles() {
 #   Suggests running vault-bootstrap if credentials are missing
 ################################################################################
 test_vault_secrets_stored() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 6: Service credentials stored in Vault"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 6: Service credentials stored in Vault"
 
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    local services=("postgres" "mysql" "redis-1" "rabbitmq" "mongodb")
-    local all_exist=true
+  local services=("postgres" "mysql" "redis-1" "rabbitmq" "mongodb")
+  local all_exist=true
 
-    for service in "${services[@]}"; do
-        local secret=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-            "$VAULT_ADDR/v1/secret/data/$service" 2>/dev/null | jq -r '.data.data.password // empty')
+  for service in "${services[@]}"; do
+    local secret=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null | jq -r '.data.data.password // empty')
 
-        if [ -z "$secret" ]; then
-            warn "  Credentials missing for: $service"
-            all_exist=false
-        fi
-    done
-
-    if [ "$all_exist" = true ]; then
-        success "All service credentials stored"
-        return 0
-    else
-        fail "Some service credentials missing - run vault-bootstrap"
-        return 1
+    if [ -z "$secret" ]; then
+      warn "  Credentials missing for: $service"
+      all_exist=false
     fi
+  done
+
+  if [ "$all_exist" = true ]; then
+    success "All service credentials stored"
+    return 0
+  else
+    fail "Some service credentials missing - run vault-bootstrap"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -426,26 +433,26 @@ test_vault_secrets_stored() {
 #   Success message includes username and database name
 ################################################################################
 test_vault_postgres_credentials() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 7: PostgreSQL credentials are valid"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 7: PostgreSQL credentials are valid"
 
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    local response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/postgres" 2>/dev/null)
+  local response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/postgres" 2> /dev/null)
 
-    local user=$(echo "$response" | jq -r '.data.data.user')
-    local password=$(echo "$response" | jq -r '.data.data.password')
-    local database=$(echo "$response" | jq -r '.data.data.database')
+  local user=$(echo "$response" | jq -r '.data.data.user')
+  local password=$(echo "$response" | jq -r '.data.data.password')
+  local database=$(echo "$response" | jq -r '.data.data.database')
 
-    if [ "$user" = "devuser" ] && [ -n "$password" ] && [ "$database" = "devdb" ]; then
-        success "PostgreSQL credentials are valid (user=$user, db=$database)"
-        return 0
-    else
-        fail "PostgreSQL credentials incomplete or invalid"
-        return 1
-    fi
+  if [ "$user" = "devuser" ] && [ -n "$password" ] && [ "$database" = "devdb" ]; then
+    success "PostgreSQL credentials are valid (user=$user, db=$database)"
+    return 0
+  else
+    fail "PostgreSQL credentials incomplete or invalid"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -471,27 +478,27 @@ test_vault_postgres_credentials() {
 #   Test status message via info/success/fail functions
 ################################################################################
 test_vault_issue_certificate() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 8: Can issue certificate for PostgreSQL"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 8: Can issue certificate for PostgreSQL"
 
-    export VAULT_ADDR="http://localhost:8200"
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
+  export VAULT_ADDR="http://localhost:8200"
+  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
 
-    local cert_response=$(curl -sf -X POST \
-        -H "X-Vault-Token: $VAULT_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
-        "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>/dev/null)
+  local cert_response=$(curl -sf -X POST \
+    -H "X-Vault-Token: $VAULT_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
+    "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2> /dev/null)
 
-    local certificate=$(echo "$cert_response" | jq -r '.data.certificate // empty')
+  local certificate=$(echo "$cert_response" | jq -r '.data.certificate // empty')
 
-    if [ -n "$certificate" ]; then
-        success "Certificate issued successfully"
-        return 0
-    else
-        fail "Failed to issue certificate"
-        return 1
-    fi
+  if [ -n "$certificate" ]; then
+    success "Certificate issued successfully"
+    return 0
+  else
+    fail "Failed to issue certificate"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -519,24 +526,24 @@ test_vault_issue_certificate() {
 #   Suggests running vault-bootstrap if certificates are missing
 ################################################################################
 test_vault_ca_exported() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 9: CA certificates exported"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 9: CA certificates exported"
 
-    local ca_dir="${HOME}/.config/vault/ca"
+  local ca_dir="${HOME}/.config/vault/ca"
 
-    if [ -f "$ca_dir/ca-chain.pem" ] && [ -f "$ca_dir/root-ca.pem" ]; then
-        # Verify the certificate is valid
-        if openssl x509 -in "$ca_dir/ca-chain.pem" -noout -text &>/dev/null; then
-            success "CA certificates exported and valid"
-            return 0
-        else
-            fail "CA certificate file exists but is invalid"
-            return 1
-        fi
+  if [ -f "$ca_dir/ca-chain.pem" ] && [ -f "$ca_dir/root-ca.pem" ]; then
+    # Verify the certificate is valid
+    if openssl x509 -in "$ca_dir/ca-chain.pem" -noout -text &> /dev/null; then
+      success "CA certificates exported and valid"
+      return 0
     else
-        fail "CA certificates not exported - run vault-bootstrap"
-        return 1
+      fail "CA certificate file exists but is invalid"
+      return 1
     fi
+  else
+    fail "CA certificates not exported - run vault-bootstrap"
+    return 1
+  fi
 }
 
 ################################################################################
@@ -563,27 +570,27 @@ test_vault_ca_exported() {
 #   Test status message via info/success/fail functions
 ################################################################################
 test_management_commands() {
-    TESTS_RUN=$((TESTS_RUN + 1))
-    info "Test 10: Management script Vault commands work"
+  TESTS_RUN=$((TESTS_RUN + 1))
+  info "Test 10: Management script Vault commands work"
 
-    # Test vault-status
-    if "$PROJECT_ROOT/devstack" vault-status &>/dev/null; then
-        # Test vault-token
-        local token=$("$PROJECT_ROOT/devstack" vault-token 2>/dev/null)
+  # Test vault-status
+  if "$PROJECT_ROOT/devstack" vault-status &> /dev/null; then
+    # Test vault-token
+    local token=$("$PROJECT_ROOT/devstack" vault-token 2> /dev/null)
 
-        if [ -n "$token" ]; then
-            # Test vault-show-password
-            local password=$("$PROJECT_ROOT/devstack" vault-show-password postgres 2>/dev/null)
+    if [ -n "$token" ]; then
+      # Test vault-show-password
+      local password=$("$PROJECT_ROOT/devstack" vault-show-password postgres 2> /dev/null)
 
-            if [ -n "$password" ]; then
-                success "Management commands work correctly"
-                return 0
-            fi
-        fi
+      if [ -n "$password" ]; then
+        success "Management commands work correctly"
+        return 0
+      fi
     fi
+  fi
 
-    fail "Some management commands failed"
-    return 1
+  fail "Some management commands failed"
+  return 1
 }
 
 ################################################################################
@@ -614,47 +621,47 @@ test_management_commands() {
 #   Test execution progress and final summary report to stdout
 ################################################################################
 run_all_tests() {
-    echo
-    echo "========================================="
-    echo "  Vault Integration Test Suite"
-    echo "========================================="
-    echo
+  echo
+  echo "========================================="
+  echo "  Vault Integration Test Suite"
+  echo "========================================="
+  echo
 
-    test_vault_running || true
-    test_vault_unsealed || true
-    test_vault_keys_exist || true
-    test_vault_bootstrap_pki || true
-    test_vault_certificate_roles || true
-    test_vault_secrets_stored || true
-    test_vault_postgres_credentials || true
-    test_vault_issue_certificate || true
-    test_vault_ca_exported || true
-    test_management_commands || true
+  test_vault_running || true
+  test_vault_unsealed || true
+  test_vault_keys_exist || true
+  test_vault_bootstrap_pki || true
+  test_vault_certificate_roles || true
+  test_vault_secrets_stored || true
+  test_vault_postgres_credentials || true
+  test_vault_issue_certificate || true
+  test_vault_ca_exported || true
+  test_management_commands || true
 
+  echo
+  echo "========================================="
+  echo "  Test Results"
+  echo "========================================="
+  echo "Total tests: $TESTS_RUN"
+  echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
+  if [ $TESTS_FAILED -gt 0 ]; then
+    echo -e "${RED}Failed: $TESTS_FAILED${NC}"
     echo
-    echo "========================================="
-    echo "  Test Results"
-    echo "========================================="
-    echo "Total tests: $TESTS_RUN"
-    echo -e "${GREEN}Passed: $TESTS_PASSED${NC}"
-    if [ $TESTS_FAILED -gt 0 ]; then
-        echo -e "${RED}Failed: $TESTS_FAILED${NC}"
-        echo
-        echo "Failed tests:"
-        for test in "${FAILED_TESTS[@]}"; do
-            echo -e "  ${RED}✗${NC} $test"
-        done
-    fi
-    echo "========================================="
-    echo
+    echo "Failed tests:"
+    for test in "${FAILED_TESTS[@]}"; do
+      echo -e "  ${RED}✗${NC} $test"
+    done
+  fi
+  echo "========================================="
+  echo
 
-    if [ $TESTS_FAILED -eq 0 ]; then
-        echo -e "${GREEN}✓ All Vault tests passed!${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Some tests failed${NC}"
-        return 1
-    fi
+  if [ $TESTS_FAILED -eq 0 ]; then
+    echo -e "${GREEN}✓ All Vault tests passed!${NC}"
+    return 0
+  else
+    echo -e "${RED}✗ Some tests failed${NC}"
+    return 1
+  fi
 }
 
 # Main

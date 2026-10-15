@@ -79,7 +79,7 @@ NC='\033[0m'
 #   Writes formatted info message to stdout
 #######################################
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+  echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 #######################################
@@ -95,7 +95,7 @@ info() {
 #   Writes formatted success message to stdout
 #######################################
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
 #######################################
@@ -111,7 +111,7 @@ success() {
 #   Writes formatted warning message to stdout
 #######################################
 warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+  echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 #######################################
@@ -127,8 +127,8 @@ warning() {
 #   Writes formatted error message to stdout, then exits
 #######################################
 error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-    exit 1
+  echo -e "${RED}[ERROR]${NC} $1"
+  exit 1
 }
 
 ################################################################################
@@ -137,7 +137,7 @@ error() {
 
 # Check if password is set
 if [ -z "${REDIS_PASSWORD:-}" ]; then
-    error "REDIS_PASSWORD environment variable is not set"
+  error "REDIS_PASSWORD environment variable is not set"
 fi
 
 echo
@@ -160,49 +160,49 @@ attempt=0
 # Wait for node 1 (172.20.2.13:6379)
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if docker exec dev-redis-1 redis-cli -h 172.20.2.13 -p 6379 -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG; then
-        success "Redis node 1 is ready"
-        break
-    fi
-    attempt=$((attempt + 1))
-    sleep 1
+  if docker exec dev-redis-1 redis-cli -h 172.20.2.13 -p 6379 -a "$REDIS_PASSWORD" ping 2> /dev/null | grep -q PONG; then
+    success "Redis node 1 is ready"
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
 done
 
 # Check if we exceeded max attempts
 if [ $attempt -eq $max_attempts ]; then
-    error "Redis node 1 did not become ready in time"
+  error "Redis node 1 did not become ready in time"
 fi
 
 # Wait for node 2 (172.20.2.16:6379)
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if docker exec dev-redis-2 redis-cli -h 172.20.2.16 -p 6379 -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG; then
-        success "Redis node 2 is ready"
-        break
-    fi
-    attempt=$((attempt + 1))
-    sleep 1
+  if docker exec dev-redis-2 redis-cli -h 172.20.2.16 -p 6379 -a "$REDIS_PASSWORD" ping 2> /dev/null | grep -q PONG; then
+    success "Redis node 2 is ready"
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
 done
 
 # Check if we exceeded max attempts
 if [ $attempt -eq $max_attempts ]; then
-    error "Redis node 2 did not become ready in time"
+  error "Redis node 2 did not become ready in time"
 fi
 
 # Wait for node 3 (172.20.2.17:6379)
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
-    if docker exec dev-redis-3 redis-cli -h 172.20.2.17 -p 6379 -a "$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG; then
-        success "Redis node 3 is ready"
-        break
-    fi
-    attempt=$((attempt + 1))
-    sleep 1
+  if docker exec dev-redis-3 redis-cli -h 172.20.2.17 -p 6379 -a "$REDIS_PASSWORD" ping 2> /dev/null | grep -q PONG; then
+    success "Redis node 3 is ready"
+    break
+  fi
+  attempt=$((attempt + 1))
+  sleep 1
 done
 
 # Check if we exceeded max attempts
 if [ $attempt -eq $max_attempts ]; then
-    error "Redis node 3 did not become ready in time"
+  error "Redis node 3 did not become ready in time"
 fi
 
 ################################################################################
@@ -211,13 +211,13 @@ fi
 # already operational and script exits successfully without re-initializing.
 ################################################################################
 info "Checking if cluster is already initialized..."
-if docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster info 2>/dev/null | grep -q "cluster_state:ok"; then
-    warning "Cluster is already initialized and running"
-    docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster info 2>/dev/null
-    docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster nodes 2>/dev/null
-    echo
-    success "Cluster is operational"
-    exit 0
+if docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster info 2> /dev/null | grep -q "cluster_state:ok"; then
+  warning "Cluster is already initialized and running"
+  docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster info 2> /dev/null
+  docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" cluster nodes 2> /dev/null
+  echo
+  success "Cluster is operational"
+  exit 0
 fi
 
 ################################################################################
@@ -231,16 +231,16 @@ info "This will assign slots to the 3 master nodes..."
 
 # Use redis-cli --cluster create
 docker exec dev-redis-1 redis-cli --cluster create \
-    172.20.2.13:6379 \
-    172.20.2.16:6379 \
-    172.20.2.17:6379 \
-    --cluster-yes \
-    -a "$REDIS_PASSWORD"
+  172.20.2.13:6379 \
+  172.20.2.16:6379 \
+  172.20.2.17:6379 \
+  --cluster-yes \
+  -a "$REDIS_PASSWORD"
 
 if [ $? -eq 0 ]; then
-    success "Redis cluster created successfully!"
+  success "Redis cluster created successfully!"
 else
-    error "Failed to create Redis cluster"
+  error "Failed to create Redis cluster"
 fi
 
 ################################################################################

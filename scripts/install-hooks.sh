@@ -36,7 +36,10 @@ readonly NC='\033[0m'
 
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit "${2:-1}"; }
+error() {
+  echo -e "${RED}[ERROR]${NC} $1" >&2
+  exit "${2:-1}"
+}
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
 #######################################
@@ -46,32 +49,32 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 #   0 - Hook installed successfully
 #######################################
 install_precommit_hook() {
-    local hook_source="${SCRIPT_DIR}/hooks/pre-commit"
-    local hook_dest="${PROJECT_ROOT}/.git/hooks/pre-commit"
+  local hook_source="${SCRIPT_DIR}/hooks/pre-commit"
+  local hook_dest="${PROJECT_ROOT}/.git/hooks/pre-commit"
 
-    info "Installing pre-commit hook..."
+  info "Installing pre-commit hook..."
 
-    # Check if source exists
-    if [ ! -f "$hook_source" ]; then
-        error "Hook source not found: $hook_source"
-    fi
+  # Check if source exists
+  if [ ! -f "$hook_source" ]; then
+    error "Hook source not found: $hook_source"
+  fi
 
-    # Backup existing hook if present
-    if [ -f "$hook_dest" ]; then
-        local backup="${hook_dest}.backup.$(date +%Y%m%d_%H%M%S)"
-        info "Backing up existing hook to: $backup"
-        mv "$hook_dest" "$backup"
-    fi
+  # Backup existing hook if present
+  if [ -f "$hook_dest" ]; then
+    local backup="${hook_dest}.backup.$(date +%Y%m%d_%H%M%S)"
+    info "Backing up existing hook to: $backup"
+    mv "$hook_dest" "$backup"
+  fi
 
-    # Create symbolic link
-    ln -sf "../../scripts/hooks/pre-commit" "$hook_dest"
+  # Create symbolic link
+  ln -sf "../../scripts/hooks/pre-commit" "$hook_dest"
 
-    # Verify installation
-    if [ -L "$hook_dest" ]; then
-        success "Pre-commit hook installed"
-    else
-        error "Failed to install pre-commit hook"
-    fi
+  # Verify installation
+  if [ -L "$hook_dest" ]; then
+    success "Pre-commit hook installed"
+  else
+    error "Failed to install pre-commit hook"
+  fi
 }
 
 #######################################
@@ -81,29 +84,29 @@ install_precommit_hook() {
 #   0 - Installation verified
 #######################################
 verify_installation() {
-    local hook_file="${PROJECT_ROOT}/.git/hooks/pre-commit"
+  local hook_file="${PROJECT_ROOT}/.git/hooks/pre-commit"
 
-    info "Verifying installation..."
+  info "Verifying installation..."
 
-    # Check if hook exists
-    if [ ! -f "$hook_file" ]; then
-        error "Hook not found after installation"
-    fi
+  # Check if hook exists
+  if [ ! -f "$hook_file" ]; then
+    error "Hook not found after installation"
+  fi
 
-    # Check if hook is executable
-    if [ ! -x "$hook_file" ]; then
-        warn "Hook is not executable - fixing..."
-        chmod +x "$hook_file"
-    fi
+  # Check if hook is executable
+  if [ ! -x "$hook_file" ]; then
+    warn "Hook is not executable - fixing..."
+    chmod +x "$hook_file"
+  fi
 
-    # Test hook syntax
-    if bash -n "$hook_file" 2>/dev/null; then
-        success "Hook syntax is valid"
-    else
-        error "Hook has syntax errors"
-    fi
+  # Test hook syntax
+  if bash -n "$hook_file" 2> /dev/null; then
+    success "Hook syntax is valid"
+  else
+    error "Hook has syntax errors"
+  fi
 
-    success "Installation verified"
+  success "Installation verified"
 }
 
 #######################################
@@ -113,54 +116,54 @@ verify_installation() {
 #   None
 #######################################
 show_instructions() {
-    echo ""
-    info "Git hooks installed successfully!"
-    echo ""
-    echo "The pre-commit hook will now run automatically before each commit."
-    echo ""
-    echo "What it checks:"
-    echo "  ✓ OpenAPI spec is valid YAML"
-    echo "  ✓ API implementations are synchronized (if running)"
-    echo "  ✓ Router changes are intentional"
-    echo ""
-    echo "To bypass the hook (use sparingly):"
-    echo "  git commit --no-verify"
-    echo ""
-    echo "To test the hook manually:"
-    echo "  .git/hooks/pre-commit"
-    echo ""
-    echo "To uninstall:"
-    echo "  rm .git/hooks/pre-commit"
-    echo ""
+  echo ""
+  info "Git hooks installed successfully!"
+  echo ""
+  echo "The pre-commit hook will now run automatically before each commit."
+  echo ""
+  echo "What it checks:"
+  echo "  ✓ OpenAPI spec is valid YAML"
+  echo "  ✓ API implementations are synchronized (if running)"
+  echo "  ✓ Router changes are intentional"
+  echo ""
+  echo "To bypass the hook (use sparingly):"
+  echo "  git commit --no-verify"
+  echo ""
+  echo "To test the hook manually:"
+  echo "  .git/hooks/pre-commit"
+  echo ""
+  echo "To uninstall:"
+  echo "  rm .git/hooks/pre-commit"
+  echo ""
 }
 
 #######################################
 # Main execution.
 #######################################
 main() {
-    info "Installing git hooks for API synchronization..."
-    echo ""
+  info "Installing git hooks for API synchronization..."
+  echo ""
 
-    # Check if in git repository
-    if [ ! -d "${PROJECT_ROOT}/.git" ]; then
-        error "Not a git repository: $PROJECT_ROOT"
-    fi
+  # Check if in git repository
+  if [ ! -d "${PROJECT_ROOT}/.git" ]; then
+    error "Not a git repository: $PROJECT_ROOT"
+  fi
 
-    # Ensure hooks directory exists
-    mkdir -p "${PROJECT_ROOT}/.git/hooks"
+  # Ensure hooks directory exists
+  mkdir -p "${PROJECT_ROOT}/.git/hooks"
 
-    # Install hooks
-    install_precommit_hook
-    echo ""
+  # Install hooks
+  install_precommit_hook
+  echo ""
 
-    # Verify installation
-    verify_installation
-    echo ""
+  # Verify installation
+  verify_installation
+  echo ""
 
-    # Show instructions
-    show_instructions
+  # Show instructions
+  show_instructions
 
-    success "✓ Git hooks installation complete!"
+  success "✓ Git hooks installation complete!"
 }
 
 main "$@"
