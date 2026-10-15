@@ -74,17 +74,17 @@ cleanup() {
     log_info "Cleaning up test backups..."
 
     if [ -n "${VALID_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${VALID_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${VALID_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${VALID_BACKUP_ID:?}"
       log_info "Removed: ${VALID_BACKUP_ID}"
     fi
 
     if [ -n "${CORRUPTED_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${CORRUPTED_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${CORRUPTED_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${CORRUPTED_BACKUP_ID:?}"
       log_info "Removed: ${CORRUPTED_BACKUP_ID}"
     fi
 
     if [ -n "${MISSING_FILE_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${MISSING_FILE_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${MISSING_FILE_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${MISSING_FILE_BACKUP_ID:?}"
       log_info "Removed: ${MISSING_FILE_BACKUP_ID}"
     fi
 
@@ -287,7 +287,7 @@ test_encrypted_backup() {
     log_info "✓ Found ${GPG_FILES} encrypted files"
   else
     log_fail "Expected at least 4 .gpg files, found: ${GPG_FILES}"
-    rm -rf "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}"
+    rm -rf "${BACKUPS_DIR:?}/${ENCRYPTED_BACKUP_ID:?}"
     return 1
   fi
 
@@ -295,7 +295,7 @@ test_encrypted_backup() {
   VERIFY_OUTPUT=$(cd "${PROJECT_ROOT}" && ../devstack verify "${ENCRYPTED_BACKUP_ID}" 2>&1)
 
   # Clean up encrypted backup
-  rm -rf "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}"
+  rm -rf "${BACKUPS_DIR:?}/${ENCRYPTED_BACKUP_ID:?}"
 
   if echo "${VERIFY_OUTPUT}" | grep -q "Backup verification PASSED"; then
     log_pass "Encrypted backup verified successfully"

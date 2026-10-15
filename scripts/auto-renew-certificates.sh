@@ -216,7 +216,7 @@ renew_certificate() {
 
   # Remove old certificate
   if [ -d "$CERT_BASE_DIR/$service" ]; then
-    rm -rf "$CERT_BASE_DIR/$service"
+    rm -rf "${CERT_BASE_DIR:?}/${service:?}"
     log "${BLUE}    Removed old certificate directory${NC}"
   fi
 

@@ -73,12 +73,12 @@ cleanup() {
     log_info "Cleaning up test backups..."
 
     if [ -n "${ENCRYPTED_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${ENCRYPTED_BACKUP_ID:?}"
       log_info "Removed: ${ENCRYPTED_BACKUP_ID}"
     fi
 
     if [ -n "${UNENCRYPTED_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${UNENCRYPTED_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${UNENCRYPTED_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${UNENCRYPTED_BACKUP_ID:?}"
       log_info "Removed: ${UNENCRYPTED_BACKUP_ID}"
     fi
 
