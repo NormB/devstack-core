@@ -16,13 +16,13 @@ from app.middleware.exception_handlers import (
     validation_error_handler,
     http_exception_handler,
     unhandled_exception_handler,
-    get_request_id
+    get_request_id,
 )
 from app.exceptions import (
     BaseAPIException,
     ServiceUnavailableError,
     VaultUnavailableError,
-    DatabaseConnectionError
+    DatabaseConnectionError,
 )
 
 
@@ -73,9 +73,7 @@ class TestBaseAPIExceptionHandler:
     async def test_handler_returns_json_response(self, mock_request):
         """Test handler returns proper JSON response"""
         exc = BaseAPIException(
-            message="Test error",
-            status_code=500,
-            details={"key": "value"}
+            message="Test error", status_code=500, details={"key": "value"}
         )
 
         response = await base_api_exception_handler(mock_request, exc)
@@ -93,21 +91,21 @@ class TestBaseAPIExceptionHandler:
 
         assert response.headers["X-Request-ID"] == "test-request-123"
 
-    @patch('app.middleware.exception_handlers.settings')
-    async def test_handler_includes_debug_info_when_debug_enabled(
+    @patch("app.middleware.exception_handlers.settings")
+    async def test_handler_excludes_debug_info_when_debug_enabled(
         self, mock_settings, mock_request
     ):
-        """Test handler includes debug info when DEBUG=True"""
+        """Test handler returns no traceback even when DEBUG=True"""
         mock_settings.DEBUG = True
         exc = BaseAPIException(message="Debug error", status_code=500)
 
         response = await base_api_exception_handler(mock_request, exc)
 
         data = response.body.decode()
-        assert "debug" in data
-        assert "traceback" in data
+        assert '"debug"' not in data
+        assert "traceback" not in data.lower()
 
-    @patch('app.middleware.exception_handlers.settings')
+    @patch("app.middleware.exception_handlers.settings")
     async def test_handler_excludes_debug_info_when_debug_disabled(
         self, mock_settings, mock_request
     ):
@@ -121,7 +119,7 @@ class TestBaseAPIExceptionHandler:
         # Check that debug is not in the response (comparing strings since body is bytes)
         assert "traceback" not in data.lower() or "debug" not in data
 
-    @patch('app.middleware.exception_handlers.error_counter')
+    @patch("app.middleware.exception_handlers.error_counter")
     async def test_handler_increments_metrics(self, mock_counter, mock_request):
         """Test handler increments Prometheus metrics"""
         exc = BaseAPIException(message="Metric test", status_code=404)
@@ -129,8 +127,7 @@ class TestBaseAPIExceptionHandler:
         await base_api_exception_handler(mock_request, exc)
 
         mock_counter.labels.assert_called_once_with(
-            error_type="BaseAPIException",
-            status_code=404
+            error_type="BaseAPIException", status_code=404
         )
         mock_counter.labels.return_value.inc.assert_called_once()
 
@@ -143,8 +140,7 @@ class TestServiceUnavailableHandler:
     async def test_handler_returns_503(self, mock_request):
         """Test handler returns 503 status code"""
         exc = ServiceUnavailableError(
-            service_name="postgres",
-            message="Database is down"
+            service_name="postgres", message="Database is down"
         )
 
         response = await service_unavailable_handler(mock_request, exc)
@@ -164,8 +160,7 @@ class TestServiceUnavailableHandler:
     async def test_handler_includes_service_name(self, mock_request):
         """Test handler includes service name in response"""
         exc = DatabaseConnectionError(
-            database_type="mysql",
-            message="Connection failed"
+            database_type="mysql", message="Connection failed"
         )
 
         response = await service_unavailable_handler(mock_request, exc)
@@ -173,7 +168,7 @@ class TestServiceUnavailableHandler:
         data = response.body.decode()
         assert "mysql" in data
 
-    @patch('app.middleware.exception_handlers.error_counter')
+    @patch("app.middleware.exception_handlers.error_counter")
     async def test_handler_increments_metrics(self, mock_counter, mock_request):
         """Test handler increments Prometheus metrics"""
         exc = ServiceUnavailableError(service_name="redis")
@@ -197,7 +192,7 @@ class TestValidationErrorHandler:
             {
                 "loc": ["body", "field"],
                 "msg": "field required",
-                "type": "value_error.missing"
+                "type": "value_error.missing",
             }
         ]
 
@@ -212,7 +207,7 @@ class TestValidationErrorHandler:
             {
                 "loc": ["query", "limit"],
                 "msg": "value is not a valid integer",
-                "type": "type_error.integer"
+                "type": "type_error.integer",
             }
         ]
 
@@ -222,7 +217,7 @@ class TestValidationErrorHandler:
         assert "validation_errors" in data
         assert "limit" in data
 
-    @patch('app.middleware.exception_handlers.error_counter')
+    @patch("app.middleware.exception_handlers.error_counter")
     async def test_handler_increments_metrics(self, mock_counter, mock_request):
         """Test handler increments Prometheus metrics"""
         exc = MagicMock(spec=RequestValidationError)
@@ -232,7 +227,7 @@ class TestValidationErrorHandler:
 
         mock_counter.labels.assert_called_once_with(
             error_type="ValidationError",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
 
 
@@ -258,7 +253,7 @@ class TestHTTPExceptionHandler:
         data = response.body.decode()
         assert "Forbidden resource" in data
 
-    @patch('app.middleware.exception_handlers.error_counter')
+    @patch("app.middleware.exception_handlers.error_counter")
     async def test_handler_increments_metrics(self, mock_counter, mock_request):
         """Test handler increments Prometheus metrics"""
         exc = StarletteHTTPException(status_code=401, detail="Unauthorized")
@@ -266,8 +261,7 @@ class TestHTTPExceptionHandler:
         await http_exception_handler(mock_request, exc)
 
         mock_counter.labels.assert_called_once_with(
-            error_type="HTTPException",
-            status_code=401
+            error_type="HTTPException", status_code=401
         )
 
 
@@ -293,21 +287,22 @@ class TestUnhandledExceptionHandler:
         data = response.body.decode()
         assert "unexpected error occurred" in data.lower()
 
-    @patch('app.middleware.exception_handlers.settings')
-    async def test_handler_includes_debug_info_when_debug_enabled(
+    @patch("app.middleware.exception_handlers.settings")
+    async def test_handler_excludes_debug_info_when_debug_enabled(
         self, mock_settings, mock_request
     ):
-        """Test handler includes exception details in debug mode"""
+        """Test handler returns no exception details even when DEBUG=True"""
         mock_settings.DEBUG = True
         exc = RuntimeError("Debug this error")
 
         response = await unhandled_exception_handler(mock_request, exc)
 
         data = response.body.decode()
-        assert "debug" in data
-        assert "RuntimeError" in data
+        assert "debug" not in data.lower()
+        assert "RuntimeError" not in data
+        assert "Debug this error" not in data
 
-    @patch('app.middleware.exception_handlers.settings')
+    @patch("app.middleware.exception_handlers.settings")
     async def test_handler_excludes_debug_info_when_debug_disabled(
         self, mock_settings, mock_request
     ):
@@ -321,7 +316,7 @@ class TestUnhandledExceptionHandler:
         # Should not include specific exception details
         assert "RuntimeError" not in data or "debug" not in data.lower()
 
-    @patch('app.middleware.exception_handlers.error_counter')
+    @patch("app.middleware.exception_handlers.error_counter")
     async def test_handler_increments_metrics(self, mock_counter, mock_request):
         """Test handler increments Prometheus metrics"""
         exc = ZeroDivisionError("Division by zero")
@@ -330,5 +325,5 @@ class TestUnhandledExceptionHandler:
 
         mock_counter.labels.assert_called_once_with(
             error_type="ZeroDivisionError",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
