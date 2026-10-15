@@ -1,7 +1,9 @@
-# Exceptions for the Docker image scan in .github/workflows/security.yml.
+# Exceptions for the Docker image scan and the repository (fs) scan in
+# .github/workflows/security.yml.
 #
-# The rule: the scan counts CRITICAL findings that have a fix (--ignore-unfixed),
-# because a finding without a fix cannot be cleared by updating the image.
+# The rule for the image scan: it counts CRITICAL findings that have a fix
+# (--ignore-unfixed), because a finding without a fix cannot be cleared by
+# updating the image.
 # A fixed finding is listed here only when the newest published tag of the
 # image still carries it, so this repository cannot act on it either; the
 # entry names the binary, the fix it waits for, and the day that was checked.
@@ -79,3 +81,16 @@ vulnerabilities:
       google.golang.org/grpc, fixed in 1.79.3; linked into the newest Vault
       and cadvisor releases.
     expired_at: 2026-10-31
+
+  # Repository (fs) scan. This advisory has no fixed version: it marks the
+  # golang.org/x/crypto/openpgp packages as unmaintained in every release of
+  # the module. The Go reference app does not import them; checked
+  # 2026-10-15 with `go mod why golang.org/x/crypto/openpgp` ("main module
+  # does not need package"). Re-check that on expiry.
+  - id: GO-2026-5932
+    paths:
+      - "reference-apps/golang/go.mod"
+    statement: >-
+      golang.org/x/crypto/openpgp is unmaintained, with no fixed release; the
+      Go reference app does not import any openpgp package.
+    expired_at: 2027-01-15
