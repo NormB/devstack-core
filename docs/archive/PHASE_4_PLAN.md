@@ -12,6 +12,7 @@
 Phase 4 finalizes the DevStack Core improvement initiative by updating all documentation to reflect changes from Phases 1-3, enhancing the CI/CD pipeline with security and validation checks, and creating comprehensive migration guides. This phase ensures knowledge transfer, maintainability, and production-readiness.
 
 **Key Objectives:**
+
 1. Update all documentation with AppRole, TLS, performance, and operational changes
 2. Enhance CI/CD with security scanning, TLS validation, and automated tests
 3. Create migration guides for root token → AppRole and HTTP → HTTPS transitions
@@ -24,6 +25,7 @@ Phase 4 finalizes the DevStack Core improvement initiative by updating all docum
 ### Changes to Document (Phases 1-3)
 
 **Phase 1: Security Hardening**
+
 - AppRole authentication for all 7 services (PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ, Forgejo, Reference API)
 - Dual-mode TLS support (services accept both TLS and non-TLS)
 - Two-tier PKI (Root CA → Intermediate CA → Service Certs)
@@ -32,6 +34,7 @@ Phase 4 finalizes the DevStack Core improvement initiative by updating all docum
 - Enhanced Vault security policies
 
 **Phase 2: Operations & Reliability**
+
 - Service health-check driven startup (Vault unsealing, credential fetching)
 - Automated backup/restore with validation
 - Disaster recovery procedures (10-12 minute RTO achieved)
@@ -39,6 +42,7 @@ Phase 4 finalizes the DevStack Core improvement initiative by updating all docum
 - Service profiles (minimal/standard/full/reference)
 
 **Phase 3: Performance & Testing**
+
 - Database performance tuning (PostgreSQL +41%, MySQL +37%, MongoDB +19%)
 - Redis cluster optimization (512MB memory, <3s failover)
 - 571+ total tests (95.2% of 600-test goal)
@@ -72,6 +76,7 @@ Update all 35 documentation files to reflect Phases 1-3 changes. Ensure accuracy
 5. **SERVICES.md** - Add AppRole auth details, TLS configuration per service
 
 **Key Additions:**
+
 - AppRole role_id/secret_id generation and storage
 - Certificate generation and renewal workflows
 - Dual-mode TLS configuration
@@ -89,6 +94,7 @@ Update all 35 documentation files to reflect Phases 1-3 changes. Ensure accuracy
 5. **QUICK_REFERENCE.md** - Add AppRole commands, certificate generation shortcuts
 
 **Key Additions:**
+
 - Common AppRole troubleshooting scenarios
 - Certificate expiration monitoring
 - Profile-based startup procedures
@@ -105,6 +111,7 @@ Update all 35 documentation files to reflect Phases 1-3 changes. Ensure accuracy
 5. **TLS_CERTIFICATE_MANAGEMENT.md** - Comprehensive certificate lifecycle
 
 **Key Additions:**
+
 - AppRole authentication flow diagrams
 - Certificate issuance and renewal workflows
 - Updated performance benchmarks
@@ -119,6 +126,7 @@ Update all 35 documentation files to reflect Phases 1-3 changes. Ensure accuracy
 3. **tests/TEST_COVERAGE.md** - Already updated in Phase 3 (verify completeness)
 
 **Key Additions:**
+
 - Performance regression testing procedures
 - Load testing scenarios
 - AppRole security validation
@@ -135,6 +143,7 @@ Update all 35 documentation files to reflect Phases 1-3 changes. Ensure accuracy
 5. **docs/README.md** - Update documentation index with new sections
 
 **Key Additions:**
+
 - Common AppRole questions
 - Certificate renewal FAQ
 - Upgrade paths from pre-Phase 1 state
@@ -346,6 +355,7 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 ## Success Criteria
 
 ### Task 4.1: Documentation Complete
+
 - [ ] All 35 documentation files reviewed and updated
 - [ ] AppRole procedures documented in all relevant files
 - [ ] TLS configuration documented for all services
@@ -355,6 +365,7 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 - [ ] Documentation accuracy verified
 
 ### Task 4.2: CI/CD Enhanced
+
 - [ ] AppRole security tests run in CI
 - [ ] TLS connection tests run in CI
 - [ ] Performance regression tests integrated
@@ -364,6 +375,7 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 - [ ] All workflows pass on main branch
 
 ### Task 4.3: Migration Guide Complete
+
 - [ ] Root token → AppRole migration documented
 - [ ] HTTP → HTTPS migration documented
 - [ ] Troubleshooting guide comprehensive
@@ -423,6 +435,7 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 ## Deliverables
 
 ### Documentation (Task 4.1)
+
 - Updated INSTALLATION.md
 - Updated VAULT.md
 - Updated SECURITY_ASSESSMENT.md
@@ -447,6 +460,7 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 - Updated docs/README.md
 
 ### CI/CD Enhancements (Task 4.2)
+
 - `.github/workflows/security-enhanced.yml`
 - `.github/workflows/performance.yml`
 - `.github/workflows/integration-tests.yml`
@@ -454,9 +468,11 @@ Create comprehensive migration guide for users upgrading from pre-Phase 1 DevSta
 - Updated `.github/workflows/README.md`
 
 ### Migration Guide (Task 4.3)
+
 - `docs/MIGRATION_GUIDE.md` (complete)
 
 ### Summary Documents
+
 - `docs/PHASE_4_SUMMARY.md` (at completion)
 
 ---

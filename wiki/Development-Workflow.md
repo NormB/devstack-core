@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [⚠️ Important: Not Production Code](#⚠️-important-not-production-code)
+- [⚠️ Important: Not Production Code](#️-important-not-production-code)
 - [What Are Reference Apps?](#what-are-reference-apps)
 - [Current Reference Apps](#current-reference-apps)
   - [1. FastAPI Code-First (Python)](#1-fastapi-code-first-python)
@@ -64,6 +64,7 @@ We provide **two FastAPI implementations** demonstrating different API developme
 **Pattern:** Implementation drives documentation
 
 **What it demonstrates:**
+
 - ✅ Vault integration (fetching secrets securely)
 - ✅ Database connectivity (PostgreSQL, MySQL, MongoDB)
 - ✅ Redis caching and cluster operations
@@ -74,6 +75,7 @@ We provide **two FastAPI implementations** demonstrating different API developme
 - ✅ Code-first development workflow
 
 **Quick Start:**
+
 ```bash
 # Start the code-first reference app
 docker compose up -d reference-api
@@ -99,6 +101,7 @@ curl http://localhost:8000/redis/cluster/info
 **Pattern:** OpenAPI specification drives implementation
 
 **What it demonstrates:**
+
 - ✅ **Same infrastructure integrations** as code-first
 - ✅ **Contract-first development** - OpenAPI spec defines the API
 - ✅ **Generated models** from specification
@@ -106,6 +109,7 @@ curl http://localhost:8000/redis/cluster/info
 - ✅ **API-first workflow** - design contract before implementation
 
 **Quick Start:**
+
 ```bash
 # Start the API-first reference app
 docker compose up -d api-first
@@ -155,6 +159,7 @@ pytest -v
 See [shared/test-suite/README.md](shared/test-suite/README.md) for details.
 
 **What Gets Validated:**
+
 - ✅ Identical endpoint paths
 - ✅ Identical response structures
 - ✅ Identical error handling
@@ -207,12 +212,14 @@ curl http://localhost:8000/redis/cluster/nodes | jq '.nodes[].role'
 **Problem:** You need to add Redis caching to your application.
 
 **Without reference app:**
+
 - ❌ Read Redis docs
 - ❌ Figure out authentication
 - ❌ Debug connection issues
 - ❌ Implement patterns from scratch
 
 **With reference app:**
+
 ```bash
 # 1. Verify Redis is working
 curl http://localhost:8000/health/redis
@@ -247,6 +254,7 @@ password = creds.get("password")
 ```
 
 **Why this matters:**
+
 - ✅ No hardcoded passwords
 - ✅ Centralized secret management
 - ✅ Credentials can be rotated without code changes
@@ -274,6 +282,7 @@ await conn.close()
 ```
 
 **What you learn:**
+
 - ✅ How to integrate Vault with databases
 - ✅ Async database operations
 - ✅ Connection management
@@ -303,6 +312,7 @@ await client.close()
 ```
 
 **What you learn:**
+
 - ✅ Redis cluster authentication
 - ✅ Setting TTL for cache entries
 - ✅ Async Redis operations
@@ -327,14 +337,16 @@ await client.close()
 Each reference app provides interactive API documentation:
 
 **Code-First (Port 8000):**
-- **Swagger UI:** http://localhost:8000/docs
-- **ReDoc:** http://localhost:8000/redoc
-- **OpenAPI JSON:** http://localhost:8000/openapi.json
+
+- **Swagger UI:** <http://localhost:8000/docs>
+- **ReDoc:** <http://localhost:8000/redoc>
+- **OpenAPI JSON:** <http://localhost:8000/openapi.json>
 
 **API-First (Port 8001):**
-- **Swagger UI:** http://localhost:8001/docs
-- **ReDoc:** http://localhost:8001/redoc
-- **OpenAPI JSON:** http://localhost:8001/openapi.json
+
+- **Swagger UI:** <http://localhost:8001/docs>
+- **ReDoc:** <http://localhost:8001/redoc>
+- **OpenAPI JSON:** <http://localhost:8001/openapi.json>
 
 Both implementations expose identical API endpoints with identical behavior.
 
@@ -345,6 +357,7 @@ Both implementations expose identical API endpoints with identical behavior.
 **Pattern:** Production-grade Go patterns with Gin framework
 
 **What it demonstrates:**
+
 - ✅ **Same infrastructure integrations** as Python implementations
 - ✅ **Concurrency** - Goroutines for async operations
 - ✅ **Context propagation** - Proper context.Context usage
@@ -353,6 +366,7 @@ Both implementations expose identical API endpoints with identical behavior.
 - ✅ **Structured logging** - Logrus with request ID correlation
 
 **Quick Start:**
+
 ```bash
 # Start the Go reference API
 docker compose up -d golang-api
@@ -375,6 +389,7 @@ curl http://localhost:8002/health/all
 **Pattern:** Modern async/await patterns with Express
 
 **What it demonstrates:**
+
 - ✅ **Same infrastructure integrations** as other implementations
 - ✅ **Async/await** - Modern JavaScript asynchronous patterns
 - ✅ **Promise.allSettled** - Concurrent operations
@@ -383,6 +398,7 @@ curl http://localhost:8002/health/all
 - ✅ **Graceful shutdown** - Clean signal handling
 
 **Quick Start:**
+
 ```bash
 # Start the Node.js reference API
 docker compose up -d nodejs-api
@@ -405,6 +421,7 @@ curl http://localhost:8003/health/all
 **Pattern:** High-performance async with Actix-web (~40% complete)
 
 **What it demonstrates:**
+
 - ✅ **Actix-web framework** - Fast, async web framework with 4 endpoints
 - ✅ **Type safety** - Rust's compile-time guarantees preventing runtime errors
 - ✅ **Zero-cost abstractions** - Performance without overhead
@@ -416,6 +433,7 @@ curl http://localhost:8003/health/all
 - ✅ **CI/CD integration** - Automated linting (clippy) and formatting (rustfmt)
 
 **Quick Start:**
+
 ```bash
 # Start the Rust reference API
 docker compose up -d rust-api
@@ -565,6 +583,7 @@ Reference apps demonstrate integration patterns but **not production security**:
 ## Getting Help
 
 **Documentation:**
+
 - Main README: [../README.md](../README.md)
 - Code-First README: [fastapi/README.md](fastapi/README.md)
 - API-First README: [fastapi-api-first/README.md](fastapi-api-first/README.md)
@@ -573,18 +592,21 @@ Reference apps demonstrate integration patterns but **not production security**:
 - Test Documentation: [../tests/README.md](../tests/README.md)
 
 **Quick Links (Code-First):**
-- Interactive API: http://localhost:8000/docs
-- Health Checks: http://localhost:8000/health/all
-- Redis Cluster: http://localhost:8000/redis/cluster/info
+
+- Interactive API: <http://localhost:8000/docs>
+- Health Checks: <http://localhost:8000/health/all>
+- Redis Cluster: <http://localhost:8000/redis/cluster/info>
 
 **Quick Links (API-First):**
-- Interactive API: http://localhost:8001/docs
-- Health Checks: http://localhost:8001/health/all
-- Redis Cluster: http://localhost:8001/redis/cluster/info
+
+- Interactive API: <http://localhost:8001/docs>
+- Health Checks: <http://localhost:8001/health/all>
+- Redis Cluster: <http://localhost:8001/redis/cluster/info>
 
 ## Summary
 
 Reference apps are **educational tools** that:
+
 - 📚 Show you how to integrate with infrastructure
 - 🔍 Help you test and debug
 - 🚀 Provide starting points for your applications

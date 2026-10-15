@@ -18,6 +18,7 @@ Comprehensive guide for testing Actix-web HTTP APIs using Rust testing best prac
 ### Unit Tests vs Integration Tests
 
 **Unit Tests:**
+
 - Small and focused, testing one module in isolation
 - Can test private interfaces
 - Located in the same file as the code (`src/` directory)
@@ -25,6 +26,7 @@ Comprehensive guide for testing Actix-web HTTP APIs using Rust testing best prac
 - Compile only when running `cargo test`
 
 **Integration Tests:**
+
 - Entirely external to your library
 - Use only the public interface
 - Test multiple modules working together
@@ -531,11 +533,13 @@ mod tests {
 ### 1. Positive and Negative Test Cases
 
 **Positive Tests (Happy Path):**
+
 - Valid inputs with expected outputs
 - Normal operation flow
 - Successful responses
 
 **Negative Tests (Error Cases):**
+
 - Invalid inputs
 - Missing required fields
 - Edge cases and boundary conditions

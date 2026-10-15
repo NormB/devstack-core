@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [[1.1.0] - 2025-10-27](#110-2025-10-27)
+- [[1.1.0] - 2025-10-27](#110---2025-10-27)
   - [Added](#added)
   - [Changed](#changed)
   - [Fixed](#fixed)
@@ -16,13 +16,14 @@
   - [Architecture](#architecture)
   - [Security](#security)
   - [Documentation](#documentation)
-- [[1.0.0] - Previous Release](#100-previous-release)
+- [[1.0.0] - Previous Release](#100---previous-release)
 
 ---
 
 ## [1.1.0] - 2025-10-27
 
 ### Added
+
 - **API-First Implementation** - Complete containerized FastAPI implementation running on port 8001
   - Generated from OpenAPI specification following API-first development pattern
   - Docker containerization with Dockerfile, init.sh, and start.sh
@@ -47,6 +48,7 @@
   - Complete documentation in reference-apps/shared/test-suite/README.md
 
 ### Changed
+
 - **docker-compose.yml** - Added api-first service configuration
   - Service name: api-first
   - Container name: dev-api-first
@@ -67,11 +69,13 @@
   - Documents rate limiting and circuit breaker settings
 
 ### Fixed
+
 - Root endpoint parity between code-first and API-first implementations
 - Dependency version conflicts in API-first requirements.txt
 - Docker image build process for API-first service
 
 ### Test Results
+
 - **Shared Test Suite**: 26/26 tests passing (100% parity achieved)
 - **Pre-commit Hooks**: API synchronization validation passing
 - **Both APIs**: Healthy and operational
@@ -79,22 +83,26 @@
 ### Technical Details
 
 #### API Endpoints
-- **Code-First**: http://localhost:8000
-- **API-First**: http://localhost:8001
+
+- **Code-First**: <http://localhost:8000>
+- **API-First**: <http://localhost:8001>
 
 #### Docker Services
+
 - Service: api-first
 - Container: dev-api-first
 - Network: dev-services (172.20.0.104)
-- Health Check: HTTP GET http://localhost:8001/health
+- Health Check: HTTP GET <http://localhost:8001/health>
 
 #### Test Suite Location
+
 - Path: reference-apps/shared/test-suite/
 - Configuration: pytest.ini
 - Fixtures: conftest.py
 - Tests: test_health_checks.py, test_api_parity.py
 
 #### Running Tests
+
 ```bash
 cd reference-apps/shared/test-suite
 pip install -r requirements.txt
@@ -102,6 +110,7 @@ pytest -v
 ```
 
 #### Starting Services
+
 ```bash
 # Start both APIs
 docker compose up -d reference-api api-first
@@ -112,13 +121,16 @@ curl http://localhost:8001/health/
 ```
 
 ### Architecture
+
 Both implementations demonstrate real-world API development patterns:
+
 - **Code-First** (port 8000): Implementation drives documentation
 - **API-First** (port 8001): Contract drives implementation
 
 The shared test suite ensures both approaches maintain identical behavior and API contracts.
 
 ### Security
+
 - All secrets managed through Vault
 - TLS/HTTPS support on both implementations
 - Rate limiting and circuit breakers configured
@@ -126,6 +138,7 @@ The shared test suite ensures both approaches maintain identical behavior and AP
 - Request validation middleware active
 
 ### Documentation
+
 - Shared test suite README with complete usage instructions
 - API-first Dockerfile with detailed comments
 - Startup scripts with comprehensive documentation

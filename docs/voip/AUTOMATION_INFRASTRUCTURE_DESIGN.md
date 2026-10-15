@@ -5,6 +5,7 @@
 **Decision:** Use libvirt for VoIP VM automation with better tooling integration.
 
 **Key Questions to Address:**
+
 1. Where should the automation/orchestration environment run?
 2. Which configuration management tool: Ansible vs Puppet vs Chef?
 3. How to reduce container count in DevStack Core?
@@ -46,6 +47,7 @@ macOS Host
 ```
 
 **Pros:**
+
 - ✅ Clean separation of concerns
 - ✅ Isolated from DevStack Core
 - ✅ Can restart automation environment without affecting VoIP
@@ -54,12 +56,14 @@ macOS Host
 - ✅ Docker available for containerized automation tools
 
 **Cons:**
+
 - ❌ Another VM to manage (resource overhead)
 - ❌ Colima VM to libvirt VM communication complexity
 - ❌ Network configuration between VMs
 - ❌ Additional 2-4GB RAM for automation VM
 
 **Resource Cost:**
+
 - CPU: 2 cores
 - RAM: 4GB
 - Disk: 20GB
@@ -85,6 +89,7 @@ macOS Host
 ```
 
 **Pros:**
+
 - ✅ No additional VM overhead
 - ✅ Fast (no VM layer for automation)
 - ✅ Direct access to macOS filesystem
@@ -93,12 +98,14 @@ macOS Host
 - ✅ Zero additional resource cost
 
 **Cons:**
+
 - ⚠️ Mixes host environment with automation
 - ⚠️ macOS Python environment management
 - ⚠️ Ansible version conflicts possible
 - ⚠️ Less isolation
 
 **Resource Cost:**
+
 - CPU: 0 (native)
 - RAM: ~500MB (Ansible/Terraform processes)
 - Disk: 1-2GB (tools + dependencies)
@@ -120,18 +127,21 @@ macOS Host
 ```
 
 **Pros:**
+
 - ✅ No additional VM
 - ✅ Centralized in development environment
 - ✅ Easy access to DevStack databases/services
 - ✅ Can use Prometheus/Grafana from DevStack
 
 **Cons:**
+
 - ❌ Mixes development and automation concerns
 - ❌ Colima VM restarts affect automation
 - ❌ Resource contention with containers
 - ❌ VZ VM to libvirt VM communication complexity
 
 **Resource Cost:**
+
 - CPU: 0 (shared with DevStack)
 - RAM: +1GB (Ansible/Terraform)
 - Disk: 2GB
@@ -160,6 +170,7 @@ macOS Host
 ```
 
 **Pros:**
+
 - ✅ Best of both worlds
 - ✅ Edit on macOS (GUI editors, VS Code)
 - ✅ Execute in isolated VM (clean environment)
@@ -167,6 +178,7 @@ macOS Host
 - ✅ VM isolation for execution
 
 **Cons:**
+
 - ⚠️ Complexity of file sharing
 - ⚠️ Additional VM overhead
 
@@ -194,6 +206,7 @@ macOS Host
    - Visual Studio Code / IntelliJ for editing
 
 4. **Simple Network Topology**
+
    ```
    macOS (localhost)
      ↓ libvirt client
@@ -217,12 +230,14 @@ macOS Host
 #### Ansible (RECOMMENDED ✅)
 
 **Architecture:**
+
 - Agentless (SSH-based)
 - Push model
 - YAML playbooks
 - Python-based
 
 **Pros:**
+
 - ✅ No agents on target VMs (just SSH)
 - ✅ Simple installation: `brew install ansible`
 - ✅ Easy to learn (YAML, Jinja2 templates)
@@ -233,10 +248,12 @@ macOS Host
 - ✅ Can manage VMs AND configure services
 
 **Cons:**
+
 - ⚠️ SSH overhead for large deployments (not a concern for 2-10 VMs)
 - ⚠️ Serial execution by default (can parallelize)
 
 **Use Cases:**
+
 - ✅ Create libvirt VMs
 - ✅ Install VoIP software from source
 - ✅ Configure OpenSIPS/Asterisk/RTPEngine
@@ -244,6 +261,7 @@ macOS Host
 - ✅ Orchestrate complex workflows
 
 **Example Ansible Structure:**
+
 ```
 ~/automation/
 ├── ansible.cfg
@@ -266,12 +284,14 @@ macOS Host
 ```
 
 **Installation:**
+
 ```bash
 brew install ansible
 ansible --version  # Verify installation
 ```
 
 **Sample Playbook:**
+
 ```yaml
 # playbooks/create-voip-vm.yml
 ---
@@ -311,18 +331,21 @@ ansible --version  # Verify installation
 #### Puppet
 
 **Architecture:**
+
 - Agent-based
 - Pull model
 - Puppet DSL (Ruby-based)
 - Master-agent architecture
 
 **Pros:**
+
 - ✅ Mature (since 2005)
 - ✅ Strong enterprise adoption
 - ✅ Good for large-scale deployments (1000+ nodes)
 - ✅ Built-in reporting
 
 **Cons:**
+
 - ❌ Requires agent on every VM
 - ❌ Requires Puppet master server
 - ❌ Steeper learning curve (Puppet DSL)
@@ -331,6 +354,7 @@ ansible --version  # Verify installation
 - ❌ Higher resource overhead
 
 **When to Use:**
+
 - Large enterprise with 100+ VoIP servers
 - Already using Puppet for other infrastructure
 - Need compliance reporting
@@ -342,17 +366,20 @@ ansible --version  # Verify installation
 #### Chef
 
 **Architecture:**
+
 - Agent-based
 - Pull model
 - Ruby DSL (recipes/cookbooks)
 - Chef server required
 
 **Pros:**
+
 - ✅ Very powerful (full Ruby)
 - ✅ Good for complex orchestration
 - ✅ Strong enterprise adoption
 
 **Cons:**
+
 - ❌ Requires agent (chef-client) on every VM
 - ❌ Requires Chef server
 - ❌ Ruby knowledge required
@@ -361,6 +388,7 @@ ansible --version  # Verify installation
 - ❌ Overkill for VoIP use case
 
 **When to Use:**
+
 - Already using Chef for infrastructure
 - Need Ruby's full programming power
 - Large-scale deployment (100+ servers)
@@ -426,6 +454,7 @@ dev-typescript-api          (TypeScript - future)
 
 **Total: 28 containers**
 **Resource Usage:**
+
 - CPU: ~2-3 cores at idle, ~4-6 under load
 - RAM: ~6-8GB total
 - Disk: ~15GB (volumes)
@@ -437,6 +466,7 @@ dev-typescript-api          (TypeScript - future)
 #### Category 1: Core Infrastructure (KEEP - 9 containers)
 
 **Essential for Development:**
+
 ```
 ✅ dev-vault             (Secrets management - CRITICAL)
 ✅ dev-postgres          (Primary database - CRITICAL)
@@ -450,6 +480,7 @@ dev-typescript-api          (TypeScript - future)
 ```
 
 **Rationale:**
+
 - Vault: Secrets for all environments
 - PostgreSQL: Primary DB for Forgejo + development
 - MySQL/MongoDB: Multi-database development support
@@ -463,6 +494,7 @@ dev-typescript-api          (TypeScript - future)
 #### Category 2: Observability (REDUCE - 8 → 2 containers)
 
 **Current:**
+
 ```
 dev-loki                  (Log aggregation)
 dev-vector                (Log pipeline)
@@ -475,6 +507,7 @@ dev-redis-exporter-3      (Redis metrics)
 **Reduction Plan:**
 
 **Option A: Keep Minimal Observability**
+
 ```
 ✅ dev-loki               (Aggregate VoIP VM logs)
 ❌ dev-vector             (REMOVE - Prometheus can scrape directly)
@@ -483,6 +516,7 @@ dev-redis-exporter-3      (Redis metrics)
 ```
 
 **Option B: Remove All Observability (Aggressive)**
+
 ```
 ❌ dev-loki               (REMOVE - use VM-native logging)
 ❌ dev-vector             (REMOVE)
@@ -491,6 +525,7 @@ dev-redis-exporter-3      (Redis metrics)
 ```
 
 **Recommendation:** Option A (Keep Loki for VoIP log aggregation)
+
 - Savings: 6 containers, ~1.5GB RAM
 
 ---
@@ -498,6 +533,7 @@ dev-redis-exporter-3      (Redis metrics)
 #### Category 3: Redis Cluster (REDUCE - 3 → 1 container)
 
 **Current:**
+
 ```
 dev-redis-1               (Cluster node 1)
 dev-redis-2               (Cluster node 2)
@@ -505,6 +541,7 @@ dev-redis-3               (Cluster node 3)
 ```
 
 **For Development:**
+
 ```
 ✅ dev-redis              (Single standalone instance)
 ❌ dev-redis-2            (REMOVE - cluster not needed for dev)
@@ -512,6 +549,7 @@ dev-redis-3               (Cluster node 3)
 ```
 
 **Rationale:**
+
 - 3-node cluster is for production HA
 - Single Redis instance sufficient for dev/testing
 - VoIP VMs will have their own Redis if needed
@@ -523,6 +561,7 @@ dev-redis-3               (Cluster node 3)
 #### Category 4: Reference APIs (REDUCE - 5 → 1 container)
 
 **Current:**
+
 ```
 dev-reference-api         (FastAPI code-first)
 dev-api-first             (FastAPI API-first)
@@ -536,6 +575,7 @@ dev-rust-api              (Rust - partial)
 **Reduction Plan:**
 
 **Option A: Keep One for Testing**
+
 ```
 ✅ dev-reference-api      (FastAPI - most complete, 254 tests)
 ❌ dev-api-first          (REMOVE - redundant)
@@ -545,6 +585,7 @@ dev-rust-api              (Rust - partial)
 ```
 
 **Option B: Remove All (Aggressive)**
+
 ```
 ❌ dev-reference-api      (REMOVE - not needed for VoIP)
 ❌ dev-api-first          (REMOVE)
@@ -554,6 +595,7 @@ dev-rust-api              (Rust - partial)
 ```
 
 **Recommendation:** Option B (Remove all reference APIs)
+
 - These were for learning Docker/API development
 - Not needed for VoIP automation focus
 - Can always restart if needed
@@ -565,16 +607,19 @@ dev-rust-api              (Rust - partial)
 #### Category 5: Database Proxies (CONDITIONAL - 1 container)
 
 **Current:**
+
 ```
 dev-pgbouncer             (PostgreSQL connection pooler)
 ```
 
 **Analysis:**
+
 - PgBouncer is for connection pooling
 - Useful for high-connection scenarios
 - Forgejo + Dev = low connection count
 
 **Options:**
+
 ```
 ⚠️ dev-pgbouncer          (REMOVE if not using connection pooling)
 ```
@@ -1290,6 +1335,7 @@ echo "Location: ~/automation/terraform/environments/prod/"
 ### Week 1: Setup Automation Environment
 
 **Day 1-2: Install Tools**
+
 ```bash
 # On macOS
 brew install ansible terraform libvirt qemu
@@ -1301,12 +1347,14 @@ cd ~/automation && git init
 ```
 
 **Day 3-4: Create Playbooks**
+
 ```bash
 # Create Ansible roles and playbooks
 # See Phase 3 above
 ```
 
 **Day 5: Test Automation**
+
 ```bash
 # Create test VM
 cd ~/automation/ansible
@@ -1318,6 +1366,7 @@ ansible-playbook playbooks/create-test-vm.yml
 ### Week 2: Reduce DevStack Core
 
 **Day 1: Backup Current State**
+
 ```bash
 # Backup databases
 ./devstack.sh backup
@@ -1327,6 +1376,7 @@ docker run --rm -v dev-postgres-data:/source -v ~/backups:/backup alpine tar czf
 ```
 
 **Day 2-3: Create Minimal Compose File**
+
 ```bash
 # Create docker-compose-minimal.yml
 # See Phase 2 above
@@ -1336,12 +1386,14 @@ docker compose -f docker-compose-minimal.yml up -d
 ```
 
 **Day 4: Verify Services**
+
 ```bash
 # Ensure Forgejo, Vault, Prometheus, Grafana still work
 ./devstack.sh health
 ```
 
 **Day 5: Switch to Minimal**
+
 ```bash
 # Stop full environment
 docker compose down
@@ -1356,6 +1408,7 @@ ln -sf docker-compose-minimal.yml docker-compose.yml
 ### Week 3: Deploy VoIP VMs with libvirt
 
 **Day 1-2: Create VMs with Terraform**
+
 ```bash
 cd ~/automation/terraform/environments/prod
 terraform init
@@ -1364,12 +1417,14 @@ terraform apply
 ```
 
 **Day 3-4: Configure with Ansible**
+
 ```bash
 cd ~/automation/ansible
 ansible-playbook playbooks/deploy-voip-stack.yml
 ```
 
 **Day 5: Verify VoIP Services**
+
 ```bash
 # SSH to VMs
 ssh admin@192.168.122.10
@@ -1383,6 +1438,7 @@ systemctl status opensips asterisk rtpengine
 ### Week 4: Integration and Monitoring
 
 **Day 1-2: Configure Prometheus/Grafana**
+
 ```bash
 # Add VoIP VMs to Prometheus scrape configs
 # Point Grafana at Prometheus
@@ -1390,12 +1446,14 @@ systemctl status opensips asterisk rtpengine
 ```
 
 **Day 3-4: Log Aggregation**
+
 ```bash
 # Configure promtail on VoIP VMs
 # Ship logs to Loki (in DevStack Core)
 ```
 
 **Day 5: Documentation**
+
 ```bash
 # Document architecture
 # Create runbooks
@@ -1409,18 +1467,21 @@ systemctl status opensips asterisk rtpengine
 ### 🎯 **Final Recommendations**
 
 #### 1. **Automation Environment: macOS Native** ✅
+
 - Install Ansible, Terraform, libvirt on macOS
 - Zero resource overhead
 - Best developer experience
 - Simple architecture
 
 #### 2. **Configuration Management: Ansible** ✅
+
 - Agentless (SSH-based)
 - Easy to learn (YAML)
 - Excellent libvirt support
 - Perfect for 1-10 VMs
 
 #### 3. **Container Reduction: 28 → 12** ✅
+
 - Keep core infrastructure (9)
 - Minimal observability (2)
 - Remove reference APIs (5)
@@ -1428,6 +1489,7 @@ systemctl status opensips asterisk rtpengine
 - **Savings: 16 containers, ~4GB RAM**
 
 #### 4. **Architecture**
+
 ```
 macOS (native)
 ├── Ansible/Terraform (automation control)
@@ -1439,6 +1501,7 @@ macOS (native)
 ```
 
 **Total Resource Savings:**
+
 - Before: 28 containers, ~8GB RAM for Colima
 - After: 12 containers, ~4GB RAM for Colima
 - **Savings: 4GB RAM, 2 CPU cores, cleaner architecture**

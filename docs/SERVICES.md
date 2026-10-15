@@ -4,9 +4,9 @@ Detailed documentation for all DevStack Core services including infrastructure, 
 
 ## Table of Contents
 
-  - [Infrastructure Services](#infrastructure-services)
-  - [Observability Stack](#observability-stack)
-  - [Reference Applications](#reference-applications)
+- [Infrastructure Services](#infrastructure-services)
+- [Observability Stack](#observability-stack)
+- [Reference Applications](#reference-applications)
 - [Service Configuration](#service-configuration)
   - [PostgreSQL](#postgresql)
   - [PgBouncer](#pgbouncer)
@@ -51,6 +51,7 @@ Detailed documentation for all DevStack Core services including infrastructure, 
 | **Rust Reference API** | Rust 1.70+ | 8004 (HTTP), 8447 (HTTPS) | High-performance async API | curl /health |
 
 **Implementation Patterns:**
+
 - **FastAPI Code-First** (port 8000): Implementation drives documentation - typical rapid development approach
 - **FastAPI API-First** (port 8001): OpenAPI specification drives implementation - contract-first approach
 - **Go/Gin** (port 8002): Compiled binary with goroutines for concurrency
@@ -62,6 +63,7 @@ Detailed documentation for all DevStack Core services including infrastructure, 
 All 5 implementations demonstrate identical core functionality with language-specific patterns. See `reference-apps/README.md` for architecture details and `tests/performance-benchmark.sh` for performance comparisons.
 
 **Resource Allocation:**
+
 - Total memory: ~4-5GB (with all services running)
 - Colima VM: 8GB allocated (4 CPU cores)
 - Each service has memory limits and health checks
@@ -73,6 +75,7 @@ All 5 implementations demonstrate identical core functionality with language-spe
 **Purpose:** Primary database for Forgejo (Git server) and local development.
 
 **Configuration:**
+
 - Image: `postgres:18` (Debian-based, ARM64 native)
 - **Credentials:** Auto-fetched from Vault at startup via `configs/postgres/scripts/init.sh`
   - Stored in Vault at `secret/postgres`
@@ -91,6 +94,7 @@ All 5 implementations demonstrate identical core functionality with language-spe
   - Enables Vector metrics collection without modifications
 
 **Key Settings** (`docker-compose.yml:68-78`):
+
 ```yaml
 command:
   - "postgres"
@@ -105,6 +109,7 @@ command:
 ```
 
 **Connection:**
+
 ```bash
 # From Mac
 psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB
@@ -118,11 +123,13 @@ docker exec -it dev-postgres psql -U $POSTGRES_USER -d $POSTGRES_DB
 ```
 
 **Init Scripts:**
+
 - Place `.sql` files in `configs/postgres/` to run on first start
 - Executed in alphabetical order
 - Useful for creating additional databases or users
 
 **Health Check:**
+
 ```bash
 # Automatic (runs every 60 seconds)
 pg_isready -U $POSTGRES_USER
@@ -132,6 +139,7 @@ docker exec dev-postgres pg_isready -U $POSTGRES_USER
 ```
 
 **Performance Tuning:**
+
 - Tuned for Git server workload (many small transactions)
 - Increased for dev workloads: adjust `max_connections`, `shared_buffers`
 - Monitor: `./devstack.sh status` shows CPU/memory usage
@@ -141,6 +149,7 @@ docker exec dev-postgres pg_isready -U $POSTGRES_USER
 **Purpose:** Connection pooling for PostgreSQL to reduce connection overhead and improve scalability.
 
 **Configuration:**
+
 - Pool mode: `transaction` (best for web applications)
 - Max client connections: 100
 - Default pool size: 10
@@ -153,9 +162,11 @@ docker exec dev-postgres pg_isready -U $POSTGRES_USER
 PgBouncer supports three pooling modes, each with different use cases:
 
 **1. Transaction Pooling (Default)**
+
 ```ini
 pool_mode = transaction
 ```
+
 - **How it works:** Connection returned to pool when transaction completes
 - **Best for:** Web applications, REST APIs, microservices
 - **Pros:** Maximum connection reuse, highest efficiency
@@ -163,9 +174,11 @@ pool_mode = transaction
 - **Use when:** Most common mode for stateless applications
 
 **2. Session Pooling**
+
 ```ini
 pool_mode = session
 ```
+
 - **How it works:** Connection returned to pool when client disconnects
 - **Best for:** Interactive applications, long-running sessions
 - **Pros:** Full PostgreSQL feature support, no restrictions
@@ -173,9 +186,11 @@ pool_mode = session
 - **Use when:** Need session-level features (temp tables, advisory locks)
 
 **3. Statement Pooling**
+
 ```ini
 pool_mode = statement
 ```
+
 - **How it works:** Connection returned after each SQL statement
 - **Best for:** Simple read-only queries
 - **Pros:** Highest connection reuse
@@ -279,6 +294,7 @@ SHOW STATS;
 5. **avg_xact_time** - Average transaction time
 
 **Prometheus Metrics** (if using pgbouncer_exporter):
+
 ```bash
 # Available at http://localhost:9127/metrics
 pgbouncer_pools_server_active_connections
@@ -294,12 +310,14 @@ pgbouncer_stats_avg_xact_time_microseconds
 **Problem: Connection Pool Exhausted**
 
 **Symptoms:**
+
 ```
 ERROR: connection pool exhausted
 FATAL: sorry, too many clients already
 ```
 
 **Solutions:**
+
 ```bash
 # 1. Increase pool size
 PGBOUNCER_DEFAULT_POOL_SIZE=20  # Was: 10
@@ -318,9 +336,11 @@ PGBOUNCER_SERVER_IDLE_TIMEOUT=300  # Close idle connections faster
 **Problem: Slow Query Performance**
 
 **Symptoms:**
+
 - Queries slower through PgBouncer than direct connection
 
 **Solutions:**
+
 ```bash
 # 1. Check pool wait time
 SHOW STATS;  # Look at avg_wait_time
@@ -339,12 +359,14 @@ SHOW SERVERS;  # Look for long-running queries blocking pool
 **Problem: Authentication Failures**
 
 **Symptoms:**
+
 ```
 FATAL: authentication failed for user "dev_admin"
 FATAL: MD5 authentication failed
 ```
 
 **Solutions:**
+
 ```bash
 # 1. Verify PostgreSQL uses MD5 (not SCRAM-SHA-256)
 docker exec dev-postgres grep "password_encryption" /var/lib/postgresql/data/postgresql.conf
@@ -362,9 +384,11 @@ docker compose restart pgbouncer
 **Problem: PgBouncer Not Forwarding Queries**
 
 **Symptoms:**
+
 - Connections succeed but queries hang
 
 **Solutions:**
+
 ```bash
 # 1. Check PgBouncer logs
 docker logs dev-pgbouncer
@@ -417,6 +441,7 @@ PGBOUNCER_QUERY_WAIT_TIMEOUT=30
 #### Connection Examples
 
 **Direct PostgreSQL Connection (Port 5432):**
+
 ```bash
 # For long-lived connections, admin tasks
 psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB
@@ -430,6 +455,7 @@ psql -h localhost -p 5432 -U $POSTGRES_USER -d $POSTGRES_DB
 ```
 
 **PgBouncer Connection (Port 6432):**
+
 ```bash
 # For application connections, APIs
 psql -h localhost -p 6432 -U $POSTGRES_USER -d $POSTGRES_DB
@@ -481,18 +507,21 @@ const pool = new Pool({
 #### Performance Benchmarks
 
 **Without PgBouncer:**
+
 - Direct PostgreSQL connections
 - Connection overhead: ~50-100ms per connection
 - Max concurrent connections: 100 (PostgreSQL limit)
 - Connection setup cost: High
 
 **With PgBouncer:**
+
 - Pooled connections
 - Connection overhead: ~1-5ms (reusing existing connections)
 - Max concurrent clients: 1000+ (configurable)
 - Connection setup cost: Minimal (pool reuse)
 
 **Throughput Improvement:**
+
 - Simple queries: 50-100% improvement
 - High-frequency requests: 200-300% improvement
 - Connection-intensive workloads: 500% improvement
@@ -508,6 +537,7 @@ const pool = new Pool({
 **Purpose:** Legacy database support during migration period.
 
 **Configuration:**
+
 - Image: `mysql:8.0.46`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/mysql/scripts/init.sh`
   - Stored in Vault at `secret/mysql`
@@ -519,6 +549,7 @@ const pool = new Pool({
 - **Optional TLS:** Configurable via `MYSQL_ENABLE_TLS=true`
 
 **Connection:**
+
 ```bash
 mysql -h 127.0.0.1 -u $MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE
 
@@ -528,6 +559,7 @@ mysql -h 127.0.0.1 -u $MYSQL_USER -p
 ```
 
 **Init Scripts:**
+
 - Place `.sql` files in `configs/mysql/`
 - Executed on first container start
 
@@ -536,6 +568,7 @@ mysql -h 127.0.0.1 -u $MYSQL_USER -p
 **Purpose:** Distributed caching with high availability and horizontal scaling.
 
 **Architecture:**
+
 - 3 master nodes (no replicas in dev mode)
 - **Credentials:** All nodes share same password from Vault at `secret/redis-1`
   - Auto-fetched at startup via `configs/redis/scripts/init.sh`
@@ -549,10 +582,12 @@ mysql -h 127.0.0.1 -u $MYSQL_USER -p
 - **Optional TLS:** Configurable via `REDIS_ENABLE_TLS=true`
 
 **Configuration Files:**
+
 - `configs/redis/redis-cluster.conf` - Cluster-specific settings
 - `configs/redis/redis.conf` - Standalone Redis config (reference)
 
 **Key Settings:**
+
 ```conf
 # Cluster mode enabled
 cluster-enabled yes
@@ -570,11 +605,13 @@ maxmemory-policy allkeys-lru
 ```
 
 **Ports:**
+
 - **6379 (non-TLS):** Standard Redis port on all nodes
 - **6390 (TLS):** TLS-encrypted port on all nodes (when TLS enabled)
 - **16379:** Cluster bus port (internal communication)
 
 **Connection:**
+
 ```bash
 # Non-TLS connection (ALWAYS use -c flag for cluster mode!)
 redis-cli -c -a $REDIS_PASSWORD -p 6379
@@ -587,6 +624,7 @@ redis-cli -c -a $REDIS_PASSWORD -p 6390 \
 ```
 
 **First-Time Cluster Initialization:**
+
 ```bash
 # After starting containers for the first time
 ./configs/redis/scripts/redis-cluster-init.sh
@@ -598,6 +636,7 @@ docker exec dev-redis-1 redis-cli --cluster create \
 ```
 
 **Cluster Operations:**
+
 ```bash
 # Check cluster status
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster info
@@ -634,11 +673,13 @@ curl http://localhost:8000/redis/nodes/redis-1/info
 ```
 
 **Data Distribution:**
+
 - Keys are automatically sharded based on CRC16 hash
 - Client redirects handled automatically with `-c` flag
 - Example: `SET user:1000 "data"` → hashed → assigned to appropriate node
 
 **Why Cluster vs Single Node?**
+
 - **High Availability:** If one node fails, others continue serving
 - **Horizontal Scaling:** Distribute data across nodes
 - **Performance:** Parallel read/write operations
@@ -649,6 +690,7 @@ curl http://localhost:8000/redis/nodes/redis-1/info
 **Purpose:** Message queue for asynchronous communication between services.
 
 **Configuration:**
+
 - Image: `rabbitmq:4.3-management-alpine`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/rabbitmq/scripts/init.sh`
   - Stored in Vault at `secret/rabbitmq`
@@ -659,12 +701,14 @@ curl http://localhost:8000/redis/nodes/redis-1/info
 - **Optional TLS:** Configurable via `RABBITMQ_ENABLE_TLS=true`
 
 **Access:**
+
 - **AMQP:** `amqp://dev_admin:password@localhost:5672/dev_vhost`
-- **Management UI:** http://localhost:15672
+- **Management UI:** <http://localhost:15672>
   - Username: `$RABBITMQ_USER` (from .env)
   - Password: `$RABBITMQ_PASSWORD` (from .env)
 
 **Common Operations:**
+
 ```bash
 # View logs
 ./devstack.sh logs rabbitmq
@@ -687,6 +731,7 @@ docker exec dev-rabbitmq rabbitmqctl list_connections
 **Purpose:** NoSQL document database for unstructured data.
 
 **Configuration:**
+
 - Image: `mongo:8.0`
 - **Credentials:** Auto-fetched from Vault at startup via `configs/mongodb/scripts/init.sh`
   - Stored in Vault at `secret/mongodb`
@@ -697,6 +742,7 @@ docker exec dev-rabbitmq rabbitmqctl list_connections
 - **Optional TLS:** Configurable via `MONGODB_ENABLE_TLS=true`
 
 **Connection:**
+
 ```bash
 # Using mongosh (MongoDB Shell)
 mongosh --host localhost --port 27017 \
@@ -709,6 +755,7 @@ mongodb://dev_admin:password@localhost:27017/dev_database?authSource=admin
 ```
 
 **Init Scripts:**
+
 - Place `.js` files in `configs/mongodb/`
 - Executed in alphabetical order on first start
 
@@ -717,6 +764,7 @@ mongodb://dev_admin:password@localhost:27017/dev_database?authSource=admin
 **Purpose:** Self-hosted Git server (Gitea fork) for private repositories with full Git forge capabilities.
 
 **Configuration:**
+
 - Image: `codeberg.org/forgejo/forgejo:1.21.11-0`
 - Uses PostgreSQL for metadata storage
 - Git data stored in Docker volume (`forgejo_data`)
@@ -729,6 +777,7 @@ mongodb://dev_admin:password@localhost:27017/dev_database?authSource=admin
 **Installation Wizard:**
 
 1. **Navigate to Forgejo**
+
    ```bash
    open http://localhost:3000
    ```
@@ -757,6 +806,7 @@ mongodb://dev_admin:password@localhost:27017/dev_database?authSource=admin
      - Server and Third-Party Services: Enable/disable features
 
 3. **Create Administrator Account**
+
    ```
    Username: admin
    Email: admin@localhost
@@ -787,6 +837,7 @@ curl -X POST http://localhost:3000/api/v1/user/setup \
 #### Git Operations
 
 **HTTP Clone:**
+
 ```bash
 # Public repository (read-only)
 git clone http://localhost:3000/username/repo.git
@@ -801,6 +852,7 @@ git clone http://localhost:3000/username/repo.git
 ```
 
 **SSH Clone:**
+
 ```bash
 # Standard SSH URL
 git clone ssh://git@localhost:2222/username/repo.git
@@ -810,6 +862,7 @@ git clone git@localhost:2222:username/repo.git
 ```
 
 **SSH Configuration** (`~/.ssh/config`):
+
 ```bash
 # Add entry for Forgejo
 Host forgejo
@@ -825,6 +878,7 @@ git remote add origin forgejo:username/repo.git
 ```
 
 **Common Git Workflows:**
+
 ```bash
 # Create new repository on Forgejo first, then:
 mkdir my-project && cd my-project
@@ -849,6 +903,7 @@ git push origin feature-branch
 **Adding SSH Keys:**
 
 1. **Generate SSH Key** (if needed)
+
    ```bash
    ssh-keygen -t ed25519 -C "your_email@example.com" -f ~/.ssh/forgejo_ed25519
    ```
@@ -861,12 +916,14 @@ git push origin feature-branch
    - Click "Add Key"
 
 3. **Test SSH Connection**
+
    ```bash
    ssh -T -p 2222 git@localhost
    # Output: Hi there, <username>! You've successfully authenticated...
    ```
 
 4. **Use SSH for Git Operations**
+
    ```bash
    git clone ssh://git@localhost:2222/username/repo.git
    ```
@@ -874,18 +931,21 @@ git push origin feature-branch
 **Adding GPG Keys for Signed Commits:**
 
 1. **Generate GPG Key** (if needed)
+
    ```bash
    gpg --full-generate-key
    # Select: (1) RSA and RSA, 4096 bits, no expiration
    ```
 
 2. **Get GPG Key ID**
+
    ```bash
    gpg --list-secret-keys --keyid-format=long
    # Note the key ID (e.g., 3AA5C34371567BD2)
    ```
 
 3. **Export Public Key**
+
    ```bash
    gpg --armor --export 3AA5C34371567BD2
    ```
@@ -897,12 +957,14 @@ git push origin feature-branch
    - Click "Add Key"
 
 5. **Configure Git to Sign Commits**
+
    ```bash
    git config --global user.signingkey 3AA5C34371567BD2
    git config --global commit.gpgsign true
    ```
 
 6. **Make Signed Commit**
+
    ```bash
    git commit -S -m "Signed commit message"
    git log --show-signature
@@ -922,6 +984,7 @@ For detailed SSH and GPG setup, see [CONTRIBUTING.md](../.github/CONTRIBUTING.md
    - Click "Create User Account"
 
 2. **Via API:**
+
    ```bash
    curl -X POST http://localhost:3000/api/v1/admin/users \
      -H "Authorization: token <admin-token>" \
@@ -935,12 +998,14 @@ For detailed SSH and GPG setup, see [CONTRIBUTING.md](../.github/CONTRIBUTING.md
    ```
 
 **User Permissions:**
+
 - **Administrator:** Full system access
 - **Regular User:** Can create repos, organizations
 - **Restricted:** Limited permissions
 - **Bot:** Automation accounts
 
 **User Quotas:**
+
 ```bash
 # Set via Site Administration → Users → Edit
 - Max repositories: 10
@@ -962,6 +1027,7 @@ For detailed SSH and GPG setup, see [CONTRIBUTING.md](../.github/CONTRIBUTING.md
    - Click "Migrate Repository"
 
 2. **Via API:**
+
    ```bash
    curl -X POST http://localhost:3000/api/v1/repos/migrate \
      -H "Authorization: token <token>" \
@@ -976,11 +1042,13 @@ For detailed SSH and GPG setup, see [CONTRIBUTING.md](../.github/CONTRIBUTING.md
    ```
 
 **Mirror Types:**
+
 - **Pull Mirror:** One-way sync from external source
 - **Push Mirror:** One-way sync to external destination
 - **Two-way Sync:** Bidirectional synchronization (advanced)
 
 **Mirror Configuration:**
+
 ```bash
 # Update mirror manually
 curl -X POST http://localhost:3000/api/v1/repos/{owner}/{repo}/mirror-sync \
@@ -1001,6 +1069,7 @@ curl http://localhost:3000/api/v1/repos/{owner}/{repo} \
    - Select type (Gitea, Slack, Discord, Generic)
 
 2. **Configure Webhook:**
+
    ```json
    {
      "type": "gitea",
@@ -1025,6 +1094,7 @@ curl http://localhost:3000/api/v1/repos/{owner}/{repo} \
    - View delivery history
 
 **Common Webhook Events:**
+
 - `push` - Code pushed to repository
 - `pull_request` - PR opened, closed, merged
 - `issue` - Issue created, edited, closed
@@ -1032,6 +1102,7 @@ curl http://localhost:3000/api/v1/repos/{owner}/{repo} \
 - `repository` - Repository created, deleted
 
 **Example CI/CD Webhook Handler:**
+
 ```python
 from flask import Flask, request, jsonify
 import hmac, hashlib
@@ -1067,6 +1138,7 @@ def handle_webhook():
 **Backup Forgejo Data:**
 
 1. **Database Backup** (PostgreSQL):
+
    ```bash
    # Backup Forgejo database
    docker exec dev-postgres pg_dump -U dev_admin forgejo > forgejo-db-backup.sql
@@ -1076,6 +1148,7 @@ def handle_webhook():
    ```
 
 2. **Git Repository Backup:**
+
    ```bash
    # Backup all repositories (Docker volume)
    docker run --rm \
@@ -1085,12 +1158,14 @@ def handle_webhook():
    ```
 
 3. **Configuration Backup:**
+
    ```bash
    # Backup Forgejo config
    docker cp dev-forgejo:/data/gitea/conf/app.ini forgejo-app.ini.backup
    ```
 
 **Automated Backup Script:**
+
 ```bash
 #!/bin/bash
 # backup-forgejo.sh
@@ -1116,16 +1191,19 @@ echo "Backup completed: $BACKUP_DIR"
 **Restore Forgejo:**
 
 1. **Stop Forgejo:**
+
    ```bash
    docker compose stop forgejo
    ```
 
 2. **Restore Database:**
+
    ```bash
    docker exec -i dev-postgres psql -U dev_admin forgejo < forgejo-db-backup.sql
    ```
 
 3. **Restore Repositories:**
+
    ```bash
    docker run --rm \
      -v devstack-core_forgejo_data:/data \
@@ -1134,11 +1212,13 @@ echo "Backup completed: $BACKUP_DIR"
    ```
 
 4. **Restore Configuration:**
+
    ```bash
    docker cp forgejo-app.ini.backup dev-forgejo:/data/gitea/conf/app.ini
    ```
 
 5. **Restart Forgejo:**
+
    ```bash
    docker compose up -d forgejo
    ```
@@ -1148,6 +1228,7 @@ echo "Backup completed: $BACKUP_DIR"
 **Large Repository Handling:**
 
 1. **Enable Git LFS:**
+
    ```bash
    # In app.ini (or via environment)
    [lfs]
@@ -1161,6 +1242,7 @@ echo "Backup completed: $BACKUP_DIR"
    ```
 
 2. **Repository Size Limits:**
+
    ```bash
    # In app.ini
    [repository]
@@ -1169,6 +1251,7 @@ echo "Backup completed: $BACKUP_DIR"
    ```
 
 3. **Garbage Collection:**
+
    ```bash
    # Manual GC for specific repository
    docker exec dev-forgejo sh -c \
@@ -1182,6 +1265,7 @@ echo "Backup completed: $BACKUP_DIR"
    ```
 
 4. **Database Optimization:**
+
    ```bash
    # Vacuum PostgreSQL
    docker exec dev-postgres psql -U dev_admin forgejo -c "VACUUM ANALYZE;"
@@ -1191,6 +1275,7 @@ echo "Backup completed: $BACKUP_DIR"
    ```
 
 **Caching Configuration:**
+
 ```bash
 # In app.ini
 [cache]
@@ -1205,6 +1290,7 @@ PROVIDER_CONFIG = redis-1:6379
 ```
 
 **Resource Tuning:**
+
 ```yaml
 # docker-compose.yml
 forgejo:
@@ -1223,6 +1309,7 @@ forgejo:
 **Local Network Access:**
 
 1. **Set Forgejo Domain:**
+
    ```bash
    # In .env
    FORGEJO_DOMAIN=192.168.106.2  # Colima IP address
@@ -1232,6 +1319,7 @@ forgejo:
    ```
 
 2. **Update Base URL:**
+
    ```bash
    # In Forgejo app.ini
    [server]
@@ -1239,12 +1327,14 @@ forgejo:
    ```
 
 3. **Access from Other Machines:**
+
    ```bash
    # From libvirt VM or other computer on network
    git clone http://192.168.106.2:3000/admin/repo.git
    ```
 
 **SSH Access from Network:**
+
 ```bash
 # Configure SSH for network access
 Host forgejo-network
@@ -1262,10 +1352,12 @@ git clone forgejo-network:username/repo.git
 **Problem: Cannot Connect to Database**
 
 **Symptoms:**
+
 - Forgejo fails to start
 - "Failed to connect to database" errors
 
 **Solutions:**
+
 ```bash
 # 1. Verify PostgreSQL is running
 docker compose ps postgres
@@ -1286,10 +1378,12 @@ docker compose restart forgejo
 **Problem: SSH Push/Pull Not Working**
 
 **Symptoms:**
+
 - `Permission denied (publickey)` errors
 - SSH authentication failures
 
 **Solutions:**
+
 ```bash
 # 1. Test SSH connection
 ssh -vT -p 2222 git@localhost
@@ -1311,10 +1405,12 @@ docker logs dev-forgejo | grep -i ssh
 **Problem: Webhook Not Triggering**
 
 **Symptoms:**
+
 - CI/CD not triggering on push
 - Webhook shows failed deliveries
 
 **Solutions:**
+
 ```bash
 # 1. Test webhook manually
 curl -X POST https://ci.example.com/webhooks/forgejo \
@@ -1337,10 +1433,12 @@ docker exec dev-forgejo curl -I https://ci.example.com
 **Problem: Large Repositories Slow Performance**
 
 **Symptoms:**
+
 - Slow clone/push operations
 - High memory usage
 
 **Solutions:**
+
 ```bash
 # 1. Enable Git LFS for large files
 git lfs migrate import --include="*.zip,*.tar.gz"
@@ -1371,12 +1469,14 @@ git gc --aggressive --prune=now
 **Purpose:** Centralized secrets management and encryption as a service.
 
 **Configuration:**
+
 - Storage backend: File (persistent across restarts)
 - Seal type: Shamir (3 of 5 keys required to unseal)
-- Auto-unseal: Enabled on container start (see [Vault Auto-Unseal](#vault-auto-unseal))
-- UI: Enabled at http://localhost:8200/ui
+- Auto-unseal: Enabled on container start (see [Vault Auto-Unseal](./VAULT.md#vault-auto-unseal))
+- UI: Enabled at <http://localhost:8200/ui>
 
 **Key Features:**
+
 - **Secrets Management:** Store API keys, passwords, certificates
 - **Dynamic Secrets:** Generate database credentials on-demand
 - **Encryption as a Service:** Encrypt/decrypt data via API
@@ -1384,6 +1484,7 @@ git gc --aggressive --prune=now
 - **Policy-Based Access:** Fine-grained permissions
 
 **File Locations:**
+
 ```
 ~/.config/vault/keys.json        # 5 unseal keys
 ~/.config/vault/root-token       # Root token for admin access
@@ -1392,6 +1493,7 @@ git gc --aggressive --prune=now
 **⚠️ CRITICAL:** Backup these files! Cannot be recovered if lost.
 
 **Access Vault:**
+
 ```bash
 # Set environment
 export VAULT_ADDR=http://localhost:8200
@@ -1415,6 +1517,7 @@ vault kv get secret/myapp/config
 ```
 
 **Vault Workflow:**
+
 1. Container starts → Vault server starts sealed
 2. Auto-unseal script waits for Vault to be ready
 3. Script reads `~/.config/vault/keys.json`
@@ -1422,4 +1525,4 @@ vault kv get secret/myapp/config
 5. Vault unseals and becomes operational
 6. Script sleeps indefinitely (zero CPU overhead)
 
-See [Vault Auto-Unseal](#vault-auto-unseal) for detailed information.
+See [Vault Auto-Unseal](./VAULT.md#vault-auto-unseal) for detailed information.

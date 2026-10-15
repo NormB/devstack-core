@@ -3,6 +3,7 @@
 Security guidelines for HashiCorp Vault in DevStack Core, covering AppRole authentication, token management, backup procedures, and production hardening.
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Critical Security Warning](#critical-security-warning)
 - [Development vs Production](#development-vs-production)
@@ -30,6 +31,7 @@ The current setup uses the Vault root token for simplicity in local development.
 - Cannot be revoked without re-initializing Vault
 
 **Current Development Configuration:**
+
 ```bash
 # .env file (DEVELOPMENT ONLY)
 VAULT_TOKEN=$(cat ~/.config/vault/root-token)
@@ -52,6 +54,7 @@ The devstack-core environment is configured for local development with:
 - Single-node deployment
 
 **This is acceptable ONLY for:**
+
 - Local development on your personal machine
 - Testing and experimentation
 - Learning Vault features
@@ -232,18 +235,21 @@ VAULT_SECRET_ID=z9y8x7w6-v5u4-t3s2-r1q0-p9o8n7m6l5k4
 ### DO NOT Store Tokens in .env Files
 
 **Bad (Current Development Setup):**
+
 ```bash
 # .env - NEVER use this in production
 VAULT_TOKEN=hvs.CAESIJ1wv8...
 ```
 
 **Better - Use Environment Variables at Runtime:**
+
 ```bash
 # Fetch from secure storage at container start
 VAULT_TOKEN=$(security find-generic-password -s vault-token -w)
 ```
 
 **Best - Use AppRole (No Token Storage):**
+
 ```bash
 # Only store role_id and secret_id
 VAULT_ROLE_ID=a1b2c3d4-...
@@ -356,6 +362,7 @@ echo "Backup completed and old backups cleaned"
 #### Backup Schedule
 
 **Recommended backup frequency:**
+
 - **Unseal keys**: Immediately after initialization, store in multiple secure locations
 - **Vault data**: Daily for development, hourly for production
 - **Policies**: After every change
@@ -394,6 +401,7 @@ docker compose start vault
 ### Root Token Rotation
 
 **Why rotate?**
+
 - Limit exposure window if token is compromised
 - Compliance requirements
 - Best security practice
@@ -558,6 +566,7 @@ groups:
 ## Support
 
 For questions or security concerns:
+
 - Open an issue in the GitHub repository
 - Review the official HashiCorp Vault documentation
 - Consult with your security team before production deployment

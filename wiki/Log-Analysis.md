@@ -21,10 +21,11 @@ Analyzing logs with Loki and troubleshooting in the DevStack Core environment.
 Loki provides centralized log aggregation for all DevStack Core. Logs are collected by Vector, stored in Loki, and queried via Grafana.
 
 **Log Stack:**
+
 - **Collection**: Vector (unified observability pipeline)
 - **Storage**: Loki (log aggregation system)
 - **Visualization**: Grafana (query and explore interface)
-- **Access**: http://localhost:3001 (Grafana)
+- **Access**: <http://localhost:3001> (Grafana)
 
 ## Loki Overview
 
@@ -37,6 +38,7 @@ Application Logs → Vector → Loki → Grafana
 ```
 
 **Components:**
+
 - **Vector**: Collects logs from Docker containers
 - **Loki**: Stores and indexes logs
 - **Grafana**: Query interface with LogQL
@@ -63,6 +65,7 @@ logcli labels
 ### Query Syntax
 
 LogQL queries consist of:
+
 1. **Log Stream Selector**: `{job="container", container_name="postgres"}`
 2. **Filter Expression**: `|= "error"` or `|~ "regex"`
 3. **Parser**: `| json` or `| logfmt`
@@ -223,12 +226,13 @@ sum by (container_name) (count_over_time({job="container"}[5m]))
 
 ### Using Grafana Explore
 
-1. **Open Grafana**: http://localhost:3001
+1. **Open Grafana**: <http://localhost:3001>
 2. **Navigate to Explore**: Left sidebar → Explore
 3. **Select Loki**: Data source dropdown → Loki
 4. **Build Query**: Use query builder or raw LogQL
 
 **Query Builder:**
+
 - Select labels (container_name, job)
 - Add line filters (contains, regex)
 - Add parsers (json, logfmt)
@@ -531,7 +535,7 @@ annotations:
 
 ### Setting Up Alerts
 
-1. **Open Grafana**: http://localhost:3001
+1. **Open Grafana**: <http://localhost:3001>
 2. **Navigate to Alerting**: Left sidebar → Alerting
 3. **Create Alert Rule**:
    - Data source: Loki

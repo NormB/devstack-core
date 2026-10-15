@@ -11,6 +11,7 @@ This directory contains specialized documentation for VoIP infrastructure design
 ## Overview
 
 The VoIP infrastructure uses **libvirt for VM management** instead of containers, providing:
+
 - Better automation support (Ansible, Terraform)
 - Infrastructure as code
 - HVF (Hypervisor.framework) support on macOS

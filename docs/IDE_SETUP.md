@@ -6,9 +6,9 @@ Configuration guides for popular IDEs and editors to work with DevStack Core, in
 
 - [Overview](#overview)
 - [Visual Studio Code](#visual-studio-code)
-- [IntelliJ IDEA / PyCharm](#intellij-idea-pycharm)
+- [IntelliJ IDEA / PyCharm](#intellij-idea--pycharm)
 - [GoLand](#goland)
-- [Neovim / Vim](#neovim-vim)
+- [Neovim / Vim](#neovim--vim)
 - [Common Tools](#common-tools)
 - [Troubleshooting](#troubleshooting)
 
@@ -17,12 +17,14 @@ Configuration guides for popular IDEs and editors to work with DevStack Core, in
 ## Overview
 
 This guide helps you configure your IDE for optimal development with the DevStack Core project. Each section covers:
+
 - Required extensions/plugins
 - Recommended settings
 - Debugging configuration
 - Language-specific setup
 
 **Supported Languages:**
+
 - Python (FastAPI)
 - Go (Gin)
 - JavaScript/TypeScript (Node.js, TypeScript)
@@ -410,6 +412,7 @@ brew install --cask pycharm
 2. Click gear icon → **Add**
 3. Select **System Interpreter** → `/usr/local/bin/python3`
 4. Or create **virtualenv** for each reference app:
+
    ```bash
    cd reference-apps/fastapi
    python3 -m venv venv
@@ -445,6 +448,7 @@ brew install --cask pycharm
    - Parameters: `app.main:app --reload --host 0.0.0.0 --port 8000`
    - Working directory: `reference-apps/fastapi`
    - Environment variables:
+
      ```
      DEBUG=true
      VAULT_ADDR=http://localhost:8200
@@ -460,6 +464,7 @@ brew install --cask pycharm
    - Package path: `github.com/normbrandinger/devstack-core/reference-apps/golang/cmd/api`
    - Working directory: `reference-apps/golang`
    - Environment:
+
      ```
      DEBUG=true
      VAULT_ADDR=http://localhost:8200
@@ -476,6 +481,7 @@ brew install --cask pycharm
    - Working directory: `reference-apps/nodejs`
    - JavaScript file: `src/index.js`
    - Environment:
+
      ```
      DEBUG=true
      VAULT_ADDR=http://localhost:8200
@@ -487,16 +493,19 @@ brew install --cask pycharm
 **File → Settings → Editor → Code Style**
 
 **Python:**
+
 - Line length: 100
 - Use tabs: No (4 spaces)
 - Follow PEP 8
 
 **Go:**
+
 - Use gofmt
 - Line length: 120
 - Use tabs: Yes
 
 **JavaScript/TypeScript:**
+
 - Line length: 100
 - Indent: 2 spaces
 - Use semicolons: Yes
@@ -809,6 +818,7 @@ alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
 **Problem:** "Import could not be resolved"
 
 **Solution:**
+
 ```bash
 # Ensure Python path is set correctly
 # In VS Code: Cmd+Shift+P → Python: Select Interpreter
@@ -824,6 +834,7 @@ pip install -r requirements.txt
 **Problem:** "Could not import package"
 
 **Solution:**
+
 ```bash
 cd reference-apps/golang
 go mod download
@@ -837,6 +848,7 @@ go mod tidy
 **Problem:** "Cannot connect to Docker daemon"
 
 **Solution:**
+
 ```bash
 # Check Colima is running
 colima status
@@ -853,6 +865,7 @@ docker context use colima
 **Problem:** Breakpoints not hitting
 
 **Solution:**
+
 1. Ensure service is running in debug mode
 2. Check port is correct in launch.json
 3. For Python: ensure `debugpy` is installed
@@ -863,6 +876,7 @@ docker context use colima
 **Problem:** No autocompletion or diagnostics
 
 **Solution:**
+
 ```bash
 # Check LSP is running
 :LspInfo
@@ -920,6 +934,7 @@ echo "4. Start debugging!"
 ```
 
 Run with:
+
 ```bash
 chmod +x setup-ide.sh
 ./setup-ide.sh

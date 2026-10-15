@@ -7,11 +7,13 @@ This document summarizes the new extended test suites that have been added to th
 ## Test Statistics
 
 ### Before New Tests
+
 - **Original Test Suites**: 12
 - **Original Test Cases**: ~370+ tests
 - **Coverage Areas**: Vault, PostgreSQL, MySQL, MongoDB, Redis, Redis Cluster, RabbitMQ, FastAPI, Performance, Negative Testing, Unit Tests, Parity Tests
 
 ### After New Tests
+
 - **Total Test Suites**: 16
 - **Total Test Cases**: ~410+ tests
 - **New Coverage**: Extended Vault testing, PostgreSQL advanced features, PgBouncer connection pooling, Observability stack monitoring
@@ -24,7 +26,8 @@ This document summarizes the new extended test suites that have been added to th
 **Test Count**: 10 new tests
 **Focus**: Advanced Vault features and operational testing
 
-#### Tests Included:
+#### Tests Included
+
 1. **Vault Health Endpoint Detailed Check**
    - Comprehensive health status validation
    - Version information retrieval
@@ -76,6 +79,7 @@ This document summarizes the new extended test suites that have been added to th
     - Dev environment acceptance
 
 **Key Features**:
+
 - Advanced PKI operations testing
 - Token lifecycle management
 - Secret versioning validation
@@ -89,7 +93,8 @@ This document summarizes the new extended test suites that have been added to th
 **Test Count**: 10 new tests
 **Focus**: Advanced PostgreSQL features and performance
 
-#### Tests Included:
+#### Tests Included
+
 1. **Transaction Isolation Levels**
    - Isolation level queries
    - SERIALIZABLE transaction testing
@@ -141,6 +146,7 @@ This document summarizes the new extended test suites that have been added to th
     - Usage percentage calculation
 
 **Key Features**:
+
 - Advanced SQL features
 - Performance testing
 - Full-text search
@@ -155,7 +161,8 @@ This document summarizes the new extended test suites that have been added to th
 **Test Count**: 10 new tests
 **Focus**: Connection pooling and performance
 
-#### Tests Included:
+#### Tests Included
+
 1. **PgBouncer Health Status**
    - Container health check
    - Service availability
@@ -197,6 +204,7 @@ This document summarizes the new extended test suites that have been added to th
     - Performance metrics collection
 
 **Key Features**:
+
 - Connection pooling validation
 - Performance benchmarking
 - Admin console testing
@@ -210,7 +218,8 @@ This document summarizes the new extended test suites that have been added to th
 **Test Count**: 10 new tests
 **Focus**: Monitoring and observability infrastructure
 
-#### Tests Included:
+#### Tests Included
+
 1. **Prometheus Scraping Targets Status**
    - Active target enumeration
    - Target health validation
@@ -259,6 +268,7 @@ This document summarizes the new extended test suites that have been added to th
     - Overall stack status
 
 **Key Features**:
+
 - Full observability stack testing
 - All monitoring components covered
 - Integration validation
@@ -294,6 +304,7 @@ The extended test suites are now integrated into the main test runner:
 ```
 
 The test runner executes tests in this order:
+
 1. Infrastructure tests (Vault, etc.)
 2. Database tests (PostgreSQL, MySQL, MongoDB)
 3. Cache tests (Redis, Redis Cluster)
@@ -312,12 +323,14 @@ The test runner executes tests in this order:
 ## Test Results Format
 
 Each test suite provides:
+
 - **Test count**: Total tests executed
 - **Pass/fail breakdown**: Number of passed and failed tests
 - **Detailed results**: Individual test outcomes with descriptive messages
 - **Summary**: Overall pass/fail status
 
 Example output:
+
 ```
 =========================================
   Observability Stack Test Suite
@@ -344,6 +357,7 @@ Passed: 10
 ## Validation Status
 
 ### Successfully Tested
+
 - ✅ **Vault Extended Tests**: All 10 tests passing
   - Health endpoint, secret versioning, token management
   - Certificate chain validation, PKI configuration
@@ -353,16 +367,19 @@ Passed: 10
   - Service discovery and integration confirmed
 
 ### Requires PostgreSQL Client (`psql`)
+
 - ⚠️ **PostgreSQL Extended Tests**: Requires `psql` client installed on host
 - ⚠️ **PgBouncer Tests**: Requires `psql` client installed on host
 
 **Prerequisites**:
+
 - Install PostgreSQL client tools: `brew install libpq` (then link psql to PATH)
 - Tests automatically retrieve credentials from Vault (`~/.config/vault/root-token`)
 
 ## Test Coverage Summary
 
 ### Services Covered
+
 - ✅ Vault (basic + extended)
 - ✅ PostgreSQL (basic + extended + PgBouncer)
 - ✅ MySQL (basic)
@@ -377,6 +394,7 @@ Passed: 10
 - ✅ Redis Exporters (extended)
 
 ### Test Categories
+
 1. **Health & Status**: Container health, service availability
 2. **Configuration**: Settings validation, proper setup
 3. **Functionality**: Feature testing, API operations
@@ -387,6 +405,7 @@ Passed: 10
 ## Future Enhancements
 
 Potential areas for additional testing:
+
 1. **MySQL Extended Tests**: Advanced MySQL features
 2. **MongoDB Extended Tests**: Replica sets, aggregation pipelines
 3. **Redis Extended Tests**: Cluster failover, sentinel
@@ -399,6 +418,7 @@ Potential areas for additional testing:
 ## Prerequisites
 
 ### Required Tools
+
 - `bash` >= 3.2
 - `docker` and `docker compose`
 - `curl` for API testing
@@ -407,6 +427,7 @@ Potential areas for additional testing:
 - `openssl` for certificate validation
 
 ### Required Services
+
 All tests require the Colima environment to be running:
 
 ```bash
@@ -414,13 +435,16 @@ All tests require the Colima environment to be running:
 ```
 
 ### Credentials
+
 Tests automatically retrieve credentials from Vault when available:
+
 - `~/.config/vault/root-token` - Vault root token
 - Vault API: `http://localhost:8200`
 
 ## Test Maintenance
 
 ### Adding New Tests
+
 1. Create test file in `tests/` directory
 2. Follow existing test structure and naming
 3. Add to `run-all-tests.sh` in appropriate section
@@ -428,6 +452,7 @@ Tests automatically retrieve credentials from Vault when available:
 5. Ensure tests are idempotent and clean up after themselves
 
 ### Test Best Practices
+
 - Use descriptive test names
 - Provide detailed pass/fail messages
 - Clean up test data after execution
@@ -437,6 +462,7 @@ Tests automatically retrieve credentials from Vault when available:
 ## Conclusion
 
 These extended test suites significantly enhance the testing infrastructure of the DevStack Core project, providing:
+
 - **+40 new test cases** across critical services
 - **Comprehensive coverage** of advanced features
 - **Observability validation** for the monitoring stack

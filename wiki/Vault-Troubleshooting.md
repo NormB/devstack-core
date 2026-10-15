@@ -6,7 +6,7 @@
 - [Test Suites](#test-suites)
   - [Infrastructure Tests](#infrastructure-tests)
   - [Database Tests](#database-tests)
-  - [Cache & Messaging Tests](#cache-messaging-tests)
+  - [Cache & Messaging Tests](#cache--messaging-tests)
   - [Application Tests](#application-tests)
 - [New Features (Latest Update)](#new-features-latest-update)
   - [1. Redis Cluster Testing (`test-redis-cluster.sh`)](#1-redis-cluster-testing-test-redis-clustersh)
@@ -64,25 +64,31 @@ Comprehensive test coverage for all infrastructure components and applications.
 ## Test Suites
 
 ### Infrastructure Tests
+
 - **`test-vault.sh`** - Vault PKI, secrets management, auto-unseal (10 tests)
 
 ### Database Tests
+
 - **`test-postgres.sh`** - PostgreSQL with Vault integration
 - **`test-mysql.sh`** - MySQL with Vault integration
 - **`test-mongodb.sh`** - MongoDB with Vault integration
 
 ### Cache & Messaging Tests
+
 - **`test-redis-cluster.sh`** - Redis cluster operations (12 tests)
 - **`test-rabbitmq.sh`** - RabbitMQ messaging
 
 ### Application Tests
+
 - **`test-fastapi.sh`** - FastAPI reference app with Redis Cluster APIs (14 tests)
 - **`test-rust.sh`** - Rust reference app with Actix-web (7 tests)
 
 ## New Features (Latest Update)
 
 ### 1. Redis Cluster Testing (`test-redis-cluster.sh`)
+
 Comprehensive 12-test suite validating:
+
 - ✅ All 3 containers running and reachable
 - ✅ Cluster mode enabled on all nodes
 - ✅ Cluster initialization (state: ok)
@@ -93,39 +99,47 @@ Comprehensive 12-test suite validating:
 - ✅ Keyslot calculation
 
 **Why it matters:**
+
 - Ensures Redis cluster is properly initialized
 - Validates complete slot coverage (100%)
 - Tests real-world data operations
 - Verifies Vault-managed authentication
 
 ### 2. FastAPI Application Testing (`test-fastapi.sh`)
+
 Comprehensive 14-test suite validating:
 
 **Container & Endpoints:**
+
 - ✅ HTTP endpoint (port 8000)
 - ✅ HTTPS endpoint (port 8443, when TLS enabled)
 - ✅ Health checks return cluster information
 
 **Redis Cluster API Tests (4 new endpoints):**
+
 - ✅ `/redis/cluster/nodes` - All nodes with slot assignments
 - ✅ `/redis/cluster/slots` - 100% slot coverage verification
 - ✅ `/redis/cluster/info` - Cluster state and statistics
 - ✅ `/redis/nodes/{node}/info` - Per-node detailed information
 
 **Integration Tests:**
+
 - ✅ Vault integration via health endpoint
 - ✅ All databases (PostgreSQL, MySQL, MongoDB)
 - ✅ RabbitMQ messaging
 - ✅ API documentation (Swagger UI, OpenAPI schema)
 
 **Why it matters:**
+
 - Validates all new Redis Cluster inspection APIs
 - Tests dual HTTP/HTTPS support
 - Ensures all service integrations work
 - Verifies API documentation generation
 
 ### 3. Enhanced Test Runner (`run-all-tests.sh`)
+
 Updated to run all 7 test suites in organized sequence:
+
 1. Infrastructure (Vault)
 2. Databases (PostgreSQL, MySQL, MongoDB)
 3. Cache (Redis Cluster)
@@ -133,6 +147,7 @@ Updated to run all 7 test suites in organized sequence:
 5. Applications (FastAPI)
 
 **Output Features:**
+
 - Color-coded pass/fail indicators
 - Real-time progress
 - Comprehensive summary
@@ -141,6 +156,7 @@ Updated to run all 7 test suites in organized sequence:
 ## Prerequisites
 
 ### System Dependencies
+
 ```bash
 # macOS
 brew install jq
@@ -152,12 +168,14 @@ apt-get install jq
 ```
 
 ### Python Dependencies
+
 ```bash
 # Install from tests directory
 pip3 install -r tests/requirements.txt
 ```
 
 Required packages:
+
 - `psycopg2-binary` - PostgreSQL client
 
 ## Test Output Example
@@ -190,21 +208,27 @@ Passed: 13
 ## Running Individual Tests
 
 ### Test FastAPI and Redis Cluster APIs
+
 ```bash
 ./tests/test-fastapi.sh
 ```
+
 Tests all new Redis Cluster inspection endpoints and service integrations.
 
 ### Test Redis Cluster Configuration
+
 ```bash
 ./tests/test-redis-cluster.sh
 ```
+
 Tests cluster initialization, slot distribution, and data operations.
 
 ### Test All Infrastructure
+
 ```bash
 ./tests/run-all-tests.sh
 ```
+
 Runs all 7 test suites and provides comprehensive summary.
 
 ## Test Coverage Summary
@@ -228,6 +252,7 @@ The test suite automatically adapts to your active service profile, skipping tes
 ### How It Works
 
 **Automatic Service Detection:**
+
 - Tests check for running containers before execution
 - Services not in active profile are automatically skipped
 - Exit code 0 (success) even with skipped tests
@@ -244,6 +269,7 @@ The test suite automatically adapts to your active service profile, skipping tes
 | **full + reference** | ✅ All | ✅ All | ✅ All | ✅ All | ✅ All |
 
 **Example Output:**
+
 ```bash
 $ ./tests/run-all-tests.sh  # With minimal profile
 
@@ -272,6 +298,7 @@ Results by suite:
 - **SKIPPED (⊘):** Service not running, tests not executed (exit code 0)
 
 **Key Difference:**
+
 - ❌ **Failure:** Indicates a bug or misconfiguration that needs fixing
 - ⊘ **Skip:** Expected behavior when service isn't in active profile
 
@@ -309,23 +336,27 @@ docker ps --format "table {{.Name}}\t{{.Status}}"
 ## What Gets Validated
 
 ### ✅ Infrastructure
+
 - Vault PKI and secrets management
 - Auto-unseal functionality
 - Certificate issuance for all services
 
 ### ✅ Data Layer
+
 - Database containers running
 - Vault credential integration
 - Real client connectivity (not docker exec)
 - SSL/TLS when enabled
 
 ### ✅ Cache Layer (New!)
+
 - Redis cluster initialization
 - Complete slot coverage (16384 slots)
 - Data sharding across nodes
 - Automatic redirection
 
 ### ✅ Application Layer (New!)
+
 - HTTP/HTTPS dual-mode operation
 - Redis Cluster inspection APIs
 - Health checks with cluster details
@@ -335,6 +366,7 @@ docker ps --format "table {{.Name}}\t{{.Status}}"
 ## Continuous Testing
 
 Run tests after:
+
 - ✅ Initial setup (`./devstack start`)
 - ✅ Configuration changes
 - ✅ Certificate regeneration
@@ -345,7 +377,9 @@ Run tests after:
 ## Test Philosophy
 
 ### External Client Testing
+
 All tests use **real external clients**, not `docker exec`:
+
 - ✅ Tests actual network stack
 - ✅ Validates SSL/TLS properly
 - ✅ Catches firewall/routing issues
@@ -353,7 +387,9 @@ All tests use **real external clients**, not `docker exec`:
 - ✅ Production-like testing
 
 ### Why This Matters
+
 Using `docker exec` bypasses the network and can't validate:
+
 - ❌ Certificate validation
 - ❌ Network routing
 - ❌ SSL/TLS encryption
@@ -366,6 +402,7 @@ Our tests connect from **outside the container** like real applications would.
 ### Test Failures
 
 **Redis Cluster Tests Fail:**
+
 ```bash
 # Reinitialize cluster
 ./configs/redis/scripts/redis-cluster-init.sh
@@ -375,6 +412,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD CLUSTER INFO
 ```
 
 **FastAPI Tests Fail:**
+
 ```bash
 # Check container logs
 docker logs dev-reference-api
@@ -387,6 +425,7 @@ curl http://localhost:8000/health/all
 ```
 
 **Database Tests Fail:**
+
 ```bash
 # Check Vault credentials
 ./devstack vault-show-password postgres
@@ -398,6 +437,7 @@ docker ps
 ### Dependencies Missing
 
 **jq not found:**
+
 ```bash
 # macOS
 brew install jq
@@ -407,6 +447,7 @@ sudo apt-get install jq
 ```
 
 **Python library errors:**
+
 ```bash
 pip3 install -r tests/requirements.txt
 ```
@@ -422,6 +463,7 @@ When adding new infrastructure or features:
 5. Test with: `./tests/test-{component}.sh`
 
 ### Test Template
+
 ```bash
 #!/bin/bash
 set -e
@@ -471,6 +513,7 @@ fi
 ## Summary
 
 The test suite provides **comprehensive validation** of:
+
 - ✅ Infrastructure security (Vault, PKI, secrets)
 - ✅ Database integration (PostgreSQL, MySQL, MongoDB)
 - ✅ **Redis Cluster** (initialization, slots, sharding)

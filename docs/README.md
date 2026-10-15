@@ -6,7 +6,7 @@
   - [Project Information](#project-information)
   - [Security Documentation](#security-documentation)
   - [Testing Documentation](#testing-documentation)
-  - [Architecture & Design](#architecture-design)
+  - [Architecture & Design](#architecture--design)
   - [Operational Guides](#operational-guides)
   - [API Development Patterns](#api-development-patterns)
 - [Quick Links](#quick-links)
@@ -220,13 +220,14 @@ This directory contains comprehensive documentation for the DevStack Core projec
   - Complete API contract (841 lines)
   - Single source of truth for both implementations
   - Used to validate synchronization between code-first and API-first
-  - Auto-generated documentation at http://localhost:8000/docs
+  - Auto-generated documentation at <http://localhost:8000/docs>
 
 ## Quick Links
 
 ### Project-Level Documentation
 
 Located in the project root and `.github/`:
+
 - [README.md](../README.md) - Main project documentation
 - [CONTRIBUTING.md](../.github/CONTRIBUTING.md) - Contribution guidelines
 - [SECURITY.md](../.github/SECURITY.md) - Security policy and reporting
@@ -299,6 +300,7 @@ fails when a mirrored copy is out of date.
 ## Contributing to Documentation
 
 See [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for guidelines on:
+
 - Documentation style guide
 - Review process
 - Testing documentation changes

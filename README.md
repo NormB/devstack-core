@@ -17,7 +17,7 @@ A comprehensive, self-contained development environment providing Git hosting (F
 - **🎯 [Service Profiles](./docs/SERVICE_PROFILES.md)** - Choose your stack: minimal (2GB), standard (4GB), or full (6GB) with observability
 - **🍎 [Apple Silicon Optimized](#-prerequisites)** - Native ARM64 support via Colima's Virtualization.framework
 - **🔒 [Vault-First Security](./docs/VAULT.md)** - All credentials managed by HashiCorp Vault with AppRole authentication
-- **🛡️ [AppRole Authentication](#-security--approle-authentication)** - Zero hardcoded secrets, least-privilege access for all core services
+- **🛡️ [AppRole Authentication](#️-security--approle-authentication)** - Zero hardcoded secrets, least-privilege access for all core services
 - **🔐 [TLS/SSL Support](./docs/TLS_CERTIFICATE_MANAGEMENT.md)** - Dual-mode TLS with automated certificate generation via Vault PKI
 - **📦 [Zero Cloud Dependencies](#-zero-cloud-dependencies)** - Runs entirely on your Mac, perfect for offline development
 - **🛠️ [Easy Management](./docs/PYTHON_CLI.md)** - Single CLI script with 21 commands for all operations
@@ -57,15 +57,17 @@ cp .env.example .env
 ```
 
 **Access your services:**
-- **Forgejo (Git):** http://localhost:3000
-- **Vault UI:** http://localhost:8200/ui
-- **RabbitMQ Management:** http://localhost:15672
-- **Grafana:** http://localhost:3001 (admin/admin)
-- **Prometheus:** http://localhost:9090
+
+- **Forgejo (Git):** <http://localhost:3000>
+- **Vault UI:** <http://localhost:8200/ui>
+- **RabbitMQ Management:** <http://localhost:15672>
+- **Grafana:** <http://localhost:3001> (admin/admin)
+- **Prometheus:** <http://localhost:9090>
 
 ## 📋 Prerequisites
 
 **Required:**
+
 - macOS with Apple Silicon (M1/M2/M3/M4)
 - **Note:** Intel Macs are not supported due to ARM64 architecture requirements
 - Homebrew package manager
@@ -73,12 +75,14 @@ cp .env.example .env
 - 50GB+ free disk space
 
 **Software (auto-installed via Homebrew):**
+
 - Colima (container runtime)
 - Docker CLI
 - Docker Compose
 - uv (Python package installer)
 
 **For development:**
+
 - Python 3.8+ (for management script)
 - Git (for cloning repository)
 
@@ -120,6 +124,7 @@ DevStack Core implements **AppRole authentication** for secure, zero-trust crede
 AppRole is HashiCorp Vault's recommended authentication method for applications. Instead of hardcoding secrets or using a single root token, each service authenticates using its own `role-id` (identifies the service) and `secret-id` (proves authorization).
 
 **Security Benefits:**
+
 - ✅ **Zero Hardcoded Secrets** - No passwords in .env files or docker-compose.yml
 - ✅ **Least Privilege** - Each service has access ONLY to its own credentials
 - ✅ **Short-Lived Tokens** - Service tokens expire after 1 hour (renewable)
@@ -139,6 +144,7 @@ When you run `./devstack vault-bootstrap`, the system:
 ### Which Services Use AppRole?
 
 **✅ Core Services (AppRole Enabled - 7 services):**
+
 - PostgreSQL, MySQL, MongoDB
 - Redis Cluster (3 nodes)
 - RabbitMQ
@@ -146,6 +152,7 @@ When you run `./devstack vault-bootstrap`, the system:
 - Reference API (FastAPI)
 
 **⚠️ Infrastructure Services (Root Token - 9 services):**
+
 - PGBouncer, Redis Exporters, Vector
 - Additional reference apps (api-first, golang, nodejs, rust)
 
@@ -210,6 +217,7 @@ Production-quality API implementations in multiple languages:
 | **Rust** | Actix-web | 8004, 8447 | ⚠️ Partial (~40%) |
 
 All reference apps demonstrate:
+
 - Vault integration for secrets
 - Database connections (PostgreSQL, MySQL, MongoDB)
 - Redis cluster operations
@@ -257,6 +265,7 @@ The `manage-devstack` script provides all essential operations:
 ### Example Workflows
 
 **Daily Development:**
+
 ```bash
 # Morning: Start development environment
 ./devstack start --profile standard
@@ -272,6 +281,7 @@ The `manage-devstack` script provides all essential operations:
 ```
 
 **Database Operations:**
+
 ```bash
 # Get database password
 ./devstack vault-show-password postgres
@@ -287,6 +297,7 @@ mongosh "mongodb://localhost:27017" --username devuser
 ```
 
 **Troubleshooting:**
+
 ```bash
 # Check service health
 ./devstack health
@@ -309,6 +320,7 @@ DevStack Core runs **entirely on your local Mac** with no cloud provider service
 ### What "Zero Cloud" Means
 
 **✅ No Cloud Services Required:**
+
 - No AWS, Azure, GCP, or any cloud provider accounts
 - No cloud databases (RDS, Cloud SQL, CosmosDB, etc.)
 - No cloud caching services (ElastiCache, Cloud Memorystore, etc.)
@@ -316,6 +328,7 @@ DevStack Core runs **entirely on your local Mac** with no cloud provider service
 - No cloud secrets managers (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager, etc.)
 
 **✅ Complete Local Execution:**
+
 - All services run in Docker containers on your Mac
 - Data stored locally in Docker volumes
 - No network calls to external cloud APIs
@@ -324,27 +337,32 @@ DevStack Core runs **entirely on your local Mac** with no cloud provider service
 ### Benefits of Local Development
 
 **🔒 Data Sovereignty:**
+
 - All data stays on your machine
 - Perfect for sensitive projects or regulated industries
 - No data egress to third-party services
 - Complete privacy for proprietary code and data
 
 **💰 Zero Cloud Costs:**
+
 - No monthly cloud service bills
 - No surprise charges from dev/test workloads
 - Predictable local hardware costs only
 
 **✈️ Offline Development:**
+
 - Full functionality without internet connection (after initial setup)
 - Work from anywhere: planes, trains, remote locations
 - No dependency on cloud service availability
 
 **⚡ Low Latency:**
+
 - All services communicate locally (172.20.0.0/16 network)
 - No network round-trips to cloud regions
 - Faster development iteration cycles
 
 **🎮 Full Environment Control:**
+
 - Version lock all services (PostgreSQL 18, Redis 7.4, etc.)
 - Experiment freely without affecting shared infrastructure
 - Easy reset and reproduction (`./devstack reset`)
@@ -354,6 +372,7 @@ DevStack Core runs **entirely on your local Mac** with no cloud provider service
 DevStack Core does require local tools for container orchestration and package management:
 
 **Required Software:**
+
 - **macOS with Apple Silicon** (M1/M2/M3/M4) - ARM64 architecture
 - **Homebrew** - Package manager for installing tools
 - **Colima** - Lightweight container runtime using macOS Virtualization.framework
@@ -362,11 +381,13 @@ DevStack Core does require local tools for container orchestration and package m
 - **uv** - Fast Python package installer
 
 **Installation (one-time):**
+
 ```bash
 brew install colima docker docker-compose uv
 ```
 
 **Why These Tools?**
+
 - **Colima**: Native ARM64 support, efficient resource usage, better than Docker Desktop for development
 - **Docker/Docker Compose**: Industry-standard container tools, portable configurations
 - **uv**: Fast Python dependency management (100x faster than pip)
@@ -374,6 +395,7 @@ brew install colima docker docker-compose uv
 ### Cloud vs. Local Tradeoffs
 
 **When Local Development Excels:**
+
 - ✅ Individual developer workflows
 - ✅ Offline or airgapped environments
 - ✅ Sensitive data that cannot leave your machine
@@ -381,6 +403,7 @@ brew install colima docker docker-compose uv
 - ✅ Rapid prototyping and experimentation
 
 **When Cloud Makes Sense:**
+
 - ☁️ Team collaboration requiring shared infrastructure
 - ☁️ Production deployments with global reach
 - ☁️ Auto-scaling requirements
@@ -391,22 +414,26 @@ DevStack Core is optimized for **local development** while maintaining patterns 
 ## 📚 Documentation
 
 ### Getting Started
+
 - **[Installation Guide](./docs/INSTALLATION.md)** - Comprehensive setup with troubleshooting
 - **[Quick Start Tutorial](./docs/USAGE.md)** - Step-by-step usage guide
 - **[Service Profiles](./docs/SERVICE_PROFILES.md)** - Profile selection and configuration
 
 ### Core Documentation
+
 - **[Architecture Overview](./docs/ARCHITECTURE.md)** - System design with diagrams
 - **[Services Guide](./docs/SERVICES.md)** - Detailed service configurations
 - **[Management Script](./docs/MANAGEMENT.md)** - Complete CLI reference
 - **[Python CLI Guide](./docs/PYTHON_CLI.md)** - Modern Python CLI documentation
 
 ### Infrastructure
+
 - **[Vault Integration](./docs/VAULT.md)** - PKI setup and secrets management
 - **[Redis Cluster](./docs/REDIS.md)** - Cluster architecture and operations
 - **[Observability Stack](./docs/OBSERVABILITY.md)** - Prometheus, Grafana, Loki setup
 
 ### Development
+
 - **[Reference Apps Overview](./reference-apps/README.md)** - Multi-language examples
 - **[Best Practices](./docs/BEST_PRACTICES.md)** - Development patterns
 - **[Testing Guide](./tests/README.md)** - Testing infrastructure
@@ -415,12 +442,14 @@ DevStack Core is optimized for **local development** while maintaining patterns 
 - **Task 2.1 Testing** - Backup system test suite (63 tests); the write-up is kept outside the repository (`docs/.private/` is gitignored)
 
 ### Operations
+
 - **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
 - **[Performance Tuning](./docs/PERFORMANCE_TUNING.md)** - Optimization strategies
 - **[Disaster Recovery](./docs/DISASTER_RECOVERY.md)** - Backup and restore procedures
 - **[Security Assessment](./docs/SECURITY_ASSESSMENT.md)** - Security hardening
 
 ### Project
+
 - **[FAQ](./docs/FAQ.md)** - Frequently asked questions
 - **[Changelog](./.github/CHANGELOG.md)** - Version history
 - **[Contributing](./.github/CONTRIBUTING.md)** - Contribution guidelines
@@ -451,12 +480,14 @@ We welcome contributions! Here's how to get started:
 ## 🐛 Issues and Support
 
 **Found a bug?** [Open an issue](https://github.com/NormB/devstack-core/issues/new) with:
+
 - Clear description of the problem
 - Steps to reproduce
 - Expected vs actual behavior
 - System information (OS, Colima version, etc.)
 
 **Need help?**
+
 1. Check the [FAQ](./docs/FAQ.md)
 2. Review [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
 3. Search [existing issues](https://github.com/NormB/devstack-core/issues)
@@ -467,6 +498,7 @@ We welcome contributions! Here's how to get started:
 This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE) file for details.
 
 You are free to:
+
 - ✅ Use commercially
 - ✅ Modify
 - ✅ Distribute

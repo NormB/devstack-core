@@ -21,6 +21,7 @@
 ### Hardware Specifications
 
 **Host Machine:**
+
 - **Model:** MacBook Pro (16-inch, 2021)
 - **Model Identifier:** MacBookPro18,2
 - **Chip:** Apple M Series Processor (M1 Max)
@@ -30,6 +31,7 @@
 - **OS:** macOS 26.0.1 (25A362) - Darwin 25.0.0
 
 **Colima VM Configuration:**
+
 - **Runtime:** Docker
 - **Architecture:** aarch64 (ARM64)
 - **CPUs Allocated:** 4 cores
@@ -89,6 +91,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | `POST /examples/messaging/publish/queue` | 12ms | 22ms | 35ms | 55ms | RabbitMQ publish |
 
 **Observations:**
+
 - Python async/await adds ~3-5ms overhead vs Go
 - Health check aggregation is sequential (room for optimization)
 - Database pool connections are efficient (<5ms overhead)
@@ -105,6 +108,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | `GET /examples/vault/secret/postgres` | 17ms | 27ms | 43ms | +2ms vs code-first (validation) |
 
 **Observations:**
+
 - OpenAPI validation adds minimal overhead (~1-2ms)
 - Runtime request/response validation ensures API contract compliance
 - Slightly higher memory usage than code-first
@@ -124,6 +128,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | `POST /examples/cache/key` | 4ms | 9ms | 14ms | 22ms | Redis SET |
 
 **Observations:**
+
 - **30-40% faster** than Python for most operations
 - Goroutines enable true concurrent health checks
 - Lower latency variance (more predictable)
@@ -143,6 +148,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | `GET /examples/cache/key` | 8ms | 14ms | 22ms | 35ms | Redis GET |
 
 **Observations:**
+
 - V8 JIT compilation provides good performance after warmup
 - Event loop handles concurrency well
 - Slightly higher latency than Go, better than Python
@@ -159,6 +165,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | `GET /health/vault` | 8ms | 15ms | 25ms | 40ms | Vault health connectivity |
 
 **Observations:**
+
 - **Fastest response times** across all implementations
 - Zero-cost abstractions provide excellent performance
 - Partial implementation (~40% complete) - missing database/cache/messaging integrations
@@ -207,6 +214,7 @@ All tests performed with idle services (no concurrent load unless otherwise spec
 | Join (2 tables, 1k rows each) | 450 queries/sec | 11ms | 22ms | With indexes |
 
 **pgbench TPC-B Benchmark:**
+
 ```
 number of clients: 10
 number of threads: 4
@@ -217,6 +225,7 @@ tps = 808.7 (including connections)
 ```
 
 **Observations:**
+
 - Shared buffers (256MB) provides good hit ratio
 - Connection pooling via PgBouncer reduces overhead
 - Write-ahead log (WAL) on SSD provides low write latency
@@ -236,6 +245,7 @@ tps = 808.7 (including connections)
 | Transaction (5 operations) | 700 tx/sec | 7.1ms | 14ms | ACID guarantees |
 
 **Observations:**
+
 - InnoDB buffer pool (256MB) provides decent caching
 - Slightly slower than PostgreSQL for most operations
 - Good performance for transactional workloads
@@ -256,6 +266,7 @@ tps = 808.7 (including connections)
 | aggregate (complex) | 180 queries/sec | 28ms | 55ms | 5-stage pipeline with $lookup |
 
 **Observations:**
+
 - **Fastest for simple read operations** (indexed)
 - WiredTiger cache provides excellent performance
 - Flexible schema allows for denormalization
@@ -292,6 +303,7 @@ tps = 808.7 (including connections)
 | Cross-slot operation | N/A | +0.3ms | +0.5ms | MOVED redirect overhead |
 
 **redis-benchmark Results (single node):**
+
 ```
 PING_INLINE: 18,182.58 requests per second
 PING_MBULK: 19,230.77 requests per second
@@ -307,6 +319,7 @@ HSET: 10,000.00 requests per second
 ```
 
 **Observations:**
+
 - Cluster overhead: ~15% compared to single Redis instance
 - Cross-node redirects add minimal latency (+0.3ms)
 - Excellent performance for sub-millisecond operations
@@ -329,6 +342,7 @@ HSET: 10,000.00 requests per second
 | Consume (manual ack) | 8,000 msg/sec | 2.5ms | 5ms | Most reliable |
 
 **Observations:**
+
 - Non-persistent messages are ~3x faster
 - Erlang VM provides excellent concurrency
 - Disk I/O is bottleneck for persistent messages
@@ -351,6 +365,7 @@ HSET: 10,000.00 requests per second
 | Seal status | 2,500 ops/sec | 2.0ms | 4ms | Status check |
 
 **Observations:**
+
 - Dev mode is faster than production (raft) storage
 - PKI operations are CPU-intensive (RSA key generation)
 - Token operations involve crypto, adding latency
@@ -363,6 +378,7 @@ HSET: 10,000.00 requests per second
 ### Idle State (No Load)
 
 **Total Resource Consumption:**
+
 - **CPU Usage:** < 5% combined (all services)
 - **Memory Usage:** ~2.8 GB of 8 GB allocated (35%)
 - **Disk I/O:** ~5 MB/s combined (WAL writes, logs)
@@ -411,6 +427,7 @@ HSET: 10,000.00 requests per second
 | RabbitMQ | 10-15% | 180 MB | Message routing |
 
 **Observations:**
+
 - **Go API** shows best CPU utilization under load
 - **Python** bottlenecked by GIL (single-threaded execution)
 - **Memory usage** remains stable under load
@@ -433,6 +450,7 @@ ab -n 60000 -c 100 -t 60 http://localhost:8000/health/all
 ```
 
 **Results:**
+
 ```
 Concurrency Level:      100
 Time taken for tests:   245.2 seconds
@@ -455,6 +473,7 @@ Percentage of requests served within:
 ```
 
 **Analysis:**
+
 - Sustained **245 req/sec** with 100 concurrent users
 - Mean latency: 408ms (reasonable for 7 health checks)
 - No failures (100% success rate)
@@ -467,6 +486,7 @@ ab -n 60000 -c 100 -t 60 http://localhost:8002/health/all
 ```
 
 **Results:**
+
 ```
 Concurrency Level:      100
 Time taken for tests:   187.5 seconds
@@ -489,6 +509,7 @@ Percentage of requests served within:
 ```
 
 **Analysis:**
+
 - Sustained **320 req/sec** (**+30% faster than Python**)
 - Mean latency: 312ms (faster health check execution)
 - Goroutines provide true concurrency
@@ -501,6 +522,7 @@ ab -n 60000 -c 100 -t 60 http://localhost:8003/health/all
 ```
 
 **Results:**
+
 ```
 Concurrency Level:      100
 Time taken for tests:   260.9 seconds
@@ -523,6 +545,7 @@ Percentage of requests served within:
 ```
 
 **Analysis:**
+
 - Sustained **230 req/sec**
 - Event loop handles concurrency well
 - Slightly higher latency variance than Go
@@ -577,11 +600,13 @@ Percentage of requests served within:
 ### Optimization Recommendations
 
 #### For Current Workload (Development)
+
 ✅ **Already Optimal** - No changes needed for development use case
 
 #### For Higher Load (Testing/QA)
 
 **Colima Resources:**
+
 ```bash
 # Stop Colima
 colima stop
@@ -596,6 +621,7 @@ colima start --cpu 8 --memory 16 --disk 100
 ```
 
 **Database Tuning:**
+
 ```env
 # PostgreSQL (.env)
 POSTGRES_SHARED_BUFFERS=512MB
@@ -614,6 +640,7 @@ REDIS_MAXMEMORY=512mb
 #### For Production Workload
 
 **Do NOT use this setup for production.** Instead:
+
 - Dedicated VMs/containers (not Colima)
 - Separate database servers
 - Load balancers (multiple API instances)

@@ -63,6 +63,7 @@ Comprehensive guide to using PgBouncer connection pooler for PostgreSQL in the D
 PgBouncer is a lightweight connection pooler for PostgreSQL that significantly improves application performance and scalability by reusing database connections.
 
 **Key Information:**
+
 - **Container Name:** `dev-pgbouncer`
 - **Host Port:** 6432
 - **Network IP:** 172.20.0.11
@@ -72,6 +73,7 @@ PgBouncer is a lightweight connection pooler for PostgreSQL that significantly i
 - **Credentials:** Same as PostgreSQL (stored in Vault at `secret/postgres`)
 
 **Related Pages:**
+
 - [PostgreSQL Operations](PostgreSQL-Operations) - PostgreSQL management
 - [Service Configuration](Service-Configuration) - PgBouncer service details
 - [Performance Tuning](Performance-Tuning) - Advanced optimization
@@ -112,6 +114,7 @@ Application (port 6432) → PgBouncer → PostgreSQL (port 5432)
 ### When to Use PgBouncer
 
 **Recommended for:**
+
 - Web applications with short-lived transactions
 - Microservices with many concurrent connections
 - Applications with connection spikes
@@ -120,6 +123,7 @@ Application (port 6432) → PgBouncer → PostgreSQL (port 5432)
 - Lambda/serverless functions
 
 **Example Scenario:**
+
 ```
 Web app with 500 concurrent users
 ├── Without PgBouncer: 500 PostgreSQL connections (unsustainable)
@@ -129,6 +133,7 @@ Web app with 500 concurrent users
 ### When to Use Direct Connections
 
 **Direct connections preferred for:**
+
 - Long-running analytical queries
 - Database administration tasks
 - Applications using prepared statements extensively
@@ -151,6 +156,7 @@ pool_mode = transaction
 ```
 
 **How it works:**
+
 ```sql
 -- Client 1 starts
 BEGIN;
@@ -164,12 +170,14 @@ SELECT * FROM products;
 ```
 
 **Characteristics:**
+
 - Most efficient mode (best connection reuse)
 - Connection released after `COMMIT` or `ROLLBACK`
 - Cannot use session-level features (temp tables, prepared statements)
 - **Recommended for:** Web applications, REST APIs, microservices
 
 **Limitations:**
+
 - No prepared statements across transactions
 - No temporary tables across transactions
 - No `SET` statements persisting across transactions
@@ -185,6 +193,7 @@ pool_mode = session
 ```
 
 **How it works:**
+
 ```sql
 -- Client 1 connects
 CREATE TEMP TABLE my_temp (id INT);
@@ -197,12 +206,14 @@ SELECT * FROM my_temp;  -- Works
 ```
 
 **Characteristics:**
+
 - Connection held for entire client session
 - All PostgreSQL features available
 - Less efficient (lower connection reuse)
 - **Recommended for:** Long-running connections, administrative tools
 
 **Use cases:**
+
 - Database administration (psql sessions)
 - Applications using prepared statements
 - Applications using temporary tables
@@ -218,6 +229,7 @@ pool_mode = statement
 ```
 
 **How it works:**
+
 ```sql
 -- Each statement uses a different connection
 SELECT * FROM users WHERE id = 1;  -- Connection A
@@ -225,6 +237,7 @@ SELECT * FROM orders WHERE user_id = 1;  -- Connection B (different!)
 ```
 
 **Characteristics:**
+
 - Highest connection reuse
 - Cannot use transactions (multi-statement transactions break)
 - Rarely used in practice
@@ -638,6 +651,7 @@ time docker exec dev-postgres psql -h pgbouncer -p 6432 -U postgres -c "SELECT 1
 ```
 
 **Connection establishment:**
+
 - Direct PostgreSQL: Fork process (5ms) + Auth (2ms) + Setup (3ms) = ~10ms
 - PgBouncer: Auth (1ms) + Reuse pooled connection (0.1ms) = ~1ms
 
@@ -719,6 +733,7 @@ ab -n 1000 -c 50 http://localhost:8000/api/pooled_db
 **Features NOT available in transaction mode:**
 
 1. **Prepared statements:**
+
 ```sql
 -- This FAILS in transaction mode
 PREPARE get_user (int) AS SELECT * FROM users WHERE id = $1;
@@ -730,6 +745,7 @@ SELECT * FROM users WHERE id = $1;  -- Pass 123 as parameter
 ```
 
 2. **SET statements:**
+
 ```sql
 -- This FAILS in transaction mode (doesn't persist)
 SET timezone = 'America/New_York';
@@ -743,6 +759,7 @@ COMMIT;
 ```
 
 3. **LISTEN/NOTIFY:**
+
 ```sql
 -- This FAILS in transaction mode
 LISTEN my_channel;
@@ -755,6 +772,7 @@ NOTIFY my_channel, 'message';
 ### Prepared Statements
 
 **Problem:**
+
 ```python
 # This pattern FAILS with PgBouncer (transaction mode)
 import psycopg2
@@ -793,6 +811,7 @@ engine = create_engine(
 ### Temporary Tables
 
 **Problem:**
+
 ```sql
 -- Temporary tables don't persist across transactions
 BEGIN;
@@ -826,6 +845,7 @@ SELECT * FROM my_temp;
 ### Advisory Locks
 
 **Problem:**
+
 ```sql
 -- Advisory locks don't persist in transaction mode
 BEGIN;
@@ -1451,23 +1471,27 @@ server_tls_key_file = /etc/pgbouncer/client.key
 ## Best Practices
 
 1. **Use transaction mode for most applications:**
+
    ```ini
    pool_mode = transaction  # Best performance
    ```
 
 2. **Disable application-level pooling:**
+
    ```python
    # Let PgBouncer handle pooling
    engine = create_engine(url, poolclass=NullPool)
    ```
 
 3. **Size pools appropriately:**
+
    ```
    Pool size = (CPU cores * 2-4)
    Monitor cl_waiting metric
    ```
 
 4. **Use parameterized queries (not prepared statements):**
+
    ```python
    # Good
    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
@@ -1477,24 +1501,28 @@ server_tls_key_file = /etc/pgbouncer/client.key
    ```
 
 5. **Set appropriate timeouts:**
+
    ```ini
    server_idle_timeout = 600   # 10 minutes
    query_timeout = 30          # 30 seconds (prevent runaway queries)
    ```
 
 6. **Monitor pool status regularly:**
+
    ```bash
    # Add to monitoring dashboard
    docker exec dev-pgbouncer psql -p 6432 -U postgres pgbouncer -c "SHOW POOLS;"
    ```
 
 7. **Use session mode for admin tasks:**
+
    ```ini
    # Separate database for admin
    admin = host=postgres port=5432 pool_size=5 pool_mode=session
    ```
 
 8. **Always close connections properly:**
+
    ```python
    # Use context managers
    with psycopg2.connect(dsn) as conn:
@@ -1504,12 +1532,14 @@ server_tls_key_file = /etc/pgbouncer/client.key
    ```
 
 9. **Test before production deployment:**
+
    ```bash
    # Run full test suite through PgBouncer
    ./tests/run-all-tests.sh
    ```
 
 10. **Document pool mode limitations:**
+
     ```
     Known limitations:
     - No prepared statements in transaction mode

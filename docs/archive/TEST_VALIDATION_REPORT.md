@@ -117,6 +117,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2>/dev/null)
 **Issue:** `/health/all` endpoint returning HTTP 500 with `AttributeError: 'str' object has no attribute 'decode'`
 **Root Cause:** Stale cached data in Redis incompatible with `fastapi-cache` library decoder
 **Impact:** 3 test failures:
+
 - FastAPI Reference App test
 - Performance & Load Testing test
 - API Parity Tests (2 tests)
@@ -132,10 +133,12 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 ### 3. Command Interception Issues
 
 **Issue:** Modern command-line tools intercepting standard commands
+
 - `fd` intercepting `find` commands
 - `rg` (ripgrep) intercepting `grep` commands
 
 **Fix:** Used full paths to system commands:
+
 - Changed `find` to `/usr/bin/find` (line 121 in `test-tls-certificate-automation.sh`)
 - Used `/usr/bin/grep` instead of `grep` in debugging
 
@@ -150,6 +153,7 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 **Status:** 100% Complete & Validated
 
 **Completed Tasks:**
+
 1. ✅ Enhanced Docker Compose setup
 2. ✅ Service profiles (minimal, standard, full, reference)
 3. ✅ Comprehensive management script
@@ -158,6 +162,7 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 6. ✅ Initial testing framework
 
 **Test Coverage:**
+
 - Vault integration: 10/10 tests passing
 - Service orchestration: Verified across all profiles
 - Management commands: All operations validated
@@ -167,6 +172,7 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 **Status:** 100% Complete & Validated
 
 **Completed Tasks:**
+
 1. ✅ Vault PKI implementation (2-tier CA)
 2. ✅ TLS/SSL for all services
 3. ✅ AppRole authentication
@@ -175,12 +181,14 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 6. ✅ TLS certificate automation
 
 **Test Coverage:**
+
 - TLS automation: 39/39 tests passing
 - AppRole authentication: Validated across 8 services
 - SSL/TLS connections: All database and message queue tests passing
 - Certificate management: Expiration checking, auto-renewal, cron scheduling
 
 **Security Features Validated:**
+
 - Two-tier PKI (Root CA → Intermediate CA → Service Certs)
 - Dual-mode TLS (accepts both encrypted and unencrypted for dev)
 - Certificate expiration monitoring
@@ -192,16 +200,19 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 **Status:** 100% Complete & Validated
 
 **Completed Tasks:**
+
 1. ✅ Enhanced backup/restore system
 2. ✅ Disaster recovery automation
 3. ✅ Health check monitoring
 
 **Test Coverage:**
+
 - Performance baselines: 10/10 tests passing
 - Error handling: 12/12 tests passing
 - Extended service tests: 30/30 tests passing
 
 **Operational Capabilities Validated:**
+
 - Sub-200ms Vault response times
 - Sub-1000ms database query response times
 - 50 concurrent FastAPI requests handled successfully
@@ -216,6 +227,7 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 ### Test Run Details
 
 **Environment:**
+
 - Platform: macOS (Darwin 25.1.0)
 - Colima VM: Running
 - Services Profile: standard + reference
@@ -223,12 +235,14 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 - Redis Cluster: 3 nodes, 16384 slots assigned
 
 **Test Execution Time:**
+
 - Bash test suites: ~5 minutes
 - Python unit tests: ~2 seconds
 - Python parity tests: ~1.5 seconds
 - **Total:** ~6-7 minutes
 
 **Test Statistics:**
+
 - Bash integration tests: 176 tests
 - Python unit tests: 254 tests
 - Python parity tests: 64 tests
@@ -309,6 +323,7 @@ docker restart dev-redis-1 dev-redis-2 dev-redis-3 dev-reference-api
 ### Production Readiness Checklist
 
 For production deployment, ensure:
+
 - ✅ Disable dual-mode TLS (enforce TLS-only connections)
 - ✅ Implement authentication on reference APIs
 - ✅ Enable rate limiting on all public endpoints

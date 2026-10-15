@@ -6,7 +6,7 @@ Overview of the testing strategy for DevStack Core, including 431+ tests across 
 
 - [Overview](#overview)
 - [Test Architecture](#test-architecture)
-  - [Total Test Count: 431 Tests (355 run, 76 skipped)](#total-test-count-431-tests-355-run-76-skipped)
+  - [Total Test Count: 571+ Tests (495+ run, 76 skipped)](#total-test-count-571-tests-495-run-76-skipped)
 - [Best Approach (Implemented in `run-all-tests.sh`)](#best-approach-implemented-in-run-all-testssh)
   - [1. Bash Integration Tests](#1-bash-integration-tests)
   - [2. Python Unit Tests (FastAPI)](#2-python-unit-tests-fastapi)
@@ -60,7 +60,9 @@ This document explains the **best practices** for running the 571+ tests in the 
 ## Best Approach (Implemented in `run-all-tests.sh`)
 
 ### 1. Bash Integration Tests
+
 **Method:** Direct execution on host
+
 ```bash
 ./tests/test-vault.sh
 ./tests/test-postgres.sh
@@ -72,6 +74,7 @@ This document explains the **best practices** for running the 571+ tests in the 
 **Why:** These tests interact with Docker containers from outside, testing real service integration.
 
 **Test Suites:**
+
 - **Infrastructure:** test-vault.sh (10 tests), test-approle-auth.sh (15 tests)
 - **Databases:** test-postgres.sh, test-mysql.sh, test-mongodb.sh
 - **Cache & Messaging:** test-redis-cluster.sh (12 tests), test-rabbitmq.sh
@@ -110,6 +113,7 @@ This document explains the **best practices** for running the 571+ tests in the 
 **Total:** 176+ integration tests across 20 suites
 
 **Phase 3 Test Validation Status:**
+
 - ✅ test-performance-regression.sh: 4/4 passing (100%)
 - ✅ test-approle-security.sh: 21/21 passing (100%)
 - ✅ test-redis-failover.sh: 16/16 passing (100%)
@@ -121,12 +125,15 @@ See [Phase 3 Test Validation Report](./archive/PHASE_3_TEST_VALIDATION.md) for c
 The Task 2.1 backup-system test write-up is kept outside the repository (`docs/.private/` is gitignored).
 
 ### 2. Python Unit Tests (FastAPI)
+
 **Method:** Execute inside Docker container
+
 ```bash
 docker exec dev-reference-api pytest tests/ -v
 ```
 
 **Why this is the BEST approach:**
+
 - ✅ **Correct Python version** (3.11) - avoids Python 3.14 compatibility issues
 - ✅ **All dependencies pre-installed** - no local environment setup needed
 - ✅ **Production-like environment** - tests run in same env as production code
@@ -134,35 +141,42 @@ docker exec dev-reference-api pytest tests/ -v
 - ✅ **Consistent across developers** - everyone uses same container image
 
 **Alternatives rejected:**
+
 - ❌ Local Python 3.14: asyncpg build fails with C compilation errors
 - ❌ Local venv: Requires manual dependency management, version conflicts
 
 ### 3. Python Parity Tests
+
 **Method:** Run from host using `uv`
+
 ```bash
 cd reference-apps/shared/test-suite
 uv venv && uv pip install -r requirements.txt && uv run pytest -v
 ```
 
 **Why this is the BEST approach:**
+
 - ✅ **Must access both APIs via localhost** - localhost:8000 and localhost:8001
 - ✅ **Client perspective testing** - tests as external client would use APIs
 - ✅ **Lightweight dependencies** - only httpx, pytest (no heavy native extensions)
 - ✅ **uv handles environment** - automatic venv creation and dependency management
 
 **Alternatives rejected:**
+
 - ❌ Inside container: Would need container networking, can't access localhost ports
 - ❌ Local Python 3.14 directly: Works but uv provides better isolation
 
 ## Running All Tests
 
 ### Simple (Recommended)
+
 ```bash
 # Auto-starts required containers and runs all 494 tests
 ./tests/run-all-tests.sh
 ```
 
 The script:
+
 1. Checks if containers are running
 2. Auto-starts them if needed (`docker compose up -d`)
 3. Runs bash tests (176 tests across 15 suites)
@@ -171,6 +185,7 @@ The script:
 6. Shows comprehensive summary
 
 **Run individual test categories:**
+
 ```bash
 # Infrastructure tests only
 ./tests/test-vault.sh
@@ -189,6 +204,7 @@ done
 ```
 
 ### Manual Container Startup (Faster)
+
 ```bash
 # Pre-start containers
 docker compose up -d reference-api api-first
@@ -200,13 +216,16 @@ docker compose up -d reference-api api-first
 ## Prerequisites
 
 ### Required Tools
+
 1. **Docker + Docker Compose** (for all services)
+
    ```bash
    docker --version
    docker compose version
    ```
 
 2. **uv** (Python package manager)
+
    ```bash
    # Install
    curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -220,6 +239,7 @@ docker compose up -d reference-api api-first
 3. **bash** (>= 3.2)
 
 ### Required Containers
+
 - `dev-reference-api` - FastAPI code-first implementation
 - `dev-api-first` - FastAPI API-first implementation
 - All infrastructure containers (vault, postgres, redis, etc.)
@@ -227,6 +247,7 @@ docker compose up -d reference-api api-first
 ## Test Execution Details
 
 ### Unit Tests (Inside Container)
+
 ```bash
 # The script runs this command:
 docker exec dev-reference-api pytest tests/ -v --tb=short
@@ -237,6 +258,7 @@ docker exec dev-reference-api pytest tests/ -v --tb=short
 ```
 
 **What runs:**
+
 - Service unit tests (vault, cache, database)
 - Router unit tests (health, vault, cache, database, messaging, redis)
 - Exception handler tests
@@ -245,6 +267,7 @@ docker exec dev-reference-api pytest tests/ -v --tb=short
 - CORS tests
 
 ### Parity Tests (From Host with uv)
+
 ```bash
 # The script runs this:
 cd reference-apps/shared/test-suite
@@ -257,6 +280,7 @@ uv run pytest -v
 ```
 
 **What runs:**
+
 - Root endpoint parity
 - OpenAPI spec matching
 - Vault endpoint parity
@@ -268,6 +292,7 @@ uv run pytest -v
 ## Troubleshooting
 
 ### Container Not Running
+
 ```bash
 # Error: "dev-reference-api container not running"
 # Solution: Script auto-starts it, or manually:
@@ -275,6 +300,7 @@ docker compose up -d reference-api
 ```
 
 ### uv Not Found
+
 ```bash
 # Error: "uv not found - required for parity tests"
 # Solution:
@@ -284,6 +310,7 @@ brew install uv
 ```
 
 ### Tests Fail
+
 ```bash
 # Check service health first
 ./devstack.sh health
@@ -298,17 +325,20 @@ docker logs dev-reference-api
 ## Why Not Other Approaches?
 
 ### Why not run everything in containers?
+
 - Parity tests need to access localhost:8000 and localhost:8001
 - Running from inside container would require complex networking setup
 - Client-perspective testing requires external access
 
 ### Why not run everything locally with uv?
+
 - Python 3.14 has compatibility issues with asyncpg (C extension build failures)
 - Would require matching exact Python version (3.11) locally
 - Defeats purpose of containerization
 - Inconsistent across developer environments
 
 ### Why not use virtualenv or pip directly?
+
 - uv is faster and handles dependency resolution better
 - uv creates isolated environments automatically
 - uv is the modern standard for Python package management
@@ -317,6 +347,7 @@ docker logs dev-reference-api
 ## Success Metrics
 
 All tests passing produces this output:
+
 ```
 Test Suites Run: 12
 Passed: 12
@@ -341,6 +372,7 @@ Results by suite:
 ## Integration with CI/CD
 
 The same approach works in CI/CD:
+
 ```yaml
 # GitHub Actions example
 - name: Run all tests
@@ -352,11 +384,13 @@ The same approach works in CI/CD:
 ## Summary
 
 **Best approach is a hybrid:**
+
 - **Bash tests:** Direct host execution ✓
 - **Unit tests:** Inside Docker containers ✓
 - **Parity tests:** From host with uv ✓
 
 This provides:
+
 - Maximum compatibility (no Python version issues)
 - Minimum setup (auto-starts containers, uv manages deps)
 - Maximum reliability (production-like environment)

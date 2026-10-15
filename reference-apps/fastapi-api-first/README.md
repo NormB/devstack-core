@@ -20,6 +20,7 @@ This implementation demonstrates the **API-first development approach** where th
 - **Interactive API docs** - Auto-generated from OpenAPI specification
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
@@ -34,13 +35,16 @@ This implementation demonstrates the **API-first development approach** where th
 ## Overview
 
 ### Purpose
+
 This API-first implementation serves as a reference for:
+
 - Contract-first API development using OpenAPI specifications
 - Containerized FastAPI applications with full infrastructure integration
 - Implementing identical functionality through different development patterns
 - Demonstrating API synchronization and parity validation
 
 ### Key Features
+
 - ✅ **Full Parity**: 100% behavioral equivalence with code-first implementation (26/26 tests passing)
 - ✅ **Containerized**: Complete Docker support with Vault integration
 - ✅ **TLS/HTTPS**: Support for secure connections on port 8444
@@ -49,11 +53,12 @@ This API-first implementation serves as a reference for:
 - ✅ **Comprehensive Testing**: Unit tests, integration tests, shared parity test suite
 
 ### Service Details
+
 - **HTTP Port**: 8001
 - **HTTPS Port**: 8444 (when TLS enabled)
 - **Network IP**: 172.20.0.104 (dev-services network)
 - **Container Name**: dev-api-first
-- **Health Check**: http://localhost:8001/health
+- **Health Check**: <http://localhost:8001/health>
 
 ## Quick Start
 
@@ -173,12 +178,15 @@ fastapi-api-first/
 ## API Endpoints
 
 ### Root Endpoint
+
 ```
 GET /
 ```
+
 Returns API information, security configuration, and available endpoints.
 
 ### Health Checks
+
 ```
 GET /health/              # Simple health check
 GET /health/all           # All services health
@@ -189,6 +197,7 @@ GET /health/messaging     # Messaging health
 ```
 
 ### Vault Integration Examples
+
 ```
 GET  /examples/vault/health                    # Vault health status
 GET  /examples/vault/secret/{path}             # Read secret from Vault
@@ -199,6 +208,7 @@ GET  /examples/vault/transit/decrypt/{ciphertext} # Decrypt with Transit
 ```
 
 ### Database Examples
+
 ```
 GET  /examples/database/postgres               # PostgreSQL operations
 POST /examples/database/postgres               # Insert data
@@ -209,6 +219,7 @@ POST /examples/database/mongodb                # Insert data
 ```
 
 ### Cache Examples
+
 ```
 GET    /examples/cache/{key}                   # Get cached value
 POST   /examples/cache/{key}                   # Set cache value
@@ -217,6 +228,7 @@ GET    /examples/cache/pattern/{pattern}       # Search by pattern
 ```
 
 ### Messaging Examples
+
 ```
 POST /examples/messaging/publish/{queue}       # Publish message
 GET  /examples/messaging/consume/{queue}       # Consume message
@@ -224,6 +236,7 @@ GET  /examples/messaging/queues                # List queues
 ```
 
 ### Redis Cluster Management
+
 ```
 GET /redis/cluster/nodes                       # Cluster node info
 GET /redis/cluster/slots                       # Slot distribution
@@ -232,6 +245,7 @@ GET /redis/nodes/{node_name}/info              # Specific node info
 ```
 
 ### Observability
+
 ```
 GET /metrics                                   # Prometheus metrics
 GET /docs                                      # Interactive API docs (Swagger UI)
@@ -242,29 +256,35 @@ GET /openapi.json                              # OpenAPI specification
 ## Security Features
 
 ### CORS Configuration
+
 - **Allowed Origins**: localhost:3000, localhost:8000, localhost:8001
 - **Allowed Methods**: GET, POST, PUT, DELETE, PATCH, OPTIONS
 - **Credentials**: Enabled (not in debug mode)
 - **Max Age**: 600 seconds
 
 ### Rate Limiting
+
 - **General Endpoints**: 100 requests/minute per IP
 - **Health Checks**: 200 requests/minute per IP
 - **Metrics**: 1000 requests/minute per IP
 - Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
 
 ### Circuit Breakers
+
 - **Enabled Services**: Vault, PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ
 - **Failure Threshold**: 5 consecutive failures
 - **Reset Timeout**: 60 seconds
 
 ### Request Validation
+
 - **Max Request Size**: 10MB
 - **Allowed Content Types**: application/json, application/x-www-form-urlencoded, multipart/form-data, text/plain
 - **Request ID Tracking**: `X-Request-ID` header on all responses
 
 ### TLS/HTTPS Support
+
 Vault-managed certificates for secure connections:
+
 - Certificates fetched from Vault PKI backend
 - Automatic renewal before expiration
 - Configurable via `API_FIRST_ENABLE_TLS` environment variable
@@ -274,12 +294,14 @@ Vault-managed certificates for secure connections:
 ### Environment Variables
 
 #### Required
+
 ```bash
 VAULT_ADDR=http://vault:8200           # Vault server address
 VAULT_TOKEN=your-vault-token           # Vault authentication token
 ```
 
 #### Database Configuration
+
 ```bash
 # PostgreSQL
 POSTGRES_HOST=postgres
@@ -304,6 +326,7 @@ MONGODB_DATABASE=appdb
 ```
 
 #### Cache Configuration
+
 ```bash
 REDIS_HOST=redis-1                     # Redis host
 REDIS_PORT=6379                        # Redis port
@@ -311,6 +334,7 @@ REDIS_PASSWORD=from-vault              # Redis password
 ```
 
 #### Messaging Configuration
+
 ```bash
 RABBITMQ_HOST=rabbitmq
 RABBITMQ_PORT=5672
@@ -319,6 +343,7 @@ RABBITMQ_PASSWORD=from-vault
 ```
 
 #### TLS Configuration
+
 ```bash
 API_FIRST_ENABLE_TLS=false             # Enable HTTPS
 API_FIRST_HTTP_PORT=8001               # HTTP port
@@ -326,6 +351,7 @@ API_FIRST_HTTPS_PORT=8444              # HTTPS port
 ```
 
 #### Application Settings
+
 ```bash
 DEBUG=false                            # Debug mode
 LOG_LEVEL=INFO                         # Logging level
@@ -423,11 +449,11 @@ uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
 
 ### Accessing the Application
 
-- **API Documentation**: http://localhost:8001/docs
-- **Alternative Docs**: http://localhost:8001/redoc
-- **OpenAPI Spec**: http://localhost:8001/openapi.json
-- **Health Check**: http://localhost:8001/health/
-- **Metrics**: http://localhost:8001/metrics
+- **API Documentation**: <http://localhost:8001/docs>
+- **Alternative Docs**: <http://localhost:8001/redoc>
+- **OpenAPI Spec**: <http://localhost:8001/openapi.json>
+- **Health Check**: <http://localhost:8001/health/>
+- **Metrics**: <http://localhost:8001/metrics>
 
 ## Testing
 
@@ -473,10 +499,12 @@ pytest -v
 ```
 
 **Test Categories:**
+
 - **Parity Tests**: Run against both implementations independently (parametrized)
 - **Comparison Tests**: Direct response comparison between implementations
 
 **Coverage Areas:**
+
 - Root endpoint structure and content
 - OpenAPI specification matching
 - Health check endpoints (simple and vault-specific)
@@ -552,24 +580,28 @@ While behavior is identical, the development workflows differ:
 ### Making Changes to the API
 
 #### 1. Update OpenAPI Specification
+
 ```bash
 # Edit the shared OpenAPI spec
 vim reference-apps/shared/openapi.yaml
 ```
 
 #### 2. Regenerate Models (Optional)
+
 ```bash
 # Regenerate Pydantic models from spec
 ./scripts/generate-api-first.sh
 ```
 
 #### 3. Implement Business Logic
+
 ```bash
 # Update router implementations
 vim reference-apps/fastapi-api-first/app/routers/your_router.py
 ```
 
 #### 4. Run Tests
+
 ```bash
 # Test your changes
 pytest tests/ -v
@@ -579,6 +611,7 @@ cd reference-apps/shared/test-suite && pytest -v
 ```
 
 #### 5. Rebuild and Deploy
+
 ```bash
 # Rebuild Docker image
 docker compose up -d --build api-first
@@ -677,25 +710,31 @@ pytest -m "not integration"
 ## Performance Considerations
 
 ### Async/Await Pattern
+
 All I/O operations use async/await for maximum concurrency:
+
 - Database queries: asyncpg, aiomysql, motor
 - Cache operations: redis[asyncio]
 - Message queue: aio-pika
 - HTTP requests: httpx
 
 ### Connection Pooling
+
 - PostgreSQL: Connection pool (min=5, max=20)
 - MySQL: Connection pool (min=5, max=20)
 - MongoDB: Connection pool configured
 - Redis: Connection pool with hiredis parser
 
 ### Caching Strategy
+
 - Application-level caching via middleware
 - Redis cluster for distributed caching
 - Cache key patterns for invalidation
 
 ### Resource Limits
+
 Docker container limits:
+
 - Memory: Configured in docker-compose.yml
 - CPU: Configured in docker-compose.yml
 - Connections: Per service limits
@@ -703,24 +742,28 @@ Docker container limits:
 ## Security Considerations
 
 ### Secrets Management
+
 - All secrets stored in Vault
 - No hardcoded credentials
 - Automatic secret rotation support
 - TLS certificates from Vault PKI
 
 ### Network Security
+
 - Internal service network (172.20.0.0/16)
 - No direct external access to infrastructure
 - HTTPS support with valid certificates
 - CORS properly configured
 
 ### Input Validation
+
 - Pydantic models for request validation
 - Type checking on all endpoints
 - SQL injection prevention (parameterized queries)
 - XSS prevention (proper escaping)
 
 ### Monitoring & Auditing
+
 - Prometheus metrics for all operations
 - Structured JSON logging
 - Request ID tracking
@@ -771,6 +814,7 @@ This is a reference implementation for development and education purposes.
 ## Support
 
 For issues or questions:
+
 - Check troubleshooting section above
 - Review logs: `docker compose logs api-first`
 - Inspect health: `curl http://localhost:8001/health/all`

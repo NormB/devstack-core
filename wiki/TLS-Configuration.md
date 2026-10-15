@@ -21,7 +21,7 @@
   - [Import CA Certificate](#import-ca-certificate)
   - [Trust Settings](#trust-settings)
   - [Verify Trust](#verify-trust)
-- [Dual-Mode (TLS + Non-TLS)](#dual-mode-tls-non-tls)
+- [Dual-Mode (TLS + Non-TLS)](#dual-mode-tls--non-tls)
   - [Why Dual-Mode](#why-dual-mode)
   - [Configuration Examples](#configuration-examples)
   - [Migration Strategy](#migration-strategy)
@@ -41,6 +41,7 @@
 The devstack-core environment uses HashiCorp Vault's PKI secrets engine to manage TLS certificates for all services. This provides a two-tier PKI hierarchy with automated certificate generation and renewal.
 
 **PKI Architecture:**
+
 ```
 Root CA (pki) - 10 years
 └── Intermediate CA (pki_int) - 5 years
@@ -54,6 +55,7 @@ Root CA (pki) - 10 years
 ```
 
 **TLS Benefits:**
+
 - Encrypted communication between services
 - Authentication via certificates
 - Protection against MITM attacks
@@ -512,12 +514,14 @@ curl --cacert ~/.config/vault/ca/ca.pem https://localhost:8443/health
 ### Why Dual-Mode
 
 **Benefits of dual-mode:**
+
 - Gradual TLS adoption
 - Backward compatibility
 - Easier troubleshooting
 - Zero downtime migration
 
 **Use cases:**
+
 - Development environment (this project)
 - Migration period in production
 - Mixed client support

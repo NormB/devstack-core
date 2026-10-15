@@ -17,6 +17,7 @@
 The observability stack provides comprehensive monitoring, logging, and visualization for all services.
 
 **Components:**
+
 - **Prometheus**: Metrics collection and alerting
 - **Grafana**: Visualization and dashboards
 - **Loki**: Log aggregation
@@ -58,6 +59,7 @@ scrape_configs:
 ```
 
 **Common Queries:**
+
 ```promql
 # CPU usage
 rate(container_cpu_usage_seconds_total[5m]) * 100
@@ -75,6 +77,7 @@ rate(container_network_receive_bytes_total[5m])
 **Default credentials:** `admin/admin`
 
 **Pre-configured dashboards:**
+
 1. Container Overview
 2. PostgreSQL Performance
 3. Redis Cluster
@@ -82,6 +85,7 @@ rate(container_network_receive_bytes_total[5m])
 5. Application Metrics
 
 **Add data source:**
+
 1. Configuration → Data Sources → Add data source
 2. Select Prometheus
 3. URL: `http://prometheus:9090`
@@ -130,6 +134,7 @@ limits_config:
 ```
 
 **Query logs in Grafana Explore:**
+
 ```logql
 {container_name="dev-postgres"}
 {container_name=~"dev-.*"} |= "ERROR"
@@ -163,6 +168,7 @@ address = "0.0.0.0:9598"
 **Access:** `http://localhost:8080`
 
 **Metrics exposed:**
+
 - CPU usage per container
 - Memory usage and limits
 - Network I/O
@@ -174,12 +180,14 @@ address = "0.0.0.0:9598"
 ## Alerting Setup
 
 **Create alert in Grafana:**
+
 1. Dashboard → Panel → Alert tab
 2. Define query and conditions
 3. Configure notification channel
 4. Set alert name and message
 
 **Example alert rules:**
+
 ```yaml
 # configs/prometheus/alerts.yml
 groups:
@@ -203,12 +211,14 @@ groups:
 ## Custom Dashboards
 
 **Import dashboard:**
+
 1. Dashboards → Import
 2. Upload JSON or enter dashboard ID
 3. Select data source
 4. Import
 
 **Popular dashboards:**
+
 - Docker Container & Host Metrics (ID: 10619)
 - PostgreSQL Database (ID: 9628)
 - Redis Dashboard (ID: 11835)

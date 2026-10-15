@@ -24,7 +24,7 @@ git push origin master
 
 ### Method 2: Manual Upload via GitHub UI
 
-1. Go to https://github.com/NormB/devstack-core/wiki
+1. Go to <https://github.com/NormB/devstack-core/wiki>
 2. Click "New Page" for each wiki page
 3. Copy content from each `.md` file
 4. Use the exact filename (without `.md`) as the page title
@@ -33,6 +33,7 @@ git push origin master
 ### Page Naming Convention
 
 GitHub wiki converts filenames to page titles:
+
 - `Home.md` → "Home"
 - `Quick-Start-Guide.md` → "Quick Start Guide"
 - `Common-Issues.md` → "Common Issues"
@@ -40,6 +41,7 @@ GitHub wiki converts filenames to page titles:
 ## Wiki Pages Included
 
 ### Essential Pages
+
 1. **Home.md** - Wiki homepage with navigation
 2. **Quick-Start-Guide.md** - 5-minute setup guide
 3. **Architecture-Overview.md** - System architecture
@@ -76,6 +78,7 @@ cp docs/INSTALLATION.md wiki/Installation.md
 ## Wiki Navigation Best Practices
 
 Each wiki page should include:
+
 1. **Title** - Clear H1 heading
 2. **Table of Contents** - For longer pages
 3. **Internal Links** - Link to related wiki pages using: `[Page Title](Page-Title)`
@@ -140,6 +143,7 @@ git clone https://github.com/NormB/devstack-core.wiki.git
 ## Support
 
 If you have questions about the wiki:
+
 1. Check existing pages for formatting examples
 2. See [GitHub Wiki Documentation](https://docs.github.com/en/communities/documenting-your-project-with-wikis)
 3. Open an issue in the main repository

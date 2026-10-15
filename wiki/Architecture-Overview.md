@@ -203,6 +203,7 @@ DevStack Core is a **container-native, infrastructure-as-code** project providin
 ### Infrastructure-First Approach
 
 Services are defined declaratively in `docker-compose.yml` with:
+
 - Explicit dependencies
 - Health checks for all services
 - Static IP assignments for predictability
@@ -219,6 +220,7 @@ Services are defined declaratively in `docker-compose.yml` with:
 - **Secret scanning** - Pre-commit hooks and CI/CD
 
 **AppRole Adoption Status (as of November 2025):**
+
 - ✅ **Core Data Tier (7 services):** PostgreSQL, MySQL, MongoDB, Redis (x3), RabbitMQ, Forgejo, FastAPI
 - ⚠️ **Infrastructure (9 services):** PGBouncer, additional reference apps, exporters, Vector - use VAULT_TOKEN
 - 🎯 **Target:** 95%+ adoption via Phase 4 migration
@@ -308,12 +310,14 @@ This project includes **5 reference API implementations** demonstrating identica
 #### Purpose and Philosophy
 
 **Why 5 Implementations?**
+
 1. **Educational** - Demonstrate patterns across different languages and frameworks
 2. **Comparison** - Enable performance and architecture comparisons
 3. **Best Practices** - Show idiomatic approaches in each ecosystem
 4. **Pattern Library** - Reference implementations for common integration patterns
 
 **Shared Functionality:**
+
 - HashiCorp Vault integration for secrets management
 - PostgreSQL, MySQL, and MongoDB database connections
 - Redis cluster integration with connection pooling
@@ -331,12 +335,14 @@ This project includes **5 reference API implementations** demonstrating identica
 **Location:** `reference-apps/fastapi/`
 
 **Technology Stack:**
+
 - **Framework:** FastAPI (async/await, Pydantic validation)
 - **Language:** Python 3.11+
 - **Approach:** Code-first (define routes in code, generate OpenAPI)
 - **Key Libraries:** asyncpg, motor (MongoDB), redis-py, aio-pika
 
 **Characteristics:**
+
 - Fully asynchronous architecture
 - Type hints and Pydantic models for validation
 - Auto-generated OpenAPI/Swagger documentation
@@ -344,6 +350,7 @@ This project includes **5 reference API implementations** demonstrating identica
 - Production-ready logging and error handling
 
 **Use Cases:**
+
 - Rapid prototyping and development
 - ML/AI integration scenarios
 - Data-heavy applications
@@ -354,12 +361,14 @@ This project includes **5 reference API implementations** demonstrating identica
 **Location:** `reference-apps/fastapi-api-first/`
 
 **Technology Stack:**
+
 - **Framework:** FastAPI (async/await, Pydantic validation)
 - **Language:** Python 3.11+
 - **Approach:** API-first (OpenAPI spec → code generation)
 - **Key Libraries:** asyncpg, motor, redis-py, aio-pika
 
 **Characteristics:**
+
 - OpenAPI specification drives implementation
 - Contract-first design methodology
 - Identical runtime behavior to code-first
@@ -367,6 +376,7 @@ This project includes **5 reference API implementations** demonstrating identica
 - Scaffolded structure for code generation
 
 **Use Cases:**
+
 - Contract-first API development
 - Multi-team coordination (API contracts)
 - Client SDK generation scenarios
@@ -377,12 +387,14 @@ This project includes **5 reference API implementations** demonstrating identica
 **Location:** `reference-apps/golang/`
 
 **Technology Stack:**
+
 - **Framework:** Gin (HTTP router and middleware)
 - **Language:** Go 1.23+
 - **Approach:** Code-first with strong typing
 - **Key Libraries:** pgx (PostgreSQL), mongo-go-driver, go-redis, amqp091-go
 
 **Characteristics:**
+
 - Compiled binary for fast startup
 - Strong static typing and compile-time checks
 - Excellent concurrency with goroutines
@@ -390,6 +402,7 @@ This project includes **5 reference API implementations** demonstrating identica
 - Structured logging with logrus
 
 **Use Cases:**
+
 - High-performance requirements
 - Microservices architectures
 - Cloud-native deployments
@@ -400,12 +413,14 @@ This project includes **5 reference API implementations** demonstrating identica
 **Location:** `reference-apps/nodejs/`
 
 **Technology Stack:**
+
 - **Framework:** Express (minimalist web framework)
 - **Language:** Node.js (JavaScript/TypeScript)
 - **Approach:** Code-first with async/await
 - **Key Libraries:** pg, mongodb, ioredis, amqplib
 
 **Characteristics:**
+
 - Event-driven, non-blocking I/O
 - Large ecosystem (npm)
 - Async/await for clean asynchronous code
@@ -413,6 +428,7 @@ This project includes **5 reference API implementations** demonstrating identica
 - JSON-native processing
 
 **Use Cases:**
+
 - JavaScript/TypeScript-centric teams
 - Real-time applications (WebSockets)
 - Rapid iteration and prototyping
@@ -423,12 +439,14 @@ This project includes **5 reference API implementations** demonstrating identica
 **Location:** `reference-apps/rust/`
 
 **Technology Stack:**
+
 - **Framework:** Actix-web (async actor framework)
 - **Language:** Rust (memory-safe systems language)
 - **Approach:** Partial implementation (~40% complete) with comprehensive testing
 - **Key Libraries:** tokio, serde, reqwest, actix-cors
 
 **Characteristics:**
+
 - Zero-cost abstractions and memory safety
 - Exceptional performance and low latency
 - Compile-time guarantees (no runtime errors)
@@ -437,6 +455,7 @@ This project includes **5 reference API implementations** demonstrating identica
 - Production-ready patterns (CORS, logging, environment config)
 
 **Use Cases:**
+
 - Ultra-high-performance requirements
 - Safety-critical applications
 - Resource-constrained environments
@@ -445,11 +464,13 @@ This project includes **5 reference API implementations** demonstrating identica
 #### API Parity and Testing
 
 **Parity Tests:** `tests/api-parity-tests.sh`
+
 - Validates identical behavior across implementations
 - Tests all common endpoints
 - Ensures consistent responses and error handling
 
 **Performance Benchmarks:** `tests/performance-benchmark.sh`
+
 - Compares throughput and latency
 - Measures resource utilization
 - Identifies performance characteristics per stack
@@ -529,6 +550,7 @@ graph TB
 ```
 
 **Network Isolation:**
+
 - **vault-network (172.20.1.0/24):** Isolated for secrets management and AppRole authentication
 - **data-network (172.20.2.0/24):** Database, cache, and message queue services
 - **app-network (172.20.3.0/24):** Application services (Forgejo, reference APIs)
@@ -573,6 +595,7 @@ Observability Network (172.20.4.0/24):
 ### Port Exposure Strategy
 
 **Exposed to Host:**
+
 - Web UIs: Grafana (3001), RabbitMQ (15672), Prometheus (9090), Loki (3100)
 - Databases: PostgreSQL (5432), MySQL (3306), MongoDB (27017), Redis (6379+)
 - Applications: APIs on 8000-8004 (HTTP) and 8443-8447 (HTTPS)
@@ -580,6 +603,7 @@ Observability Network (172.20.4.0/24):
 - Vault: 8200
 
 **Internal Only:**
+
 - Container metrics (cAdvisor)
 - Log shipping (Promtail)
 - Exporters (internal scraping)
@@ -587,6 +611,7 @@ Observability Network (172.20.4.0/24):
 ### DNS Resolution
 
 Services resolve each other by service name across networks:
+
 - `vault` resolves to 172.20.1.10 (vault-network)
 - `postgres` resolves to 172.20.2.10 (data-network)
 - `forgejo` resolves to 172.20.3.10 (app-network)
@@ -639,6 +664,7 @@ graph TD
 ```
 
 **Certificate Issuance Flow:**
+
 1. Service requests cert from Vault PKI
 2. Vault validates request against role
 3. Intermediate CA signs certificate
@@ -648,6 +674,7 @@ graph TD
 ### TLS Configuration
 
 **Optional TLS (Development Mode):**
+
 - Controlled by `tls_enabled` flag in Vault
 - Default: `true` for all services
 - Services check flag on startup
@@ -655,6 +682,7 @@ graph TD
 - If disabled: plain connections
 
 **TLS Endpoints:**
+
 - PostgreSQL: Port 5432 (TLS)
 - MySQL: Port 3306 (TLS)
 - MongoDB: Port 27017 (preferTLS)
@@ -665,6 +693,7 @@ graph TD
 ### Credential Storage
 
 **In Vault (secret/ KV engine):**
+
 ```
 secret/postgresql
   ├─ username: dev_admin
@@ -929,6 +958,7 @@ graph TD
 ```
 
 **Metric Types:**
+
 - **Counters:** Request counts, error counts
 - **Gauges:** Active connections, memory usage
 - **Histograms:** Request durations, response sizes
@@ -937,6 +967,7 @@ graph TD
 ### Grafana Dashboards
 
 Pre-configured dashboards in `configs/grafana/dashboards/`:
+
 1. **redis-cluster-dashboard.json** - Redis cluster health
 2. **postgres-dashboard.json** - PostgreSQL metrics
 3. **mysql-dashboard.json** - MySQL metrics
@@ -947,11 +978,13 @@ Pre-configured dashboards in `configs/grafana/dashboards/`:
 ### Log Aggregation Strategy
 
 **Structured Logging:**
+
 - JSON format for all application logs
 - Consistent fields: timestamp, level, message, service, request_id
 - Easy to parse and query
 
 **Label Strategy:**
+
 ```
 {service="fastapi", container="dev-reference-api", level="error"}
 {service="postgres", container="dev-postgres"}
@@ -959,6 +992,7 @@ Pre-configured dashboards in `configs/grafana/dashboards/`:
 ```
 
 **Retention:**
+
 - Development: 7 days (configurable)
 - Logs stored in Docker volumes
 
@@ -993,6 +1027,7 @@ graph TD
 ### Health Check Cascade
 
 Each service has a health check that validates:
+
 1. Process is running
 2. Port is listening
 3. Service-specific checks (e.g., DB can execute queries)
@@ -1041,6 +1076,7 @@ sequenceDiagram
 ```
 
 **AppRole Security Benefits:**
+
 1. **No Root Token in Containers** - Core services never see root token
 2. **Least Privilege** - Each service policy allows access ONLY to own secrets
 3. **Short-Lived Tokens** - Service tokens expire after 1 hour
@@ -1048,9 +1084,11 @@ sequenceDiagram
 5. **Policy Enforcement** - Cross-service access prevented by Vault policies
 
 **Services Using AppRole (7):**
+
 - PostgreSQL, MySQL, MongoDB, Redis (3 nodes), RabbitMQ, Forgejo, Reference API (FastAPI)
 
 **Services Using Root Token (9):**
+
 - PGBouncer, API-First, Golang API, Node.js API, Rust API, Redis Exporters (3), Vector
 
 ### Startup Order
@@ -1129,6 +1167,7 @@ sequenceDiagram
 ```
 
 **Startup Sequence Summary:**
+
 ```
 1. Vault (5-10s to unseal)
 2. Data Services (30-60s for initialization)
@@ -1158,6 +1197,7 @@ sequenceDiagram
 ### Colima VM Specifications
 
 **Default Configuration:**
+
 - **CPU:** 4 cores
 - **Memory:** 8 GB
 - **Disk:** 60 GB
@@ -1166,6 +1206,7 @@ sequenceDiagram
 - **Networking:** Bridged (VZ framework)
 
 **Customizable via devstack.sh:**
+
 ```bash
 COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ```
@@ -1173,6 +1214,7 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ### Volume Strategy
 
 **Named Volumes (Persistent):**
+
 - `postgres_data` - PostgreSQL database files
 - `mysql_data` - MySQL database files
 - `mongodb_data` - MongoDB database files
@@ -1185,10 +1227,12 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 - `loki_data` - Log storage
 
 **Bind Mounts (Configuration):**
+
 - `./configs/{service}/` → Container config directories
 - Configuration files are version-controlled
 
 **Benefits:**
+
 - Data persists across container restarts
 - Can backup volumes independently
 - Easy to reset individual services
@@ -1196,11 +1240,13 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ### Resource Allocation
 
 **Per-Service Limits (if configured):**
+
 - Not set by default (development mode)
 - Can add via deploy.resources in docker-compose.yml
 - Recommended for resource-constrained environments
 
 **Observed Resource Usage (28 services):**
+
 - **Total Memory:** ~4-6 GB
 - **Total CPU:** ~1-2 cores average
 - **Disk:** ~10-15 GB (with data)
@@ -1258,11 +1304,13 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ### Horizontal Scaling
 
 **Services that can scale horizontally:**
+
 - ✅ Reference APIs (stateless)
 - ✅ PgBouncer (connection pooler)
 - ⚠️ Forgejo (needs shared storage)
 
 **Services that require special handling:**
+
 - ❌ Databases (need replication setup)
 - ❌ Redis (needs cluster reconfiguration)
 - ❌ RabbitMQ (needs cluster mode)
@@ -1275,6 +1323,7 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ### Initialization Pattern
 
 All stateful services follow this pattern:
+
 ```bash
 #!/bin/bash
 # init.sh
@@ -1314,6 +1363,7 @@ healthcheck:
 ```
 
 **Progressive Health Checks:**
+
 1. Start period: Service initialization time
 2. Interval: How often to check
 3. Retries: How many failures before unhealthy

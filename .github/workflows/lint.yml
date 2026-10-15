@@ -117,12 +117,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      # Advisory, deliberately. Measured on 2026-09-03: about 13,000 findings
-      # across 162 Markdown files, three quarters of them MD060, MD032, MD031,
-      # MD013 and MD022, which are formatting conventions this corpus has never
-      # followed. Turning the step into a gate needs a rule policy first
-      # (a .markdownlint-cli2 config) and one pass over the corpus; until then
-      # the step reports and the lint summary treats it as informational.
+      # Advisory, deliberately. .markdownlint.yaml holds the rule policy, and
+      # the markdownlint pre-commit hook (markdownlint-cli 0.38.0) passes on
+      # every Markdown file. This action runs markdownlint-cli2 0.23.2, whose
+      # newer table rules still report, measured on 2026-10-15: MD060 table
+      # column style 2,963, MD058 blanks around tables 20, MD056 table column
+      # count 14. They need their own decision before this step gates; until
+      # then the lint summary treats it as informational.
       - name: Markdown Lint
         uses: DavidAnson/markdownlint-cli2-action@v24
         with:

@@ -12,6 +12,7 @@
 ### Key Findings
 
 ✅ **What's Actually Implemented (But Poorly Documented):**
+
 - AppRole authentication for 7 core services
 - TLS dual-mode support (certificates generated and mounted)
 - Health-check driven startup architecture
@@ -20,10 +21,12 @@
 - 571+ test suites validated
 
 ⚠️ **What's Partially Implemented:**
+
 - AppRole for infrastructure services (9 services still use VAULT_TOKEN)
 - TLS enforcement (dual-mode allows non-TLS, no enforcement option)
 
 ❌ **What's Documented But Inaccurate:**
+
 - "ALL services use AppRole" (VAULT.md line 98) - FALSE
 - README.md has ZERO AppRole mentions
 - Installation docs don't mention AppRole bootstrap
@@ -38,6 +41,7 @@
 #### ✅ ACTUALLY IMPLEMENTED (7 Services Using AppRole)
 
 **Core Services (init-approle.sh):**
+
 1. **PostgreSQL** - `configs/postgres/scripts/init-approle.sh`
    - AppRole dir mounted: `~/.config/vault/approles/postgres`
    - Credentials: `role-id` and `secret-id` present
@@ -72,6 +76,7 @@
    - Status: ✅ WORKING
 
 **AppRole Bootstrap Script:**
+
 - Location: `scripts/vault-approle-bootstrap.sh`
 - Services configured: postgres, mysql, mongodb, redis, rabbitmq, forgejo, reference-api, **management**
 - Policy files: `configs/vault/policies/*.hcl`
@@ -80,6 +85,7 @@
 #### ❌ STILL USING VAULT_TOKEN (9 Services)
 
 **Infrastructure/Utility Services:**
+
 1. **PGBouncer** (dev-pgbouncer)
    - Entrypoint: `/usr/local/bin/init.sh` (NOT init-approle.sh)
    - Environment: `VAULT_TOKEN: ${VAULT_TOKEN}`
@@ -125,11 +131,13 @@
 #### ✅ ACTUALLY IMPLEMENTED
 
 **Certificate Infrastructure:**
+
 - Root CA: `~/.config/vault/ca/root-ca.pem` - ✅ EXISTS
 - Intermediate CA: `~/.config/vault/ca/intermediate-ca.pem` - ✅ EXISTS
 - CA Chain: `~/.config/vault/ca/ca-chain.pem` - ✅ EXISTS
 
 **Service Certificates (All Present):**
+
 ```bash
 ~/.config/vault/certs/
 ├── postgres/     (ca.crt, server.crt, server.key)
@@ -144,12 +152,14 @@
 ```
 
 **Certificate Mounting (Verified in Containers):**
+
 - PostgreSQL: Certificates mounted at `/var/lib/postgresql/certs/`
   - Verified: `docker exec dev-postgres ls /var/lib/postgresql/certs/`
   - Files present: ca.crt, server.crt, server.key
   - Permissions: Correct (server.key is 600)
 
 **PostgreSQL SSL Status:**
+
 ```sql
 SHOW ssl;
  ssl
@@ -157,9 +167,11 @@ SHOW ssl;
  on
 (1 row)
 ```
+
 ✅ **SSL IS ENABLED AND WORKING**
 
 **MySQL SSL Status:**
+
 ```sql
 SHOW VARIABLES LIKE 'have_ssl';
 +---------------+-------+
@@ -168,9 +180,11 @@ SHOW VARIABLES LIKE 'have_ssl';
 | have_ssl      | YES   |
 +---------------+-------+
 ```
+
 ✅ **SSL IS ENABLED**
 
 **Dual-Mode TLS:**
+
 - PostgreSQL: Accepts both SSL and non-SSL connections (port 5432)
 - MySQL: Accepts both SSL and non-SSL connections (port 3306)
 - Redis: Non-TLS on 6379 (TLS port 6380 not fully configured)
@@ -180,6 +194,7 @@ SHOW VARIABLES LIKE 'have_ssl';
 #### ⚠️ TLS TEST FAILURES
 
 **test-tls-connections.sh Results:**
+
 - Test 1-4: ✅ PASS (CA certs valid, PostgreSQL SSL enabled)
 - Test 5: ❌ FAIL (PostgreSQL certificate files check - path issue)
 - Tests 6+: ⏸️ Not fully validated
@@ -195,6 +210,7 @@ SHOW VARIABLES LIKE 'have_ssl';
 #### README.md - CRITICALLY OUT OF DATE
 
 **Missing Mentions:**
+
 - ❌ No AppRole authentication documentation
 - ❌ No certificate generation procedures
 - ❌ No `vault-bootstrap` command in Quick Start
@@ -202,6 +218,7 @@ SHOW VARIABLES LIKE 'have_ssl';
 - ❌ No mention of init-approle.sh scripts
 
 **Quick Start Section Issues:**
+
 ```bash
 # Current Quick Start (lines 43-54)
 ./devstack vault-init
@@ -213,6 +230,7 @@ SHOW VARIABLES LIKE 'have_ssl';
 #### docs/VAULT.md - PARTIALLY ACCURATE
 
 **Line 98-107 - FALSE CLAIM:**
+
 ```markdown
 **ALL services use Vault integration with AppRole authentication
 for credentials management.** AppRole migration completed November
@@ -226,6 +244,7 @@ for credentials management.** AppRole migration completed November
 ```
 
 **Reality Check:**
+
 - Core services (7): ✅ TRUE - They DO use AppRole
 - Reference apps (4): ❌ FALSE - api-first, golang-api, nodejs-api, rust-api use VAULT_TOKEN
 - Infrastructure (5): ❌ FALSE - pgbouncer, redis-exporters, vector use VAULT_TOKEN
@@ -235,6 +254,7 @@ for credentials management.** AppRole migration completed November
 #### docs/INSTALLATION.md - NOT CHECKED (Need to Verify)
 
 **Expected to be Missing:**
+
 - AppRole bootstrap steps
 - Certificate generation procedures
 - Service profile explanations
@@ -243,6 +263,7 @@ for credentials management.** AppRole migration completed November
 #### docs/SECURITY_ASSESSMENT.md - NOT UPDATED
 
 **Expected Updates Needed:**
+
 - AppRole security improvements
 - Policy enforcement documentation
 - Token TTL and renewal procedures
@@ -252,6 +273,7 @@ for credentials management.** AppRole migration completed November
 #### docs/ARCHITECTURE.md - NEEDS VERIFICATION
 
 **Expected to Need:**
+
 - AppRole authentication flow diagrams
 - Startup sequence with health checks
 - Service dependency graph
@@ -264,12 +286,14 @@ for credentials management.** AppRole migration completed November
 #### Test Results Reality Check
 
 **PHASE_3_TEST_VALIDATION.md Claims:**
+
 - ✅ test-performance-regression.sh: 4/4 passing (100%) - ✅ VERIFIED
 - ✅ test-approle-security.sh: 21/21 passing (100%) - ✅ VERIFIED
 - ✅ test-redis-failover.sh: 16/16 passing (100%) - ✅ VERIFIED
 - ⚠️ test-tls-connections.sh: 7/24 validated (29%) - ⚠️ PARTIAL
 
 **AppRole Security Tests (21 Tests):**
+
 ```bash
 Tests 1-2:   Vault accessibility, AppRole enabled
 Tests 3-6:   Invalid credentials rejected ✅
@@ -289,6 +313,7 @@ Tests 20-21: Token TTL and renewability ✅
 #### ✅ FULLY IMPLEMENTED
 
 **Profiles in docker-compose.yml:**
+
 - `minimal`: 5 services (postgres, vault, forgejo, pgbouncer, redis-1)
 - `standard`: 10 services (minimal + mysql, mongodb, redis-2/3, rabbitmq)
 - `full`: 18 services (standard + prometheus, grafana, loki, vector, cadvisor, exporters)
@@ -301,12 +326,14 @@ Tests 20-21: Token TTL and renewability ✅
 ### 6. Performance Optimization Claims
 
 **Phase 3 Claims:**
+
 - PostgreSQL: +41% improvement (validated ✅)
 - MySQL: +37% improvement (validated ✅)
 - MongoDB: +19% improvement (validated ✅)
 - Redis: <3s failover (validated ✅)
 
 **Test Results:**
+
 - PostgreSQL: 8,162 TPS (target: ≥5,000) - ✅ EXCEEDS
 - MySQL: 20,449 rows/sec (target: ≥10,000) - ✅ EXCEEDS
 - MongoDB: 106,382 docs/sec (target: ≥50,000) - ✅ EXCEEDS
@@ -321,6 +348,7 @@ Tests 20-21: Token TTL and renewability ✅
 ### 1. README.md Gaps (PRIORITY: CRITICAL)
 
 **Missing Sections:**
+
 1. **AppRole Authentication**
    - What it is and why we use it
    - How to run `vault-bootstrap`
@@ -347,6 +375,7 @@ Tests 20-21: Token TTL and renewability ✅
 ### 2. Installation Documentation Gaps
 
 **Missing Steps:**
+
 1. `./devstack vault-bootstrap` explanation
 2. AppRole credential verification
 3. Certificate generation steps
@@ -356,6 +385,7 @@ Tests 20-21: Token TTL and renewability ✅
 ### 3. VAULT.md Inaccuracies (PRIORITY: HIGH)
 
 **Required Fixes:**
+
 1. **Line 98-110:** Correct "ALL services" claim to reflect reality
 2. Add section: "Services Still Using VAULT_TOKEN"
 3. Add section: "AppRole Migration Roadmap"
@@ -363,6 +393,7 @@ Tests 20-21: Token TTL and renewability ✅
 5. Update examples to show both AppRole and token-based auth
 
 **Recommended Rewrite (Line 98):**
+
 ```markdown
 **MOST core services use Vault integration with AppRole authentication
 for credentials management.** AppRole migration for core data tier services
@@ -391,6 +422,7 @@ completed November 2025 (7/16 services, 43.75%).
 ### 4. Security Assessment Gaps
 
 **Missing Security Improvements:**
+
 1. AppRole least-privilege policy enforcement
 2. Token TTL and renewal mechanisms
 3. Service-specific policy examples
@@ -401,6 +433,7 @@ completed November 2025 (7/16 services, 43.75%).
 ### 5. Architecture Documentation Gaps
 
 **Missing Diagrams/Flows:**
+
 1. AppRole authentication flow
 2. Service startup with health-check dependencies
 3. Certificate issuance and renewal workflow
@@ -416,6 +449,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 1. Fix Critical Documentation Inaccuracies (4 hours)
 
 **Files to Update:**
+
 - `docs/VAULT.md` - Correct AppRole claims (lines 98-110)
 - `README.md` - Add AppRole quickstart section
 - `docs/SECURITY_ASSESSMENT.md` - Add AppRole security improvements
@@ -425,6 +459,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 2. Create AppRole Migration Documentation (3 hours)
 
 **New Section in docs/VAULT.md:**
+
 - Which services use AppRole (7)
 - Which services still use tokens (9)
 - Why the distinction
@@ -435,6 +470,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 3. Update Installation Guide (2 hours)
 
 **docs/INSTALLATION.md Updates:**
+
 - Add `vault-bootstrap` explanation
 - Document AppRole credential locations
 - Explain certificate generation
@@ -447,6 +483,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 4. Complete Architecture Documentation (4 hours)
 
 **docs/ARCHITECTURE.md Updates:**
+
 - AppRole authentication flow diagram
 - Service startup sequence with health checks
 - Certificate hierarchy visualization
@@ -457,6 +494,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 5. Migrate Remaining Reference Apps to AppRole (6 hours)
 
 **Services to Migrate:**
+
 - api-first (Python FastAPI)
 - golang-api (Go Gin)
 - nodejs-api (Node.js Express)
@@ -469,6 +507,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 6. Create Comprehensive Troubleshooting Guide (3 hours)
 
 **New Section in docs/TROUBLESHOOTING.md:**
+
 - AppRole authentication failures
 - Certificate validation errors
 - Service startup failures
@@ -482,6 +521,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 7. Migrate Infrastructure Services to AppRole (8 hours)
 
 **Services to Migrate:**
+
 - pgbouncer
 - redis-exporter-1/2/3
 - vector
@@ -493,6 +533,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 8. Add TLS Enforcement Option (4 hours)
 
 **Implementation:**
+
 - Add `TLS_ENFORCE=true/false` flag
 - Modify init scripts to reject non-TLS when enforced
 - Update documentation
@@ -503,6 +544,7 @@ completed November 2025 (7/16 services, 43.75%).
 #### 9. Create Migration Guide (5 hours)
 
 **New File: docs/MIGRATION_GUIDE.md:**
+
 - Pre-Phase 1 → Current migration
 - Root token → AppRole migration
 - HTTP → HTTPS migration
@@ -518,6 +560,7 @@ completed November 2025 (7/16 services, 43.75%).
 ### Phase 4 Completion Criteria
 
 **Documentation Accuracy (Must be 100%):**
+
 - [ ] All service AppRole claims are accurate
 - [ ] README.md mentions AppRole and explains it
 - [ ] Installation guide includes vault-bootstrap
@@ -526,12 +569,14 @@ completed November 2025 (7/16 services, 43.75%).
 - [ ] No outdated or misleading claims remain
 
 **AppRole Adoption (Target: 80%+):**
+
 - [x] Core data tier: 7/7 services (100%) ✅
 - [ ] Reference apps: 4/4 services (0% → 100%)
 - [ ] Infrastructure: 5/5 services (0% → 100%)
 - **Target:** 16/16 services (100%) or justify exceptions
 
 **Test Coverage (Target: 90%+):**
+
 - [x] AppRole security: 21/21 tests (100%) ✅
 - [ ] TLS connections: 24/24 tests (29% → 100%)
 - [x] Performance: 4/4 tests (100%) ✅
@@ -539,6 +584,7 @@ completed November 2025 (7/16 services, 43.75%).
 - [ ] Load: 0/7 tests (0% → 100%)
 
 **User Experience:**
+
 - [ ] New users can follow README.md and get working system
 - [ ] AppRole bootstrap is explained and documented
 - [ ] Certificate generation is clear
@@ -559,11 +605,13 @@ completed November 2025 (7/16 services, 43.75%).
 **Revised Estimate:** 40-50 hours for comprehensive documentation + remaining AppRole migrations
 
 **Risk Assessment:**
+
 - **High Risk:** Users following current docs will be confused about AppRole adoption
 - **Medium Risk:** TLS deployment unclear due to test/doc mismatches
 - **Low Risk:** Performance claims are accurate and validated
 
 **Recommended Approach:**
+
 1. **Fix critical inaccuracies FIRST** (VAULT.md, README.md) - 4 hours
 2. **Complete documentation updates** per original Phase 4 plan - 25 hours
 3. **Migrate remaining reference apps** to demonstrate best practices - 6 hours

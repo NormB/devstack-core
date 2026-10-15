@@ -21,11 +21,14 @@ This project adheres to a Code of Conduct that all contributors are expected to 
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/devstack-core.git
    cd devstack-core
    ```
+
 3. **Set up the development environment**:
+
    ```bash
    cp .env.example .env
    # Edit .env with appropriate values
@@ -39,13 +42,14 @@ To enable authenticated Git operations and commit signing with the local Forgejo
 #### Add SSH Key (for git push/pull authentication)
 
 1. **Display your public key:**
+
    ```bash
    cat ~/.ssh/id_ed25519.pub
    # Or: cat ~/.ssh/id_rsa.pub
    ```
 
 2. **Add to Forgejo:**
-   - Navigate to http://localhost:3000
+   - Navigate to <http://localhost:3000>
    - Sign in to your account
    - Go to Settings → SSH / GPG Keys
    - Click "Add Key" under SSH Keys
@@ -56,11 +60,13 @@ To enable authenticated Git operations and commit signing with the local Forgejo
 #### Add GPG Key (for signed commits)
 
 1. **List your GPG keys:**
+
    ```bash
    gpg --list-secret-keys --keyid-format LONG
    ```
 
 2. **Export your public key:**
+
    ```bash
    # Replace KEY_ID with your key ID from the previous command
    gpg --armor --export KEY_ID
@@ -85,6 +91,7 @@ git config --global commit.gpgsign true
 #### Configure SSH for Forgejo
 
 Add to your `~/.ssh/config`:
+
 ```
 Host forgejo
   HostName localhost
@@ -94,6 +101,7 @@ Host forgejo
 ```
 
 Then you can clone and push using:
+
 ```bash
 git clone forgejo:username/repo.git
 ```
@@ -134,6 +142,7 @@ We welcome code contributions! Here are the types of contributions we're looking
 ## Development Workflow
 
 1. **Create a branch** for your work:
+
    ```bash
    git checkout -b feature/your-feature-name
    # or
@@ -146,6 +155,7 @@ We welcome code contributions! Here are the types of contributions we're looking
    - Update documentation as needed
 
 3. **Test your changes**:
+
    ```bash
    # Start fresh environment
    ./devstack.sh stop
@@ -160,6 +170,7 @@ We welcome code contributions! Here are the types of contributions we're looking
    ```
 
 4. **Commit your changes**:
+
    ```bash
    git add .
    git commit -m "Type: Brief description
@@ -178,6 +189,7 @@ We welcome code contributions! Here are the types of contributions we're looking
    - `chore:` - Maintenance tasks
 
 5. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -252,23 +264,27 @@ We welcome code contributions! Here are the types of contributions we're looking
 Before submitting a PR, verify:
 
 1. **Clean installation works**:
+
    ```bash
    ./devstack.sh clean
    ./devstack.sh start
    ```
 
 2. **All services start healthy**:
+
    ```bash
    ./devstack.sh health
    ```
 
 3. **Vault operations work**:
+
    ```bash
    ./devstack.sh vault-init
    ./devstack.sh vault-bootstrap
    ```
 
 4. **Service-specific tests**:
+
    ```bash
    ./scripts/run-tests.sh
    ```
@@ -311,6 +327,7 @@ Before submitting a PR, verify:
 ## Recognition
 
 Contributors will be recognized in:
+
 - GitHub contributors list
 - CHANGELOG.md for significant contributions
 - Special thanks in release notes

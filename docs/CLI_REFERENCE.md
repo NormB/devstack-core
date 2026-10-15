@@ -70,6 +70,7 @@ Start Colima VM and Docker services.
 | `--no-vm` | Don't start Colima VM (use existing) | false |
 
 **Examples:**
+
 ```bash
 # Start with default profile (standard)
 ./devstack start
@@ -88,6 +89,7 @@ Start Colima VM and Docker services.
 ```
 
 **What it does:**
+
 1. Starts Colima VM (if not running)
 2. Pulls Docker images (if needed)
 3. Starts containers in dependency order
@@ -109,6 +111,7 @@ Stop Docker services and optionally Colima VM.
 | `--vm` | Also stop Colima VM | false |
 
 **Examples:**
+
 ```bash
 # Stop containers only (VM keeps running)
 ./devstack stop
@@ -118,6 +121,7 @@ Stop Docker services and optionally Colima VM.
 ```
 
 **What it does:**
+
 1. Stops all Docker containers
 2. Preserves data volumes
 3. Optionally stops Colima VM
@@ -138,6 +142,7 @@ Restart all Docker services without restarting VM.
 | `--profile` | Profile to restart with | current |
 
 **Examples:**
+
 ```bash
 # Restart all services
 ./devstack restart
@@ -162,6 +167,7 @@ Completely reset and delete Colima VM. **DESTRUCTIVE!**
 | `--force` | Skip confirmation prompt | false |
 
 **Examples:**
+
 ```bash
 # Reset with confirmation
 ./devstack reset
@@ -171,6 +177,7 @@ Completely reset and delete Colima VM. **DESTRUCTIVE!**
 ```
 
 **What it does:**
+
 1. Stops all containers
 2. Removes all containers
 3. Removes all volumes (data deleted!)
@@ -192,11 +199,13 @@ Display Colima VM and service status.
 ```
 
 **Output shows:**
+
 - Colima VM state (running/stopped)
 - CPU, memory, disk allocation
 - Container status for each service
 
 **Example output:**
+
 ```
 ═══ DevStack Core - Status ═══
 
@@ -224,11 +233,13 @@ Check health status of all running services.
 ```
 
 **Output shows:**
+
 - Service name
 - Running status
 - Health check result (healthy/unhealthy/starting)
 
 **Example output:**
+
 ```
         Service Health Status
 ╭───────────────┬─────────┬─────────╮
@@ -252,6 +263,7 @@ Display Colima VM IP address.
 ```
 
 **Example output:**
+
 ```
 192.168.106.2
 ```
@@ -278,6 +290,7 @@ View logs for all services or a specific service.
 | `--since` | Show logs since timestamp | all |
 
 **Examples:**
+
 ```bash
 # View all service logs
 ./devstack logs
@@ -311,6 +324,7 @@ Open an interactive shell in a running container.
 | `--user` | User to run shell as | container default |
 
 **Examples:**
+
 ```bash
 # Shell into PostgreSQL container
 ./devstack shell postgres
@@ -323,6 +337,7 @@ Open an interactive shell in a running container.
 ```
 
 **Common use cases:**
+
 ```bash
 # PostgreSQL psql
 ./devstack shell postgres
@@ -350,6 +365,7 @@ Initialize and unseal Vault (first-time setup).
 ```
 
 **What it does:**
+
 1. Initializes Vault with 5 key shares, 3 threshold
 2. Saves unseal keys to `~/.config/vault/keys.json`
 3. Saves root token to `~/.config/vault/root-token`
@@ -368,6 +384,7 @@ Manually unseal Vault using stored keys.
 ```
 
 **What it does:**
+
 1. Reads keys from `~/.config/vault/keys.json`
 2. Submits unseal keys until threshold reached
 3. Vault becomes operational
@@ -385,6 +402,7 @@ Display Vault seal status and token information.
 ```
 
 **Example output:**
+
 ```
 ═══ Vault Status ═══
 
@@ -409,11 +427,13 @@ Print Vault root token to stdout.
 ```
 
 **Example output:**
+
 ```
 hvs.CAESIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 **Use case:** Piping to other commands:
+
 ```bash
 export VAULT_TOKEN=$(./devstack vault-token)
 vault kv list secret/
@@ -435,6 +455,7 @@ Bootstrap Vault with PKI and service credentials.
 | `--regenerate` | Regenerate all credentials | false |
 
 **What it does:**
+
 1. Enables KV secrets engine
 2. Sets up PKI (Root CA → Intermediate CA)
 3. Creates certificate roles for each service
@@ -457,6 +478,7 @@ Export Vault CA certificate chain to stdout.
 **Output:** PEM-encoded certificate chain (Root CA + Intermediate CA)
 
 **Use case:** Adding to trust store:
+
 ```bash
 ./devstack vault-ca-cert > ca-chain.pem
 ```
@@ -472,6 +494,7 @@ Retrieve and display service credentials from Vault.
 ```
 
 **Available services:**
+
 - `postgres` or `postgresql`
 - `mysql`
 - `mongodb` or `mongo`
@@ -479,6 +502,7 @@ Retrieve and display service credentials from Vault.
 - `rabbitmq`
 
 **Examples:**
+
 ```bash
 # Get PostgreSQL credentials
 ./devstack vault-show-password postgres
@@ -491,6 +515,7 @@ Retrieve and display service credentials from Vault.
 ```
 
 **Example output:**
+
 ```
 ═══ PostgreSQL Credentials ═══
 
@@ -523,6 +548,7 @@ Backup all service data to timestamped directory.
 | `--encrypt` | Encrypt backup with GPG | false |
 
 **Examples:**
+
 ```bash
 # Create backup with timestamp
 ./devstack backup
@@ -535,6 +561,7 @@ Backup all service data to timestamped directory.
 ```
 
 **What gets backed up:**
+
 - PostgreSQL: Full database dump
 - MySQL: Full database dump
 - MongoDB: Archive dump
@@ -553,6 +580,7 @@ Restore service data from backup.
 ```
 
 **Examples:**
+
 ```bash
 # List available backups
 ./devstack restore
@@ -562,6 +590,7 @@ Restore service data from backup.
 ```
 
 **List output:**
+
 ```
 ═══ Available Backups ═══
 
@@ -584,11 +613,13 @@ Verify backup integrity using checksums.
 ```
 
 **Example:**
+
 ```bash
 ./devstack verify 20250113_143022
 ```
 
 **Output:**
+
 ```
 ═══ Backup Verification ═══
 
@@ -614,6 +645,7 @@ Initialize Forgejo via automated bootstrap.
 ```
 
 **What it does:**
+
 1. Waits for Forgejo to be healthy
 2. Creates initial admin user (if not exists)
 3. Configures Forgejo settings
@@ -631,6 +663,7 @@ Initialize Redis cluster for standard/full profiles.
 ```
 
 **What it does:**
+
 1. Waits for all 3 Redis nodes
 2. Creates cluster with `redis-cli --cluster create`
 3. Assigns hash slots to each node
@@ -650,6 +683,7 @@ List all available service profiles with details.
 ```
 
 **Output:**
+
 ```
 ═══ Available Profiles ═══
 
@@ -679,6 +713,7 @@ The CLI respects these environment variables:
 | `VAULT_TOKEN` | Vault authentication token | (from file) |
 
 **Example:**
+
 ```bash
 # Start with more resources
 COLIMA_CPU=8 COLIMA_MEMORY=16 ./devstack start

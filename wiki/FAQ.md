@@ -4,6 +4,7 @@
 
 **Q: What are service profiles and why should I use them?**
 A: Service profiles let you start only the services you need, saving resources and startup time:
+
 - **minimal**: 5 services, 2GB RAM - Git hosting + basic database
 - **standard**: 10 services, 4GB RAM - Full stack + Redis cluster (recommended)
 - **full**: 18 services, 6GB RAM - Everything + observability
@@ -13,13 +14,16 @@ See [SERVICE_PROFILES.md](./SERVICE_PROFILES.md) for complete details.
 
 **Q: Which profile should I use?**
 A: **Standard profile is recommended for most developers:**
+
 ```bash
 ./devstack.py start --profile standard
 ```
+
 Use minimal if you have limited RAM (< 8GB), or full if you need Prometheus/Grafana.
 
 **Q: How do I switch between profiles?**
 A: Stop current services and start with new profile:
+
 ```bash
 docker compose down
 ./devstack.py start --profile minimal  # or standard, full
@@ -27,21 +31,26 @@ docker compose down
 
 **Q: Can I combine profiles?**
 A: Yes! Combine standard/full with reference:
+
 ```bash
 ./devstack.py start --profile standard --profile reference
 ```
+
 This gives you infrastructure + 5 educational API examples.
 
 **Q: Do I need to initialize Redis cluster for all profiles?**
 A: Only for standard and full profiles:
+
 ```bash
 ./devstack.py start --profile standard
 ./devstack.py redis-cluster-init  # Required for cluster
 ```
+
 Minimal profile uses single Redis instance (no initialization needed).
 
 **Q: Can I use the bash script with profiles?**
 A: The bash script (`devstack.sh`) starts all services (no profile support). Use the Python script for profile control:
+
 ```bash
 ./devstack.py start --profile standard  # Profile-aware
 ./devstack.sh start                     # All services
@@ -49,6 +58,7 @@ A: The bash script (`devstack.sh`) starts all services (no profile support). Use
 
 **Q: How do I check which profile is running?**
 A: Use status or health commands:
+
 ```bash
 ./devstack.py status   # Shows running containers
 ./devstack.py health   # Shows health status
@@ -57,6 +67,7 @@ docker compose ps             # Shows all running services
 
 **Q: Can I create custom profiles?**
 A: Yes! Create a custom environment file:
+
 ```bash
 # Create custom profile
 cat > configs/profiles/my-custom.env << 'EOF'
@@ -74,6 +85,7 @@ docker compose --profile standard up -d
 
 **Q: Where are profile settings stored?**
 A: Profile environment overrides are in `configs/profiles/`:
+
 - `minimal.env` - Minimal profile settings
 - `standard.env` - Standard profile settings
 - `full.env` - Full profile settings
@@ -81,6 +93,7 @@ A: Profile environment overrides are in `configs/profiles/`:
 
 **Q: What's the difference between Python and Bash management scripts?**
 A:
+
 - **Python script** (`devstack.py`): Profile-aware, colored output, better UX, 850 lines
 - **Bash script** (`devstack.sh`): Traditional, no profiles, starts everything, 1,622 lines
 
@@ -92,6 +105,7 @@ Both are maintained. Use Python for profiles, Bash for backwards compatibility.
 A: No, not without significant modifications. The project uses ARM64-specific Docker images (`platform: linux/arm64`) that are incompatible with Intel Macs.
 
 **If you must run on Intel Mac:**
+
 1. Use QEMU emulation: `colima start --vm-type qemu --arch aarch64`
 2. Expect significant performance degradation (emulation overhead)
 3. Some services may not work correctly under emulation
@@ -101,6 +115,7 @@ A: No, not without significant modifications. The project uses ARM64-specific Do
 
 **Q: Can I run multiple Colima instances?**
 A: Yes, use profiles:
+
 ```bash
 export COLIMA_PROFILE=project1
 ./devstack.sh start
@@ -111,6 +126,7 @@ export COLIMA_PROFILE=project2
 
 **Q: How do I access services from libvirt VMs?**
 A: Use Colima IP instead of localhost:
+
 ```bash
 COLIMA_IP=$(./devstack.sh ip | grep "Colima IP:" | awk '{print $3}')
 psql -h $COLIMA_IP -p 5432 -U $POSTGRES_USER
@@ -121,6 +137,7 @@ A: Yes, but remove `colima` commands from `devstack.sh`. Just use `docker compos
 
 **Q: How do I update service versions?**
 A: Edit `docker-compose.yml`:
+
 ```yaml
 # Change
 image: postgres:16-alpine
@@ -135,6 +152,7 @@ docker compose up -d postgres
 
 **Q: What if I lose Vault unseal keys?**
 A: Data is permanently inaccessible. You must:
+
 1. Stop Vault
 2. Delete vault_data volume
 3. Re-initialize (creates new keys)
@@ -144,6 +162,7 @@ A: Data is permanently inaccessible. You must:
 
 **Q: Can I use this for production?**
 A: No. Requires:
+
 - TLS everywhere
 - External secrets management
 - High availability
@@ -153,6 +172,7 @@ A: No. Requires:
 
 **Q: How do I migrate data from old setup?**
 A:
+
 1. Backup old databases (pg_dump, mysqldump, etc.)
 2. Start DevStack Core services
 3. Restore backups
@@ -161,6 +181,7 @@ A:
 
 **Q: Redis cluster vs single instance?**
 A: Cluster provides:
+
 - Horizontal scaling (distribute data)
 - High availability (node failures)
 - Production parity

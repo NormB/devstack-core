@@ -6,6 +6,7 @@
 Complete guide for upgrading DevStack Core versions, service versions, migrating between profiles, and implementing security features (AppRole authentication, TLS encryption).
 
 > **Related Documentation:**
+>
 > - For disaster recovery procedures, see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
 > - For detailed rollback procedures, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
 
@@ -31,6 +32,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
 ### v1.2.x → v1.3.0 (Current)
 
 **Major Changes:**
+
 - Introduction of service profiles (minimal, standard, full, reference)
 - Python management CLI (devstack.py)
 - Enhanced TLS certificate management
@@ -40,6 +42,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
 **Upgrade Steps:**
 
 1. **Backup Current Environment**
+
    ```bash
    # Backup databases and Vault configuration
    ./devstack backup
@@ -49,11 +52,13 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 2. **Stop All Services**
+
    ```bash
    ./devstack stop
    ```
 
 3. **Update Repository**
+
    ```bash
    cd ~/devstack-core
    git fetch origin
@@ -61,6 +66,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 4. **Update Dependencies**
+
    ```bash
    # Update Python dependencies (if using Python CLI)
    cd ~/devstack-core
@@ -69,6 +75,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 5. **Review Configuration Changes**
+
    ```bash
    # Compare .env files
    diff .env .env.example
@@ -80,6 +87,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 6. **Choose Service Profile**
+
    ```bash
    # v1.2.x equivalent = standard profile
    # All services from v1.2.x = full profile
@@ -89,6 +97,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 7. **Re-initialize Vault**
+
    ```bash
    # Vault keys preserved from backup, just unseal
    ./devstack vault-init
@@ -96,11 +105,13 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 8. **Re-initialize Redis Cluster** (if using standard/full)
+
    ```bash
    ./devstack redis-cluster-init
    ```
 
 9. **Restore Databases** (optional)
+
    ```bash
    # List available backups
    ./devstack restore
@@ -110,6 +121,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
    ```
 
 10. **Verify Upgrade**
+
     ```bash
     # Run health checks
     ./devstack health
@@ -122,6 +134,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
     ```
 
 **Breaking Changes:**
+
 - Service profile system requires explicit `--profile` flag
 - Redis cluster now requires initialization script
 - Network IPs changed with 4-tier segmentation (update firewall rules if accessing from other machines)
@@ -133,6 +146,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
 ### v1.1.x → v1.2.x
 
 **Major Changes:**
+
 - AppRole authentication introduced
 - Enhanced observability stack
 - PgBouncer connection pooling
@@ -153,6 +167,7 @@ Complete guide for upgrading DevStack Core versions, service versions, migrating
 ### v1.0.x → v1.1.x
 
 **Major Changes:**
+
 - Initial Vault integration
 - TLS certificate automation
 - Docker Compose v2 required
@@ -185,18 +200,21 @@ This section covers migrating from legacy configurations to modern security feat
 ### Root Token → AppRole Migration
 
 **Prerequisites:**
+
 1. ✅ Backup data: `./devstack backup`
 2. ✅ Backup Vault: `cp -r ~/.config/vault ~/vault-backup-$(date +%Y%m%d)`
 3. ✅ Vault accessible and unsealed
 4. ✅ All services healthy
 
 **Step 1: Stop Services**
+
 ```bash
 ./devstack stop
 docker ps  # Should be empty or Vault only
 ```
 
 **Step 2: Enable AppRole in Vault**
+
 ```bash
 docker compose up -d vault
 sleep 10
@@ -207,6 +225,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ```
 
 **Expected output:**
+
 ```
 [✓] AppRole enabled
 [✓] Policy created: postgres-policy, mysql-policy, ...
@@ -215,6 +234,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ```
 
 **Step 3: Verify AppRole Credentials**
+
 ```bash
 ls -la ~/.config/vault/approles/
 # Should show: postgres, mysql, mongodb, redis, rabbitmq, forgejo, reference-api, management
@@ -227,6 +247,7 @@ curl -X POST http://localhost:8200/v1/auth/approle/login \
 ```
 
 **Step 4: Restart Services**
+
 ```bash
 ./devstack start --profile standard
 
@@ -236,6 +257,7 @@ docker inspect dev-postgres | grep VAULT_APPROLE_DIR
 ```
 
 **Step 5: Validate**
+
 ```bash
 ./tests/test-approle-security.sh
 # Should show: 32/32 tests passed
@@ -262,12 +284,14 @@ docker exec dev-postgres psql -U devuser -d devdb -c "SHOW ssl;"
 ### TLS-Only Mode (Production)
 
 **PostgreSQL:**
+
 ```bash
 docker exec dev-postgres bash -c 'echo "hostssl all all 0.0.0.0/0 scram-sha-256" >> /var/lib/postgresql/data/pg_hba.conf'
 docker compose restart postgres
 ```
 
 **MySQL:**
+
 ```bash
 docker exec dev-mysql bash -c 'echo "require_secure_transport = ON" >> /etc/mysql/conf.d/tls.cnf'
 docker compose restart mysql
@@ -276,6 +300,7 @@ docker compose restart mysql
 ### Adding AppRole to Custom Services
 
 **1. Create Vault Policy**
+
 ```bash
 cat > configs/vault/policies/myservice-policy.hcl <<'EOF'
 path "secret/data/myservice" {
@@ -286,6 +311,7 @@ vault policy write myservice-policy configs/vault/policies/myservice-policy.hcl
 ```
 
 **2. Create AppRole**
+
 ```bash
 vault write auth/approle/role/myservice \
   token_ttl=1h token_max_ttl=4h policies=myservice-policy
@@ -299,6 +325,7 @@ chmod 600 ~/.config/vault/approles/myservice/secret-id
 ```
 
 **3. Create init-approle.sh Script**
+
 ```bash
 cp configs/postgres/scripts/init-approle.sh configs/myservice/scripts/init-approle.sh
 # Modify SERVICE_NAME and paths for your service
@@ -306,6 +333,7 @@ chmod +x configs/myservice/scripts/init-approle.sh
 ```
 
 **4. Update docker-compose.yml**
+
 ```yaml
 myservice:
   entrypoint: ["/init/init-approle.sh"]
@@ -322,6 +350,7 @@ myservice:
 ### Security Migration Rollback
 
 **Rollback AppRole → Root Token:**
+
 ```bash
 # 1. Restore docker-compose.yml backup
 cp docker-compose.yml.backup docker-compose.yml
@@ -332,6 +361,7 @@ VAULT_TOKEN="$VAULT_TOKEN" ./devstack restart
 ```
 
 **Rollback TLS → Non-TLS:**
+
 ```bash
 # Remove SSL requirements from service configs
 docker compose restart postgres mysql mongodb
@@ -346,6 +376,7 @@ docker compose restart postgres mysql mongodb
 #### PostgreSQL 16 → PostgreSQL 18 (v1.3.0)
 
 **Changes:**
+
 - New statistics views (`pg_stat_io`, `pg_stat_wal`)
 - Removed `pg_stat_bgwriter` (replaced with compatibility view)
 - Enhanced monitoring capabilities
@@ -353,6 +384,7 @@ docker compose restart postgres mysql mongodb
 **Upgrade Procedure:**
 
 1. **Backup PostgreSQL Data**
+
    ```bash
    ./devstack backup
 
@@ -361,28 +393,33 @@ docker compose restart postgres mysql mongodb
    ```
 
 2. **Stop PostgreSQL**
+
    ```bash
    docker compose stop postgres pgbouncer forgejo
    ```
 
 3. **Update docker-compose.yml**
+
    ```yaml
    postgres:
      image: postgres:18  # Was: postgres:16
    ```
 
 4. **Remove Old Volume** (if clean upgrade desired)
+
    ```bash
    # WARNING: This deletes all data! Backup first!
    docker volume rm devstack-core_postgres_data
    ```
 
 5. **Start PostgreSQL 18**
+
    ```bash
    docker compose up -d postgres
    ```
 
 6. **Restore Data**
+
    ```bash
    # If using clean volume
    docker exec -i dev-postgres psql -U dev_admin < backup-pg16.sql
@@ -392,12 +429,14 @@ docker compose restart postgres mysql mongodb
    ```
 
 7. **Verify Compatibility View**
+
    ```bash
    docker exec dev-postgres psql -U dev_admin -d dev_database \
      -c "SELECT * FROM compat.pg_stat_bgwriter LIMIT 1;"
    ```
 
 8. **Restart Dependent Services**
+
    ```bash
    docker compose up -d pgbouncer forgejo
    ```
@@ -420,6 +459,7 @@ docker compose up -d postgres
 ```
 
 **Rollback Procedure:**
+
 ```bash
 # Restore from backup
 docker compose down postgres
@@ -435,6 +475,7 @@ docker exec -i dev-postgres psql -U dev_admin < backup-pg16.sql
 #### PostgreSQL 18 → PostgreSQL 19 (future)
 
 **Preparation Steps:**
+
 1. Review PostgreSQL 19 release notes
 2. Test migration in separate environment
 3. Update compatibility views if needed
@@ -447,6 +488,7 @@ docker exec -i dev-postgres psql -U dev_admin < backup-pg16.sql
 #### MySQL 8.0.38 → MySQL 8.0.40
 
 **Changes:**
+
 - Security updates
 - Bug fixes
 - Minor performance improvements
@@ -454,39 +496,46 @@ docker exec -i dev-postgres psql -U dev_admin < backup-pg16.sql
 **Upgrade Procedure:**
 
 1. **Backup MySQL Data**
+
    ```bash
    docker exec dev-mysql mysqldump -u root -p$(./devstack vault-show-password mysql) \
      --all-databases > backup-mysql-8.0.38.sql
    ```
 
 2. **Stop MySQL**
+
    ```bash
    docker compose stop mysql
    ```
 
 3. **Update Image**
+
    ```yaml
    mysql:
      image: mysql:8.0.40  # Was: mysql:8.0.38
    ```
 
 4. **Start MySQL**
+
    ```bash
    docker compose up -d mysql
    ```
 
 5. **Run mysql_upgrade** (automatic in 8.0+)
+
    ```bash
    docker exec dev-mysql mysql_upgrade -u root -p$(./devstack vault-show-password mysql)
    ```
 
 6. **Verify Version**
+
    ```bash
    docker exec dev-mysql mysql -u root -p$(./devstack vault-show-password mysql) \
      -e "SELECT VERSION();"
    ```
 
 **Rollback:**
+
 ```bash
 docker compose down mysql
 docker volume rm devstack-core_mysql_data
@@ -502,6 +551,7 @@ docker volume rm devstack-core_mysql_data
 #### Redis 7.2 → Redis 7.4
 
 **Changes:**
+
 - Cluster improvements
 - Performance enhancements
 - New commands and features
@@ -509,6 +559,7 @@ docker volume rm devstack-core_mysql_data
 **Upgrade Procedure:**
 
 1. **Backup Redis Data**
+
    ```bash
    # For each node
    for i in 1 2 3; do
@@ -518,6 +569,7 @@ docker volume rm devstack-core_mysql_data
    ```
 
 2. **Update Image** (rolling upgrade for zero downtime)
+
    ```bash
    # Node by node
    docker compose stop redis-1
@@ -531,11 +583,13 @@ docker volume rm devstack-core_mysql_data
    ```
 
 3. **Verify Cluster Health**
+
    ```bash
    docker exec dev-redis-1 redis-cli --cluster check 172.20.2.13:6379 -a $REDIS_PASSWORD
    ```
 
 **Full Cluster Restart** (simpler but brief downtime):
+
 ```bash
 docker compose stop redis-1 redis-2 redis-3
 # Update all images
@@ -554,6 +608,7 @@ docker compose up -d redis-1 redis-2 redis-3
 **Upgrade Procedure:**
 
 1. **Backup MongoDB**
+
    ```bash
    docker exec dev-mongodb mongodump --username dev_admin \
      --password $(./devstack vault-show-password mongodb) \
@@ -563,6 +618,7 @@ docker compose up -d redis-1 redis-2 redis-3
    ```
 
 2. **Check Feature Compatibility Version**
+
    ```bash
    docker exec dev-mongodb mongosh --username dev_admin \
      --password $(./devstack vault-show-password mongodb) \
@@ -570,22 +626,26 @@ docker compose up -d redis-1 redis-2 redis-3
    ```
 
 3. **Stop MongoDB**
+
    ```bash
    docker compose stop mongodb
    ```
 
 4. **Update Image**
+
    ```yaml
    mongodb:
      image: mongo:7.2  # Was: mongo:7.0
    ```
 
 5. **Start MongoDB**
+
    ```bash
    docker compose up -d mongodb
    ```
 
 6. **Set Feature Compatibility Version**
+
    ```bash
    docker exec dev-mongodb mongosh --username dev_admin \
      --password $(./devstack vault-show-password mongodb) \
@@ -603,33 +663,39 @@ docker compose up -d redis-1 redis-2 redis-3
 **Upgrade Procedure:**
 
 1. **Backup Definitions**
+
    ```bash
    curl -u dev_admin:$RABBITMQ_PASSWORD \
      http://localhost:15672/api/definitions > rabbitmq-definitions.json
    ```
 
 2. **Stop RabbitMQ**
+
    ```bash
    docker compose stop rabbitmq
    ```
 
 3. **Update Image**
+
    ```yaml
    rabbitmq:
      image: rabbitmq:3.13-management-alpine
    ```
 
 4. **Start RabbitMQ**
+
    ```bash
    docker compose up -d rabbitmq
    ```
 
 5. **Verify Version**
+
    ```bash
    docker exec dev-rabbitmq rabbitmqctl version
    ```
 
 6. **Restore Definitions** (if needed)
+
    ```bash
    curl -u dev_admin:$RABBITMQ_PASSWORD -H "Content-Type: application/json" \
      -X POST -d @rabbitmq-definitions.json http://localhost:15672/api/definitions
@@ -672,26 +738,31 @@ docker compose up -d redis-1 redis-2 redis-3
 **Upgrade Steps:**
 
 1. **Stop Current Services**
+
    ```bash
    docker compose down
    ```
 
 2. **Start with Standard Profile**
+
    ```bash
    ./devstack start --profile standard
    ```
 
 3. **Initialize Redis Cluster**
+
    ```bash
    ./devstack redis-cluster-init
    ```
 
 4. **Verify New Services**
+
    ```bash
    docker compose ps | grep -E '(mysql|mongodb|rabbitmq|redis-[23])'
    ```
 
 5. **Test Connectivity**
+
    ```bash
    # MySQL
    mysql -h 127.0.0.1 -u dev_admin -p
@@ -719,16 +790,19 @@ docker compose up -d redis-1 redis-2 redis-3
 **Upgrade Steps:**
 
 1. **Start Full Profile** (keeps existing services running)
+
    ```bash
    docker compose --profile full up -d
    ```
 
 2. **Verify Observability Services**
+
    ```bash
    docker compose ps | grep -E '(prometheus|grafana|loki|vector)'
    ```
 
 3. **Access Dashboards**
+
    ```bash
    # Prometheus
    open http://localhost:9090
@@ -741,6 +815,7 @@ docker compose up -d redis-1 redis-2 redis-3
    ```
 
 4. **Import Grafana Dashboards**
+
    ```bash
    # Dashboards located in configs/grafana/dashboards/
    # Auto-imported on first start
@@ -885,6 +960,7 @@ Redis cluster uses AOF by default - data automatically persisted.
 ### API Compatibility
 
 **v1.3.0 Compatibility:**
+
 - ✅ Docker Compose v2+ required (not compatible with v1.x)
 - ✅ Colima v0.5.0+ recommended
 - ✅ macOS 12+ (Apple Silicon)
@@ -894,11 +970,13 @@ Redis cluster uses AOF by default - data automatically persisted.
 ### Configuration Compatibility
 
 **Breaking Changes in v1.3.0:**
+
 - Profile system requires `--profile` flag (no default profile)
 - Network IP ranges changed (172.20.x.x scheme)
 - Vault paths restructured (`secret/data/` → `secret/`)
 
 **Maintaining Compatibility:**
+
 ```bash
 # Old v1.2.x command
 ./devstack start
@@ -924,33 +1002,39 @@ Redis cluster uses AOF by default - data automatically persisted.
 **Steps:**
 
 1. **Stop All Services**
+
    ```bash
    docker compose down
    ```
 
 2. **Restore Vault Backup**
+
    ```bash
    rm -rf ~/.config/vault
    cp -r ~/vault-backup-20250118 ~/.config/vault
    ```
 
 3. **Revert Repository**
+
    ```bash
    cd ~/devstack-core
    git checkout v1.2.9  # Or your previous version
    ```
 
 4. **Start Services (Old Method)**
+
    ```bash
    ./devstack start  # No profile flag in v1.2
    ```
 
 5. **Restore Database Backups**
+
    ```bash
    ./devstack restore 20250118_120000  # Pre-upgrade backup
    ```
 
 6. **Verify Services**
+
    ```bash
    ./devstack health
    docker compose ps
@@ -1001,6 +1085,7 @@ docker compose --profile minimal up -d
 ### Validation Checklist
 
 **1. Service Health**
+
 ```bash
 # Overall health
 ./devstack health
@@ -1013,6 +1098,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD ping
 ```
 
 **2. Vault Integration**
+
 ```bash
 # Vault status
 ./devstack vault-status
@@ -1026,6 +1112,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD ping
 ```
 
 **3. Database Connectivity**
+
 ```bash
 # PostgreSQL
 psql -h localhost -p 5432 -U dev_admin -d dev_database -c "SELECT version();"
@@ -1038,6 +1125,7 @@ mongosh --host localhost --port 27017 -u dev_admin -e "db.version()"
 ```
 
 **4. Redis Cluster**
+
 ```bash
 # Cluster status
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster info
@@ -1051,6 +1139,7 @@ redis-cli -c -a $REDIS_PASSWORD GET test:key
 ```
 
 **5. Network Connectivity**
+
 ```bash
 # Service-to-service communication
 docker exec dev-reference-api curl -s http://postgres:5432 || echo "Connection works"
@@ -1058,6 +1147,7 @@ docker exec dev-reference-api curl -s http://redis-1:6379 || echo "Connection wo
 ```
 
 **6. Observability Stack** (if full profile)
+
 ```bash
 # Prometheus targets
 curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[].health'
@@ -1070,6 +1160,7 @@ curl -s http://localhost:3100/ready
 ```
 
 **7. Reference APIs** (if reference profile)
+
 ```bash
 # Health checks
 curl http://localhost:8000/health  # Python FastAPI
@@ -1080,6 +1171,7 @@ curl http://localhost:8004/health  # Rust
 ```
 
 **8. TLS Certificates** (if TLS enabled)
+
 ```bash
 # Check certificate validity
 ls -la ~/.config/vault/certs/postgres/
@@ -1123,6 +1215,7 @@ echo "✅ All validation checks passed!"
 ### Issue: Services Won't Start After Upgrade
 
 **Symptoms:**
+
 - Docker containers exit immediately
 - Health checks failing
 - "Connection refused" errors
@@ -1130,24 +1223,28 @@ echo "✅ All validation checks passed!"
 **Solutions:**
 
 1. **Check Docker Compose Version**
+
    ```bash
    docker compose version
    # Must be v2.0+
    ```
 
 2. **Clear Old Containers**
+
    ```bash
    docker compose down --remove-orphans
    docker system prune -f
    ```
 
 3. **Reset Networks**
+
    ```bash
    docker network prune -f
    docker compose up -d
    ```
 
 4. **Check Resource Limits**
+
    ```bash
    colima status
    # Ensure adequate CPU/memory allocated
@@ -1158,18 +1255,21 @@ echo "✅ All validation checks passed!"
 ### Issue: Vault Won't Unseal
 
 **Symptoms:**
+
 - Services waiting for Vault
 - "Vault is sealed" errors
 
 **Solutions:**
 
 1. **Verify Unseal Keys**
+
    ```bash
    ls -la ~/.config/vault/keys.json
    cat ~/.config/vault/keys.json | jq '.unseal_keys_b64'
    ```
 
 2. **Manual Unseal**
+
    ```bash
    export VAULT_ADDR=http://localhost:8200
    vault operator unseal <key1>
@@ -1178,6 +1278,7 @@ echo "✅ All validation checks passed!"
    ```
 
 3. **Check Auto-Unseal Script**
+
    ```bash
    docker exec dev-vault ps aux | grep unseal
    docker logs dev-vault | grep -i unseal
@@ -1188,17 +1289,20 @@ echo "✅ All validation checks passed!"
 ### Issue: Redis Cluster Not Forming
 
 **Symptoms:**
+
 - Cluster state: fail
 - CLUSTERDOWN errors
 
 **Solutions:**
 
 1. **Re-initialize Cluster**
+
    ```bash
    ./devstack redis-cluster-init
    ```
 
 2. **Manual Cluster Creation**
+
    ```bash
    docker exec dev-redis-1 redis-cli --cluster create \
      172.20.2.13:6379 172.20.2.16:6379 172.20.2.17:6379 \
@@ -1206,6 +1310,7 @@ echo "✅ All validation checks passed!"
    ```
 
 3. **Check Node Connectivity**
+
    ```bash
    for i in 1 2 3; do
      docker exec dev-redis-$i redis-cli -a $REDIS_PASSWORD ping
@@ -1217,17 +1322,20 @@ echo "✅ All validation checks passed!"
 ### Issue: Database Migration Failed
 
 **Symptoms:**
+
 - Data missing after upgrade
 - Schema version mismatch errors
 
 **Solutions:**
 
 1. **Restore from Backup**
+
    ```bash
    ./devstack restore <timestamp>
    ```
 
 2. **Check Backup Integrity**
+
    ```bash
    # PostgreSQL
    pg_restore --list backup.dump
@@ -1237,6 +1345,7 @@ echo "✅ All validation checks passed!"
    ```
 
 3. **Manual Migration**
+
    ```bash
    # Review migration scripts
    ls configs/postgres/*.sql
@@ -1250,23 +1359,27 @@ echo "✅ All validation checks passed!"
 ### Issue: Profile Not Starting Correctly
 
 **Symptoms:**
+
 - Wrong services running
 - Missing expected services
 
 **Solutions:**
 
 1. **Verify Profile Flag**
+
    ```bash
    docker compose --profile standard config
    # Shows expanded configuration
    ```
 
 2. **Check Service Profiles**
+
    ```bash
    grep -A 1 "profiles:" docker-compose.yml | head -20
    ```
 
 3. **Explicit Profile Start**
+
    ```bash
    docker compose down
    docker compose --profile standard up -d
@@ -1277,6 +1390,7 @@ echo "✅ All validation checks passed!"
 ### Issue: Performance Degradation After Upgrade
 
 **Symptoms:**
+
 - Slow queries
 - High CPU usage
 - Memory pressure
@@ -1284,12 +1398,14 @@ echo "✅ All validation checks passed!"
 **Solutions:**
 
 1. **Review Resource Allocation**
+
    ```bash
    docker stats
    colima status
    ```
 
 2. **Adjust Profile**
+
    ```bash
    # Downgrade from full to standard if needed
    docker compose down
@@ -1297,6 +1413,7 @@ echo "✅ All validation checks passed!"
    ```
 
 3. **Optimize Database Settings**
+
    ```bash
    # PostgreSQL
    docker exec dev-postgres psql -U dev_admin -c "VACUUM ANALYZE;"

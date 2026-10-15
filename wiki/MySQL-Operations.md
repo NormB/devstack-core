@@ -1767,6 +1767,7 @@ echo "Backup retention: Removed backups older than 7 days"
 ### Replication Overview
 
 MySQL replication types:
+
 - **Asynchronous**: Master doesn't wait for slave acknowledgment (default)
 - **Semi-synchronous**: Master waits for at least one slave acknowledgment
 - **Group Replication**: Multi-master with conflict detection
@@ -2147,6 +2148,7 @@ FROM mysql.user;
 ```
 
 **⚠️ WARNING:** This is a development environment. Production requires additional hardening:
+
 - Network firewalls
 - TLS encryption for all connections
 - Regular security patches

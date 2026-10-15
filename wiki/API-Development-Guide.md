@@ -22,6 +22,7 @@ Building new APIs following reference patterns in DevStack Core.
 DevStack Core includes 5 reference API implementations demonstrating best practices for building services that integrate with the infrastructure.
 
 **Reference APIs:**
+
 - **FastAPI (Code-First)**: Port 8000/8443
 - **FastAPI (API-First)**: Port 8001/8444
 - **Go (Gin)**: Port 8002/8445
@@ -29,6 +30,7 @@ DevStack Core includes 5 reference API implementations demonstrating best practi
 - **Rust (Actix-web)**: Port 8004/8447
 
 All demonstrate:
+
 - Vault secret retrieval
 - Database connections with Vault credentials
 - Redis cluster operations
@@ -41,21 +43,25 @@ All demonstrate:
 ### Choosing Framework
 
 **Python FastAPI:**
+
 - **Pros**: Modern, async, auto-generated OpenAPI docs, type hints
 - **Cons**: Slower than compiled languages
 - **Use**: APIs, microservices, data processing
 
 **Go Gin:**
+
 - **Pros**: Fast, compiled, low memory, good concurrency
 - **Cons**: Verbose error handling, less flexible than Python
 - **Use**: High-performance APIs, system tools
 
 **Node.js Express:**
+
 - **Pros**: JavaScript ecosystem, npm packages, async I/O
 - **Cons**: Single-threaded, callback complexity
 - **Use**: Real-time apps, JSON APIs, prototyping
 
 **Rust Actix-web:**
+
 - **Pros**: Extremely fast, memory-safe, zero-cost abstractions
 - **Cons**: Steep learning curve, slower development
 - **Use**: Performance-critical APIs, systems programming

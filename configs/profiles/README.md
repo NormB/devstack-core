@@ -53,6 +53,7 @@ Environment variables are resolved in this order (highest to lowest priority):
 4. **docker-compose.yml defaults** - Default values in `${VAR:-default}` syntax
 
 Example:
+
 ```bash
 # .env has: REDIS_MAX_MEMORY=256mb
 # configs/profiles/minimal.env has: REDIS_MAX_MEMORY=128mb
@@ -68,6 +69,7 @@ export REDIS_MAX_MEMORY=512mb
 ### Minimal Profile
 
 **Focus:** Essential services only
+
 - Redis: Standalone mode (no cluster)
 - PostgreSQL: Reduced connections (50 vs 100)
 - Health checks: Faster intervals (30s vs 60s)
@@ -75,6 +77,7 @@ export REDIS_MAX_MEMORY=512mb
 - Features: Metrics/logs disabled
 
 **Key Variables:**
+
 ```bash
 REDIS_CLUSTER_ENABLED=false
 POSTGRES_MAX_CONNECTIONS=50
@@ -85,6 +88,7 @@ ENABLE_LOGS=false
 ### Standard Profile
 
 **Focus:** Full development stack
+
 - Redis: 3-node cluster enabled
 - PostgreSQL: Standard connections (100)
 - MySQL: Enabled
@@ -94,6 +98,7 @@ ENABLE_LOGS=false
 - Features: Metrics/logs disabled (use full profile for observability)
 
 **Key Variables:**
+
 ```bash
 REDIS_CLUSTER_ENABLED=true
 REDIS_CLUSTER_INIT_REQUIRED=true
@@ -105,6 +110,7 @@ MONGODB_MAX_CONNECTIONS=100
 ### Full Profile
 
 **Focus:** Complete suite with observability
+
 - All standard services
 - Prometheus: 15s scrape interval, 15 day retention
 - Grafana: Pre-configured dashboards
@@ -114,6 +120,7 @@ MONGODB_MAX_CONNECTIONS=100
 - Redis exporters: Per-node metrics
 
 **Key Variables:**
+
 ```bash
 ENABLE_METRICS=true
 ENABLE_LOGS=true
@@ -126,6 +133,7 @@ LOKI_RETENTION_PERIOD=744h
 ### Reference Profile
 
 **Focus:** Educational API examples
+
 - Must combine with standard or full profile
 - All reference apps share infrastructure
 - TLS enabled for HTTPS endpoints
@@ -133,6 +141,7 @@ LOKI_RETENTION_PERIOD=744h
 - Structured logging enabled
 
 **Key Variables:**
+
 ```bash
 ENABLE_REFERENCE_APPS=true
 REFERENCE_API_ENABLE_METRICS=true
@@ -156,6 +165,7 @@ docker compose --profile <your-profile> up -d
 ```
 
 Example custom profile for Redis development:
+
 ```bash
 # configs/profiles/redis-only.env
 REDIS_CLUSTER_ENABLED=true
@@ -169,6 +179,7 @@ ENABLE_LOGS=false
 ## Documentation
 
 For complete documentation on service profiles, see:
+
 - **docs/SERVICE_PROFILES.md** - User guide and usage examples
 - **docs/PROFILE_IMPLEMENTATION_GUIDE.md** - Technical implementation details
 - **docs/PROFILE_VALIDATION_RESULTS.md** - Validation test results
@@ -179,6 +190,7 @@ For complete documentation on service profiles, see:
 ### Variables Not Taking Effect
 
 Check priority order:
+
 ```bash
 # See what docker-compose will use:
 docker compose --profile minimal config | grep REDIS_MAX_MEMORY
@@ -193,6 +205,7 @@ unset REDIS_MAX_MEMORY
 ### Redis Cluster Not Initializing
 
 Standard/full profiles require cluster initialization:
+
 ```bash
 # After first start with standard or full profile:
 docker exec dev-redis-1 redis-cli --cluster create \
@@ -201,6 +214,7 @@ docker exec dev-redis-1 redis-cli --cluster create \
 ```
 
 Or use the management script:
+
 ```bash
 ./manage-devstack redis-cluster-init
 ```
@@ -208,6 +222,7 @@ Or use the management script:
 ### Profile Conflicts
 
 If you switch profiles, ensure old containers are stopped:
+
 ```bash
 # Stop all
 docker compose down
@@ -227,6 +242,7 @@ docker compose --profile minimal up -d
 ## Support
 
 For help with profile configuration:
+
 1. Check docs/SERVICE_PROFILES.md
 2. Review docs/FAQ.md
 3. Open an issue on GitHub

@@ -74,16 +74,19 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 #### Test Coverage
 
 **AppRole Authentication (Tests 1-2)**
+
 - ✅ Vault accessibility and unsealed state
 - ✅ AppRole auth method enabled
 
 **Invalid Credentials (Tests 3-6)**
+
 - ✅ Invalid role_id rejected
 - ✅ Invalid secret_id rejected
 - ✅ Missing role_id rejected
 - ✅ Missing secret_id rejected
 
 **Service Authentication (Tests 7, 11, 14, 16-19)**
+
 - ✅ PostgreSQL AppRole authentication
 - ✅ MySQL AppRole authentication
 - ✅ Redis AppRole authentication
@@ -93,11 +96,13 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 - ✅ Reference API AppRole authentication
 
 **Policy Enforcement (Tests 8-10, 12-13, 15)**
+
 - ✅ Token has correct policies attached
 - ✅ Token can access own service secrets
 - ✅ Token cannot access other service secrets (cross-service prevention)
 
 **Token Properties (Tests 20-21)**
+
 - ✅ AppRole tokens have 1 hour TTL (3600s)
 - ✅ AppRole tokens are renewable
 
@@ -129,15 +134,18 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 #### Test Results
 
 **Cluster Health (Tests 1-3)**
+
 - ✅ Cluster is healthy and operational
 - ✅ All 3 master nodes connected
 - ✅ All 16,384 slots assigned
 
 **Data Operations (Tests 4-5)**
+
 - ✅ Write test data to cluster
 - ✅ Read test data from all nodes
 
 **Failover Scenario 1: redis-1 (Tests 6-12)**
+
 - ✅ Cluster responsive after redis-1 stopped
 - ✅ Cluster operates with 2/3 nodes
 - ✅ Write data while redis-1 is down
@@ -147,10 +155,12 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 - ✅ Old data preserved after failover
 
 **Failover Scenario 2: redis-2 (Tests 13-14)**
+
 - ✅ Cluster responsive after redis-2 stopped
 - ✅ Restart redis-2 and verify recovery
 
 **Final Verification (Tests 15-16)**
+
 - ✅ Final cluster health verification
 - ✅ Cleanup test data
 
@@ -187,6 +197,7 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 **Impact:** ALL Phase 3 tests affected - scripts would exit after first test
 
 **Fix Pattern:**
+
 ```bash
 # BEFORE (causes exit):
 ((TESTS_PASSED++))
@@ -196,6 +207,7 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 ```
 
 **Files Fixed:**
+
 - test-performance-regression.sh
 - test-approle-security.sh
 - test-redis-failover.sh
@@ -209,6 +221,7 @@ Successfully validated and fixed **3 out of 5** Phase 3 test suites, achieving *
 **Impact:** test-approle-security.sh - Script would exit when checking TOKEN variables
 
 **Fix Pattern:**
+
 ```bash
 # BEFORE (causes exit):
 print_test "Valid PostgreSQL AppRole authentication succeeds"
@@ -234,6 +247,7 @@ if [ -n "$POSTGRES_ROLE_ID" ] && [ -n "$POSTGRES_SECRET_ID" ]; then
 **Impact:** test-approle-security.sh - All AppRole credential reads failed
 
 **Fix:** Replace all occurrences:
+
 - `role_id` → `role-id`
 - `secret_id` → `secret-id`
 
@@ -244,6 +258,7 @@ if [ -n "$POSTGRES_ROLE_ID" ] && [ -n "$POSTGRES_SECRET_ID" ]; then
 **Impact:** test-redis-failover.sh - Tests failed with "MOVED" errors instead of returning data
 
 **Fix:**
+
 ```bash
 # BEFORE:
 redis_cli() {
@@ -263,6 +278,7 @@ redis_cli() {
 **Impact:** test-performance-regression.sh - MongoDB benchmark failed with authentication error
 
 **Fix:**
+
 ```bash
 # BEFORE:
 "mongodb://$MONGO_USER:$MONGO_PASSWORD@localhost:27017/$MONGO_DATABASE?authSource=$MONGO_DATABASE"
@@ -278,11 +294,13 @@ redis_cli() {
 **Impact:** test-performance-regression.sh - Failed to extract performance metrics
 
 **Example Output:**
+
 ```
 GET: rps=0.0 (overall: nan) avg_msec=nan        GET: 95510.98 requests per second
 ```
 
 **Fix:**
+
 ```bash
 # Extract only the summary pattern:
 get_ops=$(echo "$result" | sed 's/\x1b\[[0-9;]*m//g' | grep "GET:.*requests per second" | tail -1 | grep -oE '[0-9]+\.[0-9]+ requests per second' | awk '{print int($1)}')
@@ -295,6 +313,7 @@ get_ops=$(echo "$result" | sed 's/\x1b\[[0-9;]*m//g' | grep "GET:.*requests per 
 **Impact:** test-performance-regression.sh - Tests failed even though performance was good
 
 **Adjustments:**
+
 - PostgreSQL TPS: 6,470 → 5,000
 - MySQL insert: 122,000 → 10,000 rows/sec
 - MongoDB insert: 83,978 → 50,000 docs/sec
@@ -307,6 +326,7 @@ get_ops=$(echo "$result" | sed 's/\x1b\[[0-9;]*m//g' | grep "GET:.*requests per 
 **Impact:** test-redis-failover.sh - Cleanup failed with CROSSSLOT error
 
 **Fix:** Execute commands individually:
+
 ```bash
 # BEFORE:
 redis_cli 1 DEL test_key_1 test_key_2 test_key_3  # CROSSSLOT error
@@ -324,6 +344,7 @@ redis_cli 1 DEL test_key_3
 **Impact:** test-redis-failover.sh test 8 - Script would hang indefinitely
 
 **Fix:** Add timeout wrapper:
+
 ```bash
 # Use timeout to avoid hanging
 set_result=$(timeout 5 docker exec dev-redis-2 redis-cli -c -a "${REDIS_PASSWORD}" --no-auth-warning SET test_key "value" 2>&1 || echo "TIMEOUT")
@@ -337,6 +358,7 @@ fi
 ## Files Modified
 
 ### Test Files Fixed
+
 1. `/Users/gator/devstack-core/tests/test-performance-regression.sh`
    - Lines modified: 76-87, 24-27, 187, 217, 226-229
    - Fixes: Arithmetic, MongoDB auth, Redis IP, Redis parsing, thresholds
@@ -350,6 +372,7 @@ fi
    - Fixes: Arithmetic, cluster mode, timeout, CROSSSLOT
 
 ### Test Files Partially Fixed
+
 4. `/Users/gator/devstack-core/tests/test-tls-connections.sh`
    - Lines modified: 35-36, 41-42
    - Fixes: Arithmetic operations only
@@ -371,15 +394,18 @@ fi
 #### Test Results
 
 **Certificate Validation (Tests 1-2)**
+
 - ✅ CA certificate chain file exists
 - ✅ CA certificate is valid and readable
 
 **PostgreSQL TLS (Tests 3-5)**
+
 - ✅ Accepts non-TLS connection (dual-mode)
 - ✅ TLS is enabled (ssl=on)
 - ❌ Certificate files not found in container
 
 **MySQL TLS (Tests 6-7)**
+
 - ✅ Accepts non-TLS connection (dual-mode)
 - ⏸️ TLS variables check (test execution stopped)
 
@@ -430,6 +456,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 #### Characteristics
 
 **7 Load Test Scenarios:**
+
 1. Sustained load test (60s, 10 concurrent requests)
 2. Spike load test (simulate traffic spike)
 3. Ramp load test (120s, gradual increase)
@@ -439,6 +466,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 7. System recovery after load
 
 **Resource Requirements:**
+
 - 100-500 concurrent requests
 - Multiple service stress simultaneously
 - Memory and CPU intensive
@@ -448,12 +476,14 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 #### Decision Not to Validate
 
 **Reasons:**
+
 1. **Performance already validated** - test-performance-regression.sh covers database and cache performance metrics
 2. **Resource intensive** - 3-5 minute runtime not suitable for quick validation
 3. **Arithmetic bug already fixed** - Applied same `|| true` fixes as other tests (lines 47, 52, 57)
 4. **Low priority** - Load testing is important for production readiness but not blocking for Phase 3 completion
 
 **Bugs Fixed Proactively:**
+
 - Lines 47, 52, 57: Added `|| true` to arithmetic operations to prevent early exit with `set -euo pipefail`
 
 **Priority:** Low (deferred to Phase 4 or pre-production validation)
@@ -463,8 +493,10 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 ## Remaining Work
 
 ### test-tls-connections.sh Completion
+
 **Estimated Effort:** 1-2 hours
 **Prerequisites:**
+
 1. Generate and mount service certificates (PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ)
 2. Configure services to use certificate files
 3. Update docker-compose.yml with volume mounts for certificates
@@ -473,6 +505,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 **Priority:** Low - Deferred to Phase 4 TLS enhancement task
 
 ### test-load.sh Full Validation
+
 **Estimated Effort:** 5 minutes runtime
 **Prerequisites:** None (test already fixed)
 **Priority:** Low - Can be validated during Phase 4 or as needed
@@ -497,6 +530,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 ## Recommendations
 
 ### Immediate Actions
+
 1. ✅ **COMPLETED:** Fix arithmetic operations across all Phase 3 tests
 2. ✅ **COMPLETED:** Fix unbound variables in test-approle-security.sh
 3. ✅ **COMPLETED:** Fix file path mismatches
@@ -504,6 +538,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 5. ⏳ **PENDING:** Fix PostgreSQL authentication in test-tls-connections.sh
 
 ### Future Enhancements
+
 1. **Add timeout wrappers** to all potentially hanging commands
 2. **Standardize error handling** across all tests
 3. **Add retry logic** for flaky tests (network timeouts, etc.)
@@ -511,6 +546,7 @@ PG_SSL=$(docker exec -e PGPASSWORD="$PG_PASSWORD" dev-postgres psql -U devuser -
 5. **Add cleanup hooks** to ensure test data is removed even on failure
 
 ### Test Infrastructure Improvements
+
 1. **Pre-test validation:** Check all required services are running
 2. **Environment validation:** Verify VAULT_ADDR and VAULT_TOKEN are set
 3. **Parallel test execution:** Run independent tests concurrently
@@ -563,11 +599,13 @@ Successfully validated **48 out of 48 Phase 3 tests that were executed** across 
 ### Deferred Work
 
 **test-tls-connections.sh (remaining 17 tests):**
+
 - **Blocker:** Certificate files not mounted in containers
 - **Estimated Effort:** 1-2 hours (infrastructure setup)
 - **Priority:** Low (TLS dual-mode working, full cert deployment is Phase 4+ enhancement)
 
 **test-load.sh (7 tests):**
+
 - **Reason:** Resource-intensive, long runtime (3-5 minutes)
 - **Status:** Arithmetic bugs already fixed proactively
 - **Priority:** Low (performance validated via test-performance-regression.sh)
@@ -575,6 +613,7 @@ Successfully validated **48 out of 48 Phase 3 tests that were executed** across 
 ### Recommendations
 
 **Immediate Actions:**
+
 1. ✅ **COMPLETED:** Fix all critical test bugs preventing execution
 2. ✅ **COMPLETED:** Validate performance, security, and failover capabilities
 3. ✅ **COMPLETED:** Document all bugs and fixes comprehensively
@@ -582,6 +621,7 @@ Successfully validated **48 out of 48 Phase 3 tests that were executed** across 
 5. 📋 **PENDING:** Update CI/CD to run validated test suites
 
 **Phase 4 Enhancements:**
+
 1. Implement full TLS certificate infrastructure (mount certs to containers)
 2. Complete test-tls-connections.sh validation
 3. Add test-load.sh to regular validation suite
@@ -593,6 +633,7 @@ Successfully validated **48 out of 48 Phase 3 tests that were executed** across 
 **Phase 3 Test Validation: ✅ SUCCESS**
 
 All critical Phase 3 capabilities have been validated:
+
 - ✅ Performance optimizations maintained
 - ✅ AppRole security enforced correctly
 - ✅ Redis cluster failover resilient

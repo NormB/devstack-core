@@ -22,6 +22,7 @@ Forgejo Actions and automation workflows for DevStack Core.
 Forgejo Actions provides GitHub Actions-compatible CI/CD pipelines for local development and testing.
 
 **CI/CD Stack:**
+
 - **Platform**: Forgejo (self-hosted Git with Actions)
 - **Runners**: Forgejo Actions runners
 - **Compatibility**: GitHub Actions syntax
@@ -66,7 +67,7 @@ open http://localhost:3000
 
 ### Enable Actions in Forgejo
 
-1. **Access Forgejo**: http://localhost:3000
+1. **Access Forgejo**: <http://localhost:3000>
 2. **Admin Panel**: Site Administration → Configuration
 3. **Enable Actions**: Check "Enable Actions"
 4. **Save Configuration**

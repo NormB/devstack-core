@@ -7,7 +7,7 @@ Resource-efficient service configurations allowing developers to run only the se
 - [Overview](#overview)
 - [Available Profiles](#available-profiles)
 - [Profile Comparison](#profile-comparison)
-- [Usage](#usage)
+- [Usage Examples](#usage-examples)
 
 ---
 
@@ -18,9 +18,11 @@ DevStack Core provides multiple **service profiles** to accommodate different de
 ## Available Profiles
 
 ### 1. **minimal** - Essential Services Only
+
 **Use Case:** Basic development with Git server and single database
 
 **Services:** (5 containers, ~2GB RAM)
+
 - `vault` - Secrets management (required)
 - `postgres` - Primary database + Git storage
 - `pgbouncer` - Connection pooling
@@ -28,6 +30,7 @@ DevStack Core provides multiple **service profiles** to accommodate different de
 - `redis-1` - Single Redis instance (non-cluster mode)
 
 **Start Command:**
+
 ```bash
 ./devstack.sh start --profile minimal
 # OR
@@ -35,6 +38,7 @@ docker compose --profile minimal up -d
 ```
 
 **Best For:**
+
 - Simple CRUD application development
 - Git repository hosting only
 - Learning the platform
@@ -43,9 +47,11 @@ docker compose --profile minimal up -d
 ---
 
 ### 2. **standard** - Full Development Stack
+
 **Use Case:** Multi-database development without observability
 
 **Services:** (12 containers, ~4GB RAM)
+
 - All minimal services
 - `mysql` - Legacy database support
 - `mongodb` - NoSQL document database
@@ -53,6 +59,7 @@ docker compose --profile minimal up -d
 - `rabbitmq` - Message queue
 
 **Start Command:**
+
 ```bash
 ./devstack.sh start --profile standard
 # OR
@@ -60,6 +67,7 @@ docker compose --profile standard up -d
 ```
 
 **Best For:**
+
 - Multi-database applications
 - Microservices development
 - Message queue integration
@@ -68,9 +76,11 @@ docker compose --profile standard up -d
 ---
 
 ### 3. **full** - Complete Suite with Observability
+
 **Use Case:** Production-parity development with full monitoring
 
 **Services:** (18 containers, ~6GB RAM)
+
 - All standard services
 - `prometheus` - Metrics collection
 - `grafana` - Visualization dashboards
@@ -80,6 +90,7 @@ docker compose --profile standard up -d
 - `redis-exporter-1/2/3` - Redis metrics exporters
 
 **Start Command:**
+
 ```bash
 ./devstack.sh start --profile full
 # OR
@@ -87,6 +98,7 @@ docker compose --profile full up -d
 ```
 
 **Best For:**
+
 - Performance testing and optimization
 - Production troubleshooting simulation
 - Understanding system resource usage
@@ -95,9 +107,11 @@ docker compose --profile full up -d
 ---
 
 ### 4. **reference** - Include Reference Applications
+
 **Use Case:** API development and cross-language pattern learning
 
 **Additional Services:** (5 reference apps)
+
 - `reference-api` - Python FastAPI (code-first)
 - `api-first` - Python FastAPI (API-first)
 - `golang-api` - Go with Gin
@@ -105,6 +119,7 @@ docker compose --profile full up -d
 - `rust-api` - Rust with Actix-web (partial)
 
 **Start Command:**
+
 ```bash
 ./devstack.sh start --profile standard --profile reference
 # OR
@@ -112,6 +127,7 @@ docker compose --profile standard --profile reference up -d
 ```
 
 **Best For:**
+
 - Learning API design patterns
 - Comparing language implementations
 - Testing shared test suites
@@ -527,6 +543,7 @@ if __name__ == '__main__':
 ### Developer Scenarios
 
 **Scenario 1: Backend Developer (PostgreSQL Only)**
+
 ```bash
 # Start minimal services
 ./devstack.py start --profile minimal
@@ -539,6 +556,7 @@ psql -h localhost -p 5432 -U dev_admin -d dev_database
 ```
 
 **Scenario 2: Redis Cluster Developer (Your Use Case)**
+
 ```bash
 # Start standard profile (includes Redis cluster)
 ./devstack.py start --profile standard
@@ -553,6 +571,7 @@ redis-cli -c -h localhost -p 6379 cluster nodes
 ```
 
 **Scenario 3: Full-Stack Developer with Observability**
+
 ```bash
 # Start everything
 ./devstack.py start --profile full
@@ -565,6 +584,7 @@ open http://localhost:9090
 ```
 
 **Scenario 4: API Developer Learning Patterns**
+
 ```bash
 # Start standard + reference apps
 ./devstack.py start --profile standard --profile reference
@@ -727,24 +747,28 @@ Each profile has specific environment variable overrides in `configs/profiles/`.
 ### Complete Variable Summary by Profile
 
 **Minimal Profile** (`configs/profiles/minimal.env`):
+
 - 298 lines of configuration
 - Focus: Resource efficiency, quick startup
 - Key differences: Single Redis, reduced limits, shorter retention
 - Target: Personal projects, learning, CI/CD
 
 **Standard Profile** (`configs/profiles/standard.env`):
+
 - 460 lines of configuration
 - Focus: Production parity, multi-database
 - Key differences: Redis cluster, all databases, standard limits
 - Target: Multi-service development, integration testing
 
 **Full Profile** (`configs/profiles/full.env`):
+
 - 486 lines of configuration
 - Focus: Complete observability, monitoring
 - Key differences: All observability stack, enhanced logging, longer retention
 - Target: Performance analysis, troubleshooting, learning observability
 
 **Reference Profile** (`configs/profiles/reference.env`):
+
 - 455 lines of configuration
 - Focus: API examples, cross-language patterns
 - Combinable: Must be used with minimal, standard, or full
@@ -771,6 +795,7 @@ custom_profiles:
 ```
 
 Then use it:
+
 ```bash
 ./devstack.py start --profile my-microservices
 ```

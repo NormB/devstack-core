@@ -38,6 +38,7 @@ fi
 ### The Problem
 
 The test attempted to verify that PgBouncer manages multiple concurrent connections by:
+
 1. Recording the initial client count
 2. Starting 5 background psql processes with `pg_sleep(0.1)` (100ms sleep)
 3. Waiting 1 second
@@ -209,12 +210,14 @@ test_pooling_behavior() {
 ## Results
 
 ### Before Fix
+
 - **Test reliability:** ~50% (highly variable)
 - **Failure mode:** Silent - just returned unexpected count
 - **Pass rate:** 2/10 PgBouncer tests
 - **Overall:** 15/16 test suites passing
 
 ### After Fix
+
 - **Test reliability:** 100% (5/5 consecutive runs)
 - **Failure mode:** Clear - shows peak/initial/expected counts
 - **Pass rate:** 10/10 PgBouncer tests ✅
@@ -233,26 +236,31 @@ The test now consistently observes 7 peak clients (5 test connections + 2 for th
 ## Lessons Learned
 
 ### 1. Timing Assumptions Are Dangerous
+
 - Never assume fixed timing in concurrent systems
 - Process scheduling is non-deterministic
 - Network/disk I/O introduces variable latency
 
 ### 2. Single Measurements Miss Transient States
+
 - Concurrent systems have transient states
 - Peak values may occur between measurements
 - Polling captures transient behavior
 
 ### 3. Test What You Mean
+
 - Original test: "Are there more connections after 1 second?"
 - Actual goal: "Does PgBouncer handle multiple concurrent connections?"
 - Redesigned test: "Can we observe multiple concurrent connections?"
 
 ### 4. Make Races Obvious
+
 - Use longer durations to widen observation windows
 - Poll multiple times to catch transient states
 - Track maximums, not just final values
 
 ### 5. Fail With Context
+
 - Old error: "test failed"
 - New error: "peak: 1, initial: 2, expected >= 3"
 - Better diagnostics help future debugging
@@ -264,6 +272,7 @@ The test now consistently observes 7 peak clients (5 test connections + 2 for th
 Based on this fix, here are general principles for testing concurrent systems:
 
 ### 1. Design for Observability
+
 ```bash
 # Bad: Single measurement
 count=$(measure_once)
@@ -277,6 +286,7 @@ done
 ```
 
 ### 2. Use Adequate Time Windows
+
 ```bash
 # Bad: Tight timing
 process &
@@ -290,6 +300,7 @@ check  # Wider window
 ```
 
 ### 3. Implement Early Exit
+
 ```bash
 # Bad: Always wait full duration
 while [ $i -lt 100 ]; do
@@ -306,6 +317,7 @@ done
 ```
 
 ### 4. Set Realistic Thresholds
+
 ```bash
 # Bad: Expect exact count
 [ $count -eq 5 ] && pass
@@ -315,6 +327,7 @@ done
 ```
 
 ### 5. Provide Diagnostic Output
+
 ```bash
 # Bad: Silent failure
 [ $actual -gt $expected ] || fail

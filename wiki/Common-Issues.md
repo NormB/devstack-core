@@ -26,6 +26,7 @@ Comprehensive troubleshooting guide for common issues in the DevStack Core infra
 ### Issue: Wrong Services Starting
 
 **Symptoms:**
+
 ```bash
 # Expected 10 services (standard profile)
 $ docker ps
@@ -35,6 +36,7 @@ $ docker ps
 **Cause:** Profile not specified or wrong profile used
 
 **Solution:**
+
 ```bash
 # Check which services are defined for a profile
 docker compose --profile standard config --services
@@ -50,6 +52,7 @@ docker compose down
 ### Issue: Redis Cluster Init Fails on Minimal Profile
 
 **Symptoms:**
+
 ```bash
 $ ./devstack redis-cluster-init
 Error: redis-2 and redis-3 not found
@@ -59,6 +62,7 @@ Error: redis-2 and redis-3 not found
 
 **Solution:**
 Minimal profile uses standalone Redis, no cluster initialization needed:
+
 ```bash
 # Use standard or full profile for Redis cluster
 docker compose down
@@ -69,6 +73,7 @@ docker compose down
 ### Issue: Python Script Command Not Found
 
 **Symptoms:**
+
 ```bash
 $ ./devstack start --profile standard
 ModuleNotFoundError: No module named 'click'
@@ -77,6 +82,7 @@ ModuleNotFoundError: No module named 'click'
 **Cause:** Python dependencies not installed
 
 **Solution:**
+
 ```bash
 # Install dependencies using uv (recommended)
 uv venv
@@ -95,6 +101,7 @@ python3 -c "import click, rich, yaml; print('All dependencies installed!')"
 ### Issue: Profile Environment Variables Not Taking Effect
 
 **Symptoms:**
+
 ```bash
 # Started with minimal profile but Redis cluster is enabled
 $ ./devstack start --profile minimal
@@ -105,6 +112,7 @@ cluster_enabled:1  # Should be 0 for minimal
 **Cause:** Environment variables from previous session or shell environment overriding profile
 
 **Solution:**
+
 ```bash
 # Check for conflicting env vars
 env | grep REDIS
@@ -124,6 +132,7 @@ docker exec dev-redis-1 redis-cli INFO cluster | grep cluster_enabled
 ### Issue: Cannot Combine Minimal and Standard Profiles
 
 **Symptoms:**
+
 ```bash
 $ ./devstack start --profile minimal --profile standard
 # Only seeing standard services, minimal services ignored
@@ -132,11 +141,13 @@ $ ./devstack start --profile minimal --profile standard
 **Cause:** Docker Compose uses all specified profiles, but standard includes all minimal services
 
 **Explanation:**
+
 - minimal ⊂ standard ⊂ full (profiles are hierarchical)
 - Specifying both is redundant
 - Standard profile includes all minimal services plus additional ones
 
 **Solution:**
+
 ```bash
 # Just use the larger profile
 ./devstack start --profile standard
@@ -145,6 +156,7 @@ $ ./devstack start --profile minimal --profile standard
 ### Issue: Missing Services After Profile Switch
 
 **Symptoms:**
+
 ```bash
 # Previously running full profile, switched to minimal
 $ ./devstack start --profile minimal
@@ -154,6 +166,7 @@ $ ./devstack start --profile minimal
 **Cause:** Old containers from previous profile still exist (stopped)
 
 **Solution:**
+
 ```bash
 # Clean shutdown removes old containers
 docker compose down  # Removes stopped containers
@@ -166,6 +179,7 @@ docker compose down -v  # WARNING: Removes volumes too
 ### Issue: Reference Profile Services Not Starting
 
 **Symptoms:**
+
 ```bash
 $ ./devstack start --profile reference
 # Reference APIs failing to start, database connection errors
@@ -174,6 +188,7 @@ $ ./devstack start --profile reference
 **Cause:** Reference profile requires infrastructure services (must combine with standard/full)
 
 **Solution:**
+
 ```bash
 # Stop and restart with combined profiles
 docker compose down
@@ -186,6 +201,7 @@ docker ps | grep -E "dev-postgres|dev-reference-api"
 ### Issue: Observability Services Not Available
 
 **Symptoms:**
+
 ```bash
 # Started with standard profile
 $ curl http://localhost:9090
@@ -195,6 +211,7 @@ Connection refused
 **Cause:** Prometheus/Grafana only included in full profile
 
 **Solution:**
+
 ```bash
 # Use full profile for observability
 docker compose down
@@ -208,6 +225,7 @@ curl http://localhost:3001  # Grafana
 ### Issue: Profile Command Help Not Working
 
 **Symptoms:**
+
 ```bash
 $ ./devstack --help
 # No output or error
@@ -216,6 +234,7 @@ $ ./devstack --help
 **Cause:** Script not executable or Python dependencies missing
 
 **Solution:**
+
 ```bash
 # Make script executable
 chmod +x devstack
@@ -234,6 +253,7 @@ uv venv && uv pip install -r scripts/requirements.txt
 ### Issue: Script Errors with Rust CLI Tool Aliases
 
 **Symptoms:**
+
 ```bash
 # Scripts failing with unexpected errors
 $ ./scripts/check-markdown-links.sh
@@ -245,12 +265,14 @@ rg: error parsing flag -E: grep config error: unknown encoding: \[([^]]+)\]\(([^
 **Cause:** Shell has aliased standard Unix tools to Rust alternatives (e.g., `grep→rg`, `find→fd`)
 
 **Background:**
+
 - Modern Rust-based CLI tools (ripgrep, fd, bat, eza) are popular replacements for grep, find, cat, ls
 - These tools have different syntax and command-line flags
 - DevStack Core scripts explicitly use `/usr/bin/grep`, `/usr/bin/awk`, etc. to avoid conflicts
 - However, some edge cases may still exist
 
 **Verification:**
+
 ```bash
 # Check what tools are aliased
 which grep    # May show: grep: aliased to rg
@@ -264,6 +286,7 @@ which cat     # May show: cat: aliased to bat
 
 **Solution 1: Scripts Already Handle This (Recommended)**
 All DevStack Core scripts are designed to work with Rust tool aliases:
+
 ```bash
 # Scripts use full paths to avoid aliases
 # No action needed - just run the script normally
@@ -274,6 +297,7 @@ All DevStack Core scripts are designed to work with Rust tool aliases:
 
 **Solution 2: Verify Script Compatibility**
 If a script still fails:
+
 ```bash
 # Check if script uses full paths
 grep -n "grep\|find\|awk\|sed" scripts/<script-name>.sh
@@ -285,6 +309,7 @@ grep -n "grep\|find\|awk\|sed" scripts/<script-name>.sh
 ```
 
 **Solution 3: Temporary Alias Removal (Last Resort)**
+
 ```bash
 # Only if a specific script fails - run without aliases
 unalias grep find ls cat
@@ -326,6 +351,7 @@ env | grep REDIS_CLUSTER_ENABLED
 ### Issue: Services Continuously Restarting After Fresh Start
 
 **Symptoms:**
+
 ```bash
 $ docker ps
 CONTAINER ID   NAME              STATUS
@@ -334,6 +360,7 @@ def456         dev-redis-1       Restarting (1) 25 seconds ago
 ```
 
 **Logs show:**
+
 ```
 Installing jq...
 Installing jq...
@@ -366,16 +393,19 @@ graph TD
 **Solution:**
 
 1. **Verify Vault is unsealed:**
+
 ```bash
 docker exec dev-vault-1 vault status
 ```
 
 Expected output:
+
 ```
 Sealed          false
 ```
 
 2. **Check if credentials exist:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -385,6 +415,7 @@ vault kv get secret/postgresql
 If you get `404` or `permission denied`, Vault needs bootstrap.
 
 3. **Run Vault bootstrap:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -392,6 +423,7 @@ bash configs/vault/scripts/vault-bootstrap.sh
 ```
 
 Expected output:
+
 ```
 ✓ KV secrets engine enabled
 ✓ Root CA created
@@ -403,11 +435,13 @@ Expected output:
 ```
 
 4. **Restart failing services:**
+
 ```bash
 docker compose restart postgres redis-1 redis-2 redis-3 mysql mongodb rabbitmq
 ```
 
 5. **Verify all services are healthy:**
+
 ```bash
 docker ps --format "table {{.Names}}\t{{.Status}}"
 ```
@@ -422,6 +456,7 @@ Add automatic bootstrap check to `devstack start` (see [Future Enhancements](#fu
 ### Issue: Colima VM Won't Start
 
 **Symptoms:**
+
 ```bash
 $ ./devstack start
 ERRO[0000] error starting vm: error creating instance
@@ -430,6 +465,7 @@ ERRO[0000] error starting vm: error creating instance
 **Common Causes:**
 
 1. **Insufficient disk space**
+
 ```bash
 # Check available space
 df -h ~
@@ -439,6 +475,7 @@ COLIMA_DISK=100 ./devstack start
 ```
 
 2. **VZ framework issue (macOS Ventura+)**
+
 ```bash
 # Check Colima version
 colima version
@@ -452,6 +489,7 @@ colima delete
 ```
 
 3. **Port conflicts**
+
 ```bash
 # Check if ports are already in use
 lsof -i :8200  # Vault
@@ -466,6 +504,7 @@ lsof -i :3001  # Grafana
 ### Issue: Docker Compose Services Won't Start
 
 **Symptoms:**
+
 ```bash
 $ docker compose up -d
 ERROR: yaml.parser.ParserError
@@ -474,6 +513,7 @@ ERROR: yaml.parser.ParserError
 **Solutions:**
 
 1. **YAML syntax error:**
+
 ```bash
 # Validate docker-compose.yml
 docker compose config
@@ -482,6 +522,7 @@ docker compose config
 ```
 
 2. **Invalid environment variables:**
+
 ```bash
 # Check .env file exists and has correct format
 cat .env
@@ -492,6 +533,7 @@ cat .env
 ```
 
 3. **Missing Docker network:**
+
 ```bash
 # Create network manually if needed
 docker network create dev-services --subnet 172.20.0.0/16
@@ -504,16 +546,19 @@ docker network create dev-services --subnet 172.20.0.0/16
 ### General Health Check Debugging
 
 **Check health status:**
+
 ```bash
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 ```
 
 **Inspect specific service health:**
+
 ```bash
 docker inspect dev-postgres-1 --format='{{json .State.Health}}' | jq
 ```
 
 **View health check logs:**
+
 ```bash
 docker logs dev-postgres-1 --tail 50
 ```
@@ -523,6 +568,7 @@ docker logs dev-postgres-1 --tail 50
 #### PostgreSQL Health Check Failing
 
 **Diagnostic:**
+
 ```bash
 # Check if PostgreSQL is running
 docker exec dev-postgres-1 pg_isready -U postgres
@@ -535,6 +581,7 @@ docker exec -it dev-postgres-1 psql -U dev_admin -d dev_database
 ```
 
 **Common fixes:**
+
 - Vault not bootstrapped (see [Vault Bootstrap](#issue-services-continuously-restarting-after-fresh-start))
 - Incorrect credentials in Vault
 - Database initialization failed (check logs)
@@ -542,6 +589,7 @@ docker exec -it dev-postgres-1 psql -U dev_admin -d dev_database
 #### Redis Cluster Health Check Failing
 
 **Diagnostic:**
+
 ```bash
 # Check cluster status
 docker exec dev-redis-1 redis-cli -a $(VAULT_ADDR=http://localhost:8200 VAULT_TOKEN=$(cat ~/.config/vault/root-token) vault kv get -field=password secret/redis-1) cluster info
@@ -551,6 +599,7 @@ docker exec dev-redis-1 redis-cli -a <password> cluster nodes
 ```
 
 **Common issues:**
+
 - Not all 3 nodes started yet (wait 30s)
 - Cluster not formed (check `configs/redis/scripts/init.sh`)
 - Network issue between nodes (check `docker network inspect dev-services`)
@@ -558,6 +607,7 @@ docker exec dev-redis-1 redis-cli -a <password> cluster nodes
 #### MySQL Health Check Failing
 
 **Diagnostic:**
+
 ```bash
 # Check if MySQL is ready
 docker exec dev-mysql-1 mysqladmin ping
@@ -576,6 +626,7 @@ docker exec -it dev-mysql-1 mysql -u dev_user -p dev_database
 ### Issue: Services Can't Reach Each Other
 
 **Symptoms:**
+
 - APIs can't connect to databases
 - "Connection refused" or "Host not found" errors
 
@@ -608,6 +659,7 @@ graph TD
 **Solutions:**
 
 1. **Verify Docker network:**
+
 ```bash
 docker network ls | grep dev-services
 docker network inspect dev-services
@@ -616,6 +668,7 @@ docker network inspect dev-services
 Expected: 172.20.0.0/16 subnet with all services listed.
 
 2. **Check service IP assignments:**
+
 ```bash
 docker inspect dev-vault-1 --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'
 # Should be: 172.20.0.5
@@ -625,6 +678,7 @@ docker inspect dev-postgres-1 --format='{{range .NetworkSettings.Networks}}{{.IP
 ```
 
 3. **Test DNS resolution:**
+
 ```bash
 # From one container to another
 docker exec dev-reference-api-1 ping -c 2 postgres
@@ -632,6 +686,7 @@ docker exec dev-reference-api-1 ping -c 2 vault
 ```
 
 4. **Test connectivity:**
+
 ```bash
 # Test database connectivity from API container
 docker exec dev-reference-api-1 nc -zv postgres 5432
@@ -639,6 +694,7 @@ docker exec dev-reference-api-1 nc -zv redis-1 6379
 ```
 
 5. **Restart network if needed:**
+
 ```bash
 docker compose down
 docker network rm dev-services
@@ -651,12 +707,14 @@ docker compose up -d
 ### Issue: Can't Access Services from Host
 
 **Symptoms:**
+
 - `curl http://localhost:8000` fails
 - `psql -h localhost -p 5432` times out
 
 **Solutions:**
 
 1. **Check port bindings:**
+
 ```bash
 docker ps --format "table {{.Names}}\t{{.Ports}}"
 ```
@@ -664,6 +722,7 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 Expected: `0.0.0.0:8000->8000/tcp` for exposed services.
 
 2. **Verify Colima VM networking:**
+
 ```bash
 colima status
 
@@ -672,6 +731,7 @@ colima list
 ```
 
 3. **Test with explicit IP:**
+
 ```bash
 # Get Colima VM IP
 colima list -j | jq -r '.[0].address'
@@ -691,6 +751,7 @@ curl http://<vm-ip>:8000/health
 **Solutions:**
 
 1. **Verify credentials in Vault:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -698,16 +759,19 @@ vault kv get secret/postgresql
 ```
 
 2. **Check pg_hba.conf:**
+
 ```bash
 docker exec dev-postgres-1 cat /var/lib/postgresql/data/pg_hba.conf
 ```
 
 Should include:
+
 ```
 host    all             all             172.20.0.0/16           md5
 ```
 
 3. **Reset PostgreSQL:**
+
 ```bash
 docker compose stop postgres
 docker volume rm devstack-core_postgres_data
@@ -723,11 +787,13 @@ docker compose up -d postgres
 **Solutions:**
 
 1. **Check user grants:**
+
 ```bash
 docker exec dev-mysql-1 mysql -u root -p$(VAULT_ADDR=http://localhost:8200 VAULT_TOKEN=$(cat ~/.config/vault/root-token) vault kv get -field=root_password secret/mysql) -e "SELECT user,host FROM mysql.user;"
 ```
 
 2. **Recreate user:**
+
 ```bash
 docker exec -it dev-mysql-1 mysql -u root -p
 
@@ -746,6 +812,7 @@ mysql> FLUSH PRIVILEGES;
 **Solutions:**
 
 1. **Verify MongoDB credentials:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -753,11 +820,13 @@ vault kv get secret/mongodb
 ```
 
 2. **Test connection:**
+
 ```bash
 docker exec -it dev-mongodb-1 mongosh -u dev_user -p <password> --authenticationDatabase admin dev_database
 ```
 
 3. **Reset MongoDB:**
+
 ```bash
 docker compose stop mongodb
 docker volume rm devstack-core_mongodb_data
@@ -771,6 +840,7 @@ docker compose up -d mongodb
 ### Issue: Redis Cluster Not Forming
 
 **Symptoms:**
+
 ```bash
 $ docker logs dev-redis-1 | grep cluster
 [ERR] Node is not in cluster mode
@@ -779,6 +849,7 @@ $ docker logs dev-redis-1 | grep cluster
 **Solutions:**
 
 1. **Check all 3 nodes are running:**
+
 ```bash
 docker ps | grep redis
 ```
@@ -786,11 +857,13 @@ docker ps | grep redis
 All three (redis-1, redis-2, redis-3) must be healthy.
 
 2. **Check cluster configuration:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a <password> cluster info
 ```
 
 Expected:
+
 ```
 cluster_state:ok
 cluster_slots_assigned:16384
@@ -798,6 +871,7 @@ cluster_known_nodes:3
 ```
 
 3. **Manually create cluster:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a <password> --cluster create \
   172.20.0.13:6379 \
@@ -807,6 +881,7 @@ docker exec dev-redis-1 redis-cli -a <password> --cluster create \
 ```
 
 4. **Reset cluster:**
+
 ```bash
 docker compose stop redis-1 redis-2 redis-3
 docker volume rm devstack-core_redis_data_1 devstack-core_redis_data_2 devstack-core_redis_data_3
@@ -824,6 +899,7 @@ docker compose up -d redis-1 redis-2 redis-3
 **Solutions:**
 
 1. **Use cluster-aware client:**
+
 ```python
 # Python example
 from redis.cluster import RedisCluster
@@ -832,6 +908,7 @@ rc = RedisCluster(host='172.20.0.13', port=6379, password='...')
 ```
 
 2. **Test cluster operations:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a <password> -c
 127.0.0.1:6379> SET mykey myvalue
@@ -848,6 +925,7 @@ Note the `-c` flag enables cluster mode (follows redirects).
 ### Issue: Vault is Sealed
 
 **Symptoms:**
+
 ```bash
 $ curl http://localhost:8200/v1/sys/health
 {"sealed":true}
@@ -856,11 +934,13 @@ $ curl http://localhost:8200/v1/sys/health
 **Solutions:**
 
 1. **Check Vault status:**
+
 ```bash
 docker exec dev-vault-1 vault status
 ```
 
 2. **Unseal Vault manually:**
+
 ```bash
 docker exec dev-vault-1 vault operator unseal $(cat ~/.config/vault/unseal-key-1)
 docker exec dev-vault-1 vault operator unseal $(cat ~/.config/vault/unseal-key-2)
@@ -868,11 +948,13 @@ docker exec dev-vault-1 vault operator unseal $(cat ~/.config/vault/unseal-key-3
 ```
 
 3. **Or use auto-unseal script:**
+
 ```bash
 docker exec dev-vault-1 /vault/scripts/vault-auto-unseal.sh
 ```
 
 4. **Restart Vault (auto-unseals on startup):**
+
 ```bash
 docker compose restart vault
 ```
@@ -886,6 +968,7 @@ docker compose restart vault
 **Solutions:**
 
 1. **Check token TTL:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -893,12 +976,14 @@ vault token lookup
 ```
 
 2. **Use root token:**
+
 ```bash
 # Root token never expires
 export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ```
 
 3. **Create new token:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -912,6 +997,7 @@ vault token create -policy=admin
 **Error:** `* permission denied`
 
 **Diagnostic:**
+
 ```bash
 # Check if secret exists
 VAULT_ADDR=http://localhost:8200 \
@@ -925,6 +1011,7 @@ vault kv get secret/postgresql
 **Solutions:**
 
 1. **If secret doesn't exist - run bootstrap:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -932,6 +1019,7 @@ bash configs/vault/scripts/vault-bootstrap.sh
 ```
 
 2. **If permission denied - check policy:**
+
 ```bash
 vault token lookup
 # Check "policies" field includes necessary policies
@@ -944,6 +1032,7 @@ vault token lookup
 ### Issue: Docker Daemon Not Running
 
 **Symptoms:**
+
 ```bash
 $ docker ps
 Cannot connect to the Docker daemon
@@ -952,21 +1041,25 @@ Cannot connect to the Docker daemon
 **Solutions:**
 
 1. **Check Colima status:**
+
 ```bash
 colima status
 ```
 
 2. **Start Colima:**
+
 ```bash
 colima start
 ```
 
 Or use manage script:
+
 ```bash
 ./devstack start
 ```
 
 3. **If stuck, force restart:**
+
 ```bash
 colima stop -f
 colima start
@@ -977,6 +1070,7 @@ colima start
 ### Issue: Out of Disk Space
 
 **Symptoms:**
+
 ```bash
 $ docker system df
 Images          50GB
@@ -987,6 +1081,7 @@ Volumes         20GB
 **Solutions:**
 
 1. **Clean up unused resources:**
+
 ```bash
 # Remove unused containers, networks, images
 docker system prune -a
@@ -996,6 +1091,7 @@ docker volume prune
 ```
 
 2. **Remove specific volumes:**
+
 ```bash
 # List volumes
 docker volume ls
@@ -1005,6 +1101,7 @@ docker volume rm devstack-core_prometheus_data
 ```
 
 3. **Increase Colima disk:**
+
 ```bash
 colima stop
 # Edit ~/.colima/default/colima.yaml
@@ -1018,12 +1115,14 @@ colima start
 ### Issue: Slow Container Performance
 
 **Symptoms:**
+
 - Containers are slow
 - High CPU usage
 
 **Solutions:**
 
 1. **Increase Colima resources:**
+
 ```bash
 # Stop Colima
 colima stop
@@ -1033,11 +1132,13 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 ./devstack start
 ```
 
 2. **Check resource usage:**
+
 ```bash
 docker stats
 ```
 
 3. **Limit individual containers:**
+
 ```yaml
 # In docker-compose.yml
 services:
@@ -1058,6 +1159,7 @@ services:
 **Common test failures and solutions:**
 
 1. **Test: Vault health check**
+
 ```bash
 # Manual test
 curl -s http://localhost:8200/v1/sys/health | jq
@@ -1068,6 +1170,7 @@ curl -s http://localhost:8200/v1/sys/health | jq
 **Fix:** Unseal Vault (see [Vault is Sealed](#issue-vault-is-sealed))
 
 2. **Test: Service connectivity**
+
 ```bash
 # Manual test
 docker exec dev-reference-api-1 curl -s http://postgres:5432
@@ -1076,6 +1179,7 @@ docker exec dev-reference-api-1 curl -s http://postgres:5432
 **Fix:** Check network connectivity (see [Network Issues](#network-connectivity-problems))
 
 3. **Test: Redis cluster**
+
 ```bash
 # Run specific test
 bash tests/infrastructure/test_redis_cluster.sh
@@ -1090,17 +1194,20 @@ bash tests/infrastructure/test_redis_cluster.sh
 **Running specific test suites:**
 
 1. **FastAPI unit tests:**
+
 ```bash
 cd reference-apps/fastapi
 pytest tests/ -v
 ```
 
 2. **With coverage:**
+
 ```bash
 pytest tests/ --cov=app --cov-report=term-missing
 ```
 
 3. **Specific test file:**
+
 ```bash
 pytest tests/test_api.py::test_health_check -v
 ```
@@ -1116,6 +1223,7 @@ pytest tests/test_api.py::test_health_check -v
 ### Issue: Docker Build Failures - Python Dependency Conflicts
 
 **Symptoms:**
+
 ```bash
 $ docker compose build reference-api
 ERROR: Cannot install -r requirements.txt (line 32) and pytest==9.0.0 because these package versions have conflicting dependencies.
@@ -1129,6 +1237,7 @@ fastapi-cache2[redis] 0.2.2 depends on redis<5.0.0 and >=4.2.0rc1; extra == "red
 ```
 
 **Cause:**
+
 - Pinned dependency versions with incompatible requirements
 - `pytest-asyncio 1.2.0` incompatible with `pytest 9.0.0`
 - `fastapi-cache2[redis]` extra requires `redis<5.0.0` but we need `redis 7.0.1`
@@ -1136,6 +1245,7 @@ fastapi-cache2[redis] 0.2.2 depends on redis<5.0.0 and >=4.2.0rc1; extra == "red
 **Solution (without downgrades):**
 
 1. **Fix pytest-asyncio conflict:**
+
 ```python
 # In requirements.txt, change:
 pytest-asyncio==1.2.0
@@ -1145,6 +1255,7 @@ pytest-asyncio  # Let pip resolve compatible version
 ```
 
 2. **Fix fastapi-cache2 redis conflict:**
+
 ```python
 # In requirements.txt, change:
 fastapi-cache2[redis]==0.2.2
@@ -1154,6 +1265,7 @@ fastapi-cache2==0.2.2  # Install without [redis] extra to avoid dependency confl
 ```
 
 3. **Rebuild Docker image:**
+
 ```bash
 docker compose build reference-api
 docker compose up -d reference-api
@@ -1168,6 +1280,7 @@ docker compose up -d reference-api
 ### Issue: FastAPI /health/all Endpoint Returns 500 Error
 
 **Symptoms:**
+
 ```bash
 $ curl http://localhost:8000/health/all
 {"error":"InternalServerError","message":"An unexpected error occurred","status_code":500}
@@ -1177,6 +1290,7 @@ AssertionError: You must call init first!
 ```
 
 **Cause:**
+
 - Redis connection fails at startup (e.g., Redis not running or credentials missing)
 - Startup exception handler catches Redis error but doesn't initialize FastAPICache
 - `/health/all` endpoint has `@cache()` decorator
@@ -1206,6 +1320,7 @@ except Exception as e:
 **Result:** Endpoint returns 200 with "degraded" status instead of crashing
 
 **Verification:**
+
 ```bash
 # Test endpoint
 curl http://localhost:8000/health/all | jq
@@ -1233,12 +1348,14 @@ go test ./... -v
 **Common issues:**
 
 1. **Build errors:**
+
 ```bash
 go mod tidy
 go mod download
 ```
 
 2. **Test timeout:**
+
 ```bash
 go test ./... -v -timeout 5m
 ```
@@ -1252,29 +1369,34 @@ go test ./... -v -timeout 5m
 **Diagnostic:**
 
 1. **Check API metrics:**
+
 ```bash
 curl http://localhost:8000/metrics | grep http_request_duration
 ```
 
 2. **Check database connection pooling:**
+
 ```bash
 docker logs dev-reference-api-1 | grep "pool"
 ```
 
 3. **Monitor with Grafana:**
-- Open http://localhost:3001
+
+- Open <http://localhost:3001>
 - Check "Application Metrics" dashboard
 - Look for slow queries or high latency
 
 **Solutions:**
 
 1. **Increase connection pool size:**
+
 ```python
 # In reference-apps/fastapi/app/database.py
 POOL_SIZE = 20  # Increase from default 10
 ```
 
 2. **Add caching:**
+
 ```python
 # Use Redis for caching
 from redis import Redis
@@ -1282,6 +1404,7 @@ cache = Redis(host='redis-1', port=6379)
 ```
 
 3. **Optimize database queries:**
+
 ```bash
 # Check slow queries in PostgreSQL
 docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c \
@@ -1293,6 +1416,7 @@ docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c \
 ### Issue: High Memory Usage
 
 **Diagnostic:**
+
 ```bash
 docker stats --no-stream
 ```
@@ -1300,11 +1424,13 @@ docker stats --no-stream
 **Solutions:**
 
 1. **Restart high-memory services:**
+
 ```bash
 docker compose restart <service>
 ```
 
 2. **Add memory limits:**
+
 ```yaml
 # docker-compose.yml
 services:
@@ -1316,6 +1442,7 @@ services:
 ```
 
 3. **Increase Colima memory:**
+
 ```bash
 COLIMA_MEMORY=16 ./devstack start
 ```
@@ -1327,6 +1454,7 @@ COLIMA_MEMORY=16 ./devstack start
 ### Issue: Vault Certificate Issuance Fails - Common Name Not Allowed
 
 **Symptoms:**
+
 ```bash
 $ vault write pki_int/issue/postgres-role common_name="postgres" ttl=1h
 Error writing data to pki_int/issue/postgres-role: Error making API request.
@@ -1338,6 +1466,7 @@ Code: 400. Errors:
 ```
 
 **Cause:**
+
 - Vault PKI role has `allowed_domains` configuration
 - Common name must match one of the allowed patterns
 - For postgres role: allowed domains are `postgres.dev-services.local` and `localhost`
@@ -1366,6 +1495,7 @@ vault write pki_int/issue/postgres-role \
 ```
 
 **Common allowed domains by service:**
+
 - **postgres**: `postgres.dev-services.local`, `localhost`
 - **mysql**: `mysql.dev-services.local`, `localhost`
 - **redis**: `redis.dev-services.local`, `localhost`
@@ -1373,6 +1503,7 @@ vault write pki_int/issue/postgres-role \
 - **rabbitmq**: `rabbitmq.dev-services.local`, `localhost`
 
 **Verification:**
+
 ```bash
 # List all PKI roles
 vault list pki_int/roles
@@ -1392,12 +1523,14 @@ vault read pki_int/roles/<service>-role
 **Solutions:**
 
 1. **Check CA certificate exists:**
+
 ```bash
 ls -la ~/.config/vault/ca/
 # Should have: ca-chain.pem, root-ca.pem, intermediate-ca.pem
 ```
 
 2. **Re-export CA certificates:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -1405,11 +1538,13 @@ bash configs/vault/scripts/vault-bootstrap.sh
 ```
 
 3. **Trust CA certificate (macOS):**
+
 ```bash
 sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/.config/vault/ca/root-ca.pem
 ```
 
 4. **Use CA in API calls:**
+
 ```bash
 curl --cacert ~/.config/vault/ca/ca-chain.pem https://localhost:8443/health
 ```
@@ -1419,6 +1554,7 @@ curl --cacert ~/.config/vault/ca/ca-chain.pem https://localhost:8443/health
 ### Issue: TLS Handshake Timeout
 
 **Diagnostic:**
+
 ```bash
 openssl s_client -connect localhost:8443 -CAfile ~/.config/vault/ca/ca-chain.pem
 ```
@@ -1426,6 +1562,7 @@ openssl s_client -connect localhost:8443 -CAfile ~/.config/vault/ca/ca-chain.pem
 **Solutions:**
 
 1. **Check TLS is enabled in Vault:**
+
 ```bash
 VAULT_ADDR=http://localhost:8200 \
 VAULT_TOKEN=$(cat ~/.config/vault/root-token) \
@@ -1433,11 +1570,13 @@ vault kv get -field=tls_enabled secret/postgresql
 ```
 
 2. **Verify certificate validity:**
+
 ```bash
 docker exec dev-postgres-1 openssl x509 -in /etc/ssl/certs/postgres.crt -text -noout
 ```
 
 3. **Regenerate certificates:**
+
 ```bash
 # Re-run bootstrap
 VAULT_ADDR=http://localhost:8200 \
@@ -1455,6 +1594,7 @@ docker compose restart postgres
 ### Complete Health Check
 
 Run all health checks:
+
 ```bash
 bash tests/infrastructure/run_all_tests.sh
 ```
@@ -1462,6 +1602,7 @@ bash tests/infrastructure/run_all_tests.sh
 ### Service-Specific Diagnostics
 
 **Vault:**
+
 ```bash
 docker exec dev-vault-1 vault status
 docker logs dev-vault-1 --tail 50
@@ -1469,6 +1610,7 @@ curl http://localhost:8200/v1/sys/health | jq
 ```
 
 **PostgreSQL:**
+
 ```bash
 docker exec dev-postgres-1 pg_isready
 docker logs dev-postgres-1 --tail 50
@@ -1476,6 +1618,7 @@ docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c "SELECT version(
 ```
 
 **Redis Cluster:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a <password> cluster info
 docker exec dev-redis-1 redis-cli -a <password> cluster nodes
@@ -1483,6 +1626,7 @@ docker logs dev-redis-1 --tail 50
 ```
 
 **MySQL:**
+
 ```bash
 docker exec dev-mysql-1 mysqladmin ping
 docker logs dev-mysql-1 --tail 50
@@ -1490,12 +1634,14 @@ docker exec dev-mysql-1 mysql -u dev_user -p<password> -e "SHOW DATABASES;"
 ```
 
 **MongoDB:**
+
 ```bash
 docker exec dev-mongodb-1 mongosh --eval "db.adminCommand('ping')"
 docker logs dev-mongodb-1 --tail 50
 ```
 
 **RabbitMQ:**
+
 ```bash
 docker exec dev-rabbitmq-1 rabbitmqctl status
 docker logs dev-rabbitmq-1 --tail 50
@@ -1505,17 +1651,20 @@ curl -u dev_user:<password> http://localhost:15672/api/overview | jq
 ### Network Diagnostics
 
 **Check all IPs:**
+
 ```bash
 docker network inspect dev-services --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}'
 ```
 
 **Test DNS resolution:**
+
 ```bash
 docker exec dev-reference-api-1 nslookup vault
 docker exec dev-reference-api-1 nslookup postgres
 ```
 
 **Test connectivity matrix:**
+
 ```bash
 for service in vault postgres mysql mongodb redis-1 rabbitmq; do
   echo "Testing $service..."
@@ -1526,16 +1675,19 @@ done
 ### Performance Diagnostics
 
 **Resource usage:**
+
 ```bash
 docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
 ```
 
 **API response time:**
+
 ```bash
 time curl -s http://localhost:8000/health
 ```
 
 **Database query performance:**
+
 ```bash
 docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c \
   "SELECT schemaname,tablename,n_tup_ins,n_tup_upd,n_tup_del FROM pg_stat_user_tables;"
@@ -1574,11 +1726,13 @@ docker exec dev-postgres-1 psql -U dev_admin -d dev_database -c \
 If you encounter an issue not covered here:
 
 1. **Check service logs:**
+
    ```bash
    docker logs <container-name> --tail 100
    ```
 
 2. **Run diagnostic tests:**
+
    ```bash
    bash tests/infrastructure/run_all_tests.sh
    ```

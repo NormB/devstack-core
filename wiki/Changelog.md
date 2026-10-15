@@ -6,33 +6,38 @@
   - [Added](#added)
   - [Changed](#changed)
   - [Fixed](#fixed)
+  - [Removed](#removed)
   - [Security](#security)
-- [[1.0.0] - 2025-10-23](#100-2025-10-23)
-  - [Added](#added)
-  - [Security](#security)
+- [[1.3.0] - 2025-11-05](#130---2025-11-05)
+  - [Changed](#changed-1)
+  - [Added](#added-1)
+  - [Fixed](#fixed-1)
+- [[1.2.1] - 2025-10-30](#121---2025-10-30)
+  - [Added](#added-2)
+  - [Changed](#changed-2)
+  - [Fixed](#fixed-2)
+  - [Security](#security-1)
+- [[1.2.0] - 2025-10-29](#120---2025-10-29)
+  - [Added](#added-3)
+  - [Changed](#changed-3)
+  - [Documentation Quality](#documentation-quality)
+- [[1.1.1] - 2025-10-29](#111---2025-10-29)
+  - [Added](#added-4)
+  - [Changed](#changed-4)
+  - [Fixed](#fixed-3)
+  - [Security](#security-2)
+- [[1.0.0] - 2025-10-23](#100---2025-10-23)
+  - [Added](#added-5)
+  - [Security](#security-3)
 - [Version History Guidelines](#version-history-guidelines)
   - [Version Format](#version-format)
-- [[X.Y.Z] - YYYY-MM-DD](#xyz-yyyy-mm-dd)
   - [Change Categories](#change-categories)
   - [Example Entry](#example-entry)
-- [[1.0.0] - 2025-01-15](#100-2025-01-15)
-  - [Added](#added)
-  - [Changed](#changed)
-  - [Fixed](#fixed)
-  - [Security](#security)
   - [Semantic Versioning](#semantic-versioning)
   - [When to Update](#when-to-update)
   - [Best Practices](#best-practices)
   - [Migration Notes](#migration-notes)
-  - [Migration from 0.x to 1.0](#migration-from-0x-to-10)
 - [Archive](#archive)
-- [[X.Y.Z] - YYYY-MM-DD](#xyz-yyyy-mm-dd)
-  - [Added](#added)
-  - [Changed](#changed)
-  - [Deprecated](#deprecated)
-  - [Removed](#removed)
-  - [Fixed](#fixed)
-  - [Security](#security)
 
 ---
 
@@ -44,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - **Redis TLS encryption with dual-port configuration**
   - Implemented TLS support for all 3 Redis cluster nodes
   - Port 6379: Non-TLS connections (backward compatible)
@@ -66,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated test suite documentation to include Rust testing
 
 ### Changed
+
 - **Updated network IPs to reflect 4-tier segmentation architecture**
   - Redis cluster IPs: 172.20.0.13/16/17 → 172.20.2.13/16/17 (data network)
   - Updated across all documentation: `docs/REDIS.md`, `docs/SERVICES.md`, `docs/ENVIRONMENT_VARIABLES.md`
@@ -82,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated across all documentation files: CLAUDE.md, README.md, reference-apps/README.md, docs/ARCHITECTURE.md, docs/SERVICES.md, docs/PERFORMANCE_BASELINE.md
 
 ### Fixed
+
 - **Observability test suite syntax error**
   - Fixed `tests/test-observability.sh:286` grep pattern causing "integer expression expected" error
   - Changed `grep -c "pattern" || echo "0"` to `grep -c "pattern" || true`
@@ -93,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prevents "installation page" issue when forgejo database is missing
 
 ### Removed
+
 - Removed redundant historical documentation files from project root
   - Deleted `RUST_DOCUMENTATION_UPDATE.md` (297 lines) - historical analysis already captured in changelog
   - Deleted `FIXES.md` (174 lines) - test suite fixes already applied to codebase
@@ -100,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Only `README.md` and `CLAUDE.md` remain in project root (per project standards)
 
 ### Security
+
 - **Completed AppRole authentication migration for all services (100% complete)**
   - Migrated all 7 services (9 instances) from Vault root token to AppRole authentication
   - Services: PostgreSQL, MySQL, MongoDB, Redis (3 nodes), RabbitMQ, Forgejo, Reference API
@@ -147,10 +157,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2025-10-30
 
 ### Added
+
 - Comprehensive Dependabot monitoring for all 7 package ecosystems (Docker, GitHub Actions, Python, Go, Node.js, Rust, TypeScript)
 - DEPENDENCY_UPGRADE_REPORT.md documenting **ALL 30 merged PRs (100% success rate)** and Go 1.24 upgrade process
 
 ### Changed
+
 - **MAJOR:** Upgraded Golang reference implementation from Go 1.23 to Go 1.24.0
   - Updated `reference-apps/golang/go.mod` to require Go 1.24.0
   - Updated `reference-apps/golang/Dockerfile` to use golang:1.24rc1-alpine with GOTOOLCHAIN=auto
@@ -168,12 +180,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - express-rate-limit 7.5.1 → 8.2.0 (nodejs) - Resolved conflicts successfully
 
 ### Fixed
+
 - Dependabot configuration file had empty package-ecosystem field causing GitHub validation errors
 - Go 1.24.0 dependency requirements resolved using GOTOOLCHAIN=auto approach
 - Docker build issues for golang-api container with Go 1.24rc1
 - Multiple merge conflicts across go.mod, requirements.txt, Cargo.toml, package.json
 
 ### Security
+
 - Multiple security updates across all dependencies via Dependabot PRs
 - All SSL/TLS connections verified working with TLSv1.3
 - 100% test pass rate (43+ infrastructure tests) after upgrades
@@ -183,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2025-10-29
 
 ### Added
+
 - **World-Class Documentation Implementation** (5,600+ lines, 9.7/10 rating, top 0.5% of projects)
   - docs/ENVIRONMENT_VARIABLES.md (700 lines) - Complete reference for all 100+ environment variables organized by service
   - docs/DISASTER_RECOVERY.md (600 lines) - 30-minute RTO recovery procedures for all failure scenarios
@@ -204,11 +219,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All docs/, reference-apps/, tests/, and project files accessible via wiki
 
 ### Changed
+
 - Enhanced reference-apps/rust/README.md with "MINIMAL EXAMPLE - INTENTIONALLY INCOMPLETE" disclaimer
 - Updated all documentation to world-class standards (98% coverage)
 - Improved documentation discoverability through wiki organization
 
 ### Documentation Quality
+
 - **Before:** 52,000 lines, 8.5/10 (A-)
 - **After:** 62,000+ lines, 9.7/10 (A+)
 - **Achievement:** Top 0.5% of open-source projects
@@ -219,6 +236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.1] - 2025-10-29
 
 ### Added
+
 - Created `.github/` directory for project metadata files
 - Created `assets/` directory for project assets
 - Complete architecture documentation (docs/ARCHITECTURE.md) with Mermaid diagrams
@@ -246,6 +264,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive security remediation plan (SECURITY_REMEDIATION.md) documenting all 63 CodeQL alerts
 
 ### Changed
+
 - **Repository Structure**: Reorganized root directory for improved clarity
   - Moved project metadata to `.github/`: CHANGELOG.md, CODE_OF_CONDUCT.md, CONTRIBUTING.md, SECURITY.md
   - Moved validate-cicd.sh to `scripts/` directory
@@ -265,6 +284,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved documentation structure with proper H1 headers in all extracted docs
 
 ### Fixed
+
 - GitHub Actions security workflow now scans both Python and Go code
 - Documented critical Vault bootstrap requirement in troubleshooting guide
 - Go module version in reference-apps/golang/go.mod (1.24.0 → 1.23)
@@ -272,6 +292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gitleaks security scanning false positives on documentation example secrets (Vault keys and passwords)
 
 ### Security
+
 - **CRITICAL**: Fixed 2 Server-Side Request Forgery (SSRF) vulnerabilities in Vault service
   - Added path validation and sanitization to prevent SSRF attacks
   - Implemented safe URL construction with urljoin
@@ -292,6 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-10-23
 
 ### Added
+
 - Complete Docker Compose infrastructure for local development on Apple Silicon
 - PostgreSQL 18 with connection pooling via PgBouncer
 - MySQL 8.0 for legacy application support
@@ -325,6 +347,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Troubleshooting guides for common issues
 
 ### Security
+
 - Vault-managed credentials for all services
 - Network isolation via Docker bridge network
 - Optional TLS encryption for all database services
@@ -339,11 +362,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 When releasing a new version, move changes from [Unreleased] to a new version section:
 
 ### Version Format
+
 ```markdown
 ## [X.Y.Z] - YYYY-MM-DD
 ```
 
 ### Change Categories
+
 - **Added** - New features
 - **Changed** - Changes in existing functionality
 - **Deprecated** - Soon-to-be removed features
@@ -352,6 +377,7 @@ When releasing a new version, move changes from [Unreleased] to a new version se
 - **Security** - Security improvements or vulnerability fixes
 
 ### Example Entry
+
 ```markdown
 ## [1.0.0] - 2025-01-15
 

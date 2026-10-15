@@ -46,6 +46,7 @@ This FastAPI application demonstrates production-grade best practices for integr
 ## Features Overview
 
 ### Core Capabilities
+
 - **Vault Integration**: Secure credential fetching with HashiCorp Vault
 - **Database Connections**: PostgreSQL, MySQL, MongoDB with connection pooling
 - **Caching**: Redis cluster integration with response caching
@@ -54,6 +55,7 @@ This FastAPI application demonstrates production-grade best practices for integr
 - **Redis Cluster**: Full cluster management and slot distribution monitoring
 
 ### Advanced Features
+
 - **Circuit Breakers**: Prevent cascading failures across all services
 - **Rate Limiting**: IP-based rate limiting (100-1000 req/min depending on endpoint)
 - **Request Validation**: Content-type and size validation
@@ -83,6 +85,7 @@ Comprehensive health monitoring for all infrastructure services.
 | GET | `/health/rabbitmq` | RabbitMQ connectivity | 200/min | None |
 
 **Health Check Response Format:**
+
 ```json
 {
   "status": "healthy|degraded",
@@ -121,6 +124,7 @@ Secure credential management using HashiCorp Vault KV v2 secrets engine.
 | GET | `/examples/vault/secret/{service_name}/{key}` | Fetch specific credential field | 5 min | Single field value (masked if sensitive) |
 
 **Parameters:**
+
 - `service_name`: Service identifier (e.g., `postgres`, `mysql`, `redis-1`)
   - Pattern: `^[a-zA-Z0-9_-]+$`
   - Length: 1-50 characters
@@ -129,6 +133,7 @@ Secure credential management using HashiCorp Vault KV v2 secrets engine.
   - Length: 1-100 characters
 
 **Example Response:**
+
 ```json
 GET /examples/vault/secret/postgres
 
@@ -146,6 +151,7 @@ GET /examples/vault/secret/postgres
 ```
 
 **Security:**
+
 - All passwords automatically masked in responses
 - Credentials cached for 5 minutes
 - Circuit breaker protection (5 failures = open circuit for 60s)
@@ -164,6 +170,7 @@ Demonstrates database connectivity with Vault-managed credentials.
 | GET | `/examples/database/mongodb/query` | List collections on MongoDB | MongoDB |
 
 **PostgreSQL Response:**
+
 ```json
 {
   "database": "PostgreSQL",
@@ -173,6 +180,7 @@ Demonstrates database connectivity with Vault-managed credentials.
 ```
 
 **MongoDB Response:**
+
 ```json
 {
   "database": "MongoDB",
@@ -182,6 +190,7 @@ Demonstrates database connectivity with Vault-managed credentials.
 ```
 
 **Features:**
+
 - Credentials fetched from Vault at runtime
 - Connection pooling (asyncpg for PostgreSQL, aiomysql for MySQL, Motor for MongoDB)
 - Circuit breaker protection per database
@@ -200,15 +209,18 @@ Redis-based caching with TTL support and validation.
 | DELETE | `/examples/cache/{key}` | Delete value from cache | `key`: Cache key |
 
 **Cache Key Validation:**
+
 - Pattern: `^[a-zA-Z0-9_:.-]+$` (alphanumeric, underscore, colon, hyphen, dot)
 - Length: 1-200 characters
 - Whitespace automatically stripped
 
 **Value Constraints:**
+
 - Maximum size: 10KB (10,000 characters)
 - TTL range: 1 second to 24 hours (86,400 seconds)
 
 **GET Response:**
+
 ```json
 {
   "key": "user:123",
@@ -219,6 +231,7 @@ Redis-based caching with TTL support and validation.
 ```
 
 **POST Response:**
+
 ```json
 {
   "key": "session:abc123",
@@ -229,6 +242,7 @@ Redis-based caching with TTL support and validation.
 ```
 
 **DELETE Response:**
+
 ```json
 {
   "key": "temp:data",
@@ -249,15 +263,18 @@ RabbitMQ message publishing and queue management.
 | GET | `/examples/messaging/queue/{queue_name}/info` | Get queue information | `queue_name`: Queue name (path) |
 
 **Queue Name Validation:**
+
 - Pattern: `^[a-zA-Z0-9_.-]+$`
 - Length: 1-100 characters
 
 **Message Constraints:**
+
 - Format: JSON object
 - Maximum size: 1MB
 - Cannot be empty
 
 **Publish Response:**
+
 ```json
 {
   "queue": "notifications",
@@ -267,6 +284,7 @@ RabbitMQ message publishing and queue management.
 ```
 
 **Queue Info Response:**
+
 ```json
 {
   "queue": "notifications",
@@ -277,6 +295,7 @@ RabbitMQ message publishing and queue management.
 ```
 
 **Features:**
+
 - Durable queues (survive broker restart)
 - Credentials from Vault
 - Circuit breaker protection
@@ -296,6 +315,7 @@ Full Redis cluster introspection and management capabilities.
 | GET | `/redis/nodes/{node_name}/info` | Get detailed info for specific node |
 
 **Cluster Nodes Response:**
+
 ```json
 {
   "status": "success",
@@ -322,6 +342,7 @@ Full Redis cluster introspection and management capabilities.
 ```
 
 **Cluster Slots Response:**
+
 ```json
 {
   "status": "success",
@@ -351,6 +372,7 @@ Full Redis cluster introspection and management capabilities.
 ```
 
 **Cluster Info Response:**
+
 ```json
 {
   "status": "success",
@@ -371,6 +393,7 @@ Full Redis cluster introspection and management capabilities.
 ```
 
 **Node Info Response:**
+
 ```json
 {
   "status": "success",
@@ -391,6 +414,7 @@ Full Redis cluster introspection and management capabilities.
 ```
 
 **Supported Nodes:**
+
 - `redis-1`: Typically master for slots 0-5460
 - `redis-2`: Typically master for slots 5461-10922
 - `redis-3`: Typically master for slots 10923-16383
@@ -410,23 +434,27 @@ Prometheus-formatted metrics for monitoring and alerting.
 **Metrics Exposed:**
 
 **HTTP Metrics:**
+
 - `http_requests_total{method, endpoint, status}` - Total requests by endpoint and status
 - `http_request_duration_seconds{method, endpoint}` - Request latency histogram
 - `http_requests_in_progress{method, endpoint}` - Current in-flight requests
 - `http_errors_total{error_type, status_code}` - Error count by type
 
 **Cache Metrics:**
+
 - `cache_hits_total{endpoint}` - Cache hit count
 - `cache_misses_total{endpoint}` - Cache miss count
 - `cache_invalidations_total{pattern}` - Cache invalidation count
 
 **Circuit Breaker Metrics:**
+
 - `circuit_breaker_opened_total{service}` - Times circuit opened
 - `circuit_breaker_half_open_total{service}` - Times circuit entered half-open state
 - `circuit_breaker_closed_total{service}` - Times circuit recovered
 - `circuit_breaker_failures_total{service}` - Total failures per service
 
 **Application Info:**
+
 - `app_info{version, name}` - Application metadata
 
 ---
@@ -507,6 +535,7 @@ BaseAPIException
 ## Security Features
 
 ### 1. Credential Management
+
 - **Vault Integration**: All credentials fetched from HashiCorp Vault
 - **AppRole Authentication**: Secure Vault authentication using AppRole method (recommended for production)
 - **Fallback Authentication**: Automatic fallback to token-based authentication if AppRole is not configured
@@ -519,6 +548,7 @@ BaseAPIException
 The reference API uses **HashiCorp Vault AppRole authentication** for secure credential management:
 
 **How it Works:**
+
 1. AppRole credentials (`role-id` and `secret-id`) are mounted into the container from `~/.config/vault/approles/reference-api/`
 2. On startup, the application reads these credentials from `/vault-approles/reference-api/`
 3. Exchanges `role-id` and `secret-id` for a Vault client token via `/v1/auth/approle/login`
@@ -526,12 +556,14 @@ The reference API uses **HashiCorp Vault AppRole authentication** for secure cre
 5. If AppRole authentication fails, falls back to `VAULT_TOKEN` environment variable
 
 **Configuration:**
+
 ```python
 # app/config.py
 VAULT_APPROLE_DIR: str = os.getenv("VAULT_APPROLE_DIR", "/vault-approles/reference-api")
 ```
 
 **Docker Compose Setup:**
+
 ```yaml
 volumes:
   - ${HOME}/.config/vault/approles/reference-api:/vault-approles/reference-api:ro
@@ -541,6 +573,7 @@ environment:
 ```
 
 **Fallback Mechanism:**
+
 ```python
 # app/services/vault.py
 def __init__(self):
@@ -557,6 +590,7 @@ def __init__(self):
 ```
 
 **Benefits:**
+
 - More secure than root tokens (limited permissions, renewable, revocable)
 - Follows HashiCorp's recommended authentication method for applications
 - No root token exposure in environment variables
@@ -564,6 +598,7 @@ def __init__(self):
 - Token rotation without container restart (when using wrapped secret-id)
 
 ### 2. Rate Limiting
+
 - **IP-based Limiting**: Using slowapi (Flask-Limiter port)
 - **Configurable Rates**:
   - General endpoints: 100 requests/minute
@@ -572,12 +607,14 @@ def __init__(self):
 - **429 Responses**: Returns `Retry-After` header
 
 ### 3. Request Validation
+
 - **Content-Type Validation**: POST/PUT/PATCH requests must have valid content type
 - **Request Size Limits**: 10MB maximum request body
 - **Input Sanitization**: Regex pattern validation on all inputs
 - **Allowed Content Types**: `application/json`, `application/x-www-form-urlencoded`, `multipart/form-data`, `text/plain`
 
 ### 4. CORS Security
+
 - **Environment-Aware**:
   - **Development** (`DEBUG=true`): Allow all origins (`*`)
   - **Production** (`DEBUG=false`): Explicit origin whitelist
@@ -589,6 +626,7 @@ def __init__(self):
 - **Preflight Caching**: 600 seconds (10 minutes)
 
 ### 5. Circuit Breakers
+
 - **Service Protection**: All external services (Vault, databases, Redis, RabbitMQ)
 - **Configuration**:
   - Failure threshold: 5 consecutive failures
@@ -597,6 +635,7 @@ def __init__(self):
 - **Benefits**: Prevents cascading failures, improves system stability
 
 ### 6. Error Handling
+
 - **Structured Responses**: Consistent error format across all endpoints
 - **Request Correlation**: Every request has unique request ID
 - **Debug Mode Control**: Stack traces only in DEBUG mode
@@ -607,9 +646,11 @@ def __init__(self):
 ## Middleware
 
 ### 1. Metrics Middleware (`metrics_middleware`)
+
 **Purpose:** Request tracking, timing, and Prometheus metrics
 
 **Functionality:**
+
 - Generates unique request ID (UUID4)
 - Tracks in-progress requests (gauge metric)
 - Measures request duration (histogram)
@@ -618,6 +659,7 @@ def __init__(self):
 - Adds `X-Request-ID` header to responses
 
 **Metrics:**
+
 - `http_requests_total{method, endpoint, status}`
 - `http_request_duration_seconds{method, endpoint}`
 - `http_requests_in_progress{method, endpoint}`
@@ -625,14 +667,17 @@ def __init__(self):
 ---
 
 ### 2. Request Validation Middleware (`request_validation_middleware`)
+
 **Purpose:** Validate request size and content type
 
 **Validations:**
+
 - **Request Size**: Maximum 10MB (returns 413 if exceeded)
 - **Content-Type**: Required for POST/PUT/PATCH with body (returns 400 if missing)
 - **Allowed Types**: JSON, form-urlencoded, multipart, text/plain (returns 415 if invalid)
 
 **Exemptions:**
+
 - GET, HEAD, OPTIONS requests
 - `/metrics`, `/docs`, `/redoc`, `/openapi.json`
 - `/health/*` endpoints
@@ -640,9 +685,11 @@ def __init__(self):
 ---
 
 ### 3. Cache Middleware (via `cache_manager`)
+
 **Purpose:** Automatic response caching with Redis backend
 
 **Features:**
+
 - **Cache Key Generation**: Based on function, path params, and query params
 - **Long Key Hashing**: MD5 hash for keys > 200 characters
 - **TTL Configuration**: Configurable per endpoint (30s to 5min typical)
@@ -650,6 +697,7 @@ def __init__(self):
 - **Metrics**: Tracks hits, misses, and invalidations
 
 **Cache Strategy:**
+
 - Vault endpoints: 5 minute TTL
 - Health checks: 30 second TTL
 - Other endpoints: No caching (unless explicitly configured)
@@ -657,9 +705,11 @@ def __init__(self):
 ---
 
 ### 4. Circuit Breaker Middleware (per-service)
+
 **Purpose:** Prevent cascading failures across services
 
 **Protected Services:**
+
 - `vault_breaker` - Vault API calls
 - `postgres_breaker` - PostgreSQL connections
 - `mysql_breaker` - MySQL connections
@@ -668,12 +718,14 @@ def __init__(self):
 - `rabbitmq_breaker` - RabbitMQ connections
 
 **Behavior:**
+
 - **CLOSED**: Normal operation, all requests pass through
 - **OPEN**: After 5 failures, circuit opens, all requests fail immediately
 - **HALF_OPEN**: After 60s timeout, allow limited requests to test recovery
 - **Recovery**: On success in HALF_OPEN, circuit closes
 
 **Metrics:**
+
 - `circuit_breaker_opened_total{service}`
 - `circuit_breaker_half_open_total{service}`
 - `circuit_breaker_closed_total{service}`
@@ -682,9 +734,11 @@ def __init__(self):
 ---
 
 ### 5. Exception Handlers (`register_exception_handlers`)
+
 **Purpose:** Centralized error handling and formatting
 
 **Handlers:**
+
 - `BaseAPIException` - All custom exceptions
 - `ServiceUnavailableError` - Service outages with retry suggestions
 - `RequestValidationError` - Pydantic validation errors (422)
@@ -692,6 +746,7 @@ def __init__(self):
 - `Exception` - Catch-all for unhandled errors (500)
 
 **Response Format:**
+
 ```json
 {
   "error": "VaultUnavailableError",
@@ -710,9 +765,11 @@ def __init__(self):
 ## Monitoring & Observability
 
 ### 1. Structured Logging
+
 **Format:** JSON (python-json-logger)
 
 **Log Fields:**
+
 - `asctime`: Timestamp
 - `name`: Logger name
 - `levelname`: Log level (INFO, ERROR, etc.)
@@ -724,6 +781,7 @@ def __init__(self):
 - `duration_ms`: Request duration in milliseconds
 
 **Example Log Entry:**
+
 ```json
 {
   "asctime": "2025-10-27 12:34:56,789",
@@ -741,9 +799,11 @@ def __init__(self):
 ---
 
 ### 2. Prometheus Metrics
+
 Exposed at `/metrics` in Prometheus text format.
 
 **HTTP Metrics:**
+
 ```
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
@@ -763,6 +823,7 @@ http_requests_in_progress{method="GET",endpoint="/health/all"} 2.0
 ```
 
 **Cache Metrics:**
+
 ```
 cache_hits_total{endpoint="/examples/vault/secret/postgres"} 15.0
 cache_misses_total{endpoint="/examples/vault/secret/postgres"} 3.0
@@ -770,6 +831,7 @@ cache_invalidations_total{pattern="cache:*"} 1.0
 ```
 
 **Circuit Breaker Metrics:**
+
 ```
 circuit_breaker_opened_total{service="vault"} 0.0
 circuit_breaker_half_open_total{service="vault"} 0.0
@@ -780,6 +842,7 @@ circuit_breaker_failures_total{service="vault"} 0.0
 ---
 
 ### 3. Request Tracing
+
 - **Request ID**: UUID4 generated per request
 - **Propagation**: Stored in `request.state.request_id`
 - **Response Header**: `X-Request-ID` added to all responses
@@ -853,6 +916,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Development Features:**
+
 - Hot reload on code changes
 - DEBUG mode enables:
   - CORS `*` (allow all origins)
@@ -887,12 +951,14 @@ pytest tests/test_vault_service.py::TestVaultClientGetSecret::test_get_secret_su
 **Total: 254 tests** (178 executed unit tests, 76 skipped integration tests)
 
 **Test Categories:**
+
 - **Unit Tests (178)**: Mock external dependencies, fast execution
 - **Integration Tests (76)**: Require running infrastructure, skipped in CI
 
 **Coverage: 84.39%** (exceeds 80% requirement)
 
 **Test Files:**
+
 - `test_caching.py` - Cache middleware and operations (23 tests)
 - `test_circuit_breaker.py` - Circuit breaker behavior (10 tests)
 - `test_cors.py` - CORS configuration (13 tests)
@@ -907,6 +973,7 @@ pytest tests/test_vault_service.py::TestVaultClientGetSecret::test_get_secret_su
 - `test_vault_service.py` - Vault client (17 tests)
 
 **Test Markers:**
+
 - `@pytest.mark.unit` - Unit tests
 - `@pytest.mark.integration` - Integration tests (require infrastructure)
 - `@pytest.mark.asyncio` - Async tests
@@ -990,6 +1057,7 @@ password = await vault_client.get_secret("postgres", key="password")
 ```
 
 **Error Handling:**
+
 ```python
 from app.exceptions import VaultUnavailableError, ResourceNotFoundError
 
@@ -1035,6 +1103,7 @@ async def query_database():
 ```
 
 **Circuit Breaker Protection:**
+
 - First 5 failures: Requests continue
 - After 5 failures: Circuit opens, requests fail immediately with `CircuitBreakerError`
 - After 60 seconds: Circuit enters HALF_OPEN, allows test request
@@ -1121,6 +1190,7 @@ async def expensive_operation():
 ```
 
 **Cache Key Generation:**
+
 - Automatically includes: function name, path parameters, query parameters
 - Keys > 200 chars are hashed (MD5)
 - Supports custom namespace prefixes
@@ -1130,11 +1200,13 @@ async def expensive_operation():
 ## Technology Stack
 
 ### Core Framework
+
 - **FastAPI** 0.104+ - Modern async Python web framework
 - **Pydantic** 2.x - Data validation and serialization
 - **Uvicorn** - ASGI server
 
 ### External Service Clients
+
 - **asyncpg** - PostgreSQL async driver
 - **aiomysql** - MySQL async driver
 - **motor** - MongoDB async driver
@@ -1143,6 +1215,7 @@ async def expensive_operation():
 - **httpx** - Async HTTP client for Vault
 
 ### Middleware & Extensions
+
 - **fastapi-cache2** - Response caching with Redis
 - **slowapi** - Rate limiting (Flask-Limiter port)
 - **pybreaker** - Circuit breaker pattern
@@ -1151,6 +1224,7 @@ async def expensive_operation():
 - **starlette** - ASGI toolkit (FastAPI dependency)
 
 ### Testing
+
 - **pytest** - Test framework
 - **pytest-asyncio** - Async test support
 - **pytest-cov** - Coverage reporting
@@ -1163,12 +1237,14 @@ async def expensive_operation():
 ### Development vs Production
 
 **This is a REFERENCE IMPLEMENTATION** designed for:
+
 - Learning infrastructure integration patterns
 - Testing service connectivity
 - Demonstrating best practices
 - Local development environment
 
 **Not production-ready because:**
+
 - No authentication/authorization beyond Vault token
 - Limited error recovery strategies
 - No request queuing or backpressure handling
@@ -1179,6 +1255,7 @@ async def expensive_operation():
 ### Production Recommendations
 
 For production deployment, consider:
+
 - **Authentication**: Add JWT/OAuth2 authentication
 - **Authorization**: Implement role-based access control (RBAC)
 - **API Gateway**: Use Kong, Traefik, or AWS API Gateway

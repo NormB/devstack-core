@@ -65,6 +65,7 @@
 ### What is Dynamic Inventory?
 
 **Static Inventory (Traditional):**
+
 ```ini
 # inventory/production (static file)
 [voip_servers]
@@ -77,6 +78,7 @@ asterisk_version=20
 ```
 
 **Dynamic Inventory (Database-Driven):**
+
 ```python
 #!/usr/bin/env python3
 # inventory/postgres_inventory.py
@@ -98,6 +100,7 @@ print(json.dumps(inventory))
 ```
 
 **Usage:**
+
 ```bash
 # Ansible automatically uses dynamic inventory
 ansible-playbook -i inventory/postgres_inventory.py deploy-voip.yml
@@ -112,11 +115,13 @@ ansible-playbook -i inventory/postgres_inventory.py deploy-voip.yml
 This pattern is used by major infrastructure tools:
 
 **1. Terraform Cloud/Enterprise**
+
 - Stores state in PostgreSQL
 - Configuration data in database
 - API-driven infrastructure management
 
 **2. AWX/Ansible Tower (Red Hat)**
+
 - Uses PostgreSQL for:
   - Inventory management
   - Job history
@@ -124,11 +129,13 @@ This pattern is used by major infrastructure tools:
   - Host configurations
 
 **3. Foreman/Katello**
+
 - PostgreSQL backend for host management
 - Dynamic Ansible inventory from database
 - Used by Red Hat Satellite
 
 **4. NetBox (IP Address Management)**
+
 - PostgreSQL-backed DCIM/IPAM
 - Ansible dynamic inventory plugin
 - Industry-standard for network automation
@@ -170,6 +177,7 @@ This pattern is used by major infrastructure tools:
 ```
 
 **Pros:**
+
 - ✅ No additional PostgreSQL instance needed
 - ✅ Leverage existing Vault-managed credentials
 - ✅ Centralized database management
@@ -177,6 +185,7 @@ This pattern is used by major infrastructure tools:
 - ✅ Prometheus/Grafana already monitor it
 
 **Cons:**
+
 - ⚠️ Colima must be running for Ansible to work
 - ⚠️ Couples automation to DevStack Core VM
 - ⚠️ PostgreSQL failure blocks both Git and automation
@@ -204,12 +213,14 @@ This pattern is used by major infrastructure tools:
 ```
 
 **Pros:**
+
 - ✅ Automation independent of Colima
 - ✅ Can manage VMs even if Colima is down
 - ✅ Lighter database (no Forgejo data)
 - ✅ Native macOS performance
 
 **Cons:**
+
 - ❌ Additional PostgreSQL instance to manage
 - ❌ Separate backup strategy needed
 - ❌ More moving parts
@@ -232,12 +243,14 @@ This pattern is used by major infrastructure tools:
 ```
 
 **Pros:**
+
 - ✅ No database server needed
 - ✅ Simple file-based storage
 - ✅ Easy to version control (though not recommended)
 - ✅ Portable
 
 **Cons:**
+
 - ❌ No concurrent access (file locking)
 - ❌ No network access (Ansible must be on same machine)
 - ❌ Limited querying performance
@@ -265,11 +278,13 @@ This pattern is used by major infrastructure tools:
 ```
 
 **Pros:**
+
 - ✅ Infrastructure database in infrastructure VMs (clean separation)
 - ✅ Full PostgreSQL features
 - ✅ Independent of Colima
 
 **Cons:**
+
 - ❌ Chicken-and-egg: Need VM to store VM configs
 - ❌ Must bootstrap first VM manually
 - ❌ Additional VM overhead
@@ -283,6 +298,7 @@ This pattern is used by major infrastructure tools:
 ### Approach 1: Ansible Dynamic Inventory Script
 
 **Database Schema:**
+
 ```sql
 -- ~/automation/schema.sql
 
@@ -372,6 +388,7 @@ CREATE INDEX idx_vm_configs_vm_name ON vm_configs(vm_name);
 ```
 
 **Dynamic Inventory Script:**
+
 ```python
 #!/usr/bin/env python3
 # ~/automation/ansible/inventory/postgres_inventory.py
@@ -532,11 +549,13 @@ if __name__ == '__main__':
 ```
 
 **Make it executable:**
+
 ```bash
 chmod +x ~/automation/ansible/inventory/postgres_inventory.py
 ```
 
 **Usage:**
+
 ```bash
 # Test dynamic inventory
 ~/automation/ansible/inventory/postgres_inventory.py --list
@@ -565,6 +584,7 @@ enable_plugins = community.postgresql.postgresql
 ```
 
 **Collection structure:**
+
 ```
 ~/automation/ansible/collections/
 └── ansible_collections/
@@ -587,6 +607,7 @@ enable_plugins = community.postgresql.postgresql
 ### 1. Database Credentials
 
 **Option A: Vault (Recommended)**
+
 ```bash
 # Store DB password in Vault
 vault kv put secret/infrastructure-db \
@@ -602,6 +623,7 @@ ansible-playbook -i inventory/postgres_inventory.py deploy-voip.yml
 ```
 
 **Option B: Environment Variables**
+
 ```bash
 # ~/.bashrc or ~/.zshrc
 export INFRA_DB_HOST=localhost
@@ -612,6 +634,7 @@ export INFRA_DB_PASSWORD=$(security find-generic-password -a ansible -s infrastr
 ```
 
 **Option C: Ansible Vault (Encrypted File)**
+
 ```yaml
 # ansible/group_vars/all/vault.yml (encrypted)
 infra_db_host: localhost
@@ -657,6 +680,7 @@ CREATE POLICY ansible_read_policy ON vm_configs
 ### 3. SQL Injection Prevention
 
 **Always use parameterized queries:**
+
 ```python
 # ❌ BAD - SQL injection vulnerable
 cursor.execute(f"SELECT * FROM vm_configs WHERE vm_name = '{vm_name}'")
@@ -672,6 +696,7 @@ cursor.execute("SELECT * FROM vm_configs WHERE vm_name = %s", (vm_name,))
 ### Query Performance
 
 **Inventory Generation:**
+
 ```
 Small deployment (1-10 VMs):    < 100ms
 Medium deployment (10-50 VMs):  < 500ms
@@ -680,6 +705,7 @@ Very large (200+ VMs):          < 5s (with proper indexing)
 ```
 
 **Optimization:**
+
 ```sql
 -- Indexes for fast queries
 CREATE INDEX idx_vm_configs_enabled ON vm_configs(enabled) WHERE enabled = true;
@@ -709,6 +735,7 @@ REFRESH MATERIALIZED VIEW vm_inventory;
 ### Caching
 
 **Option 1: Ansible Fact Caching**
+
 ```ini
 # ansible.cfg
 [defaults]
@@ -719,6 +746,7 @@ fact_caching_timeout = 3600  # 1 hour
 ```
 
 **Option 2: Redis Caching**
+
 ```ini
 # ansible.cfg
 [defaults]
@@ -734,6 +762,7 @@ fact_caching_timeout = 3600
 ### 🎯 **Use Existing Colima PostgreSQL + Dynamic Inventory**
 
 **Why:**
+
 1. ✅ Leverages existing infrastructure
 2. ✅ No additional database to manage
 3. ✅ Already has Vault-managed credentials

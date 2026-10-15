@@ -37,14 +37,14 @@ DevStack Core is a **local development infrastructure** that gives you productio
 
 | Service | Purpose | Access |
 |---------|---------|--------|
-| **Vault** | Secrets & certificates | http://localhost:8200 |
+| **Vault** | Secrets & certificates | <http://localhost:8200> |
 | **PostgreSQL** | Relational database | localhost:5432 |
 | **MySQL** | Relational database | localhost:3306 |
 | **MongoDB** | Document database | localhost:27017 |
 | **Redis Cluster** | Caching (3 nodes) | localhost:6379-6381 |
-| **RabbitMQ** | Message queue | localhost:5672, http://localhost:15672 |
-| **Forgejo** | Git hosting | http://localhost:3000 |
-| **Grafana** | Monitoring dashboards | http://localhost:3001 |
+| **RabbitMQ** | Message queue | localhost:5672, <http://localhost:15672> |
+| **Forgejo** | Git hosting | <http://localhost:3000> |
+| **Grafana** | Monitoring dashboards | <http://localhost:3001> |
 
 ---
 
@@ -82,6 +82,7 @@ cp .env.example .env
 ```
 
 **What you should see:**
+
 ```
 ═══ DevStack Core - Start Services ═══
 
@@ -113,6 +114,7 @@ Starting Docker services...
 ```
 
 **What you should see:**
+
 ```
 ═══ Vault Initialization ═══
 ✓ Vault initialized successfully
@@ -133,6 +135,7 @@ Starting Docker services...
 ```
 
 **What you should see:**
+
 ```
         Service Health Status
 ╭───────────────┬─────────┬─────────╮
@@ -170,6 +173,7 @@ echo $POSTGRES_PASSWORD  # Now available in your shell
 ### Connection Examples
 
 **PostgreSQL (Python)**
+
 ```python
 import psycopg2
 
@@ -183,6 +187,7 @@ conn = psycopg2.connect(
 ```
 
 **MySQL (Node.js)**
+
 ```javascript
 const mysql = require('mysql2');
 
@@ -196,6 +201,7 @@ const connection = mysql.createConnection({
 ```
 
 **Redis (Go)**
+
 ```go
 import "github.com/redis/go-redis/v9"
 
@@ -206,6 +212,7 @@ rdb := redis.NewClient(&redis.Options{
 ```
 
 **MongoDB (Rust)**
+
 ```rust
 use mongodb::Client;
 
@@ -218,6 +225,7 @@ let client = Client::with_uri_str(uri).await?;
 ## Daily Workflow
 
 ### Starting Your Day
+
 ```bash
 cd ~/devstack-core
 ./devstack start          # Start all services
@@ -225,6 +233,7 @@ cd ~/devstack-core
 ```
 
 ### During Development
+
 ```bash
 ./devstack logs postgres  # View PostgreSQL logs
 ./devstack shell mysql    # Get shell inside MySQL container
@@ -232,6 +241,7 @@ cd ~/devstack-core
 ```
 
 ### End of Day
+
 ```bash
 ./devstack stop           # Stop all services (data preserved)
 ```
@@ -265,6 +275,7 @@ DevStack has different profiles for different needs:
 ## Common Tasks
 
 ### View Logs
+
 ```bash
 ./devstack logs              # All services
 ./devstack logs postgres     # Specific service
@@ -272,11 +283,13 @@ DevStack has different profiles for different needs:
 ```
 
 ### Restart a Service
+
 ```bash
 ./devstack restart postgres
 ```
 
 ### Reset Everything
+
 ```bash
 ./devstack reset             # Stops and removes all containers
 ./devstack start             # Fresh start
@@ -285,6 +298,7 @@ DevStack has different profiles for different needs:
 ```
 
 ### Backup Data
+
 ```bash
 ./devstack backup            # Creates timestamped backup
 ./devstack restore           # Lists available backups
@@ -299,11 +313,11 @@ After starting DevStack, you can access these web UIs:
 
 | Service | URL | Default Login |
 |---------|-----|---------------|
-| **Vault** | http://localhost:8200 | Token from `~/.config/vault/root-token` |
-| **RabbitMQ** | http://localhost:15672 | `./devstack vault-show-password rabbitmq` |
-| **Forgejo** | http://localhost:3000 | Create account on first visit |
-| **Grafana** | http://localhost:3001 | admin / admin |
-| **Prometheus** | http://localhost:9090 | No auth required |
+| **Vault** | <http://localhost:8200> | Token from `~/.config/vault/root-token` |
+| **RabbitMQ** | <http://localhost:15672> | `./devstack vault-show-password rabbitmq` |
+| **Forgejo** | <http://localhost:3000> | Create account on first visit |
+| **Grafana** | <http://localhost:3001> | admin / admin |
+| **Prometheus** | <http://localhost:9090> | No auth required |
 
 ---
 
@@ -374,4 +388,4 @@ Now that DevStack is running:
 - **Service status:** `./devstack health`
 - **Logs:** `./devstack logs <service>`
 - **Documentation:** See [docs/README.md](README.md) for full documentation
-- **Issues:** https://github.com/NormB/devstack-core/issues
+- **Issues:** <https://github.com/NormB/devstack-core/issues>

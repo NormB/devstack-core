@@ -30,6 +30,7 @@
 ### As Documented in Codebase
 
 **From README.md (lines 98-101):**
+
 ```
 Architecture Philosophy - Separation of Concerns:
 - DevStack Core environment: Git hosting (Forgejo) + development databases
@@ -38,6 +39,7 @@ Architecture Philosophy - Separation of Concerns:
 ```
 
 **From docker-compose.yml (lines 1523-1537):**
+
 ```yaml
 # Architecture Notes:
 # - Separation of Concerns:
@@ -49,6 +51,7 @@ Architecture Philosophy - Separation of Concerns:
 ```
 
 **Current State:**
+
 ```
 macOS Host (Apple Silicon)
 │
@@ -74,6 +77,7 @@ macOS Host (Apple Silicon)
 **Purpose:** SIP signaling server (call routing, authentication, load balancing)
 
 **Requirements:**
+
 - **Latency-sensitive:** <50ms SIP response time expected
 - **High availability:** Minimal downtime tolerance
 - **Network access:** Direct UDP/TCP ports (5060, 5061 TLS)
@@ -85,6 +89,7 @@ macOS Host (Apple Silicon)
   - Custom TLS/crypto libraries
 
 **Typical source build:**
+
 ```bash
 # OpenSIPS from source
 git clone https://github.com/OpenSIPS/opensips.git
@@ -104,6 +109,7 @@ make install
 **Purpose:** PBX for voicemail, IVR, conferencing, call recording
 
 **Requirements:**
+
 - **Real-time audio processing:** Echo cancellation, transcoding
 - **Low latency:** <100ms for interactive applications
 - **Database:** PostgreSQL/MySQL for CDR, configuration
@@ -116,6 +122,7 @@ make install
   - PJSIP vs chan_sip selection
 
 **Typical source build:**
+
 ```bash
 # Asterisk from source
 wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-20-current.tar.gz
@@ -140,6 +147,7 @@ make config
 **Purpose:** Real-time media relay, transcoding, recording, WebRTC gateway
 
 **Requirements:**
+
 - **CRITICAL: Real-time packet processing**
 - **Latency target:** <10ms media relay
 - **Jitter tolerance:** <30ms
@@ -152,6 +160,7 @@ make config
   - Enable/disable features (DTLS, SRTP, transcoding)
 
 **Typical source build:**
+
 ```bash
 # RTPEngine from source
 git clone https://github.com/sipwise/rtpengine.git
@@ -173,6 +182,7 @@ make install
 ```
 
 **CRITICAL REQUIREMENT:** RTPEngine kernel module requires:
+
 - Native kernel access (not possible in containers)
 - Direct hardware access for packet forwarding
 - iptables/nftables integration
@@ -216,18 +226,21 @@ make install
 #### Docker Container Compilation
 
 **Pros:**
+
 - ✅ Consistent build environment
 - ✅ Easy to version control (Dockerfile)
 - ✅ Reproducible builds
 - ✅ Fast iteration (layer caching)
 
 **Cons:**
+
 - ❌ **Cannot compile kernel modules** (no kernel headers in container)
 - ❌ **Cannot load kernel modules** (no direct kernel access)
 - ❌ **Cannot use kernel-level optimizations** (iptables/nftables limited)
 - ❌ Binaries compiled for container may not be optimal for VM deployment
 
 **Example: OpenSIPS in Docker**
+
 ```dockerfile
 # Dockerfile for OpenSIPS compilation (works but suboptimal)
 FROM ubuntu:22.04
@@ -249,6 +262,7 @@ RUN make install
 #### VM Compilation
 
 **Pros:**
+
 - ✅ **Full kernel access** (can compile kernel modules)
 - ✅ **Native performance** (no container overhead)
 - ✅ **Direct hardware access** (network cards, CPU features)
@@ -256,11 +270,13 @@ RUN make install
 - ✅ **Realistic production environment** (same as deployment)
 
 **Cons:**
+
 - ⚠️ Slower build times (no Docker layer caching)
 - ⚠️ More manual setup (but can be scripted)
 - ⚠️ Need to manage VM lifecycle
 
 **Example: RTPEngine in VM**
+
 ```bash
 #!/bin/bash
 # compile-rtpengine-vm.sh - Must run in VM, not container
@@ -361,6 +377,7 @@ volumes:
 ```
 
 **Use Cases:**
+
 - ✅ Development and testing
 - ✅ Integration testing with SIP clients
 - ✅ Non-production call routing
@@ -398,6 +415,7 @@ colima list
 ```
 
 **Benefits:**
+
 - ✅ Isolate VoIP development from main DevStack
 - ✅ Different resource allocations
 - ✅ Independent lifecycle management
@@ -426,12 +444,14 @@ insmod xt_RTPENGINE.ko
 ```
 
 **Why it fails:**
+
 - Containers share host kernel
 - Cannot load kernel modules from container
 - Docker `--privileged` gives device access, not kernel module loading
 - RTPEngine's kernel forwarding is critical for performance
 
 **Workaround (not recommended):**
+
 - Run rtpengine in userspace-only mode (massive performance penalty)
 - 10-20x slower than kernel forwarding
 - Not viable for production
@@ -693,6 +713,7 @@ echo "4. Start services: systemctl start opensips asterisk rtpengine"
 ```
 
 **Advantages:**
+
 - ✅ Full control over compilation flags
 - ✅ Select exact modules needed
 - ✅ Optimize for specific hardware (Apple Silicon ARM64)
@@ -706,6 +727,7 @@ echo "4. Start services: systemctl start opensips asterisk rtpengine"
 #### 4. **Performance Benchmarking**
 
 **Container (Colima/Docker):**
+
 ```
 RTPEngine userspace mode (no kernel module):
 - Latency: 8-15ms (baseline)
@@ -715,6 +737,7 @@ RTPEngine userspace mode (no kernel module):
 ```
 
 **VM (UTM with kernel module):**
+
 ```
 RTPEngine kernel mode (with xt_RTPENGINE):
 - Latency: 0.5-2ms (kernel forwarding)
@@ -904,12 +927,14 @@ Simplest approach - keep VoIP completely separate:
 ```
 
 **Pros:**
+
 - ✅ Clear separation of concerns
 - ✅ Production VoIP not affected by dev environment
 - ✅ Full kernel access for RTPEngine
 - ✅ Easier to back up (one VM = one backup)
 
 **Cons:**
+
 - ⚠️ VoIP development iterations slower (need to compile in VM)
 - ⚠️ No quick testing environment
 
@@ -1229,41 +1254,47 @@ docker compose up -d
 
 ## Decision Matrix
 
-### Use Colima When:
+### Use Colima When
 
 ✅ **VoIP development/testing**
+
 - Testing SIP logic
 - Integration testing
 - CI/CD pipelines
 - Learning OpenSIPS/Asterisk
 
 ✅ **Non-RTPEngine scenarios**
+
 - Pure signaling (OpenSIPS only)
 - No media processing required
 - Call routing logic testing
 
 ✅ **Quick iterations**
+
 - Config changes
 - Module testing
 - Development workflow
 
 ---
 
-### Use UTM VM When:
+### Use UTM VM When
 
 ✅ **Production VoIP** (REQUIRED)
+
 - Real calls with actual users
 - RTPEngine kernel module needed
 - Low latency requirements (<50ms)
 - Kernel tuning required
 
 ✅ **Compiling from source** (RECOMMENDED)
+
 - Need RTPEngine kernel module
 - Custom module selection
 - Performance optimization
 - Architecture-specific builds
 
 ✅ **Real-time performance** (REQUIRED)
+
 - <10ms media latency
 - <30ms jitter tolerance
 - CPU isolation
@@ -1342,6 +1373,7 @@ Optional: VoIP dev environment
 **Answer:** Use **UTM VMs** for production VoIP services that need source compilation.
 
 **Key Reasons:**
+
 1. ✅ RTPEngine kernel module is critical for performance (10x faster than userspace)
 2. ✅ Source compilation benefits from native VM environment
 3. ✅ Real-time kernel tuning requires full kernel access

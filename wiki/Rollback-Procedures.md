@@ -5,6 +5,7 @@ Procedures for safely rolling back DevStack Core changes, including database res
 **Document Version:** 1.1 | **Last Updated:** 2025-12-30
 
 > **Related Documentation:**
+>
 > - For disaster recovery (complete environment loss), see [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
 > - For upgrade and migration procedures, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
 > - For troubleshooting, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
@@ -12,6 +13,7 @@ Procedures for safely rolling back DevStack Core changes, including database res
 ---
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Quick Rollback (Emergency)](#quick-rollback-emergency)
 3. [Complete Environment Rollback](#complete-environment-rollback)
@@ -28,6 +30,7 @@ Procedures for safely rolling back DevStack Core changes, including database res
 This document provides step-by-step procedures to roll back DevStack Core improvements implemented in Phases 0-4. Rollback procedures are organized by scope and urgency.
 
 **🧪 Automated Testing:** Before performing manual rollback, consider running automated rollback tests:
+
 - **Quick validation:** `./tests/test-rollback-simple.sh` (⭐ Recommended - 30 seconds)
 - **Comprehensive:** `./tests/test-rollback-comprehensive.sh` (All databases - 2 minutes)
 - **All test scripts:** See [Rollback Testing](#rollback-testing) section below
@@ -35,6 +38,7 @@ This document provides step-by-step procedures to roll back DevStack Core improv
 ### When to Roll Back
 
 Consider rollback when:
+
 - Critical service failures occur after implementing changes
 - Security vulnerabilities are introduced
 - Performance degrades beyond acceptable thresholds (>20% memory, >10% CPU)
@@ -58,6 +62,7 @@ Consider rollback when:
 **Use this for critical failures requiring immediate action.**
 
 ### Prerequisites
+
 - Terminal access to DevStack Core host
 - Backup files exist (verify before rollback):
   - `~/vault-backup-20251114/`
@@ -93,9 +98,11 @@ sleep 180
 ```
 
 ### Expected Duration
+
 **15-20 minutes** (including service startup and stabilization)
 
 ### Verification
+
 - [ ] All 23 services show "healthy" status
 - [ ] Vault unsealed and operational
 - [ ] All databases accepting connections
@@ -145,6 +152,7 @@ git log --oneline -1
 ```
 
 **Expected Output:**
+
 ```
 9bef892 docs: add comprehensive Zero Cloud Dependencies section to README (#50)
 ```
@@ -170,6 +178,7 @@ ls ~/.config/vault/certs/
 ```
 
 **Expected Files:**
+
 - `keys.json` (651 bytes)
 - `root-token` (29 bytes)
 - `ca/` directory with CA certificates
@@ -268,6 +277,7 @@ docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
 ```
 
 **Expected Results:**
+
 - All 23 services healthy
 - 370+ tests passing
 - All API endpoints responding
@@ -332,11 +342,13 @@ docker compose restart prometheus grafana loki vector
 **CRITICAL NOTE:** When creating root token init scripts, the entrypoint must pass through Docker's command arguments. Services like PostgreSQL, MySQL, and MongoDB require additional configuration flags defined in docker-compose.yml's `command:` section.
 
 **Correct Pattern:**
+
 ```bash
 exec docker-entrypoint.sh "$@"
 ```
 
 **Incorrect Pattern (will cause service failures):**
+
 ```bash
 exec docker-entrypoint.sh postgres  # WRONG - loses command args
 ```
@@ -503,6 +515,7 @@ docker compose exec mysql mysql -u devuser -p$(./devstack vault-show-password my
 ```
 
 **Performance Note:** MySQL typically takes 50-60 seconds to become healthy after restart, compared to:
+
 - PostgreSQL: 6 seconds
 - MongoDB: 1 second
 
@@ -530,6 +543,7 @@ docker compose exec mongodb mongosh --username devuser --password $(./devstack v
 ```
 
 **MongoDB Root Token Authentication Requirements:**
+
 - When rolling back to root token authentication, ensure init script exports:
   - `MONGO_INITDB_ROOT_USERNAME` (from Vault secret/mongodb username field)
   - `MONGO_INITDB_ROOT_PASSWORD` (from Vault secret/mongodb password field)
@@ -660,11 +674,13 @@ The following improvements have been implemented in test scripts:
 5. ✅ **Documented MySQL Restart Time**: Added performance note about MySQL's 50-60 second restart time
 
 **Files Updated:**
+
 - `configs/mongodb/scripts/init.sh` - Added MONGO_INITDB_ROOT_USERNAME export
 - `tests/test-rollback-core-services.sh` - Fixed command syntax, added Redis retry logic, fixed restart commands
 - `docs/ROLLBACK_PROCEDURES.md` - Added MySQL restart time documentation and performance notes
 
 **Remaining Improvements:**
+
 - Better error handling with diagnostic capture
 - Prerequisites validation before test execution
 - Automated cleanup on test failures
@@ -785,6 +801,7 @@ echo "=== Rollback Validation: SUCCESS ==="
 **Cause:** Cluster metadata not synchronized during volume restoration.
 
 **Resolution:**
+
 ```bash
 # 1. Stop Redis nodes
 docker compose stop redis-1 redis-2 redis-3
@@ -817,6 +834,7 @@ sleep 30
 **Cause:** Vault data volume not restored properly.
 
 **Resolution:**
+
 ```bash
 # 1. Check seal status
 ./devstack vault-status
@@ -839,6 +857,7 @@ docker run --rm -v devstack-core_vault_data:/data -v $(pwd)/backups/20251114_man
 **Cause:** Forgejo data volume corruption during rollback.
 
 **Resolution:**
+
 ```bash
 # 1. Stop Forgejo
 docker compose stop forgejo
@@ -862,6 +881,7 @@ curl -s http://localhost:3000 | /usr/bin/grep -q "Forgejo" && echo "✓ Forgejo 
 **Cause:** Services not fully stabilized.
 
 **Resolution:**
+
 ```bash
 # 1. Wait for all services to stabilize
 sleep 300
@@ -880,12 +900,14 @@ sleep 300
 Use this checklist to verify successful rollback:
 
 ### Git State
+
 - [ ] Branch: `main`
 - [ ] Commit: `9bef892`
 - [ ] No uncommitted changes
 - [ ] No untracked files (except backups/)
 
 ### Services
+
 - [ ] All 23 services running
 - [ ] All 23 services healthy
 - [ ] Vault unsealed (Sealed: false)
@@ -894,9 +916,10 @@ Use this checklist to verify successful rollback:
 - [ ] MongoDB accepting connections
 - [ ] Redis cluster operational
 - [ ] RabbitMQ accepting connections
-- [ ] Forgejo accessible (http://localhost:3000)
+- [ ] Forgejo accessible (<http://localhost:3000>)
 
 ### APIs
+
 - [ ] Reference API (port 8000) responding
 - [ ] API-First (port 8001) responding
 - [ ] Golang API (port 8002) responding
@@ -904,6 +927,7 @@ Use this checklist to verify successful rollback:
 - [ ] Rust API (port 8004) responding
 
 ### Data Integrity
+
 - [ ] PostgreSQL databases present and queryable
 - [ ] MySQL databases present and queryable
 - [ ] MongoDB databases present and queryable
@@ -911,6 +935,7 @@ Use this checklist to verify successful rollback:
 - [ ] Forgejo repositories accessible
 
 ### Configuration
+
 - [ ] `.env` matches baseline (backups/20251114_manual/env_backup)
 - [ ] Vault keys restored (~/vault-backup-20251114/)
 - [ ] No TLS enabled (all services HTTP only)
@@ -918,18 +943,21 @@ Use this checklist to verify successful rollback:
 - [ ] Single network (dev-services)
 
 ### Testing
+
 - [ ] Test suite runs without errors
 - [ ] All 370+ tests pass
 - [ ] No test failures
 - [ ] No test timeouts
 
 ### Performance
+
 - [ ] Memory usage: ~2.6 GiB (±10%)
 - [ ] CPU usage: <10%
 - [ ] Response times normal (baseline)
 - [ ] No performance degradation
 
 ### Logs
+
 - [ ] No critical errors in Vault logs
 - [ ] No critical errors in PostgreSQL logs
 - [ ] No critical errors in MySQL logs
@@ -943,7 +971,7 @@ Use this checklist to verify successful rollback:
 
 In case of rollback failure:
 
-1. **Check GitHub Issues:** https://github.com/NormB/devstack-core/issues
+1. **Check GitHub Issues:** <https://github.com/NormB/devstack-core/issues>
 2. **Review Documentation:** `docs/DISASTER_RECOVERY.md`
 3. **Consult Team:** (add team contact information)
 

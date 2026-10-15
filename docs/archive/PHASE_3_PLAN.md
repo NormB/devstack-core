@@ -12,6 +12,7 @@
 Phase 3 focuses on optimizing database and cache performance, expanding test coverage to include new security features (AppRole, TLS, network segmentation), and establishing comprehensive performance regression testing.
 
 **Key Objectives:**
+
 1. Optimize database configurations (PostgreSQL, MySQL, MongoDB)
 2. Optimize Redis cluster performance and test failover
 3. Expand test coverage to 95%+ (add AppRole, TLS, network tests)
@@ -24,21 +25,25 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ### Existing Performance Baseline (from PERFORMANCE_BASELINE.md)
 
 **Database Performance:**
+
 - PostgreSQL: 808 TPS (pgbench), 12.4ms avg latency
 - MySQL: 700 TPS, 7.1ms avg latency
 - MongoDB: 2,500 inserts/sec, 2.0ms avg latency
 
 **Cache Performance:**
+
 - Redis Cluster: 35,000 SET ops/sec, 52,000 GET ops/sec
 - Cluster overhead: ~15% vs single instance
 - Cross-node redirect: +0.3ms
 
 **API Performance:**
+
 - Go: 320 req/sec (fastest), 312ms mean latency
 - Python FastAPI: 245 req/sec, 408ms mean latency
 - Node.js: 230 req/sec, 434ms mean latency
 
 **Test Coverage:**
+
 - Total tests: 494+ (100% passing)
 - Infrastructure: 370 baseline + 124 Phase 1-2
 - **Gaps:** AppRole auth tests, TLS connection tests, network segmentation tests
@@ -52,6 +57,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Status:** ⏳ Pending
 
 ### Objectives
+
 1. Establish current performance baseline (re-run benchmarks)
 2. Optimize PostgreSQL configuration for workload
 3. Optimize MySQL configuration for workload
@@ -61,6 +67,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ### Subtasks
 
 #### Subtask 3.1.1: Run Current Performance Baseline ⏳
+
 - [ ] Run pgbench on PostgreSQL (current: 808 TPS)
 - [ ] Run sysbench on MySQL (establish baseline)
 - [ ] Run YCSB on MongoDB (establish baseline)
@@ -70,6 +77,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Expected Output:** `docs/PHASE_3_BASELINE.md` with current performance data
 
 #### Subtask 3.1.2: PostgreSQL Optimization ⏳
+
 - [ ] Analyze current configuration (`shared_buffers`, `work_mem`, `effective_cache_size`)
 - [ ] Tune for development workload:
   - Increase `shared_buffers` to 512MB (currently 256MB)
@@ -85,6 +93,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target Improvement:** 20-30% TPS increase (target: 1,000+ TPS)
 
 #### Subtask 3.1.3: MySQL Optimization ⏳
+
 - [ ] Analyze current configuration (`innodb_buffer_pool_size`, `innodb_log_file_size`)
 - [ ] Tune for development workload:
   - Increase `innodb_buffer_pool_size` to 512M (currently 256M)
@@ -99,6 +108,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target Improvement:** 15-25% TPS increase
 
 #### Subtask 3.1.4: MongoDB Optimization ⏳
+
 - [ ] Analyze WiredTiger cache size (currently defaults)
 - [ ] Tune for development workload:
   - Set WiredTiger cache to 1GB
@@ -113,6 +123,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target Improvement:** 10-20% throughput increase
 
 #### Subtask 3.1.5: Validate and Document Improvements ⏳
+
 - [ ] Create comparison table (before/after)
 - [ ] Validate no regression in other metrics
 - [ ] Update PERFORMANCE_BASELINE.md
@@ -120,6 +131,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 - [ ] Commit configuration changes
 
 **Deliverables:**
+
 - Updated database configurations in `configs/`
 - Performance comparison report
 - Updated PERFORMANCE_BASELINE.md
@@ -133,6 +145,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Status:** ⏳ Pending
 
 ### Objectives
+
 1. Benchmark Redis cluster performance (baseline)
 2. Optimize Redis configuration
 3. Test failover scenarios
@@ -141,16 +154,19 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ### Subtasks
 
 #### Subtask 3.2.1: Redis Cluster Baseline ⏳
+
 - [ ] Run `redis-benchmark` on all 3 nodes
 - [ ] Test distributed operations (cross-node keys)
 - [ ] Measure cluster overhead vs single instance
 - [ ] Document current throughput and latency
 
 **Current Baseline:**
+
 - Single node: 12,000 SET/sec, 18,000 GET/sec
 - Cluster-wide: 35,000 SET/sec, 52,000 GET/sec
 
 #### Subtask 3.2.2: Redis Configuration Optimization ⏳
+
 - [ ] Analyze current maxmemory settings (256MB per node)
 - [ ] Optimize for development workload:
   - Increase `maxmemory` to 512MB per node
@@ -166,6 +182,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target Improvement:** 10-15% throughput increase
 
 #### Subtask 3.2.3: Failover Testing ⏳
+
 - [ ] Create failover test script: `tests/test-redis-failover.sh`
 - [ ] Test scenarios:
   1. Stop redis-1 (master), verify cluster continues
@@ -180,12 +197,14 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Deliverable:** Comprehensive failover test script with 10+ tests
 
 #### Subtask 3.2.4: Performance Documentation ⏳
+
 - [ ] Update PERFORMANCE_BASELINE.md with Redis tuning
 - [ ] Document failover procedures
 - [ ] Create Redis optimization guide
 - [ ] Add failover playbook
 
 **Deliverables:**
+
 - `tests/test-redis-failover.sh` (comprehensive failover tests)
 - Updated Redis configuration
 - Performance comparison report
@@ -200,6 +219,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Status:** ⏳ Pending
 
 ### Objectives
+
 1. Add AppRole authentication tests
 2. Add TLS connection tests
 3. Add network segmentation tests (when implemented)
@@ -209,6 +229,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ### Current Test Coverage Gap Analysis
 
 **Missing Test Coverage:**
+
 - AppRole authentication failure scenarios
 - TLS certificate validation (client-side)
 - TLS connection refusal (non-TLS clients)
@@ -219,6 +240,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ### Subtasks
 
 #### Subtask 3.3.1: AppRole Authentication Tests ⏳
+
 - [ ] Create `tests/test-approle-security.sh` (security-focused)
 - [ ] Test scenarios:
   1. Invalid role_id (should fail)
@@ -234,6 +256,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target:** 20+ tests across 7 services
 
 #### Subtask 3.3.2: TLS Connection Tests ⏳
+
 - [ ] Create `tests/test-tls-connections.sh`
 - [ ] Test scenarios:
   1. Verify all services accept TLS connections
@@ -250,6 +273,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target:** 24+ tests (8 scenarios × 3 services minimum)
 
 #### Subtask 3.3.3: Performance Regression Tests ⏳
+
 - [ ] Create `tests/test-performance-regression.sh`
 - [ ] Establish performance thresholds:
   - API response time: p95 < 100ms (simple endpoints)
@@ -266,6 +290,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Deliverable:** Automated performance regression detection
 
 #### Subtask 3.3.4: Network Segmentation Tests (Future) 🔮
+
 **Note:** Network segmentation is listed as Task 1.4 (Phase 1) but marked pending. Will implement tests when that task is completed.
 
 - [ ] Create `tests/test-network-segmentation.sh` (placeholder)
@@ -279,6 +304,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Status:** Blocked until Task 1.4 (Network Segmentation) is complete
 
 #### Subtask 3.3.5: Load Testing Automation ⏳
+
 - [ ] Create `tests/test-load.sh`
 - [ ] Use Apache Bench (ab) or wrk
 - [ ] Test scenarios:
@@ -298,6 +324,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Deliverable:** Comprehensive load testing suite
 
 #### Subtask 3.3.6: Test Coverage Report ⏳
+
 - [ ] Count all tests across all suites
 - [ ] Calculate coverage percentage
 - [ ] Identify remaining gaps
@@ -308,6 +335,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 **Target:** 600+ total tests (current: 494)
 
 **Deliverables:**
+
 - `tests/test-approle-security.sh` (~20 tests)
 - `tests/test-tls-connections.sh` (~24 tests)
 - `tests/test-performance-regression.sh` (automated regression detection)
@@ -320,6 +348,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ## Success Criteria
 
 ### Task 3.1: Database Performance Tuning ✅
+
 - [ ] PostgreSQL TPS increased by 20-30% (target: 1,000+ TPS)
 - [ ] MySQL TPS increased by 15-25%
 - [ ] MongoDB throughput increased by 10-20%
@@ -327,12 +356,14 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 - [ ] Configuration changes documented and committed
 
 ### Task 3.2: Cache Performance Optimization ✅
+
 - [ ] Redis throughput increased by 10-15%
 - [ ] Failover tested and documented (target: <5 second failover)
 - [ ] Failover test suite created (10+ tests)
 - [ ] Performance improvements documented
 
 ### Task 3.3: Expand Test Coverage ✅
+
 - [ ] AppRole security tests added (20+ tests)
 - [ ] TLS connection tests added (24+ tests)
 - [ ] Performance regression tests automated
@@ -345,6 +376,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ## Deliverables Summary
 
 ### Documentation
+
 1. `docs/PHASE_3_PLAN.md` (this file)
 2. `docs/PHASE_3_BASELINE.md` (current performance data)
 3. `docs/PHASE_3_TUNING_RESULTS.md` (optimization results)
@@ -352,12 +384,14 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 5. Updated `tests/TEST_COVERAGE.md`
 
 ### Configuration Changes
+
 1. Updated `configs/postgres/postgresql.conf` (or docker-compose.yml)
 2. Updated `configs/mysql/my.cnf` (or docker-compose.yml)
 3. Updated `configs/mongodb/mongod.conf` (or docker-compose.yml)
 4. Updated `configs/redis/redis.conf`
 
 ### Test Scripts
+
 1. `tests/test-approle-security.sh` (AppRole security tests)
 2. `tests/test-tls-connections.sh` (TLS connection tests)
 3. `tests/test-redis-failover.sh` (Redis failover tests)
@@ -365,6 +399,7 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 5. `tests/test-load.sh` (load testing)
 
 ### Test Coverage
+
 - **Current:** 494 tests
 - **Target:** 600+ tests
 - **New Tests:** ~106+ tests
@@ -401,16 +436,19 @@ Phase 3 focuses on optimizing database and cache performance, expanding test cov
 ## Timeline Estimate
 
 ### Task 3.1: Database Performance Tuning (8-10 hours)
+
 - Day 1 (4 hours): Baseline benchmarking, PostgreSQL tuning
 - Day 2 (4 hours): MySQL and MongoDB tuning
 - Day 3 (2 hours): Validation, documentation
 
 ### Task 3.2: Cache Performance Optimization (6-8 hours)
+
 - Day 1 (3 hours): Redis benchmarking, configuration tuning
 - Day 2 (3 hours): Failover testing, script creation
 - Day 3 (2 hours): Documentation
 
 ### Task 3.3: Expand Test Coverage (11-12 hours)
+
 - Day 1 (4 hours): AppRole security tests
 - Day 2 (4 hours): TLS connection tests
 - Day 3 (3 hours): Performance regression + load tests

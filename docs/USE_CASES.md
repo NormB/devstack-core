@@ -45,6 +45,7 @@ cd ~/devstack-core
 ```
 
 **Output:**
+
 ```
 Username: devuser
 Password: Hx7kL9mNpQr2sTuVwXyZ12345
@@ -62,6 +63,7 @@ pip install psycopg2-binary sqlalchemy
 ### Step 4: Connect in Your Code
 
 **Option A: Direct Connection (psycopg2)**
+
 ```python
 import psycopg2
 
@@ -80,6 +82,7 @@ conn.close()
 ```
 
 **Option B: SQLAlchemy**
+
 ```python
 from sqlalchemy import create_engine
 
@@ -92,6 +95,7 @@ with engine.connect() as conn:
 ```
 
 **Option C: FastAPI with Environment Variables**
+
 ```python
 import os
 from sqlalchemy import create_engine
@@ -155,6 +159,7 @@ go get github.com/redis/go-redis/v9
 ### Step 4: Connect in Your Code
 
 **Single Node Connection**
+
 ```go
 package main
 
@@ -187,6 +192,7 @@ func main() {
 ```
 
 **Cluster Connection**
+
 ```go
 package main
 
@@ -305,7 +311,7 @@ consumeMessages();
 
 ### Step 5: Monitor in RabbitMQ UI
 
-Open http://localhost:15672 and login with the credentials from `vault-show-password rabbitmq`.
+Open <http://localhost:15672> and login with the credentials from `vault-show-password rabbitmq`.
 
 ---
 
@@ -539,28 +545,32 @@ scrape_configs:
 ```
 
 Restart Prometheus:
+
 ```bash
 docker compose restart prometheus
 ```
 
 ### Step 4: Create Grafana Dashboard
 
-1. Open http://localhost:3001 (admin/admin)
+1. Open <http://localhost:3001> (admin/admin)
 2. Go to Dashboards → New Dashboard
 3. Add a panel
 4. Use these PromQL queries:
 
 **Request Rate:**
+
 ```promql
 rate(myapp_requests_total[5m])
 ```
 
 **Latency (p95):**
+
 ```promql
 histogram_quantile(0.95, rate(myapp_request_latency_seconds_bucket[5m]))
 ```
 
 **Request Count by Endpoint:**
+
 ```promql
 sum by (endpoint) (rate(myapp_requests_total[5m]))
 ```

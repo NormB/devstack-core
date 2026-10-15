@@ -9,12 +9,14 @@
 ## Test Environment
 
 ### System Configuration
+
 - **Colima VM:** 4 cores, 8 GiB memory, 60 GiB disk
 - **Host:** MacBook Pro M Series (ARM64)
 - **Docker:** 27.3.1
 - **Test Date:** November 18, 2025
 
 ### Software Versions
+
 - PostgreSQL: 18.0
 - MySQL: 8.0.40
 - MongoDB: 7.0.16
@@ -29,12 +31,14 @@
 **Test Tool:** pgbench (TPC-B benchmark)
 
 **Current Configuration:**
+
 - shared_buffers: 256MB (default)
 - work_mem: 4MB (default)
 - effective_cache_size: 4GB (default)
 - max_connections: 100 (default)
 
 **Benchmark Command:**
+
 ```bash
 # Initialize test database
 docker exec dev-postgres pgbench -i -s 50 postgres
@@ -44,6 +48,7 @@ docker exec dev-postgres pgbench -c 10 -j 4 -T 60 postgres
 ```
 
 **Results:**
+
 ```
 Test Run 1: 6,572 TPS, 1.522 ms avg latency
 Test Run 2: 3,532 TPS, 2.831 ms avg latency
@@ -59,11 +64,13 @@ Average: 5,723 TPS, 1.923 ms avg latency
 **Test Tool:** Custom INSERT benchmark
 
 **Current Configuration:**
+
 - innodb_buffer_pool_size: 256M (default)
 - innodb_flush_log_at_trx_commit: 1 (default - full ACID)
 - max_connections: 100 (default)
 
 **Benchmark Command:**
+
 ```bash
 docker exec -e MYSQL_PWD=<password> dev-mysql mysql -u devuser devdb -e "
   CREATE TABLE IF NOT EXISTS benchmark_test (...);
@@ -72,6 +79,7 @@ docker exec -e MYSQL_PWD=<password> dev-mysql mysql -u devuser devdb -e "
 ```
 
 **Results:**
+
 ```
 Insert 1,000 rows: 0.009 seconds
 Insert rate: 111,111 rows/sec
@@ -84,11 +92,13 @@ Insert rate: 111,111 rows/sec
 **Test Tool:** Custom insert/query benchmark
 
 **Current Configuration:**
+
 - WiredTiger cache: Default (~50% of RAM)
 - journal: Enabled
 - Compression: snappy (default)
 
 **Benchmark Results:**
+
 ```
 Insert 10,000 docs: 0.114 seconds
 Insert rate: 87,719 docs/sec
@@ -119,6 +129,7 @@ Query rate: 2,105 queries/sec
 ## Redis Cluster Configuration
 
 **Current Configuration (from .env and docker inspect):**
+
 - maxmemory: 256MB per node (768MB total)
 - maxmemory-policy: allkeys-lru
 - save: enabled (RDB snapshots)
@@ -126,11 +137,13 @@ Query rate: 2,105 queries/sec
 - Cluster mode: 3 master nodes, no replicas
 
 **Cluster Topology:**
+
 - redis-1 (172.20.2.13): slots 0-5460
 - redis-2 (172.20.2.16): slots 5461-10922
 - redis-3 (172.20.2.17): slots 10923-16383
 
 **Baseline Performance (from PERFORMANCE_BASELINE.md):**
+
 - Single node SET: 12,000 ops/sec
 - Single node GET: 18,000 ops/sec
 - Cluster-wide SET: 35,000 ops/sec

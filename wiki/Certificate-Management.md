@@ -13,7 +13,7 @@
     - [1.3 Secret Detection in CI/CD](#13-secret-detection-in-cicd)
     - [1.4 Password Masking in API Responses](#14-password-masking-in-api-responses)
   - [Warnings](#warnings)
-- [2. Authentication & Authorization ⚠️ BY DESIGN](#2-authentication--authorization-⚠️-by-design)
+- [2. Authentication & Authorization ⚠️ BY DESIGN](#2-authentication--authorization-️-by-design)
   - [Strengths](#strengths)
     - [2.1 Rate Limiting](#21-rate-limiting)
     - [2.2 Circuit Breaker Pattern](#22-circuit-breaker-pattern)
@@ -108,7 +108,7 @@
   - [✅ 50 Best Practices Found](#-50-best-practices-found)
 - [Compliance Considerations](#compliance-considerations)
   - [Development Environment: ✅ COMPLIANT](#development-environment--compliant)
-  - [Production Environment: ⚠️ REQUIRES MODIFICATIONS](#production-environment-⚠️-requires-modifications)
+  - [Production Environment: ⚠️ REQUIRES MODIFICATIONS](#production-environment-️-requires-modifications)
 - [Conclusion](#conclusion)
   - [Summary](#summary)
   - [Risk Assessment](#risk-assessment)
@@ -135,6 +135,7 @@ This comprehensive security assessment evaluated the DevStack Core infrastructur
 The infrastructure is well-designed for local development with clear security boundaries and appropriate warnings about production use.
 
 ### Risk Level: **LOW-MEDIUM**
+
 - Development environment: **LOW RISK** (as designed)
 - If deployed to production without changes: **HIGH RISK** (clearly documented)
 
@@ -164,7 +165,9 @@ The infrastructure is well-designed for local development with clear security bo
 ### Strengths
 
 #### 1.1 Vault-Managed Credentials
+
 ✅ **All credentials stored in HashiCorp Vault**
+
 - PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ credentials
 - No hardcoded passwords in any configuration files
 - Passwords loaded at runtime from Vault
@@ -177,13 +180,16 @@ environment:
 ```
 
 #### 1.2 Environment File Security
+
 ✅ **Proper .env handling**
+
 ```bash
 # .env.example shows EMPTY passwords
 POSTGRES_PASSWORD=  # Loaded from Vault at runtime
 ```
 
 ✅ **Gitignore configured correctly**
+
 ```
 .env
 *.env.local
@@ -192,13 +198,16 @@ POSTGRES_PASSWORD=  # Loaded from Vault at runtime
 ```
 
 #### 1.3 Secret Detection in CI/CD
+
 ✅ **Multiple secret scanning tools**
+
 - TruffleHog (verified secrets only)
 - Gitleaks
 - Custom regex patterns
 - detect-secrets baseline file (`.secrets.baseline`)
 
 ✅ **Pre-commit hook for detect-secrets**
+
 ```yaml
 # .pre-commit-config.yaml
 - repo: https://github.com/Yelp/detect-secrets
@@ -209,7 +218,9 @@ POSTGRES_PASSWORD=  # Loaded from Vault at runtime
 ```
 
 #### 1.4 Password Masking in API Responses
+
 ✅ **Vault router masks passwords**
+
 ```python
 # app/routers/vault_demo.py
 if "password" in result:
@@ -219,6 +230,7 @@ if "password" in result:
 ### Warnings
 
 ⚠️ **ROOT_TOKEN_WARNING** - Development uses Vault root token
+
 - **Location:** `.env.example`, `vault-bootstrap.sh`
 - **Risk:** Root token has unlimited privileges
 - **Mitigation:** Clearly documented as development-only
@@ -241,7 +253,9 @@ VAULT_TOKEN=
 ### Strengths
 
 #### 2.1 Rate Limiting
+
 ✅ **slowapi rate limiting implemented**
+
 ```python
 # app/main.py
 limiter = Limiter(key_func=get_remote_address)
@@ -251,12 +265,15 @@ limiter = Limiter(key_func=get_remote_address)
 ```
 
 **Rate limits configured:**
+
 - General endpoints: 100/minute
 - Metrics endpoint: 1000/minute
 - Health checks: 200/minute
 
 #### 2.2 Circuit Breaker Pattern
+
 ✅ **pybreaker prevents cascading failures**
+
 ```python
 # Configured for all external services
 - Vault, PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ
@@ -267,27 +284,32 @@ limiter = Limiter(key_func=get_remote_address)
 ### Warnings (By Design for Development)
 
 ⚠️ **NO_AUTH_WARNING** - No authentication on API endpoints
+
 - **Location:** FastAPI reference application
 - **Risk:** Anyone can access all endpoints
 - **Status:** Intentional for development/testing
 - **Documentation:** Clearly stated in README
 
 ⚠️ **DEBUG_MODE_WARNING** - Debug mode enables CORS wildcard
+
 ```python
 # app/main.py (line 107-108)
 if settings.DEBUG:
     CORS_ORIGINS = ["*"]  # Allow all origins in debug
 ```
+
 - **Risk:** CORS wildcard with credentials=True would be dangerous
 - **Mitigation:** `allow_credentials=not settings.DEBUG` prevents this
 
 ⚠️ **NO_API_KEYS** - No API key validation
+
 - **Status:** Reference implementation for learning
 - **Recommendation:** Implement OAuth2/JWT for production
 
 ### Production Recommendations
 
 For production deployment, implement:
+
 1. **OAuth2 with JWT tokens** - User authentication
 2. **API key validation** - Service-to-service auth
 3. **AppRole authentication** - Vault access
@@ -301,7 +323,9 @@ For production deployment, implement:
 ### Strengths
 
 #### 3.1 Pinned Image Versions
+
 ✅ **All container images use specific versions**
+
 ```yaml
 postgres: postgres:16.6-alpine3.21
 mysql: mysql:8.0.40
@@ -310,7 +334,9 @@ vault: hashicorp/vault:1.18.2
 ```
 
 #### 3.2 Read-Only Volume Mounts
+
 ✅ **Configuration files mounted read-only**
+
 ```yaml
 volumes:
   - ./configs/postgres:/docker-entrypoint-initdb.d:ro
@@ -319,7 +345,9 @@ volumes:
 ```
 
 #### 3.3 Non-Root Users
+
 ✅ **Services run as non-root where possible**
+
 ```yaml
 # Forgejo runs as UID 1000
 environment:
@@ -328,7 +356,9 @@ environment:
 ```
 
 #### 3.4 Resource Limits Configured
+
 ✅ **Memory and connection limits set**
+
 ```yaml
 environment:
   POSTGRES_MAX_CONNECTIONS: 100
@@ -337,7 +367,9 @@ environment:
 ```
 
 #### 3.5 Health Checks Implemented
+
 ✅ **All services have health checks**
+
 ```yaml
 healthcheck:
   test: ["CMD-SHELL", "pg_isready -U dev_admin"]
@@ -348,7 +380,9 @@ healthcheck:
 ```
 
 #### 3.6 Network Isolation
+
 ✅ **Custom bridge network with static IPs**
+
 ```yaml
 networks:
   dev-services:
@@ -361,6 +395,7 @@ networks:
 ### Warnings
 
 ⚠️ **PRIVILEGED_CONTAINER** - cAdvisor runs privileged
+
 - **Location:** `docker-compose.yml:976`
 - **Service:** cAdvisor (container monitoring)
 - **Justification:** Requires access to host Docker socket
@@ -372,6 +407,7 @@ cadvisor:
 ```
 
 ⚠️ **CAP_ADD** - Vault uses IPC_LOCK capability
+
 - **Location:** `docker-compose.yml:615`
 - **Service:** Vault
 - **Justification:** Prevents memory swapping (security best practice for secrets)
@@ -396,9 +432,11 @@ vault:
 ### Strengths
 
 #### 4.1 SQL Injection Protection
+
 ✅ **Parameterized queries only - NO string concatenation**
 
 **PostgreSQL (asyncpg):**
+
 ```python
 # SAFE: No user input in queries
 result = await conn.fetchval("SELECT current_timestamp")
@@ -406,30 +444,36 @@ result = await conn.fetchval("SELECT current_timestamp")
 ```
 
 **MySQL (aiomysql):**
+
 ```python
 # SAFE: No user input in queries
 await cursor.execute("SELECT NOW()")
 ```
 
 **MongoDB (motor):**
+
 ```python
 # SAFE: No raw queries, uses Python objects
 collections = await db.list_collection_names()
 ```
 
 ✅ **No dynamic SQL construction found**
+
 - Searched all database routers
 - All queries are static
 - No f-strings or string concatenation with user input
 
 #### 4.2 Command Injection Protection
+
 ✅ **No shell command execution with user input**
 
 Searched for:
+
 - `subprocess`, `os.system`, `os.popen`, `eval`, `exec`
 - **Result:** No dangerous functions found in Python code
 
 ✅ **Shell scripts use safe patterns**
+
 ```bash
 # vault-bootstrap.sh uses proper quoting
 curl -s -X POST "${VAULT_ADDR}/v1/sys/mounts/pki" \
@@ -437,7 +481,9 @@ curl -s -X POST "${VAULT_ADDR}/v1/sys/mounts/pki" \
 ```
 
 #### 4.3 NoSQL Injection Protection
+
 ✅ **MongoDB queries use driver objects**
+
 ```python
 # SAFE: No raw query strings
 client = motor.motor_asyncio.AsyncIOMotorClient(uri)
@@ -445,14 +491,18 @@ collections = await db.list_collection_names()
 ```
 
 #### 4.4 Redis Command Injection Protection
+
 ✅ **Redis commands use driver methods**
+
 ```python
 # SAFE: Using execute_command with static strings
 cluster_nodes_raw = await client.execute_command("CLUSTER", "NODES")
 ```
 
 #### 4.5 Input Validation
+
 ✅ **Pydantic v2 data models validate all input**
+
 ```python
 # app/models/responses.py
 class StandardResponse(BaseModel):
@@ -475,7 +525,9 @@ class StandardResponse(BaseModel):
 ### Strengths
 
 #### 5.1 Internal Network Isolation
+
 ✅ **Services on isolated Docker network**
+
 ```yaml
 networks:
   dev-services:
@@ -486,7 +538,9 @@ networks:
 ```
 
 #### 5.2 TLS Support
+
 ✅ **Optional TLS for all services**
+
 - PostgreSQL: `POSTGRES_ENABLE_TLS=true`
 - MySQL: `MYSQL_ENABLE_TLS=true`
 - Redis: `REDIS_ENABLE_TLS=true`
@@ -494,12 +548,15 @@ networks:
 - MongoDB: `MONGODB_ENABLE_TLS=true`
 
 ✅ **Vault PKI infrastructure**
+
 - Two-tier CA (Root + Intermediate)
 - Automatic certificate generation
 - 1-year certificate TTL
 
 #### 5.3 HTTPS Support for Reference API
+
 ✅ **Dual HTTP/HTTPS mode**
+
 ```yaml
 reference-api:
   ports:
@@ -510,7 +567,9 @@ reference-api:
 ```
 
 #### 5.4 Service Dependencies
+
 ✅ **Proper startup ordering**
+
 ```yaml
 depends_on:
   vault:
@@ -520,6 +579,7 @@ depends_on:
 ### Warnings
 
 ⚠️ **HTTP_DEFAULT** - HTTP is default for development
+
 - **Risk:** Unencrypted traffic in development
 - **Mitigation:** TLS can be enabled via environment variables
 - **Status:** Appropriate for local development
@@ -537,7 +597,9 @@ depends_on:
 ### Strengths
 
 #### 6.1 Custom Exception Hierarchy
+
 ✅ **13 exception types with proper status codes**
+
 ```python
 # app/exceptions.py
 - BaseAPIException (500)
@@ -556,7 +618,9 @@ depends_on:
 ```
 
 #### 6.2 Structured Error Responses
+
 ✅ **Consistent error format**
+
 ```python
 {
     "error": "error_type",
@@ -569,14 +633,18 @@ depends_on:
 ```
 
 #### 6.3 Global Exception Handlers
+
 ✅ **Centralized exception handling**
+
 ```python
 # app/middleware/exception_handlers.py
 register_exception_handlers(app)
 ```
 
 #### 6.4 Logging with Request Correlation
+
 ✅ **Structured JSON logging with UUIDs**
+
 ```python
 # app/main.py
 request_id = str(uuid.uuid4())
@@ -595,7 +663,9 @@ logger.info(
 ```
 
 #### 6.5 No Stack Traces in Responses
+
 ✅ **Exception details logged, not exposed**
+
 ```python
 except Exception as e:
     logger.error(f"Request failed: {str(e)}", exc_info=True)
@@ -603,14 +673,18 @@ except Exception as e:
 ```
 
 #### 6.6 Password Masking in Logs
+
 ✅ **Passwords masked in Vault responses**
+
 ```python
 if "password" in result:
     result["password"] = "******"
 ```
 
 #### 6.7 Timeout Protection
+
 ✅ **All external calls have timeouts**
+
 ```python
 async with httpx.AsyncClient() as client:
     response = await client.get(url, headers=self.headers, timeout=5.0)
@@ -629,7 +703,9 @@ async with httpx.AsyncClient() as client:
 ### Strengths
 
 #### 7.1 Vault PKI Implementation
+
 ✅ **Production-grade PKI hierarchy**
+
 ```bash
 # vault-bootstrap.sh
 ROOT_CA_TTL="87600h"     # 10 years
@@ -640,20 +716,26 @@ KEY_BITS="2048"
 ```
 
 #### 7.2 Password Generation
+
 ✅ **Strong password generation**
+
 ```bash
 # 25-character alphanumeric passwords
 openssl rand -base64 32 | tr -d '/+=' | head -c 25
 ```
 
 #### 7.3 TLS Configuration
+
 ✅ **Modern TLS settings**
+
 - RSA 2048-bit keys
 - Support for TLS 1.2+
 - Proper certificate chain validation
 
 #### 7.4 Database Authentication
+
 ✅ **SCRAM-SHA-256 for PostgreSQL**
+
 ```yaml
 # docker-compose.yml
 pgbouncer:
@@ -662,7 +744,9 @@ pgbouncer:
 ```
 
 #### 7.5 Dependency: cryptography>=41.0.0
+
 ✅ **Modern cryptography library**
+
 ```
 # requirements.txt
 cryptography>=41.0.0  # Required for MySQL caching_sha2_password auth
@@ -681,7 +765,9 @@ cryptography>=41.0.0  # Required for MySQL caching_sha2_password auth
 ### Strengths
 
 #### 8.1 Gitignore Configuration
+
 ✅ **Comprehensive .gitignore**
+
 ```
 .env
 *.env.local
@@ -693,21 +779,27 @@ backups/
 ```
 
 #### 8.2 File Permissions in Scripts
+
 ✅ **Executable scripts have proper permissions**
+
 ```bash
 # Dockerfile
 RUN chmod +x /app/start.sh /app/init.sh
 ```
 
 #### 8.3 Read-Only Mounts
+
 ✅ **Configuration files mounted read-only**
+
 ```yaml
 volumes:
   - ./configs/postgres:/docker-entrypoint-initdb.d:ro
 ```
 
 #### 8.4 Vault Token Storage
+
 ✅ **Tokens stored in user home directory**
+
 ```bash
 ~/.config/vault/root-token
 ~/.config/vault/keys.json
@@ -726,7 +818,9 @@ volumes:
 ### Strengths
 
 #### 9.1 Pinned Python Dependencies
+
 ✅ **All versions pinned**
+
 ```
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -736,13 +830,17 @@ redis[hiredis]==4.6.0
 ```
 
 #### 9.2 Security-Focused Dependencies
+
 ✅ **Modern, actively maintained libraries**
+
 - cryptography>=41.0.0 (security library)
 - slowapi (rate limiting)
 - pybreaker (circuit breaker)
 
 #### 9.3 Automated Dependency Scanning
+
 ✅ **CI/CD security workflow**
+
 ```yaml
 # .github/workflows/security.yml
 - name: Check Python dependencies
@@ -753,10 +851,12 @@ redis[hiredis]==4.6.0
 ### Warnings
 
 ⚠️ **REDIS_DOWNGRADE** - Redis downgraded for compatibility
+
 ```
 # requirements.txt
 redis[hiredis]==4.6.0  # Downgraded for fastapi-cache2 compatibility
 ```
+
 - **Risk:** May miss security fixes in newer versions
 - **Mitigation:** Monitor for fastapi-cache2 updates
 
@@ -773,14 +873,18 @@ redis[hiredis]==4.6.0  # Downgraded for fastapi-cache2 compatibility
 ### Strengths
 
 #### 10.1 Security Scanning Workflow
+
 ✅ **Comprehensive security.yml workflow**
+
 - **TruffleHog** - Secret scanning (verified only)
 - **Gitleaks** - Additional secret detection
 - **Safety** - Python dependency vulnerability scanning
 - **Custom checks** - AWS keys, private keys, weak passwords
 
 #### 10.2 Secret Detection Pre-Commit Hook
+
 ✅ **detect-secrets integration**
+
 ```yaml
 # .pre-commit-config.yaml
 - repo: https://github.com/Yelp/detect-secrets
@@ -791,7 +895,9 @@ redis[hiredis]==4.6.0  # Downgraded for fastapi-cache2 compatibility
 ```
 
 #### 10.3 Docker Security Checks
+
 ✅ **Automated Docker Compose security validation**
+
 ```yaml
 # Check for privileged containers
 # Check for host network mode
@@ -800,14 +906,18 @@ redis[hiredis]==4.6.0  # Downgraded for fastapi-cache2 compatibility
 ```
 
 #### 10.4 Environment File Validation
+
 ✅ **Checks for weak passwords and gitignore**
+
 ```yaml
 - name: Check .env.example for weak defaults
 - name: Ensure .env is gitignored
 ```
 
 #### 10.5 Scheduled Scans
+
 ✅ **Weekly automated security scans**
+
 ```yaml
 on:
   schedule:
@@ -815,7 +925,9 @@ on:
 ```
 
 #### 10.6 Minimal CI Permissions
+
 ✅ **Least privilege for workflows**
+
 ```yaml
 permissions:
   contents: read
@@ -841,18 +953,21 @@ After comprehensive assessment across 10 security domains, **no critical vulnera
 ## High-Priority Warnings
 
 ### 1. ROOT_TOKEN_USAGE (Development Only)
+
 - **Severity:** HIGH (if deployed to production)
 - **Current Risk:** LOW (development environment)
 - **Mitigation:** Extensively documented
 - **Action:** Use AppRole/JWT for production
 
 ### 2. NO_AUTHENTICATION (By Design)
+
 - **Severity:** HIGH (if exposed externally)
 - **Current Risk:** LOW (localhost only)
 - **Mitigation:** Clearly stated as reference implementation
 - **Action:** Implement OAuth2/JWT for production
 
 ### 3. DEBUG_MODE_CORS (Development Only)
+
 - **Severity:** MEDIUM (if enabled in production)
 - **Current Risk:** LOW (allow_credentials=False in debug)
 - **Mitigation:** Disabled credentials with wildcard
@@ -863,26 +978,31 @@ After comprehensive assessment across 10 security domains, **no critical vulnera
 ## Medium-Priority Recommendations
 
 ### 1. Enable TLS by Default
+
 **Current State:** TLS optional (disabled by default)
 **Recommendation:** Set all `*_ENABLE_TLS=true` in `.env.example`
 **Benefit:** Encryption by default for development
 
 ### 2. Add Resource Limits
+
 **Current State:** Connection limits set, but no CPU/memory limits
 **Recommendation:** Add Docker resource constraints
 **Benefit:** Prevent resource exhaustion DoS
 
 ### 3. Implement API Authentication
+
 **Current State:** No authentication on reference API
 **Recommendation:** Add OAuth2 example implementation
 **Benefit:** Shows production-ready patterns
 
 ### 4. Certificate Rotation Automation
+
 **Current State:** Manual certificate renewal
 **Recommendation:** Automated renewal 30 days before expiry
 **Benefit:** Prevents certificate expiration incidents
 
 ### 5. Update Redis Version
+
 **Current State:** redis==4.6.0 (downgraded for compatibility)
 **Recommendation:** Monitor fastapi-cache2 for updates
 **Benefit:** Latest security patches
@@ -892,7 +1012,9 @@ After comprehensive assessment across 10 security domains, **no critical vulnera
 ## Low-Priority Recommendations
 
 ### 1. File Permission Documentation
+
 Add explicit file permission requirements:
+
 ```bash
 chmod 600 ~/.config/vault/root-token
 chmod 600 ~/.config/vault/keys.json
@@ -900,18 +1022,23 @@ chmod 700 ~/.config/vault/
 ```
 
 ### 2. Consider 4096-bit RSA Keys
+
 For production deployments:
+
 ```bash
 KEY_BITS="4096"  # Enhanced security
 ```
 
 ### 3. Add OCSP Stapling
+
 Implement certificate revocation checking
 
 ### 4. Read-Only Root Filesystem
+
 Where applicable, use read-only containers
 
 ### 5. Dependabot Configuration
+
 Automate dependency updates
 
 ---
@@ -978,6 +1105,7 @@ Automate dependency updates
 ### Development Environment: ✅ COMPLIANT
 
 This infrastructure is designed for local development and meets best practices for:
+
 - Secure development environments
 - Secret management (Vault)
 - Access control
@@ -986,6 +1114,7 @@ This infrastructure is designed for local development and meets best practices f
 ### Production Environment: ⚠️ REQUIRES MODIFICATIONS
 
 For production deployment, address:
+
 1. **Authentication:** Implement OAuth2/JWT
 2. **Vault Access:** Switch from root token to AppRole/JWT
 3. **TLS:** Enable and enforce TLS for all services
@@ -1012,11 +1141,13 @@ The DevStack Core infrastructure demonstrates **excellent security practices** f
 ### Risk Assessment
 
 **Current Use Case (Local Development):** ✅ **LOW RISK**
+
 - Appropriate security controls for development
 - Clear documentation of limitations
 - Proper secrets management
 
 **If Deployed to Production Without Changes:** ⚠️ **HIGH RISK**
+
 - Requires authentication implementation
 - Needs enhanced monitoring and alerting
 - Must use production Vault auth methods

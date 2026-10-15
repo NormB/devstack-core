@@ -59,6 +59,7 @@ networks:
 ### Why Bridge Networking?
 
 **Advantages:**
+
 - ✅ **Isolation** - Services isolated from host network
 - ✅ **DNS** - Built-in DNS resolution between containers
 - ✅ **Port Control** - Explicit port mapping to host
@@ -66,6 +67,7 @@ networks:
 - ✅ **Portability** - Works consistently across different hosts
 
 **Alternative (Not Used):**
+
 - ❌ **Host Network Mode** - No isolation, potential port conflicts
 - ❌ **Overlay Network** - Unnecessary complexity for single-host setup
 
@@ -83,6 +85,7 @@ docker network inspect dev-services --format='{{json .IPAM.Config}}' | jq
 ```
 
 Expected output:
+
 ```json
 [
   {
@@ -267,12 +270,12 @@ Only ports that need to be accessible from the **host machine** are exposed. Int
 
 | Service | Internal Port | Host Port | Protocol | URL |
 |---------|---------------|-----------|----------|-----|
-| Vault UI | 8200 | 8200 | HTTP | http://localhost:8200 |
-| Grafana | 3001 | 3001 | HTTP | http://localhost:3001 |
-| Prometheus | 9090 | 9090 | HTTP | http://localhost:9090 |
-| Loki | 3100 | 3100 | HTTP | http://localhost:3100 |
-| RabbitMQ UI | 15672 | 15672 | HTTP | http://localhost:15672 |
-| Forgejo Web | 3000 | 3000 | HTTP | http://localhost:3000 |
+| Vault UI | 8200 | 8200 | HTTP | <http://localhost:8200> |
+| Grafana | 3001 | 3001 | HTTP | <http://localhost:3001> |
+| Prometheus | 9090 | 9090 | HTTP | <http://localhost:9090> |
+| Loki | 3100 | 3100 | HTTP | <http://localhost:3100> |
+| RabbitMQ UI | 15672 | 15672 | HTTP | <http://localhost:15672> |
+| Forgejo Web | 3000 | 3000 | HTTP | <http://localhost:3000> |
 | Forgejo SSH | 22 | 2222 | SSH | ssh://git@localhost:2222 |
 
 #### Reference APIs
@@ -337,17 +340,20 @@ All services run in the **same bridge network**, allowing them to communicate. H
 ### Host Isolation
 
 Services **cannot** directly access:
+
 - Host filesystem (except via mounted volumes)
 - Host network services (unless explicitly exposed)
 - Other Docker networks
 
 Services **can** access:
+
 - Other containers in `dev-services` network
 - External internet (for package downloads, etc.)
 
 ### Firewall Considerations
 
 **macOS Firewall:**
+
 ```bash
 # Check if firewall is blocking Docker
 /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
@@ -357,6 +363,7 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.
 ```
 
 **Network Address Translation (NAT):**
+
 - Colima VM uses NAT to share host's internet connection
 - Containers use Docker's NAT for outbound connections
 - Port mappings create inbound NAT rules
@@ -370,6 +377,7 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /Applications/Docker.
 Docker provides automatic DNS resolution for container names within the same network.
 
 **How it works:**
+
 1. Container queries `postgres`
 2. Docker DNS server (127.0.0.11) receives query
 3. DNS server looks up `postgres` in `dev-services` network
@@ -398,6 +406,7 @@ Address: 172.20.0.10
 ### DNS Configuration
 
 Docker automatically configures DNS:
+
 - **DNS Server:** 127.0.0.11 (Docker embedded DNS)
 - **Search Domain:** None (use full container names)
 - **Resolution:** Container name → Static IP
@@ -441,11 +450,13 @@ docker exec dev-nodejs-api nslookup vault
 #### Issue: Container Can't Resolve Other Services
 
 **Symptoms:**
+
 ```bash
 curl: (6) Could not resolve host: postgres
 ```
 
 **Diagnostic:**
+
 ```bash
 # Check DNS resolution
 docker exec dev-reference-api nslookup postgres
@@ -455,6 +466,7 @@ docker inspect dev-reference-api --format='{{json .NetworkSettings.Networks}}' |
 ```
 
 **Solutions:**
+
 1. Verify service is on the same network
 2. Restart container: `docker restart dev-reference-api`
 3. Check service is running: `docker ps | grep postgres`
@@ -462,11 +474,13 @@ docker inspect dev-reference-api --format='{{json .NetworkSettings.Networks}}' |
 #### Issue: Connection Refused
 
 **Symptoms:**
+
 ```bash
 curl: (7) Failed to connect to postgres port 5432: Connection refused
 ```
 
 **Diagnostic:**
+
 ```bash
 # Check if service is listening
 docker exec dev-postgres ss -tlnp | grep 5432
@@ -476,6 +490,7 @@ docker ps --filter name=postgres
 ```
 
 **Solutions:**
+
 1. Wait for service to be healthy (check health checks)
 2. Verify port is correct (5432 for PostgreSQL)
 3. Check service logs: `docker logs dev-postgres`
@@ -483,11 +498,13 @@ docker ps --filter name=postgres
 #### Issue: Port Already in Use
 
 **Symptoms:**
+
 ```bash
 Error starting userland proxy: listen tcp4 0.0.0.0:5432: bind: address already in use
 ```
 
 **Diagnostic:**
+
 ```bash
 # Find process using the port
 lsof -i :5432
@@ -495,6 +512,7 @@ netstat -anv | grep 5432
 ```
 
 **Solutions:**
+
 ```bash
 # Option 1: Stop conflicting service
 brew services stop postgresql
@@ -507,11 +525,13 @@ ports:
 #### Issue: Network Not Found
 
 **Symptoms:**
+
 ```bash
 network dev-services not found
 ```
 
 **Solutions:**
+
 ```bash
 # Recreate network
 docker network create dev-services --subnet 172.20.0.0/16
@@ -565,12 +585,14 @@ docker exec dev-reference-api iperf3 -c postgres -t 10
 ### Network Security Best Practices
 
 **What We Do:**
+
 - ✅ Use bridge networking (isolated from host)
 - ✅ Static IPs for predictability
 - ✅ Selective port exposure
 - ✅ No host network mode
 
 **For Production (Not in Dev Environment):**
+
 - 🔒 Implement network policies (firewalls between services)
 - 🔒 Use Docker secrets instead of environment variables
 - 🔒 Enable TLS for all service-to-service communication
@@ -629,6 +651,7 @@ iptables -A DOCKER-USER -j DROP
 ## Summary
 
 The network architecture provides:
+
 - **Predictable networking** with static IP assignments
 - **Easy service discovery** via Docker DNS
 - **Isolation and security** with bridge networking

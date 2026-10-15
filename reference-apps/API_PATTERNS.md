@@ -59,6 +59,7 @@ Code → Auto-Generated Docs → Runtime OpenAPI
 ```
 
 **Directory Structure:**
+
 ```
 reference-apps/fastapi/
 ├── app/
@@ -73,11 +74,13 @@ reference-apps/fastapi/
 ```
 
 **Access Points:**
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- OpenAPI JSON: http://localhost:8000/openapi.json
+
+- Swagger UI: <http://localhost:8000/docs>
+- ReDoc: <http://localhost:8000/redoc>
+- OpenAPI JSON: <http://localhost:8000/openapi.json>
 
 **When to Use:**
+
 - ✅ Rapid prototyping
 - ✅ Small teams (1-3 developers)
 - ✅ Internal tools
@@ -85,12 +88,14 @@ reference-apps/fastapi/
 - ✅ Iterating on design quickly
 
 **Pros:**
+
 - Fast initial development
 - Less tooling required
 - Direct code changes
 - Hot reload in development
 
 **Cons:**
+
 - Documentation can drift
 - Harder to coordinate multiple teams
 - No client SDK generation before implementation
@@ -107,6 +112,7 @@ OpenAPI Spec → Code Generation → Implementation → Validation
 ```
 
 **Directory Structure:**
+
 ```
 reference-apps/
 ├── shared/
@@ -135,11 +141,13 @@ reference-apps/
 ```
 
 **Access Points:**
-- Swagger UI: http://localhost:8001/docs
-- ReDoc: http://localhost:8001/redoc
-- OpenAPI JSON: http://localhost:8001/openapi.json
+
+- Swagger UI: <http://localhost:8001/docs>
+- ReDoc: <http://localhost:8001/redoc>
+- OpenAPI JSON: <http://localhost:8001/openapi.json>
 
 **When to Use:**
+
 - ✅ Microservices architecture
 - ✅ Multiple teams (frontend/backend)
 - ✅ Public/external APIs
@@ -148,6 +156,7 @@ reference-apps/
 - ✅ Enterprise environments
 
 **Pros:**
+
 - Contract is guaranteed
 - Generate clients in any language
 - Teams can work in parallel
@@ -155,6 +164,7 @@ reference-apps/
 - Breaking changes are explicit
 
 **Cons:**
+
 - More initial setup
 - Requires code generation tooling
 - Slower iteration (spec → generate → implement)
@@ -232,6 +242,7 @@ Week 4: Completely different APIs ❌❌❌
 **Four-Layer Protection Strategy:**
 
 #### Layer 1: Pre-commit Hooks (PRIMARY Enforcement - Local)
+
 ```bash
 # scripts/hooks/pre-commit
 # Runs BEFORE every commit - catches issues locally BEFORE push
@@ -254,6 +265,7 @@ fi
 ```
 
 #### Layer 2: Makefile (Standard Interface)
+
 ```makefile
 # Makefile - Platform-agnostic standard interface
 # Works with ANY CI/CD system (GitHub Actions, GitLab CI, Jenkins, etc.)
@@ -279,6 +291,7 @@ install-hooks:    ## Install pre-commit hooks
 ```
 
 #### Layer 3: Portable Bash Scripts
+
 ```bash
 # scripts/validate-sync.sh - Core validation logic
 # Platform-agnostic (works on any Unix-like system)
@@ -298,6 +311,7 @@ compare_specs "code-first-normalized.yaml" "shared/openapi.yaml"
 ```
 
 #### Layer 4: Optional CI/CD Adapters (Any Platform)
+
 ```yaml
 # Works with ANY CI/CD system - just invoke Makefile targets
 
@@ -466,11 +480,13 @@ git commit -m "Update existing endpoint response"
 ### Workflow 4: Checking Synchronization Status
 
 **Quick check:**
+
 ```bash
 make sync-check
 ```
 
 **Output:**
+
 ```
 ✓ Starting code-first API...
 ✓ Extracting OpenAPI spec...
@@ -484,11 +500,13 @@ make sync-check
 ```
 
 **Detailed report:**
+
 ```bash
 make sync-report
 ```
 
 **Output:**
+
 ```
 # API Synchronization Report
 
@@ -789,12 +807,14 @@ info "APIs are synchronized - all validations passed"
 #### Layer 1: Unit Tests (Per-Implementation)
 
 **Code-First:**
+
 ```bash
 cd reference-apps/fastapi
 pytest tests/ -v
 ```
 
 **API-First:**
+
 ```bash
 cd reference-apps/fastapi-api-first
 pytest tests/ -v
@@ -812,6 +832,7 @@ pytest -v
 **Purpose:** Ensure both implementations behave identically.
 
 **Example:**
+
 ```python
 # shared/test-suite/test_redis_cluster.py
 @pytest.mark.parametrize("api_url", [
@@ -841,6 +862,7 @@ dredd shared/openapi.yaml http://localhost:8001
 ### Test Coverage Requirements
 
 Both implementations must maintain:
+
 - ✅ **80%+ code coverage** (unit tests)
 - ✅ **100% endpoint coverage** (shared tests)
 - ✅ **100% schema validation** (contract tests)
@@ -973,6 +995,7 @@ fi
 ```
 
 **Installation:**
+
 ```bash
 # Install pre-commit hooks (creates symlink for easy updates)
 make install-hooks
@@ -991,12 +1014,14 @@ make install-hooks
 ### Problem: "SPEC MISMATCH" error
 
 **Symptom:**
+
 ```
 ✗ SPEC MISMATCH: Code-first doesn't match shared spec
 Run 'make sync-report' for details
 ```
 
 **Solution:**
+
 ```bash
 # Step 1: See what's different
 make sync-report
@@ -1020,12 +1045,14 @@ make sync-check
 ### Problem: Shared tests fail on one implementation
 
 **Symptom:**
+
 ```
 test_health_all[http://localhost:8000] PASSED
 test_health_all[http://localhost:8001] FAILED
 ```
 
 **Solution:**
+
 ```bash
 # Step 1: Check logs for that implementation
 docker logs dev-reference-api-first
@@ -1049,12 +1076,14 @@ pytest shared/test-suite/test_health.py -v
 ### Problem: Contract test fails
 
 **Symptom:**
+
 ```
 dredd shared/openapi.yaml http://localhost:8000
 fail: GET /health/all returns extra field "uptime"
 ```
 
 **Solution:**
+
 ```bash
 # Step 1: Determine if field should exist
 # If YES: Update shared spec
@@ -1074,11 +1103,13 @@ make sync-check
 ### Problem: Code generation fails
 
 **Symptom:**
+
 ```
 Error: Unable to generate code from specification
 ```
 
 **Solution:**
+
 ```bash
 # Step 1: Validate spec syntax
 spectral lint reference-apps/shared/openapi.yaml

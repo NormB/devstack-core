@@ -28,6 +28,7 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 | **Avg Latency** | 1.923 ms | 1.237 ms | **-35.7%** ⬇️ |
 
 **Optimizations Applied:**
+
 - `shared_buffers`: 256MB → **512MB**
 - `effective_cache_size`: 1GB → **2GB**
 - `work_mem`: 8MB → **16MB**
@@ -36,6 +37,7 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 - `wal_buffers`: (default) → **16MB**
 
 **Files Modified:**
+
 - `.env`: Added PostgreSQL performance tuning parameters
 - `docker-compose.yml`: Added command-line parameters for runtime configuration
 
@@ -49,6 +51,7 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 | **Latency** | 0.009s per 1K | 0.007s per 1K | **-22.2%** ⬇️ |
 
 **Optimizations Applied:**
+
 - `max_connections`: 100 → **200**
 - `innodb_buffer_pool_size`: 256M → **512M**
 - `innodb_log_file_size`: 48M (default) → **128M**
@@ -56,6 +59,7 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 - `innodb_flush_method`: fsync → **O_DIRECT** (bypass OS cache)
 
 **Files Modified:**
+
 - `.env`: Added MySQL performance tuning parameters
 - `docker-compose.yml`: Added command-line parameters for InnoDB tuning
 
@@ -69,11 +73,13 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 | **Query Rate** | 2,105 queries/sec | 2,058 queries/sec | -2.2% (within variance) |
 
 **Optimizations Applied:**
+
 - `wiredTigerCacheSizeGB`: ~0.5GB (default) → **1GB**
 - `wiredTigerJournalCompressor`: snappy → **zstd** (better compression)
 - `journalCommitInterval`: 100ms (default) → **100ms** (confirmed)
 
 **Files Modified:**
+
 - `.env`: Added MongoDB performance tuning parameters
 - `docker-compose.yml`: Added command-line parameters for WiredTiger tuning
 
@@ -84,6 +90,7 @@ All optimizations focused on increasing buffer/cache sizes, tuning write perform
 ### Environment Variables Added (.env)
 
 **PostgreSQL:**
+
 ```bash
 POSTGRES_SHARED_BUFFERS=512MB
 POSTGRES_EFFECTIVE_CACHE_SIZE=2GB
@@ -94,6 +101,7 @@ POSTGRES_WAL_BUFFERS=16MB
 ```
 
 **MySQL:**
+
 ```bash
 MYSQL_MAX_CONNECTIONS=200
 MYSQL_INNODB_BUFFER_POOL=512M
@@ -103,6 +111,7 @@ MYSQL_INNODB_FLUSH_METHOD=O_DIRECT
 ```
 
 **MongoDB:**
+
 ```bash
 MONGODB_WIRED_TIGER_CACHE_SIZE=1
 MONGODB_JOURNAL_COMMIT_INTERVAL=100
@@ -117,6 +126,7 @@ All three services now accept environment-variable-driven performance tuning thr
 ## Benchmark Methodology
 
 ### PostgreSQL
+
 - **Tool:** pgbench (TPC-B benchmark)
 - **Scale Factor:** 50 (5 million rows)
 - **Clients:** 10
@@ -125,12 +135,14 @@ All three services now accept environment-variable-driven performance tuning thr
 - **Runs:** 3 per configuration (averaged)
 
 ### MySQL
+
 - **Tool:** Custom SQL benchmark
 - **Operation:** Bulk INSERT of 1,000 rows
 - **Method:** Single transaction with generated data
 - **Runs:** 3 per configuration (averaged)
 
 ### MongoDB
+
 - **Tool:** Custom mongosh benchmark
 - **Operation:** Bulk insert of 10,000 documents
 - **Method:** Unordered bulk operation
@@ -141,15 +153,19 @@ All three services now accept environment-variable-driven performance tuning thr
 ## Key Insights
 
 ### 1. Buffer Pool Size is Critical
+
 Increasing buffer pool sizes (PostgreSQL shared_buffers, MySQL innodb_buffer_pool, MongoDB wiredTiger cache) from 256MB to 512MB-1GB provided the most significant improvements, reducing disk I/O and improving cache hit rates.
 
 ### 2. Relaxed Durability for Development
+
 Setting `synchronous_commit=off` (PostgreSQL) and `innodb_flush_log_at_trx_commit=2` (MySQL) significantly improved write performance by reducing fsync calls. **Note:** These settings are appropriate for development but should be reverted to default for production.
 
 ### 3. O_DIRECT Benefits on NVMe
+
 MySQL's `innodb_flush_method=O_DIRECT` bypasses the operating system cache, which is beneficial on fast NVMe storage where the database can manage its own caching more efficiently.
 
 ### 4. Larger WAL Buffers Help Write-Heavy Workloads
+
 Increasing PostgreSQL's `wal_buffers` to 16MB reduced write bottlenecks during high-throughput scenarios.
 
 ---

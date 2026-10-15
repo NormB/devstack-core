@@ -8,6 +8,7 @@
 **Last Updated:** November 19, 2025 (Phase 3 Complete - 100%)
 
 **Phase Completion Summary:**
+
 - ✅ Phase 0: Preparation - 100% Complete (6/6 tasks)
 - ✅ Phase 1: Security Hardening - 100% Complete (6/6 tasks)
 - ✅ Phase 2: Operations & Reliability - 100% Complete (3/3 tasks)
@@ -19,6 +20,7 @@
 ## Phase 0: Preparation (2-3 hours) ✅ COMPLETED (100%)
 
 ### Task 0.1: Establish Baseline and Safety Net ✅ COMPLETED
+
 **Status:** ✅ Completed (6/6 subtasks)
 **Estimated Time:** 3 hours
 **Actual Time:** ~4 hours (includes rollback test development)
@@ -26,6 +28,7 @@
 **Completed:** November 17, 2025
 
 #### Subtasks
+
 - [x] **Subtask 0.1.1:** Full environment backup
   - [x] Backup Vault keys to `~/vault-backup-20251114/`
   - [x] Verify Vault backup contains: keys.json, root-token, ca/, certs/
@@ -86,6 +89,7 @@
   - [x] Committed: November 17, 2025 (commit 213f57f)
 
 **Notes:**
+
 - Backups completed successfully (Vault: 20K, Services: 35M)
 - All services verified healthy before proceeding
 - Feature branch created with initial commit
@@ -96,6 +100,7 @@
 ## Phase 1: Security Hardening (35-40 hours) - ✅ COMPLETED (100% complete, 6/6 tasks)
 
 ### Task 1.1: Vault AppRole Bootstrap (Critical) ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🔴 Critical
 **Estimated Time:** 6-8 hours
@@ -104,6 +109,7 @@
 **Dependencies:** Phase 0 complete
 
 #### Subtasks
+
 - [x] **Subtask 1.1.1:** Bootstrap script creation
   - [x] Create `scripts/vault-approle-bootstrap.sh` (16KB, 485 lines)
   - [x] Implement policy loading for all 7 services
@@ -131,6 +137,7 @@
   - [x] Document role_id/secret_id storage location (~/.config/vault/approles/)
 
 **Test Checklist:**
+
 - [x] Run bootstrap script successfully
 - [x] Verify all 7 policies loaded
 - [x] Verify all 7 AppRoles created
@@ -144,6 +151,7 @@
 - [x] Verify least-privilege access (each service can only access own secrets)
 
 **Notes:**
+
 - Bootstrap script: `scripts/vault-approle-bootstrap.sh` (16KB, complete)
 - All 7 policy files exist in `configs/vault/policies/`
 - Credentials stored in `~/.config/vault/approles/{service}/` (role-id, secret-id)
@@ -154,6 +162,7 @@
 ---
 
 ### Task 1.2: Service Init Script Migration ✅ COMPLETED
+
 **Status:** ✅ Completed (7 of 7 services - ALL COMPLETE)
 **Priority:** 🔴 Critical
 **Estimated Time:** 8-10 hours
@@ -163,6 +172,7 @@
 **Dependencies:** Task 1.1 complete
 
 #### Subtasks (Per Service: postgres, mysql, mongodb, redis, rabbitmq, forgejo, reference-api)
+
 - [x] **Subtask 1.2.1:** PostgreSQL migration ✅ COMPLETE
   - [x] Create `configs/postgres/scripts/init-approle.sh` (12KB)
   - [x] Replace root token with AppRole authentication
@@ -221,6 +231,7 @@
   - [x] Rollback test
 
 **Implementation Details:**
+
 - Modified `reference-apps/fastapi/app/services/vault.py` to add `_login_with_approle()` method
 - Updated `reference-apps/fastapi/app/config.py` to add `VAULT_APPROLE_DIR` setting
 - Removed `VAULT_TOKEN` from `docker-compose.yml` reference-api service (commit 3daa5d7)
@@ -228,6 +239,7 @@
 - Fixed dependency conflicts: pytest 9.0.0 → 8.3.4, redis 7.0.1 → 4.6.0 (commit 16dd23d)
 
 **Test Results (7 comprehensive end-to-end tests):**
+
 1. ✅ AppRole credentials exist and accessible (`role-id`, `secret-id`)
 2. ✅ Container running and healthy (dev-reference-api)
 3. ✅ Vault client token obtained via AppRole (hvs. prefix, 95 characters)
@@ -237,11 +249,13 @@
 7. ✅ Docker Compose config verified (no VAULT_TOKEN at line 861)
 
 **Commits:**
+
 - d9bfcdb: Added AppRole support code and credential mounting
 - 3daa5d7: Removed VAULT_TOKEN from docker-compose.yml
 - 16dd23d: Fixed pytest and redis dependency conflicts
 
 **Test Checklist:**
+
 - [x] PostgreSQL starts successfully with AppRole
 - [x] MySQL starts successfully with AppRole
 - [x] MongoDB starts successfully with AppRole
@@ -255,6 +269,7 @@
 - [x] Rollback to root token works for all services
 
 **Comprehensive AppRole Verification Test Results:**
+
 - Created comprehensive test script: `test-approle-complete.sh`
 - **Total Tests:** 45 (5 tests × 9 service instances)
 - **Test Results:** 45/45 PASSED (100% success rate)
@@ -262,6 +277,7 @@
 - **Verification Date:** November 16, 2025
 
 **Test Coverage per Service:**
+
 1. ✅ AppRole credentials exist on host (`~/.config/vault/approles/{service}/`)
 2. ✅ Container is running
 3. ✅ NO VAULT_TOKEN environment variable in container (proves AppRole is required)
@@ -269,6 +285,7 @@
 5. ✅ AppRole authentication successful (verified via logs or token type)
 
 **Notes:**
+
 - ALL 7 services (9 instances) migrated to AppRole (docker-compose.yml updated)
 - Zero root token usage in any service container
 - Old init.sh scripts retained for rollback capability
@@ -278,6 +295,7 @@
 ---
 
 ### Task 1.3: Vault Backup and Restore Scripts ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟡 High
 **Estimated Time:** 4-6 hours
@@ -286,6 +304,7 @@
 **Dependencies:** None
 
 #### Subtasks
+
 - [x] **Subtask 1.3.1:** Create vault-backup.sh script
   - [x] Create `scripts/vault-backup.sh` (152 lines)
   - [x] Backup Vault keys (~/.config/vault/keys.json)
@@ -309,6 +328,7 @@
   - [x] Test restore from backup
 
 **Test Checklist:**
+
 - [x] Backup script creates complete backup
 - [x] Backup includes all Vault files
 - [x] Backup is compressed and timestamped
@@ -317,6 +337,7 @@
 - [x] Services can authenticate after restore
 
 **Notes:**
+
 - Completed in PR #54 (commit f7c9871)
 - vault-backup.sh creates timestamped tar.gz archives
 - vault-restore.sh includes permission restoration (chmod 700/600)
@@ -326,6 +347,7 @@
 ---
 
 ### Task 1.4: Fix MySQL Password Exposure in Backup Commands ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🔴 Critical (Security Issue)
 **Estimated Time:** 1-2 hours
@@ -334,10 +356,12 @@
 **Dependencies:** None
 
 #### Security Issue (FIXED)
+
 MySQL password was exposed in process list when running backup/restore commands.
 Fixed by using `MYSQL_PWD` environment variable instead of command-line `-p` flag.
 
 #### Subtasks
+
 - [x] **Subtask 1.4.1:** Fix mysqldump password exposure
   - [x] Replace `-p'{mysql_pass}'` with environment variable
   - [x] Use `MYSQL_PWD` environment variable
@@ -353,6 +377,7 @@ Fixed by using `MYSQL_PWD` environment variable instead of command-line `-p` fla
   - [x] Fixed in scripts/manage_devstack.py:1191-1212
 
 **Test Checklist:**
+
 - [x] Backup runs successfully without password in command line
 - [x] Restore runs successfully without password in command line
 - [x] Password not visible in `ps aux` during backup/restore
@@ -360,6 +385,7 @@ Fixed by using `MYSQL_PWD` environment variable instead of command-line `-p` fla
 - [x] Restore functionality works correctly
 
 **Implementation:**
+
 ```python
 # Backup (lines 960-977):
 env = os.environ.copy()
@@ -381,6 +407,7 @@ returncode, stdout, stderr = run_command(
 ```
 
 **Notes:**
+
 - Completed in PR #54 (commit f7c9871)
 - Critical security vulnerability resolved
 - Password no longer visible in process list
@@ -389,6 +416,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 1.5: Document Container Capabilities ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟡 Medium
 **Estimated Time:** 2-3 hours
@@ -397,6 +425,7 @@ returncode, stdout, stderr = run_command(
 **Dependencies:** None
 
 #### Subtasks
+
 - [x] **Subtask 1.5.1:** Add inline comments for Vault IPC_LOCK
   - [x] Add comment in docker-compose.yml (lines 813-816)
   - [x] Explain why IPC_LOCK capability is needed
@@ -415,12 +444,14 @@ returncode, stdout, stderr = run_command(
   - [x] Add documentation references
 
 **Test Checklist:**
+
 - [x] All capabilities have inline comments in docker-compose.yml
 - [x] audit-capabilities.sh lists all capabilities
 - [x] audit-capabilities.sh output is clear and actionable
 - [x] Documentation references are accurate
 
 **Notes:**
+
 - Completed in PR #54 (commit f7c9871)
 - Vault IPC_LOCK now fully documented with 4-line inline comment
 - audit-capabilities.sh provides security audit report
@@ -430,6 +461,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 1.6: TLS/SSL Implementation ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟡 High
 **Estimated Time:** 12-15 hours
@@ -438,6 +470,7 @@ returncode, stdout, stderr = run_command(
 **Dependencies:** Task 1.2 complete
 
 #### Subtasks
+
 - [x] **Subtask 1.6.1:** Certificate automation ✅ COMPLETED
   - [x] Create `scripts/auto-renew-certificates.sh` (296 lines)
   - [x] Create `scripts/check-cert-expiration.sh` (277 lines)
@@ -478,6 +511,7 @@ returncode, stdout, stderr = run_command(
   - [x] Committed: PR #68 (merged November 17, 2025)
 
 **Test Checklist:**
+
 - [x] All services accept TLS connections (dual-mode: accept both TLS and non-TLS)
 - [x] Certificates valid and trusted (all showing 361 days validity)
 - [x] No certificate warnings in logs
@@ -487,6 +521,7 @@ returncode, stdout, stderr = run_command(
 - [x] Comprehensive test suite passes (39+ tests across 6 categories)
 
 **Comprehensive Test Suite Coverage:**
+
 1. **Prerequisites (8 tests):** Scripts exist, are executable, Vault running, certificates present
 2. **Expiration Checking (8 tests):** Human/JSON/Nagios output, per-service, exit codes, service validation
 3. **Automatic Renewal (7 tests):** Dry-run, quiet mode, per-service, Vault dependency, certificate preservation
@@ -495,6 +530,7 @@ returncode, stdout, stderr = run_command(
 6. **Integration (4 tests):** Full workflow, JSON parsing, required fields
 
 **Implementation Notes:**
+
 - All services run in dual-mode (accept both TLS and non-TLS connections)
 - Certificates automatically generated from Vault PKI (1-year validity)
 - Three automation scripts created (auto-renew, check-expiration, cron-setup)
@@ -509,12 +545,14 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 1.4: Network Segmentation
+
 **Status:** ⏳ Pending
 **Priority:** 🟡 High
 **Estimated Time:** 5-7 hours
 **Dependencies:** Task 1.3 complete
 
 #### Subtasks
+
 - [ ] **Subtask 1.4.1:** Network topology design
   - [ ] Define database network (172.20.1.0/24)
   - [ ] Define cache network (172.20.2.0/24)
@@ -537,6 +575,7 @@ returncode, stdout, stderr = run_command(
   - [ ] Document allowed network paths
 
 **Test Checklist:**
+
 - [ ] Services on different networks can communicate as allowed
 - [ ] Services on different networks cannot communicate if not allowed
 - [ ] No regression in service connectivity
@@ -546,12 +585,14 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 1.5: Security Testing
+
 **Status:** ⏳ Pending
 **Priority:** 🟡 High
 **Estimated Time:** 4-5 hours
 **Dependencies:** Task 1.4 complete
 
 #### Subtasks
+
 - [ ] **Subtask 1.5.1:** Create security test suite
   - [ ] Create `tests/test-security.sh`
   - [ ] Add AppRole authentication tests
@@ -567,6 +608,7 @@ returncode, stdout, stderr = run_command(
   - [ ] Document all test results
 
 **Test Checklist:**
+
 - [ ] All security tests pass
 - [ ] No credential leaks found
 - [ ] AppRole isolation verified
@@ -578,6 +620,7 @@ returncode, stdout, stderr = run_command(
 ## Phase 2: Operations & Reliability (18-25 hours) - ✅ COMPLETED (3/3 tasks complete, 100%)
 
 ### Task 2.1: Enhance Backup/Restore System ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟡 High
 **Estimated Time:** 8-10 hours
@@ -586,6 +629,7 @@ returncode, stdout, stderr = run_command(
 **Dependencies:** Task 1.1 complete
 
 #### Subtasks
+
 - [x] Fix `manage_devstack.py` backup function to use AppRole
 - [x] Add incremental backup support
 - [x] Add backup encryption
@@ -593,6 +637,7 @@ returncode, stdout, stderr = run_command(
 - [x] Test full restore procedure
 
 #### Implementation Details
+
 - Created comprehensive test suite: `docs/.private/TASK_2.1_TESTING.md` (1,076 lines)
 - 5 complete test suites (63 tests total, 100% pass rate):
   1. `test-approle-auth.sh` - 15 tests (AppRole authentication)
@@ -602,12 +647,14 @@ returncode, stdout, stderr = run_command(
   5. `test-backup-restore.sh` - 12 tests (Full restore workflow)
 
 #### Test Results
+
 - **Total Tests:** 63
 - **Pass Rate:** 100% (63/63)
 - **Execution Time:** ~30 seconds (all suites)
 - **Coverage:** Complete backup/restore system
 
 #### Features Implemented
+
 - AppRole-based authentication for backup operations
 - Incremental backup with manifest.json tracking
 - Backup encryption (GPG and AES256 support)
@@ -616,6 +663,7 @@ returncode, stdout, stderr = run_command(
 - Backup chain tracking and validation
 
 **Notes:**
+
 - Completed in PR #70 (merged November 9, 2025)
 - Comprehensive documentation added (1,076 lines)
 - All 63 tests passing in CI/CD pipeline
@@ -625,6 +673,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 2.2: Implement Disaster Recovery ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟡 High
 **Estimated Time:** 6-8 hours
@@ -632,6 +681,7 @@ returncode, stdout, stderr = run_command(
 **Completed:** November 18, 2025
 
 #### Subtasks
+
 - [x] Create automated DR test script (`tests/test-disaster-recovery.sh` - 600+ lines, 9 tests)
 - [x] Create DR automation script (`scripts/disaster-recovery.sh` - 600+ lines, 7-step recovery)
 - [x] Test complete environment rebuild (dry-run validated)
@@ -639,6 +689,7 @@ returncode, stdout, stderr = run_command(
 - [x] Validate 30-minute RTO target (✅ achieved 60% better than target)
 
 #### Implementation Details
+
 - **DR Test Script**: 9 comprehensive tests covering all recovery scenarios
   - Test Results: 9/9 passing (100% pass rate)
   - RTO measurement: Complete recovery simulation validated
@@ -655,6 +706,7 @@ returncode, stdout, stderr = run_command(
 - **Safety Features**: Pre-recovery validation, error handling, rollback capability, step-by-step progress reporting, post-recovery verification
 
 #### Test Coverage
+
 - ✅ Prerequisites check
 - ✅ Create test backup for DR scenarios
 - ✅ Vault backup and restore functionality
@@ -666,6 +718,7 @@ returncode, stdout, stderr = run_command(
 - ✅ Backup automation verification
 
 **Notes:**
+
 - RTO target of 30 minutes exceeded: 10-12 minutes achieved (60% improvement)
 - All critical recovery steps automated and tested
 - Supports both manual and automated recovery workflows
@@ -675,6 +728,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 2.3: Add Health Check Monitoring ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟢 Medium
 **Estimated Time:** 4-7 hours
@@ -682,12 +736,14 @@ returncode, stdout, stderr = run_command(
 **Completed:** November 18, 2025
 
 #### Subtasks
+
 - [x] Create alerting thresholds and rules
 - [x] Add Prometheus alerting rules (50+ alerts across 10 categories)
 - [x] Configure AlertManager with routing and receivers
 - [x] Document escalation procedures (included in alert annotations)
 
 #### Implementation Details
+
 - **Alert Rules File**: `configs/prometheus/rules/devstack-alerts.yml` (500+ lines)
   - 10 alert rule groups covering all critical infrastructure
   - 50+ individual alert rules with thresholds and runbooks
@@ -714,11 +770,13 @@ returncode, stdout, stderr = run_command(
   - Alert evaluation every 15 seconds
 
 **Alert Routing Strategy**:
+
 - Critical alerts: Immediate notification (10s delay, 1m interval, 30m repeat)
 - Warning alerts: Grouped delivery (5m delay, 15m interval, 12h repeat)
 - Info alerts: Daily summary (1h delay, 24h interval, weekly repeat)
 
 **Receivers Configured**:
+
 - devstack-critical: Multiple channels for immediate response
 - devstack-vault: Vault-specific alerts
 - devstack-database: Database health monitoring
@@ -727,6 +785,7 @@ returncode, stdout, stderr = run_command(
 - devstack-warning/info: Standard alerts
 
 **Notes:**
+
 - All alerts include runbooks in annotations for quick remediation
 - Alert thresholds tuned for development environment (adjustable for production)
 - Supports email, Slack, PagerDuty notifications (requires configuration)
@@ -744,6 +803,7 @@ returncode, stdout, stderr = run_command(
 **New Test Suites:** +77 tests (Redis failover: 16, AppRole: 21, TLS: 24, Performance: 9, Load: 7)
 
 ### Task 3.1: Database Performance Tuning ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟢 Medium
 **Estimated Time:** 8-10 hours
@@ -752,6 +812,7 @@ returncode, stdout, stderr = run_command(
 **Results:** PostgreSQL +41.3%, MySQL +37.5%, MongoDB +19.6%
 
 #### Subtasks
+
 - [x] **Subtask 3.1.1:** Run current performance baseline (pgbench, custom benchmarks) ✅
 - [x] **Subtask 3.1.2:** PostgreSQL optimization (shared_buffers: 512MB, work_mem: 16MB, synchronous_commit: off) ✅
 - [x] **Subtask 3.1.3:** MySQL optimization (innodb_buffer_pool: 512M, flush_log_at_trx_commit: 2, O_DIRECT) ✅
@@ -759,6 +820,7 @@ returncode, stdout, stderr = run_command(
 - [x] **Subtask 3.1.5:** Validate improvements (created PHASE_3_TUNING_RESULTS.md) ✅
 
 **Deliverables:**
+
 - `docs/PHASE_3_BASELINE.md` - Pre-optimization baseline
 - `docs/PHASE_3_TUNING_RESULTS.md` - Complete results and analysis
 - Updated `.env` - Performance tuning parameters for all 3 databases
@@ -767,6 +829,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 3.2: Cache Performance Optimization ✅ COMPLETED
+
 **Status:** ✅ Completed
 **Priority:** 🟢 Medium
 **Estimated Time:** 6-8 hours
@@ -775,12 +838,14 @@ returncode, stdout, stderr = run_command(
 **Results:** Configuration optimized (512MB, persistence disabled), failover <3s
 
 #### Subtasks
+
 - [x] **Subtask 3.2.1:** Redis cluster baseline (used existing 52K ops/sec baseline) ✅
 - [x] **Subtask 3.2.2:** Redis configuration optimization (maxmemory: 512MB, disabled RDB/AOF for dev) ✅
 - [x] **Subtask 3.2.3:** Failover testing (16 comprehensive tests, <3 second failover measured) ✅
 - [x] **Subtask 3.2.4:** Performance documentation (updated PHASE_3_SUMMARY.md) ✅
 
 **Deliverables:**
+
 - `tests/test-redis-failover.sh` - 16-test comprehensive failover suite
 - `configs/redis/redis-cluster.conf` - Disabled persistence for dev performance
 - `docker-compose.yml` - Added Redis configuration environment variable support
@@ -789,6 +854,7 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 3.3: Expand Test Coverage ✅ COMPLETED
+
 **Status:** ✅ Completed (5/5 subtasks complete)
 **Priority:** 🟢 Medium
 **Estimated Time:** 11-12 hours
@@ -798,6 +864,7 @@ returncode, stdout, stderr = run_command(
 **Final Test Count:** 494+ baseline + 77 new tests = 571+ tests (95.2% of 600-test goal)
 
 #### Subtasks
+
 - [x] **Subtask 3.3.1:** AppRole authentication tests (21 tests created) ✅
 - [x] **Subtask 3.3.2:** TLS connection tests (24 tests created) ✅
 - [x] **Subtask 3.3.3:** Performance regression tests (9 tests, automated baseline comparison, 20% regression tolerance) ✅
@@ -805,6 +872,7 @@ returncode, stdout, stderr = run_command(
 - [x] **Subtask 3.3.5:** Test coverage report (571+ tests documented in TEST_COVERAGE.md, 95.2% achieved) ✅
 
 **Deliverables:**
+
 - `tests/test-performance-regression.sh` - 9-test performance validation suite
 - `tests/test-load.sh` - 7-test load testing automation
 - Updated `tests/TEST_COVERAGE.md` - Comprehensive Phase 3 test documentation
@@ -815,11 +883,13 @@ returncode, stdout, stderr = run_command(
 ## Phase 4: Documentation & CI/CD (25-30 hours)
 
 ### Task 4.1: Update All Documentation
+
 **Status:** ⏳ Pending
 **Priority:** 🟡 High
 **Estimated Time:** 12-15 hours
 
 #### Subtasks
+
 - [ ] Update INSTALLATION.md with AppRole setup
 - [ ] Update VAULT.md with certificate automation
 - [ ] Update SECURITY_ASSESSMENT.md
@@ -829,11 +899,13 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 4.2: CI/CD Pipeline Enhancement
+
 **Status:** ⏳ Pending
 **Priority:** 🟡 High
 **Estimated Time:** 8-10 hours
 
 #### Subtasks
+
 - [ ] Add security scanning to CI
 - [ ] Add TLS certificate validation
 - [ ] Add network policy tests
@@ -842,11 +914,13 @@ returncode, stdout, stderr = run_command(
 ---
 
 ### Task 4.3: Create Migration Guide
+
 **Status:** ⏳ Pending
 **Priority:** 🟢 Medium
 **Estimated Time:** 5 hours
 
 #### Subtasks
+
 - [ ] Document root token → AppRole migration
 - [ ] Document HTTP → HTTPS migration
 - [ ] Create troubleshooting guide
@@ -857,6 +931,7 @@ returncode, stdout, stderr = run_command(
 ## Summary Statistics
 
 ### Time Tracking
+
 - **Phase 0:** 4h / 3h estimated (133% time used - includes comprehensive rollback test development)
 - **Phase 1:** ~30h / 40h estimated (25% time saved through efficient implementation)
 - **Phase 2:** ~21h / 25h estimated (16% time saved)
@@ -865,6 +940,7 @@ returncode, stdout, stderr = run_command(
 - **Total:** 64h / 128h estimated (50% complete - Phases 0-3 done)
 
 ### Completion Status
+
 - **Phase 0:** 100% complete (6/6 tasks) ✅
 - **Phase 1:** 100% complete (6/6 tasks) ✅
 - **Phase 2:** 100% complete (3/3 tasks) ✅
@@ -873,6 +949,7 @@ returncode, stdout, stderr = run_command(
 - **Overall:** 72% complete (18/25 total tasks across all phases)
 
 ### Risk Register
+
 - ✅ **RESOLVED:** Backup failure risk (manual backups successful)
 - ✅ **RESOLVED:** Health verification passed
 - ✅ **RESOLVED:** AppRole bootstrap chicken-and-egg problem (solved via init-approle.sh scripts)
@@ -885,9 +962,11 @@ returncode, stdout, stderr = run_command(
 ## Daily Checkpoints
 
 ### November 14, 2025 - Day 1
+
 **Time:** 08:30 - 08:50 EST (1 hour)
 **Phase:** 0
 **Tasks Completed:**
+
 - ✅ Subtask 0.1.1: Full environment backup
 - ✅ Subtask 0.1.2: Document current state
 - ✅ Subtask 0.1.3: Create feature branch
@@ -897,10 +976,12 @@ returncode, stdout, stderr = run_command(
 **Blockers:** None
 
 **Next Session Goals:**
+
 - Complete Subtask 0.1.6: Create rollback documentation
 - Begin Task 1.1: Vault AppRole Bootstrap
 
 **Notes:**
+
 - Backup size larger than expected (35M vs estimated 10-20M)
 - All services healthy and responding
 - Redis cluster requires authentication (expected)
@@ -911,17 +992,20 @@ returncode, stdout, stderr = run_command(
 ## Notes and Observations
 
 ### Risks Encountered
+
 1. **Database backup credentials**: Management script backup function needed manual intervention. Will fix in Phase 2.
 2. **Redis authentication**: Redis cluster requires password authentication (expected behavior).
 3. **Large backup size**: 35M total (acceptable, mostly MySQL dump at 3.8M).
 
 ### Lessons Learned
+
 1. Always verify backups before proceeding with changes
 2. Test restore procedures, not just backup creation
 3. Document exact versions and configurations
 4. Validate network connectivity before and after changes
 
 ### Open Questions
+
 1. Should we implement Vault secret_id TTL immediately in Phase 1? (Decision: Yes, as part of Task 1.1)
 2. Should we enable TLS in dual-mode (accept both HTTP and HTTPS)? (Decision: Yes, for gradual migration)
 3. Should we segment networks by service type or by security zone? (Decision: By service type for better isolation)
@@ -931,6 +1015,7 @@ returncode, stdout, stderr = run_command(
 ## Completion Checklist
 
 ### Phase 0 Completion Criteria
+
 - [x] Full backup created and verified
 - [x] Baseline documented
 - [x] Feature branch created
@@ -939,6 +1024,7 @@ returncode, stdout, stderr = run_command(
 - [x] Rollback documentation created (docs/ROLLBACK_PROCEDURES.md + 6 test scripts)
 
 ### Overall Project Completion Criteria
+
 - [x] Phases 0-2 complete (15/15 tasks) ✅
 - [ ] Phases 3-4 complete (0/10 tasks remaining)
 - [x] All 494+ tests passing (baseline 370 + Phase 1-2 additions 124+) ✅
