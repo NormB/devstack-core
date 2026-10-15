@@ -29,7 +29,6 @@ set -euo pipefail
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -71,11 +70,11 @@ cleanup() {
   if [ "${1:-}" = "now" ]; then
     log_info "Cleaning up test backups..."
     if [ -n "${FULL_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${FULL_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${FULL_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${FULL_BACKUP_ID:?}"
       log_info "Removed: ${FULL_BACKUP_ID}"
     fi
     if [ -n "${INCREMENTAL_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${INCREMENTAL_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${INCREMENTAL_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${INCREMENTAL_BACKUP_ID:?}"
       log_info "Removed: ${INCREMENTAL_BACKUP_ID}"
     fi
   fi
@@ -198,10 +197,10 @@ test_incremental_without_base() {
       log_pass "Backup created successfully (type: ${BACKUP_TYPE})"
       log_info "Note: Found existing backup directory to use as base"
       # Clean up this test backup
-      rm -rf "${BACKUPS_DIR}/${TEST_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${TEST_BACKUP_ID:?}"
     else
       log_fail "Unexpected backup type: ${BACKUP_TYPE}"
-      rm -rf "${BACKUPS_DIR}/${TEST_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${TEST_BACKUP_ID:?}"
       return 1
     fi
   else

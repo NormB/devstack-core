@@ -325,12 +325,13 @@ wait_for_vault_pki() {
   local test_attempt=0
 
   while [ $test_attempt -lt $test_attempts ]; do
-    local test_response=$(curl -sf --connect-timeout 5 --max-time 15 \
+    local test_response
+    test_response=$(curl -sf --connect-timeout 5 --max-time 15 \
       -X POST \
       -H "X-Vault-Token: $VAULT_TOKEN" \
       -H "Content-Type: application/json" \
       -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
-      "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>&1)
+      "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2>&1) || true
 
     if echo "$test_response" | grep -q '"certificate"'; then
       success "Vault PKI issuance endpoint is ready"
@@ -391,13 +392,16 @@ is_cert_valid() {
   fi
 
   # Check if certificate expires in more than 30 days
-  local expiry_date=$(openssl x509 -in "$cert_file" -noout -enddate 2> /dev/null | cut -d= -f2)
+  local expiry_date
+  expiry_date=$(openssl x509 -in "$cert_file" -noout -enddate 2> /dev/null | cut -d= -f2) || true
   if [ -z "$expiry_date" ]; then
     return 1 # Can't parse certificate
   fi
 
-  local expiry_epoch=$(date -j -f "%b %d %T %Y %Z" "$expiry_date" +%s 2> /dev/null)
-  local now_epoch=$(date +%s)
+  local expiry_epoch
+  expiry_epoch=$(date -j -f "%b %d %T %Y %Z" "$expiry_date" +%s 2> /dev/null) || true
+  local now_epoch
+  now_epoch=$(date +%s) || true
   local days_remaining=$((($expiry_epoch - $now_epoch) / 86400))
 
   if [ $days_remaining -gt 30 ]; then
@@ -480,14 +484,17 @@ generate_certificate() {
 
   # Check if existing certificate is still valid
   if is_cert_valid "$cert_dir/server.crt"; then
-    local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
+    local expiry
+    expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2) || true
     success "Certificate for $service is still valid (expires: $expiry), skipping generation"
     return 0
   fi
 
   # Request certificate from Vault
   # Note: Only using allowed alt_names (localhost), roles don't allow bare service names
-  local cert_response=$(curl -s --connect-timeout 10 --max-time 30 \
+  local cert_response
+  local curl_exit=0
+  cert_response=$(curl -s --connect-timeout 10 --max-time 30 \
     -X POST \
     -H "X-Vault-Token: $VAULT_TOKEN" \
     -H "Content-Type: application/json" \
@@ -497,9 +504,7 @@ generate_certificate() {
             \"ip_sans\": \"127.0.0.1,$service_ip\",
             \"ttl\": \"$CERT_TTL\"
         }" \
-    "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1)
-
-  local curl_exit=$?
+    "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1) || curl_exit=$?
 
   if [ $curl_exit -ne 0 ] || ! echo "$cert_response" | grep -q '"certificate"'; then
     warn "Certificate request failed for $service (curl exit: $curl_exit)"
@@ -551,8 +556,10 @@ generate_certificate() {
   esac
 
   # Display certificate info
-  local expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2)
-  local subject=$(openssl x509 -in "$cert_dir/server.crt" -noout -subject | sed 's/subject=//')
+  local expiry
+  expiry=$(openssl x509 -in "$cert_dir/server.crt" -noout -enddate | cut -d= -f2) || true
+  local subject
+  subject=$(openssl x509 -in "$cert_dir/server.crt" -noout -subject | sed 's/subject=//') || true
 
   success "Generated certificate for $service"
   info "  Subject: $subject"

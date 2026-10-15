@@ -50,12 +50,14 @@ main() {
   echo ""
 
   # Create temp directory for extraction
-  local temp_dir=$(mktemp -d)
+  local temp_dir
+  temp_dir=$(mktemp -d) || true
   info "Extracting backup archive to: $temp_dir"
   tar -xzf "$archive" -C "$temp_dir"
 
   # Find backup directory (should be only one)
-  local backup_dir=$(find "$temp_dir" -maxdepth 1 -type d ! -path "$temp_dir" | head -1)
+  local backup_dir
+  backup_dir=$(find "$temp_dir" -maxdepth 1 -type d ! -path "$temp_dir" | head -1) || true
 
   if [ -z "$backup_dir" ]; then
     rm -rf "$temp_dir"

@@ -96,6 +96,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load common test library
@@ -119,8 +120,11 @@ run_python() {
 
 # Test counters
 TESTS_RUN=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_PASSED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 TESTS_FAILED=0
+# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
 declare -a FAILED_TESTS=()
 
 ################################################################################
@@ -254,7 +258,8 @@ test_mongodb_wrong_password() {
   fi
 
   # Try to connect with wrong password via docker exec (this should fail)
-  local result=$(docker exec dev-mongodb mongosh -u dev_admin -p wrong_password --authenticationDatabase admin --eval "db.version()" 2>&1)
+  local result
+  result=$(docker exec dev-mongodb mongosh -u dev_admin -p wrong_password --authenticationDatabase admin --eval "db.version()" 2>&1) || true
 
   if echo "$result" | grep -qE "(Authentication failed|auth.*failed)"; then
     success "Correctly rejected wrong password"
@@ -304,7 +309,8 @@ test_redis_wrong_password() {
   fi
 
   # Try to connect with wrong password (this should fail)
-  local result=$(docker exec dev-redis-1 redis-cli -a "wrong_password" PING 2>&1)
+  local result
+  result=$(docker exec dev-redis-1 redis-cli -a "wrong_password" PING 2>&1) || true
 
   if echo "$result" | grep -qE "(WRONGPASS|invalid password|Authentication failed)"; then
     success "Correctly rejected wrong password"
@@ -442,7 +448,8 @@ test_nonexistent_database() {
     return 0
   fi
 
-  local password=$(get_password_from_vault "postgres")
+  local password
+  password=$(get_password_from_vault "postgres") || true
 
   if [ -z "$password" ]; then
     warn "Could not get password from Vault, skipping test"
@@ -497,7 +504,8 @@ test_invalid_sql_query() {
     return 0
   fi
 
-  local password=$(get_password_from_vault "postgres")
+  local password
+  password=$(get_password_from_vault "postgres") || true
 
   if [ -z "$password" ]; then
     warn "Could not get password from Vault, skipping test"
@@ -558,7 +566,7 @@ test_connection_limit() {
   local pids=()
   local max_connections=50
 
-  for i in $(seq 1 $max_connections); do
+  for _ in $(seq 1 $max_connections); do
     run_python lib/postgres_client.py --test connection > /dev/null 2>&1 &
     pids+=($!)
   done
@@ -619,10 +627,12 @@ test_api_invalid_parameters() {
   fi
 
   # Try to access non-existent node (this should return error)
-  local response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1)
+  local response
+  local curl_status=0
+  response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1) || curl_status=$?
 
   # This should fail or return an error response
-  if [ $? -ne 0 ] || echo "$response" | jq -e '.status == "error"' &> /dev/null; then
+  if [ "$curl_status" -ne 0 ] || echo "$response" | jq -e '.status == "error"' &> /dev/null; then
     success "Correctly rejected invalid node parameter"
     return 0
   else
@@ -711,9 +721,10 @@ test_api_invalid_json() {
 
   # Test with malformed JSON to cache endpoint (accepts POST)
   # Use -w to capture HTTP status code, -o to suppress body output
-  local http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  local http_code
+  http_code=$(curl -s -o /dev/null -w "%{http_code}" \
     -X POST -H "Content-Type: application/json" \
-    -d '{invalid json}' "http://localhost:8000/examples/cache/test-key")
+    -d '{invalid json}' "http://localhost:8000/examples/cache/test-key") || true
 
   # Should return 4xx error (400 Bad Request, 422 Unprocessable Entity, etc.)
   if [ "$http_code" -ge 400 ] && [ "$http_code" -lt 500 ]; then

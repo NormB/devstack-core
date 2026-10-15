@@ -67,9 +67,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -186,8 +183,9 @@ test_http_endpoint() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 2: HTTP endpoint is accessible"
 
-  local response=$(curl -sf "$HTTP_URL/" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.name' &> /dev/null; then
     success "HTTP endpoint is accessible"
@@ -221,15 +219,16 @@ test_http_endpoint() {
 get_tls_status_from_vault() {
   local service_name="$1"
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     echo "false"
     return 1
   fi
 
-  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
-  if [ $? -eq 0 ]; then
+  local response
+  if response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null); then
     echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
   else
     echo "false"
@@ -262,7 +261,8 @@ test_https_endpoint() {
   info "Test 3: HTTPS endpoint is accessible (when TLS enabled)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "reference-api")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "reference-api") || true
 
   if [ "$tls_enabled" != "true" ]; then
     warn "TLS not enabled in Vault - skipping HTTPS test"
@@ -270,8 +270,9 @@ test_https_endpoint() {
     return 0
   fi
 
-  local response=$(curl -sfk "$HTTPS_URL/" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sfk "$HTTPS_URL/" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.name' &> /dev/null; then
     success "HTTPS endpoint is accessible"
@@ -306,11 +307,13 @@ test_health_all() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 4: Health check endpoint (/health/all)"
 
-  local response=$(curl -sf "$HTTP_URL/health/all" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/all" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local overall_status=$(echo "$response" | jq -r '.status // empty')
+    local overall_status
+    overall_status=$(echo "$response" | jq -r '.status // empty') || true
 
     if [ "$overall_status" = "healthy" ] || [ "$overall_status" = "degraded" ]; then
       success "Health check endpoint works (status: $overall_status)"
@@ -348,13 +351,17 @@ test_health_redis() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 5: Redis health check with cluster details"
 
-  local response=$(curl -sf "$HTTP_URL/health/redis" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/redis" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local cluster_enabled=$(echo "$response" | jq -r '.cluster_enabled')
-    local cluster_state=$(echo "$response" | jq -r '.cluster_state')
-    local total_nodes=$(echo "$response" | jq -r '.total_nodes')
+    local cluster_enabled
+    cluster_enabled=$(echo "$response" | jq -r '.cluster_enabled') || true
+    local cluster_state
+    cluster_state=$(echo "$response" | jq -r '.cluster_state') || true
+    local total_nodes
+    total_nodes=$(echo "$response" | jq -r '.total_nodes') || true
 
     if [ "$cluster_enabled" = "true" ] && [ "$cluster_state" = "ok" ] && [ "$total_nodes" = "3" ]; then
       success "Redis health shows cluster enabled with 3 nodes in ok state"
@@ -395,17 +402,22 @@ test_redis_cluster_nodes() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 6: Redis cluster nodes API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/nodes" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/nodes" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local api_status=$(echo "$response" | jq -r '.status')
-    local total_nodes=$(echo "$response" | jq -r '.total_nodes')
-    local nodes_count=$(echo "$response" | jq '.nodes | length')
+    local api_status
+    api_status=$(echo "$response" | jq -r '.status') || true
+    local total_nodes
+    total_nodes=$(echo "$response" | jq -r '.total_nodes') || true
+    local nodes_count
+    nodes_count=$(echo "$response" | jq '.nodes | length') || true
 
     if [ "$api_status" = "success" ] && [ "$total_nodes" = "3" ] && [ "$nodes_count" = "3" ]; then
       # Check that all nodes have slots assigned
-      local nodes_with_slots=$(echo "$response" | jq '[.nodes[] | select(.slots_count > 0)] | length')
+      local nodes_with_slots
+      nodes_with_slots=$(echo "$response" | jq '[.nodes[] | select(.slots_count > 0)] | length') || true
 
       if [ "$nodes_with_slots" = "3" ]; then
         success "Redis cluster nodes API returns 3 nodes with slot assignments"
@@ -443,13 +455,17 @@ test_redis_cluster_slots() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 7: Redis cluster slots API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/slots" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/slots" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local api_status=$(echo "$response" | jq -r '.status')
-    local total_slots=$(echo "$response" | jq -r '.total_slots')
-    local coverage=$(echo "$response" | jq -r '.coverage_percentage')
+    local api_status
+    api_status=$(echo "$response" | jq -r '.status') || true
+    local total_slots
+    total_slots=$(echo "$response" | jq -r '.total_slots') || true
+    local coverage
+    coverage=$(echo "$response" | jq -r '.coverage_percentage') || true
 
     # Coverage can be 100 or 100.0
     if [ "$api_status" = "success" ] && [ "$total_slots" = "16384" ] &&
@@ -492,13 +508,17 @@ test_redis_cluster_info() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 8: Redis cluster info API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/info" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/info" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local api_status=$(echo "$response" | jq -r '.status')
-    local cluster_state=$(echo "$response" | jq -r '.cluster_info.cluster_state')
-    local slots_assigned=$(echo "$response" | jq -r '.cluster_info.cluster_slots_assigned')
+    local api_status
+    api_status=$(echo "$response" | jq -r '.status') || true
+    local cluster_state
+    cluster_state=$(echo "$response" | jq -r '.cluster_info.cluster_state') || true
+    local slots_assigned
+    slots_assigned=$(echo "$response" | jq -r '.cluster_info.cluster_slots_assigned') || true
 
     if [ "$api_status" = "success" ] && [ "$cluster_state" = "ok" ] && [ "$slots_assigned" = "16384" ]; then
       success "Redis cluster info shows healthy state with all slots assigned"
@@ -539,14 +559,19 @@ test_redis_node_info() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 9: Redis per-node info API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/nodes/redis-1/info" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/nodes/redis-1/info" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local api_status=$(echo "$response" | jq -r '.status')
-    local node=$(echo "$response" | jq -r '.node')
-    local redis_version=$(echo "$response" | jq -r '.info.redis_version // empty')
-    local cluster_enabled=$(echo "$response" | jq -r '.info.cluster_enabled')
+    local api_status
+    api_status=$(echo "$response" | jq -r '.status') || true
+    local node
+    node=$(echo "$response" | jq -r '.node') || true
+    local redis_version
+    redis_version=$(echo "$response" | jq -r '.info.redis_version // empty') || true
+    local cluster_enabled
+    cluster_enabled=$(echo "$response" | jq -r '.info.cluster_enabled') || true
 
     if [ "$api_status" = "success" ] && [ "$node" = "redis-1" ] && [ -n "$redis_version" ] && [ "$cluster_enabled" = "1" ]; then
       success "Redis node info API returns detailed information for redis-1"
@@ -581,8 +606,9 @@ test_api_docs() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 10: API documentation is accessible"
 
-  local response=$(curl -sf "$HTTP_URL/docs" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/docs" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | grep -q "Swagger UI"; then
     success "API documentation is accessible at /docs"
@@ -617,11 +643,13 @@ test_openapi_schema() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 11: OpenAPI schema is valid"
 
-  local response=$(curl -sf "$HTTP_URL/openapi.json" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/openapi.json" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.openapi' &> /dev/null; then
-    local title=$(echo "$response" | jq -r '.info.title')
+    local title
+    title=$(echo "$response" | jq -r '.info.title') || true
 
     if [ "$title" = "DevStack Core - Reference API" ]; then
       success "OpenAPI schema is valid and accessible"
@@ -656,11 +684,13 @@ test_vault_integration() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 12: Vault integration works"
 
-  local response=$(curl -sf "$HTTP_URL/health/vault" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/vault" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local vault_status=$(echo "$response" | jq -r '.status // empty')
+    local vault_status
+    vault_status=$(echo "$response" | jq -r '.status // empty') || true
 
     if [ "$vault_status" = "healthy" ]; then
       success "Vault integration is working"
@@ -697,9 +727,12 @@ test_database_connectivity() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 13: Database connectivity (all databases)"
 
-  local postgres=$(curl -sf "$HTTP_URL/health/postgres" 2> /dev/null | jq -r '.status')
-  local mysql=$(curl -sf "$HTTP_URL/health/mysql" 2> /dev/null | jq -r '.status')
-  local mongodb=$(curl -sf "$HTTP_URL/health/mongodb" 2> /dev/null | jq -r '.status')
+  local postgres
+  postgres=$(curl -sf "$HTTP_URL/health/postgres" 2> /dev/null | jq -r '.status') || true
+  local mysql
+  mysql=$(curl -sf "$HTTP_URL/health/mysql" 2> /dev/null | jq -r '.status') || true
+  local mongodb
+  mongodb=$(curl -sf "$HTTP_URL/health/mongodb" 2> /dev/null | jq -r '.status') || true
 
   if [ "$postgres" = "healthy" ] && [ "$mysql" = "healthy" ] && [ "$mongodb" = "healthy" ]; then
     success "All database connections are healthy"
@@ -734,11 +767,13 @@ test_rabbitmq_integration() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 14: RabbitMQ integration"
 
-  local response=$(curl -sf "$HTTP_URL/health/rabbitmq" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/rabbitmq" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
-    local rabbitmq_status=$(echo "$response" | jq -r '.status')
+    local rabbitmq_status
+    rabbitmq_status=$(echo "$response" | jq -r '.status') || true
 
     if [ "$rabbitmq_status" = "healthy" ]; then
       success "RabbitMQ integration is working"

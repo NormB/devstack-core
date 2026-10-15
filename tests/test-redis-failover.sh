@@ -137,10 +137,9 @@ else
   fail "Data mismatch: got '$value_1', '$value_2', '$value_3'"
 fi
 
-# Test 6: Stop redis-1 and measure failover time
+# Test 6: Stop redis-1 and check the cluster still answers
 print_test "Failover when redis-1 is stopped"
 echo "  Stopping redis-1..."
-start_time=$(date +%s)
 docker stop dev-redis-1 > /dev/null
 
 # Wait for cluster to detect failure and adjust
@@ -148,8 +147,6 @@ sleep 2
 
 # Check if cluster is still operational (should be, with partial coverage)
 if redis_cli 2 PING | grep -q "PONG"; then
-  end_time=$(date +%s)
-  failover_time=$((end_time - start_time))
   echo "  Cluster still responsive after redis-1 stopped"
   pass
 else

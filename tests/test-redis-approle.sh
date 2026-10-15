@@ -68,7 +68,7 @@ echo -e "${BLUE}Detected ${#REDIS_NODES[@]} Redis node(s): ${REDIS_NODES[*]}${NC
 echo ""
 
 # Get Redis password from Vault (all nodes share same password from secret/redis-1)
-password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault vault kv get -field=password secret/redis-1 2> /dev/null || echo "")
+password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault vault kv get -field=password secret/redis-1 2> /dev/null || echo "")
 
 # Test 1-3: Container running, entrypoint, and AppRole credentials for each node
 for node in "${REDIS_NODES[@]}"; do

@@ -126,8 +126,10 @@ main() {
 
   # Verify backup
   info "Verifying backup..."
-  local backup_size=$(du -sh "$BACKUP_DIR" | cut -f1)
-  local archive_size=$(du -sh "$(basename "$BACKUP_DIR").tar.gz" | cut -f1)
+  local backup_size
+  backup_size=$(du -sh "$BACKUP_DIR" | cut -f1) || true
+  local archive_size
+  archive_size=$(du -sh "$(basename "$BACKUP_DIR").tar.gz" | cut -f1) || true
 
   echo ""
   echo "════════════════════════════════════════════════════════════════════════════════"

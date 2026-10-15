@@ -75,7 +75,6 @@ REDIS_NODE="${REDIS_NODE:-redis-1}"
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -91,7 +90,7 @@ NC='\033[0m'
 # Outputs:
 #   Writes formatted info message to stdout
 #######################################
-info() { echo -e "${BLUE}[Redis Exporter]${NC} $1"; }
+info() { printf '%b\n' "${BLUE}[Redis Exporter]${NC} $1"; }
 
 #######################################
 # Print success message to stdout
@@ -105,7 +104,7 @@ info() { echo -e "${BLUE}[Redis Exporter]${NC} $1"; }
 # Outputs:
 #   Writes formatted success message to stdout
 #######################################
-success() { echo -e "${GREEN}[Redis Exporter]${NC} $1"; }
+success() { printf '%b\n' "${GREEN}[Redis Exporter]${NC} $1"; }
 
 #######################################
 # Print error message and exit script
@@ -120,7 +119,7 @@ success() { echo -e "${GREEN}[Redis Exporter]${NC} $1"; }
 #   Writes formatted error message to stdout, then exits
 #######################################
 error() {
-  echo -e "${RED}[Redis Exporter]${NC} $1"
+  printf '%b\n' "${RED}[Redis Exporter]${NC} $1"
   exit 1
 }
 
@@ -144,7 +143,9 @@ error() {
 #######################################
 wait_for_vault() {
   info "Waiting for Vault to be ready..."
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local max_attempts=60
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local attempt=0
 
   while [ $attempt -lt $max_attempts ]; do
@@ -170,13 +171,16 @@ login_with_approle() {
     error "AppRole directory not found: $VAULT_APPROLE_DIR"
   fi
 
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local role_id_file="$VAULT_APPROLE_DIR/role-id"
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local secret_id_file="$VAULT_APPROLE_DIR/secret-id"
 
   if [ ! -f "$role_id_file" ] || [ ! -f "$secret_id_file" ]; then
     error "AppRole credentials not found in $VAULT_APPROLE_DIR"
   fi
 
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local role_id secret_id
   role_id=$(cat "$role_id_file")
   secret_id=$(cat "$secret_id_file")
@@ -186,6 +190,7 @@ login_with_approle() {
   fi
 
   # Login with AppRole
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local response
   response=$(wget -qO- \
     --header "Content-Type: application/json" \
@@ -230,16 +235,21 @@ login_with_approle() {
 fetch_credentials() {
   info "Fetching credentials from Vault (service: $REDIS_NODE)..."
 
-  local response=$(wget -qO- \
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
+  local response
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
+  local fetch_status=0
+  response=$(wget -qO- \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null) || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export REDIS_PASSWORD
 
   if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
     error "Invalid password received from Vault"

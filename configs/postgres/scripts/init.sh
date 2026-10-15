@@ -17,10 +17,8 @@
 #   VAULT_ADDR - Vault server address (default: http://vault:8200)
 #   VAULT_TOKEN - Authentication token for Vault API access (required)
 #   SERVICE_NAME - Service identifier for Vault secrets (set to "postgres")
-#   SERVICE_IP - PostgreSQL service IP address (default: 172.20.0.10)
 #   CERT_DIR - Directory containing TLS certificates (/var/lib/postgresql/certs)
 #   ENABLE_TLS - TLS enablement flag (read from Vault)
-#   TLS_CONFIG_DIR - Temporary directory for TLS configuration
 #   POSTGRES_USER - Database username (exported from Vault)
 #   POSTGRES_PASSWORD - Database password (exported from Vault)
 #   POSTGRES_DB - Default database name (exported from Vault)
@@ -90,10 +88,8 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="postgres"
-SERVICE_IP="${POSTGRES_IP:-172.20.0.10}"
 CERT_DIR="/var/lib/postgresql/certs"
 ENABLE_TLS="" # Will be read from Vault
-TLS_CONFIG_DIR="/tmp/postgres-tls"
 
 # Colors
 RED='\033[0;31m'
@@ -225,18 +221,24 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(curl -sf \
+  local response
+  local fetch_status=0
+  response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
-  export POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user')
-  export POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
-  export POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database')
-  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user') || true
+  export POSTGRES_USER
+  POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password') || true
+  export POSTGRES_PASSWORD
+  POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database') || true
+  export POSTGRES_DB
+  ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+  export ENABLE_TLS
 
   if [ -z "$POSTGRES_USER" ] || [ "$POSTGRES_USER" = "null" ]; then
     error "Invalid credentials received from Vault"

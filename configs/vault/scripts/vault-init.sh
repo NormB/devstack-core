@@ -174,7 +174,8 @@ wait_for_vault() {
 #   Queries /v1/sys/init endpoint and parses initialized field
 #######################################
 is_initialized() {
-  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/init" | grep -o '"initialized":[^,}]*' | cut -d':' -f2)
+  local status
+  status=$(curl -sf "${VAULT_ADDR}/v1/sys/init" | grep -o '"initialized":[^,}]*' | cut -d':' -f2) || true
   [ "$status" = "true" ]
 }
 
@@ -201,9 +202,10 @@ initialize_vault() {
   info "Initializing Vault..."
 
   # Initialize with 5 key shares and 3 key threshold
-  local init_output=$(curl -sf --request POST \
+  local init_output
+  init_output=$(curl -sf --request POST \
     --data '{"secret_shares": 5, "secret_threshold": 3}' \
-    "${VAULT_ADDR}/v1/sys/init")
+    "${VAULT_ADDR}/v1/sys/init") || true
 
   # Save keys and root token
   echo "$init_output" > "$VAULT_KEYS_FILE"
@@ -235,7 +237,8 @@ initialize_vault() {
 #   Queries /v1/sys/seal-status endpoint and parses sealed field
 #######################################
 is_sealed() {
-  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status" | grep -o '"sealed":[^,}]*' | cut -d':' -f2)
+  local status
+  status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status" | grep -o '"sealed":[^,}]*' | cut -d':' -f2) || true
   [ "$status" = "true" ]
 }
 
@@ -271,7 +274,11 @@ unseal_vault() {
   fi
 
   # Extract unseal keys (we need 3 out of 5)
-  local keys=($(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3))
+  local keys=()
+  local key
+  while IFS= read -r key; do
+    keys+=("$key")
+  done < <(grep -o '"[^"]*"' "$VAULT_KEYS_FILE" | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3)
 
   if [ ${#keys[@]} -lt 3 ]; then
     error "Could not extract enough unseal keys from $VAULT_KEYS_FILE"
@@ -309,7 +316,8 @@ unseal_vault() {
 #######################################
 show_status() {
   info "Vault Status:"
-  local status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status")
+  local status
+  status=$(curl -sf "${VAULT_ADDR}/v1/sys/seal-status") || true
 
   echo "$status" | python3 -m json.tool 2> /dev/null || echo "$status"
 

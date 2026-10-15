@@ -61,7 +61,6 @@ set -euo pipefail
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
@@ -225,8 +224,10 @@ test_credentials_stored() {
     fi
 
     # Check file permissions (should be 600)
-    local role_id_perms=$(stat -f "%OLp" "${service_dir}/role-id" 2> /dev/null || stat -c "%a" "${service_dir}/role-id" 2> /dev/null)
-    local secret_id_perms=$(stat -f "%OLp" "${service_dir}/secret-id" 2> /dev/null || stat -c "%a" "${service_dir}/secret-id" 2> /dev/null)
+    local role_id_perms
+    role_id_perms=$(stat -f "%OLp" "${service_dir}/role-id" 2> /dev/null || stat -c "%a" "${service_dir}/role-id" 2> /dev/null) || true
+    local secret_id_perms
+    secret_id_perms=$(stat -f "%OLp" "${service_dir}/secret-id" 2> /dev/null || stat -c "%a" "${service_dir}/secret-id" 2> /dev/null) || true
 
     if [ "$role_id_perms" != "600" ] || [ "$secret_id_perms" != "600" ]; then
       print_result "Credentials stored: ${service}" "FAIL" "Incorrect permissions (expected 600, got role-id:$role_id_perms secret-id:$secret_id_perms)"
@@ -245,13 +246,16 @@ test_authentication() {
   local failures=0
 
   for service in "${SERVICES[@]}"; do
-    local role_id=$(cat "${APPROLE_DIR}/${service}/role-id")
-    local secret_id=$(cat "${APPROLE_DIR}/${service}/secret-id")
+    local role_id
+    role_id=$(cat "${APPROLE_DIR}/${service}/role-id") || true
+    local secret_id
+    secret_id=$(cat "${APPROLE_DIR}/${service}/secret-id") || true
 
-    local token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
+    local token
+    token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
       vault write -field=token auth/approle/login \
       role_id="$role_id" \
-      secret_id="$secret_id" 2> /dev/null)
+      secret_id="$secret_id" 2> /dev/null) || true
 
     if [ -n "$token" ] && [ "$token" != "null" ]; then
       print_result "Authentication: ${service}" "PASS" "Token obtained successfully"
@@ -276,13 +280,16 @@ test_secret_access() {
       continue
     fi
 
-    local role_id=$(cat "${APPROLE_DIR}/${service}/role-id")
-    local secret_id=$(cat "${APPROLE_DIR}/${service}/secret-id")
+    local role_id
+    role_id=$(cat "${APPROLE_DIR}/${service}/role-id") || true
+    local secret_id
+    secret_id=$(cat "${APPROLE_DIR}/${service}/secret-id") || true
 
-    local token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
+    local token
+    token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
       vault write -field=token auth/approle/login \
       role_id="$role_id" \
-      secret_id="$secret_id" 2> /dev/null)
+      secret_id="$secret_id" 2> /dev/null) || true
 
     # Map service name to secret path (redis -> redis-1)
     local secret_path="$service"
@@ -306,13 +313,16 @@ test_secret_access() {
 test_policy_enforcement() {
   local test_name="Policy enforcement: postgres CANNOT access mysql secret"
 
-  local role_id=$(cat "${APPROLE_DIR}/postgres/role-id")
-  local secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id")
+  local role_id
+  role_id=$(cat "${APPROLE_DIR}/postgres/role-id") || true
+  local secret_id
+  secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id") || true
 
-  local token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
+  local token
+  token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
     vault write -field=token auth/approle/login \
     role_id="$role_id" \
-    secret_id="$secret_id" 2> /dev/null)
+    secret_id="$secret_id" 2> /dev/null) || true
 
   # Try to access mysql secret with postgres token (should fail)
   if docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="$token" dev-vault \
@@ -332,11 +342,13 @@ test_token_ttl() {
   for service in "${SERVICES[@]}"; do
     local role_name="${service}-role"
 
-    local token_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
-      vault read -field=token_ttl "auth/approle/role/${role_name}" 2> /dev/null)
+    local token_ttl
+    token_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
+      vault read -field=token_ttl "auth/approle/role/${role_name}" 2> /dev/null) || true
 
-    local token_max_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
-      vault read -field=token_max_ttl "auth/approle/role/${role_name}" 2> /dev/null)
+    local token_max_ttl
+    token_max_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
+      vault read -field=token_max_ttl "auth/approle/role/${role_name}" 2> /dev/null) || true
 
     # Expected: token_ttl=3600s (1h), token_max_ttl=86400s (24h)
     if [ "$token_ttl" = "3600" ] && [ "$token_max_ttl" = "86400" ]; then
@@ -357,8 +369,9 @@ test_secret_id_ttl() {
   for service in "${SERVICES[@]}"; do
     local role_name="${service}-role"
 
-    local secret_id_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
-      vault read -field=secret_id_ttl "auth/approle/role/${role_name}" 2> /dev/null)
+    local secret_id_ttl
+    secret_id_ttl=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault \
+      vault read -field=secret_id_ttl "auth/approle/role/${role_name}" 2> /dev/null) || true
 
     # Expected: secret_id_ttl=2592000s (30 days)
     if [ "$secret_id_ttl" = "2592000" ]; then
@@ -376,13 +389,16 @@ test_secret_id_ttl() {
 test_token_renewal() {
   local test_name="Token renewal: postgres token can be renewed"
 
-  local role_id=$(cat "${APPROLE_DIR}/postgres/role-id")
-  local secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id")
+  local role_id
+  role_id=$(cat "${APPROLE_DIR}/postgres/role-id") || true
+  local secret_id
+  secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id") || true
 
-  local token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
+  local token
+  token=$(docker exec -e VAULT_ADDR="${VAULT_ADDR}" dev-vault \
     vault write -field=token auth/approle/login \
     role_id="$role_id" \
-    secret_id="$secret_id" 2> /dev/null)
+    secret_id="$secret_id" 2> /dev/null) || true
 
   # Try to renew the token
   if docker exec -e VAULT_ADDR="${VAULT_ADDR}" -e VAULT_TOKEN="$token" dev-vault \
@@ -423,7 +439,8 @@ test_directory_permissions() {
     return 1
   fi
 
-  local dir_perms=$(stat -f "%OLp" "$APPROLE_DIR" 2> /dev/null || stat -c "%a" "$APPROLE_DIR" 2> /dev/null)
+  local dir_perms
+  dir_perms=$(stat -f "%OLp" "$APPROLE_DIR" 2> /dev/null || stat -c "%a" "$APPROLE_DIR" 2> /dev/null) || true
 
   if [ "$dir_perms" = "700" ]; then
     print_result "$test_name" "PASS" "Directory permissions: 700"

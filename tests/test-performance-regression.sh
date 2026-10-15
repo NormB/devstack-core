@@ -26,12 +26,6 @@ MYSQL_INSERT_MIN=10000   # Baseline: ~20000 rows/sec for 1000 row batch
 MONGODB_INSERT_MIN=50000 # Baseline: ~80000 docs/sec for bulk insert
 REDIS_OPS_MIN=30000      # Baseline: ~50000 ops/sec, allow regression to 30000
 
-# API response time thresholds (p95)
-API_HEALTH_P95_MAX=100 # p95 < 100ms for simple endpoints
-DB_QUERY_P95_MAX=50    # p95 < 50ms for single row queries
-REDIS_OP_P95_MAX=5     # p95 < 5ms for cache operations
-VAULT_OP_P95_MAX=20    # p95 < 20ms for secret retrieval
-
 # Get credentials from Vault
 get_credential() {
   local service=$1
@@ -64,7 +58,9 @@ MYSQL_DATABASE=$(get_credential mysql database)
 
 MONGO_PASSWORD=$(get_credential mongodb password)
 MONGO_USER=$(get_credential mongodb user)
-MONGO_DATABASE=$(get_credential mongodb database)
+# Not used below; the lookup still stops the script, like the other
+# lookups, when Vault has no MongoDB database field.
+get_credential mongodb database > /dev/null
 
 REDIS_PASSWORD=$(get_credential redis-1 password)
 
@@ -134,17 +130,21 @@ test_mysql_insert() {
   }
 
   # Benchmark bulk insert (1000 rows)
-  local start=$(date +%s.%N)
+  local start
+  start=$(date +%s.%N) || true
   docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e \
     "INSERT INTO perf_test (name, value) SELECT CONCAT('test_', n), FLOOR(RAND() * 1000) FROM (SELECT @row := @row + 1 AS n FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) a, (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) b, (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) c, (SELECT @row := 0) r LIMIT 1000) nums;" 2> /dev/null || {
     fail "Failed to execute bulk insert"
     docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e "DROP TABLE IF EXISTS perf_test;" 2> /dev/null || true
     return
   }
-  local end=$(date +%s.%N)
+  local end
+  end=$(date +%s.%N) || true
 
-  local duration=$(echo "$end - $start" | bc)
-  local rows_per_sec=$(echo "1000 / $duration" | bc)
+  local duration
+  duration=$(echo "$end - $start" | bc) || true
+  local rows_per_sec
+  rows_per_sec=$(echo "1000 / $duration" | bc) || true
 
   # Cleanup
   docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e \

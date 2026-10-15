@@ -17,8 +17,6 @@
 #   VAULT_ADDR - Vault server address (default: http://vault:8200)
 #   VAULT_TOKEN - Authentication token for Vault API access (required)
 #   SERVICE_NAME - Service identifier for Vault secrets (set to "mongodb")
-#   SERVICE_IP - MongoDB service IP address (default: 172.20.0.15)
-#   PKI_ROLE - Vault PKI role name for certificate generation (mongodb-role)
 #   CERT_DIR - Directory containing TLS certificates (/etc/mongodb/certs)
 #   ENABLE_TLS - TLS enablement flag (read from Vault)
 #   MONGO_INITDB_ROOT_USERNAME - Root username (exported from Vault)
@@ -87,8 +85,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="mongodb"
-SERVICE_IP="${MONGODB_IP:-172.20.0.15}"
-PKI_ROLE="mongodb-role"
 CERT_DIR="/etc/mongodb/certs"
 ENABLE_TLS="" # Will be read from Vault
 
@@ -249,21 +245,27 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(curl -sf \
+  local response
+  local fetch_status=0
+  response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-  export MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-  export MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+  MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_ROOT_USERNAME
+  MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_ROOT_PASSWORD
+  MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_DATABASE
 
   # Extract tls_enabled (default to false if not present)
-  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  local tls_value
+  tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "') || true
   export ENABLE_TLS="${tls_value:-false}"
 
   if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then

@@ -29,7 +29,6 @@ set -euo pipefail
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -74,12 +73,12 @@ cleanup() {
     log_info "Cleaning up test backups..."
 
     if [ -n "${UNENCRYPTED_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${UNENCRYPTED_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${UNENCRYPTED_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${UNENCRYPTED_BACKUP_ID:?}"
       log_info "Removed: ${UNENCRYPTED_BACKUP_ID}"
     fi
 
     if [ -n "${ENCRYPTED_BACKUP_ID}" ] && [ -d "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}" ]; then
-      rm -rf "${BACKUPS_DIR}/${ENCRYPTED_BACKUP_ID}"
+      rm -rf "${BACKUPS_DIR:?}/${ENCRYPTED_BACKUP_ID:?}"
       log_info "Removed: ${ENCRYPTED_BACKUP_ID}"
     fi
 

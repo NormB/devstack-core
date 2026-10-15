@@ -77,9 +77,23 @@ start_timer() {
 
 end_timer() {
   local start_time="$1"
-  local end_time=$(date +%s)
+  local end_time
+  end_time=$(date +%s) || true
   local elapsed=$((end_time - start_time))
   echo "$elapsed"
+}
+
+# Count the entries in a directory whose names are backup timestamps
+# (YYYYMMDD_HHMMSS)
+count_backups() {
+  local count=0
+  local entry
+  for entry in "$1"/*; do
+    if [[ "${entry##*/}" =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
+      count=$((count + 1))
+    fi
+  done
+  echo "$count"
 }
 
 format_time() {
@@ -138,7 +152,8 @@ check_prerequisites() {
 create_test_backup() {
   test_start "Create test backup for DR scenarios"
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
 
   mkdir -p "$TEST_BACKUP_DIR"
   mkdir -p "$VAULT_BACKUP_DIR"
@@ -159,7 +174,9 @@ create_test_backup() {
 
     # Copy latest backup to test directory
     if [[ -d "$BACKUP_DIR" ]]; then
-      local latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1)
+      local latest_backup
+      # shellcheck disable=SC2010 # ls -t orders by modification time, which a glob cannot; the regex admits only timestamp names
+      latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1) || true
       if [[ -n "$latest_backup" ]]; then
         cp -r "${BACKUP_DIR}/${latest_backup}" "${TEST_BACKUP_DIR}/databases/"
         log_info "Database backup created: $latest_backup"
@@ -169,7 +186,8 @@ create_test_backup() {
     log_warning "Services not running, skipping database backup"
   fi
 
-  local elapsed=$(end_timer "$start_time")
+  local elapsed
+  elapsed=$(end_timer "$start_time") || true
   log_info "Backup completed in $(format_time $elapsed)"
 
   test_pass "Test backup created at $TEST_BACKUP_DIR"
@@ -185,7 +203,8 @@ test_vault_backup_restore() {
     return 0
   fi
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
   local temp_restore="/tmp/vault-restore-test-$$"
 
   # Create backup
@@ -201,7 +220,8 @@ test_vault_backup_restore() {
 
     # Verify backup contents
     # Note: vault-backup.sh creates the .tar.gz file in the parent directory
-    local backup_file=$(ls -t "${temp_restore}.tar.gz" 2> /dev/null)
+    local backup_file
+    backup_file=$(ls -t "${temp_restore}.tar.gz" 2> /dev/null) || true
     if [[ -f "$backup_file" ]]; then
       # Extract and verify
       local extract_dir="${temp_restore}/extracted"
@@ -209,13 +229,15 @@ test_vault_backup_restore() {
       tar -xzf "$backup_file" -C "$extract_dir"
 
       # The tar extracts to a subdirectory with the backup name
-      local backup_name=$(basename "$temp_restore")
+      local backup_name
+      backup_name=$(basename "$temp_restore") || true
       local actual_dir="${extract_dir}/${backup_name}"
 
       # Check for critical files
       if [[ -f "${actual_dir}/keys.json" ]] &&
         [[ -f "${actual_dir}/root-token" ]]; then
-        local elapsed=$(end_timer "$start_time")
+        local elapsed
+        elapsed=$(end_timer "$start_time") || true
         RTO_VAULT_BACKUP=$elapsed
         test_pass "Vault backup/restore verified in $(format_time $elapsed)"
       else
@@ -243,7 +265,8 @@ test_database_backup_restore() {
     return 0
   fi
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
 
   cd "$PROJECT_ROOT"
 
@@ -255,7 +278,9 @@ test_database_backup_restore() {
   }
 
   # Verify backup was created
-  local latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1)
+  local latest_backup
+  # shellcheck disable=SC2010 # ls -t orders by modification time, which a glob cannot; the regex admits only timestamp names
+  latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1) || true
 
   if [[ -n "$latest_backup" ]]; then
     local backup_path="${BACKUP_DIR}/${latest_backup}"
@@ -267,7 +292,8 @@ test_database_backup_restore() {
     [[ -d "${backup_path}/mongodb" ]] && backup_files=$((backup_files + 1))
 
     if [[ $backup_files -ge 1 ]]; then
-      local elapsed=$(end_timer "$start_time")
+      local elapsed
+      elapsed=$(end_timer "$start_time") || true
       RTO_DATABASE_BACKUP=$elapsed
       test_pass "Database backup verified ($backup_files databases) in $(format_time $elapsed)"
     else
@@ -284,7 +310,8 @@ test_complete_environment_recovery() {
 
   log_warning "This test simulates recovery without actually destroying the environment"
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
   local steps_completed=0
   local total_steps=7
 
@@ -351,7 +378,8 @@ test_complete_environment_recovery() {
   # Step 6: Restore databases (target: 8 minutes)
   log_info "Step 6/$total_steps: Database restoration..."
   if [[ -d "$BACKUP_DIR" ]]; then
-    local backup_count=$(ls -1 "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | wc -l)
+    local backup_count
+    backup_count=$(count_backups "$BACKUP_DIR")
     steps_completed=$((steps_completed + 1))
     log_success "✓ Database backups available ($backup_count)"
   else
@@ -371,7 +399,8 @@ test_complete_environment_recovery() {
   fi
   sleep 1
 
-  local elapsed=$(end_timer "$start_time")
+  local elapsed
+  elapsed=$(end_timer "$start_time") || true
   RTO_COMPLETE_RECOVERY=$elapsed
 
   local rto_target=1800                    # 30 minutes in seconds
@@ -402,7 +431,8 @@ test_service_health_validation() {
     return 0
   fi
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
   local healthy_services=0
   local total_services=0
 
@@ -416,7 +446,8 @@ test_service_health_validation() {
     fi
   done < <(docker compose ps)
 
-  local elapsed=$(end_timer "$start_time")
+  local elapsed
+  elapsed=$(end_timer "$start_time") || true
 
   if [[ $total_services -gt 0 ]]; then
     local health_percentage=$((healthy_services * 100 / total_services))
@@ -446,11 +477,13 @@ test_vault_accessibility() {
     return 0
   fi
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
 
   # Test Vault health endpoint
   if curl -sf http://localhost:8200/v1/sys/health &> /dev/null; then
-    local elapsed=$(end_timer "$start_time")
+    local elapsed
+    elapsed=$(end_timer "$start_time") || true
     test_pass "Vault accessible in $(format_time $elapsed)"
   else
     test_fail "Vault not accessible"
@@ -470,7 +503,8 @@ test_database_connectivity() {
     return 0
   fi
 
-  local start_time=$(start_timer)
+  local start_time
+  start_time=$(start_timer) || true
   local connected=0
   local total=0
 
@@ -501,7 +535,8 @@ test_database_connectivity() {
     fi
   fi
 
-  local elapsed=$(end_timer "$start_time")
+  local elapsed
+  elapsed=$(end_timer "$start_time") || true
 
   if [[ $total -gt 0 ]]; then
     log_info "Database connectivity: $connected/$total databases accessible"
@@ -547,7 +582,8 @@ test_backup_automation() {
 
   # Check if backups directory exists
   if [[ -d "$BACKUP_DIR" ]]; then
-    local backup_count=$(ls -1 "$BACKUP_DIR" 2> /dev/null | grep -E '^[0-9]{8}_[0-9]{6}$' | wc -l)
+    local backup_count
+    backup_count=$(count_backups "$BACKUP_DIR")
     log_success "✓ Backups directory exists ($backup_count backups)"
   else
     log_warning "Backups directory not found"

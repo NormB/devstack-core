@@ -274,7 +274,8 @@ phase2_rollback_execution() {
   log_success "Services stopped"
 
   # Step 2: Get Vault token
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  export VAULT_TOKEN
   export VAULT_ADDR=http://localhost:8200
   log_step "Vault token loaded: ${VAULT_TOKEN:0:10}..."
 
@@ -345,7 +346,8 @@ EOFVAULT
 
     # For bash init scripts, create simple root token version
     local init_script="configs/$service/scripts/init.sh"
-    local service_entrypoint=$(get_service_entrypoint "$service")
+    local service_entrypoint
+    service_entrypoint=$(get_service_entrypoint "$service")
 
     cat > "$init_script" << EOFINIT
 #!/bin/bash
@@ -473,8 +475,10 @@ phase3_validate_root_token() {
   local validation_fail=0
 
   # Get passwords from Vault for authentication testing
-  local VAULT_TOKEN=$(cat ~/.config/vault/root-token)
-  local REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
+  local VAULT_TOKEN
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  local REDIS_PASS
+  REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
     vault kv get -field=password secret/redis 2> /dev/null)
 
   for i in "${!CONTAINERS[@]}"; do
@@ -676,7 +680,6 @@ phase5_final_validation() {
 ################################################################################
 
 main() {
-  local overall_result=0
 
   # Safety check
   echo -e "${YELLOW}WARNING: This is a DESTRUCTIVE test${NC}"

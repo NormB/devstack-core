@@ -57,7 +57,6 @@ set -euo pipefail
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
@@ -150,7 +149,8 @@ test_container_running() {
 test_approle_entrypoint() {
   local test_name="Container uses init-approle.sh entrypoint"
 
-  local entrypoint=$(docker inspect dev-mysql --format '{{json .Config.Entrypoint}}')
+  local entrypoint
+  entrypoint=$(docker inspect dev-mysql --format '{{json .Config.Entrypoint}}') || true
 
   if echo "$entrypoint" | /usr/bin/grep -q "init-approle.sh"; then
     print_result "$test_name" "PASS" "Entrypoint: init-approle.sh"
@@ -175,7 +175,8 @@ test_approle_mounted() {
 test_no_root_token() {
   local test_name="No VAULT_TOKEN in environment (root token removed)"
 
-  local env_vars=$(docker exec dev-mysql env)
+  local env_vars
+  env_vars=$(docker exec dev-mysql env) || true
 
   if echo "$env_vars" | /usr/bin/grep -q "^VAULT_TOKEN="; then
     print_result "$test_name" "FAIL" "VAULT_TOKEN still present in environment"
@@ -188,7 +189,8 @@ test_no_root_token() {
 test_approle_dir_set() {
   local test_name="VAULT_APPROLE_DIR environment variable is set"
 
-  local approle_dir=$(docker exec dev-mysql printenv VAULT_APPROLE_DIR 2> /dev/null || echo "")
+  local approle_dir
+  approle_dir=$(docker exec dev-mysql printenv VAULT_APPROLE_DIR 2> /dev/null || echo "") || true
 
   if [ -n "$approle_dir" ]; then
     print_result "$test_name" "PASS" "VAULT_APPROLE_DIR=$approle_dir"
@@ -212,7 +214,8 @@ test_mysql_started() {
 test_approle_auth_logs() {
   local test_name="AppRole authentication logs present"
 
-  local logs=$(docker compose logs mysql 2>&1)
+  local logs
+  logs=$(docker compose logs mysql 2>&1) || true
 
   if echo "$logs" | /usr/bin/grep -q "AppRole authentication successful"; then
     print_result "$test_name" "PASS" "AppRole authentication log found"
@@ -226,8 +229,9 @@ test_db_connection() {
   local test_name="Database connection works with AppRole credentials"
 
   # Get credentials from Vault
-  local password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault \
-    vault kv get -field=password secret/mysql 2> /dev/null)
+  local password
+  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault \
+    vault kv get -field=password secret/mysql 2> /dev/null) || true
 
   if docker compose exec -T mysql mysql -u devuser -p${password} -D devdb -e "SELECT 1" > /dev/null 2>&1; then
     print_result "$test_name" "PASS" "Connection successful"
@@ -241,8 +245,9 @@ test_db_operations() {
   local test_name="Database operations work (CREATE, INSERT, SELECT, DROP)"
 
   # Get credentials from Vault
-  local password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault \
-    vault kv get -field=password secret/mysql 2> /dev/null)
+  local password
+  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault \
+    vault kv get -field=password secret/mysql 2> /dev/null) || true
 
   # Create test table
   if ! docker compose exec -T mysql mysql -u devuser -p${password} -D devdb -e \
@@ -259,8 +264,9 @@ test_db_operations() {
   fi
 
   # Select test data
-  local result=$(docker compose exec -T mysql mysql -u devuser -p${password} -D devdb -N -e \
-    "SELECT message FROM approle_test WHERE message LIKE '%AppRole%';" 2>&1 | /usr/bin/grep -v "Using a password" | tr -d '[:space:]')
+  local result
+  result=$(docker compose exec -T mysql mysql -u devuser -p${password} -D devdb -N -e \
+    "SELECT message FROM approle_test WHERE message LIKE '%AppRole%';" 2>&1 | /usr/bin/grep -v "Using a password" | tr -d '[:space:]') || true
 
   if [ "$result" != "AppRoleauthenticationworks!" ]; then
     print_result "$test_name" "FAIL" "Failed to select data (got: $result)"
@@ -281,8 +287,10 @@ test_db_operations() {
 test_no_root_token_in_logs() {
   local test_name="No root token in container logs"
 
-  local logs=$(docker compose logs mysql 2>&1)
-  local root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "")
+  local logs
+  logs=$(docker compose logs mysql 2>&1) || true
+  local root_token
+  root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "") || true
 
   if [ -n "$root_token" ] && echo "$logs" | /usr/bin/grep -q "$root_token"; then
     print_result "$test_name" "FAIL" "Root token found in logs (security issue)"
@@ -295,13 +303,16 @@ test_no_root_token_in_logs() {
 test_temporary_token() {
   local test_name="Temporary token obtained via AppRole (not root token)"
 
-  local logs=$(docker compose logs mysql 2>&1)
-  local root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "")
+  local logs
+  logs=$(docker compose logs mysql 2>&1) || true
+  local root_token
+  root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "") || true
 
   # Look for "AppRole authentication successful (token: hvs.CAESIJ..." pattern
   if echo "$logs" | /usr/bin/grep -q "AppRole authentication successful (token: hvs\."; then
     # Extract the token from logs
-    local temp_token=$(echo "$logs" | /usr/bin/grep "AppRole authentication successful" | /usr/bin/grep -o "token: hvs\.[^)]*" | cut -d' ' -f2 | head -1)
+    local temp_token
+    temp_token=$(echo "$logs" | /usr/bin/grep "AppRole authentication successful" | /usr/bin/grep -o "token: hvs\.[^)]*" | cut -d' ' -f2 | head -1) || true
 
     if [ "$temp_token" = "$root_token" ]; then
       print_result "$test_name" "FAIL" "Using root token instead of temporary token"
@@ -318,8 +329,10 @@ test_policy_enforcement() {
   local test_name="Policy enforcement: mysql AppRole cannot access postgres secret"
 
   # Get mysql AppRole credentials
-  local role_id=$(cat "${APPROLE_DIR}/mysql/role-id" 2> /dev/null || echo "")
-  local secret_id=$(cat "${APPROLE_DIR}/mysql/secret-id" 2> /dev/null || echo "")
+  local role_id
+  role_id=$(cat "${APPROLE_DIR}/mysql/role-id" 2> /dev/null || echo "") || true
+  local secret_id
+  secret_id=$(cat "${APPROLE_DIR}/mysql/secret-id" 2> /dev/null || echo "") || true
 
   if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
     print_result "$test_name" "FAIL" "Cannot read mysql AppRole credentials"
@@ -327,10 +340,11 @@ test_policy_enforcement() {
   fi
 
   # Authenticate with mysql AppRole
-  local token=$(docker exec -e VAULT_ADDR=http://vault:8200 dev-vault \
+  local token
+  token=$(docker exec -e VAULT_ADDR=http://vault:8200 dev-vault \
     vault write -field=token auth/approle/login \
     role_id="$role_id" \
-    secret_id="$secret_id" 2> /dev/null || echo "")
+    secret_id="$secret_id" 2> /dev/null || echo "") || true
 
   if [ -z "$token" ]; then
     print_result "$test_name" "FAIL" "Failed to authenticate with mysql AppRole"

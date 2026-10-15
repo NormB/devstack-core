@@ -33,10 +33,8 @@ DB_CONCURRENT_QUERIES=1000
 CACHE_CONCURRENT_OPS=10000
 
 # Performance thresholds
-MAX_ERROR_RATE=1.0      # Maximum 1% error rate
-MIN_SUCCESS_RATE=99.0   # Minimum 99% success rate
-MAX_P95_LATENCY_MS=500  # Maximum p95 latency 500ms under load
-MAX_P99_LATENCY_MS=1000 # Maximum p99 latency 1000ms under load
+MAX_ERROR_RATE=1.0    # Maximum 1% error rate
+MIN_SUCCESS_RATE=99.0 # Minimum 99% success rate
 
 print_header() {
   echo -e "\n${YELLOW}=== $1 ===${NC}"
@@ -81,7 +79,8 @@ calculate_percentile() {
   shift
   local values=("$@")
   local count=${#values[@]}
-  local index=$(echo "($count * $percentile / 100) - 1" | bc)
+  local index
+  index=$(echo "($count * $percentile / 100) - 1" | bc) || true
   echo "${values[$index]}"
 }
 
@@ -93,26 +92,29 @@ test_sustained_load() {
   local total_requests=0
   local successful_requests=0
   local failed_requests=0
-  local response_times=()
 
   # Run concurrent requests
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s) || true
   local end_time=$((start_time + SUSTAINED_DURATION))
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     local pids=()
 
     # Launch concurrent requests
     for i in $(seq 1 $SUSTAINED_USERS); do
       (
-        local req_start=$(date +%s.%N)
+        local req_start
+        req_start=$(date +%s.%N) || true
         if curl -s -f http://localhost:8000/health > /dev/null 2>&1; then
           echo "SUCCESS"
         else
           echo "FAIL"
         fi
-        local req_end=$(date +%s.%N)
-        local duration=$(echo "($req_end - $req_start) * 1000" | bc)
+        local req_end
+        req_end=$(date +%s.%N) || true
+        local duration
+        duration=$(echo "($req_end - $req_start) * 1000" | bc) || true
         echo "$duration"
       ) &
       pids+=($!)
@@ -120,7 +122,8 @@ test_sustained_load() {
 
     # Wait for batch to complete
     for pid in "${pids[@]}"; do
-      local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL 0")
+      local result
+      result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL 0") || true
       ((total_requests++))
 
       if echo "$result" | grep -q "SUCCESS"; then
@@ -133,8 +136,10 @@ test_sustained_load() {
     sleep 0.1 # Brief pause between batches
   done
 
-  local error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc)
-  local success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc)
+  local error_rate
+  error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc) || true
+  local success_rate
+  success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc) || true
 
   print_info "Total requests: $total_requests"
   print_info "Successful: $successful_requests"
@@ -143,7 +148,8 @@ test_sustained_load() {
   print_info "Success rate: ${success_rate}%"
 
   # Check if error rate is acceptable
-  local error_check=$(echo "$error_rate <= $MAX_ERROR_RATE" | bc)
+  local error_check
+  error_check=$(echo "$error_rate <= $MAX_ERROR_RATE" | bc) || true
   if [ "$error_check" -eq 1 ]; then
     print_pass "Error rate under sustained load is acceptable (${error_rate}% <= ${MAX_ERROR_RATE}%)"
   else
@@ -160,10 +166,11 @@ test_spike_load() {
   local successful_requests=0
   local failed_requests=0
 
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s) || true
   local end_time=$((start_time + SPIKE_DURATION))
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     local pids=()
 
     # Launch spike of concurrent requests
@@ -180,7 +187,8 @@ test_spike_load() {
 
     # Wait for batch to complete
     for pid in "${pids[@]}"; do
-      local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL")
+      local result
+      result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL") || true
       ((total_requests++))
 
       if echo "$result" | grep -q "SUCCESS"; then
@@ -191,8 +199,10 @@ test_spike_load() {
     done
   done
 
-  local error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc)
-  local success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc)
+  local error_rate
+  error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc) || true
+  local success_rate
+  success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc) || true
 
   print_info "Total requests: $total_requests"
   print_info "Successful: $successful_requests"
@@ -201,7 +211,8 @@ test_spike_load() {
   print_info "Success rate: ${success_rate}%"
 
   # Check if system handled spike
-  local success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc)
+  local success_check
+  success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc) || true
   if [ "$success_check" -eq 1 ]; then
     print_pass "System handled spike load with acceptable success rate (${success_rate}% >= ${MIN_SUCCESS_RATE}%)"
   else
@@ -218,14 +229,16 @@ test_gradual_ramp() {
   local successful_requests=0
   local failed_requests=0
 
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s) || true
   local end_time=$((start_time + RAMP_DURATION))
   local step_duration=10 # Increase users every 10 seconds
 
   local current_users=$RAMP_START
-  local user_increment=$(echo "($RAMP_END - $RAMP_START) / ($RAMP_DURATION / $step_duration)" | bc)
+  local user_increment
+  user_increment=$(echo "($RAMP_END - $RAMP_START) / ($RAMP_DURATION / $step_duration)" | bc) || true
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     print_info "Current load: $current_users concurrent users"
 
     local pids=()
@@ -244,7 +257,8 @@ test_gradual_ramp() {
 
     # Wait for batch to complete
     for pid in "${pids[@]}"; do
-      local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL")
+      local result
+      result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL") || true
       ((total_requests++))
 
       if echo "$result" | grep -q "SUCCESS"; then
@@ -259,8 +273,10 @@ test_gradual_ramp() {
     sleep $step_duration
   done
 
-  local error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc)
-  local success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc)
+  local error_rate
+  error_rate=$(echo "scale=2; ($failed_requests * 100) / $total_requests" | bc) || true
+  local success_rate
+  success_rate=$(echo "scale=2; ($successful_requests * 100) / $total_requests" | bc) || true
 
   print_info "Total requests: $total_requests"
   print_info "Successful: $successful_requests"
@@ -269,7 +285,8 @@ test_gradual_ramp() {
   print_info "Success rate: ${success_rate}%"
 
   # Check if system scaled well
-  local error_check=$(echo "$error_rate <= $MAX_ERROR_RATE" | bc)
+  local error_check
+  error_check=$(echo "$error_rate <= $MAX_ERROR_RATE" | bc) || true
   if [ "$error_check" -eq 1 ]; then
     print_pass "System scaled well during gradual ramp (${error_rate}% <= ${MAX_ERROR_RATE}%)"
   else
@@ -281,7 +298,8 @@ test_gradual_ramp() {
 test_database_load() {
   print_test "Database load: $DB_CONCURRENT_QUERIES concurrent queries"
 
-  local password=$(get_db_password postgres)
+  local password
+  password=$(get_db_password postgres) || true
 
   # Create test table
   print_info "Setting up test table..."
@@ -307,7 +325,8 @@ test_database_load() {
 
   # Wait for all queries to complete
   for pid in "${pids[@]}"; do
-    local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL")
+    local result
+    result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL") || true
     if echo "$result" | grep -q "SUCCESS"; then
       ((successful++))
     else
@@ -315,7 +334,8 @@ test_database_load() {
     fi
   done
 
-  local success_rate=$(echo "scale=2; ($successful * 100) / $DB_CONCURRENT_QUERIES" | bc)
+  local success_rate
+  success_rate=$(echo "scale=2; ($successful * 100) / $DB_CONCURRENT_QUERIES" | bc) || true
 
   print_info "Successful queries: $successful"
   print_info "Failed queries: $failed"
@@ -326,7 +346,8 @@ test_database_load() {
     psql -U devuser -d devdb -c "DROP TABLE IF EXISTS load_test;" > /dev/null 2>&1
 
   # Check if database handled load
-  local success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc)
+  local success_check
+  success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc) || true
   if [ "$success_check" -eq 1 ]; then
     print_pass "Database handled concurrent queries well (${success_rate}% >= ${MIN_SUCCESS_RATE}%)"
   else
@@ -338,7 +359,8 @@ test_database_load() {
 test_cache_load() {
   print_test "Cache load: $CACHE_CONCURRENT_OPS concurrent operations"
 
-  local password=$(get_db_password redis-1)
+  local password
+  password=$(get_db_password redis-1) || true
 
   print_info "Running $CACHE_CONCURRENT_OPS concurrent Redis operations..."
   local successful=0
@@ -368,7 +390,8 @@ test_cache_load() {
     # Batch processing to avoid too many background processes
     if [ ${#pids[@]} -ge 100 ]; then
       for pid in "${pids[@]}"; do
-        local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL")
+        local result
+        result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL") || true
         if echo "$result" | grep -q "SUCCESS"; then
           ((successful++))
         else
@@ -381,7 +404,8 @@ test_cache_load() {
 
   # Wait for remaining processes
   for pid in "${pids[@]}"; do
-    local result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL")
+    local result
+    result=$(wait $pid 2> /dev/null && cat /dev/fd/0 || echo "FAIL") || true
     if echo "$result" | grep -q "SUCCESS"; then
       ((successful++))
     else
@@ -389,7 +413,8 @@ test_cache_load() {
     fi
   done
 
-  local success_rate=$(echo "scale=2; ($successful * 100) / $CACHE_CONCURRENT_OPS" | bc)
+  local success_rate
+  success_rate=$(echo "scale=2; ($successful * 100) / $CACHE_CONCURRENT_OPS" | bc) || true
 
   print_info "Successful operations: $successful"
   print_info "Failed operations: $failed"
@@ -403,7 +428,8 @@ test_cache_load() {
   wait
 
   # Check if cache handled load
-  local success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc)
+  local success_check
+  success_check=$(echo "$success_rate >= $MIN_SUCCESS_RATE" | bc) || true
   if [ "$success_check" -eq 1 ]; then
     print_pass "Cache handled concurrent operations well (${success_rate}% >= ${MIN_SUCCESS_RATE}%)"
   else
@@ -416,8 +442,10 @@ test_resource_usage() {
   print_test "Resource usage monitoring during load"
 
   print_info "Collecting baseline resource usage..."
-  local baseline_cpu=$(docker stats --no-stream --format "{{.CPUPerc}}" dev-reference-api | sed 's/%//')
-  local baseline_mem=$(docker stats --no-stream --format "{{.MemUsage}}" dev-reference-api | cut -d/ -f1 | sed 's/MiB//')
+  local baseline_cpu
+  baseline_cpu=$(docker stats --no-stream --format "{{.CPUPerc}}" dev-reference-api | sed 's/%//') || true
+  local baseline_mem
+  baseline_mem=$(docker stats --no-stream --format "{{.MemUsage}}" dev-reference-api | cut -d/ -f1 | sed 's/MiB//') || true
 
   print_info "Baseline - CPU: ${baseline_cpu}%, Memory: ${baseline_mem}MiB"
 
@@ -430,16 +458,20 @@ test_resource_usage() {
   sleep 5
 
   # Measure under load
-  local load_cpu=$(docker stats --no-stream --format "{{.CPUPerc}}" dev-reference-api | sed 's/%//')
-  local load_mem=$(docker stats --no-stream --format "{{.MemUsage}}" dev-reference-api | cut -d/ -f1 | sed 's/MiB//')
+  local load_cpu
+  load_cpu=$(docker stats --no-stream --format "{{.CPUPerc}}" dev-reference-api | sed 's/%//') || true
+  local load_mem
+  load_mem=$(docker stats --no-stream --format "{{.MemUsage}}" dev-reference-api | cut -d/ -f1 | sed 's/MiB//') || true
 
   wait # Wait for background requests to complete
 
   print_info "Under load - CPU: ${load_cpu}%, Memory: ${load_mem}MiB"
 
   # Check if resources are within acceptable limits (< 80% CPU, < 500MB memory)
-  local cpu_check=$(echo "$load_cpu < 80" | bc)
-  local mem_check=$(echo "$load_mem < 500" | bc)
+  local cpu_check
+  cpu_check=$(echo "$load_cpu < 80" | bc) || true
+  local mem_check
+  mem_check=$(echo "$load_mem < 500" | bc) || true
 
   if [ "$cpu_check" -eq 1 ] && [ "$mem_check" -eq 1 ]; then
     print_pass "Resource usage under load is acceptable (CPU: ${load_cpu}%, Memory: ${load_mem}MiB)"

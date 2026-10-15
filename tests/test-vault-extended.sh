@@ -23,13 +23,9 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
@@ -44,7 +40,8 @@ export VAULT_ADDR="http://localhost:8200"
 
 # Always read token from file (ignore environment variable)
 if [ -f ~/.config/vault/root-token ]; then
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token) || true
+  export VAULT_TOKEN
 fi
 
 # Verify we can access Vault
@@ -74,7 +71,8 @@ test_vault_health_detailed() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 1: Vault health endpoint detailed check"
 
-  local health=$(curl -s "$VAULT_ADDR/v1/sys/health" 2> /dev/null)
+  local health
+  health=$(curl -s "$VAULT_ADDR/v1/sys/health" 2> /dev/null) || true
 
   if [ -z "$health" ]; then
     # Try to get more info about why it failed
@@ -86,11 +84,14 @@ test_vault_health_detailed() {
   fi
 
   # Check all health parameters
-  local initialized=$(echo "$health" | jq -r '.initialized')
-  local sealed=$(echo "$health" | jq -r '.sealed')
-  local standby=$(echo "$health" | jq -r '.standby')
-  local performance_standby=$(echo "$health" | jq -r '.performance_standby')
-  local version=$(echo "$health" | jq -r '.version')
+  local initialized
+  initialized=$(echo "$health" | jq -r '.initialized') || true
+  local sealed
+  sealed=$(echo "$health" | jq -r '.sealed') || true
+  local standby
+  standby=$(echo "$health" | jq -r '.standby') || true
+  local version
+  version=$(echo "$health" | jq -r '.version') || true
 
   if [ "$initialized" == "true" ] && [ "$sealed" == "false" ] && [ "$standby" == "false" ] && [ -n "$version" ]; then
     success "Vault health check passed (version: $version, initialized: $initialized, sealed: $sealed)"
@@ -109,17 +110,21 @@ test_secret_versioning() {
   info "Test 2: Secret versioning and metadata check"
 
   # Write a test secret with metadata
-  local test_secret="test-version-$(date +%s)"
-  local response=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
+  local test_secret
+  test_secret="test-version-$(date +%s)" || true
+  curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
     -d '{"data": {"value": "version1"}}' \
-    "$VAULT_ADDR/v1/secret/data/$test_secret")
+    "$VAULT_ADDR/v1/secret/data/$test_secret" > /dev/null || true
 
   # Read the secret and check version
-  local read_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$test_secret")
+  local read_response
+  read_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$test_secret") || true
 
-  local version=$(echo "$read_response" | jq -r '.data.metadata.version')
-  local created_time=$(echo "$read_response" | jq -r '.data.metadata.created_time')
+  local version
+  version=$(echo "$read_response" | jq -r '.data.metadata.version') || true
+  local created_time
+  created_time=$(echo "$read_response" | jq -r '.data.metadata.created_time') || true
 
   if [ "$version" == "1" ] && [ -n "$created_time" ] && [ "$created_time" != "null" ]; then
     # Update the secret to create version 2
@@ -128,14 +133,18 @@ test_secret_versioning() {
       "$VAULT_ADDR/v1/secret/data/$test_secret" > /dev/null
 
     # Read version 2
-    local v2_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-      "$VAULT_ADDR/v1/secret/data/$test_secret")
-    local v2=$(echo "$v2_response" | jq -r '.data.metadata.version')
+    local v2_response
+    v2_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/secret/data/$test_secret") || true
+    local v2
+    v2=$(echo "$v2_response" | jq -r '.data.metadata.version') || true
 
     # Read version 1 specifically
-    local v1_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-      "$VAULT_ADDR/v1/secret/data/$test_secret?version=1")
-    local v1_value=$(echo "$v1_response" | jq -r '.data.data.value')
+    local v1_response
+    v1_response=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/secret/data/$test_secret?version=1") || true
+    local v1_value
+    v1_value=$(echo "$v1_response" | jq -r '.data.data.value') || true
 
     if [ "$v2" == "2" ] && [ "$v1_value" == "version1" ]; then
       success "Secret versioning works correctly (versions 1 and 2 validated)"
@@ -158,20 +167,23 @@ test_token_management() {
   info "Test 3: Token creation and management"
 
   # Create a child token with limited TTL
-  local token_response=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
+  local token_response
+  token_response=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
     -d '{"ttl": "1h", "renewable": true, "policies": ["default"]}' \
-    "$VAULT_ADDR/v1/auth/token/create")
+    "$VAULT_ADDR/v1/auth/token/create") || true
 
-  local child_token=$(echo "$token_response" | jq -r '.auth.client_token')
-  local ttl=$(echo "$token_response" | jq -r '.auth.lease_duration')
+  local child_token
+  child_token=$(echo "$token_response" | jq -r '.auth.client_token') || true
 
   if [ -n "$child_token" ] && [ "$child_token" != "null" ]; then
     # Lookup the token
-    local lookup=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
+    local lookup
+    lookup=$(curl -s -X POST -H "X-Vault-Token: $VAULT_TOKEN" \
       -d "{\"token\": \"$child_token\"}" \
-      "$VAULT_ADDR/v1/auth/token/lookup")
+      "$VAULT_ADDR/v1/auth/token/lookup") || true
 
-    local policies=$(echo "$lookup" | jq -r '.data.policies[0]')
+    local policies
+    policies=$(echo "$lookup" | jq -r '.data.policies[0]') || true
 
     if [ "$policies" == "default" ]; then
       # Revoke the token
@@ -196,7 +208,8 @@ test_certificate_chain() {
   info "Test 4: Certificate chain validation"
 
   # Get the CA chain
-  local ca_chain=$(curl -s "$VAULT_ADDR/v1/pki_int/ca_chain")
+  local ca_chain
+  ca_chain=$(curl -s "$VAULT_ADDR/v1/pki_int/ca_chain") || true
 
   if [ -z "$ca_chain" ]; then
     fail "Could not retrieve CA chain" "Certificate chain"
@@ -210,8 +223,10 @@ test_certificate_chain() {
   # Verify the certificate chain with openssl
   if openssl verify -CAfile "$temp_ca" "$temp_ca" 2> /dev/null | grep -q "OK"; then
     # Check certificate details
-    local issuer=$(openssl x509 -in "$temp_ca" -noout -issuer 2> /dev/null | grep -o "CN=[^,]*")
-    local subject=$(openssl x509 -in "$temp_ca" -noout -subject 2> /dev/null | grep -o "CN=[^,]*")
+    local issuer
+    issuer=$(openssl x509 -in "$temp_ca" -noout -issuer 2> /dev/null | grep -o "CN=[^,]*") || true
+    local subject
+    subject=$(openssl x509 -in "$temp_ca" -noout -subject 2> /dev/null | grep -o "CN=[^,]*") || true
 
     rm -f "$temp_ca"
 
@@ -234,17 +249,21 @@ test_pki_role_configuration() {
   info "Test 5: PKI role configuration validation"
 
   # Check postgres role configuration
-  local role_config=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/pki_int/roles/postgres-role")
+  local role_config
+  role_config=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/pki_int/roles/postgres-role") || true
 
   if [ -z "$role_config" ] || [ "$role_config" == "null" ]; then
     fail "Could not read PKI role configuration" "PKI role config"
     return 1
   fi
 
-  local max_ttl=$(echo "$role_config" | jq -r '.data.max_ttl')
-  local allowed_domains=$(echo "$role_config" | jq -r '.data.allowed_domains[0]')
-  local allow_subdomains=$(echo "$role_config" | jq -r '.data.allow_subdomains')
+  local max_ttl
+  max_ttl=$(echo "$role_config" | jq -r '.data.max_ttl') || true
+  local allowed_domains
+  allowed_domains=$(echo "$role_config" | jq -r '.data.allowed_domains[0]') || true
+  local allow_subdomains
+  allow_subdomains=$(echo "$role_config" | jq -r '.data.allow_subdomains') || true
 
   if [ -n "$max_ttl" ] && [ -n "$allowed_domains" ] && [ "$allow_subdomains" != "null" ]; then
     success "PKI role configuration valid (max_ttl: ${max_ttl}s, allowed_domains: $allowed_domains)"
@@ -262,18 +281,21 @@ test_vault_seal_configuration() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 6: Vault seal status and configuration"
 
-  local seal_status=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/seal-status")
+  local seal_status
+  seal_status=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/seal-status") || true
 
   if [ -z "$seal_status" ]; then
     fail "Could not retrieve seal status" "Seal configuration"
     return 1
   fi
 
-  local sealed=$(echo "$seal_status" | jq -r '.sealed')
-  local threshold=$(echo "$seal_status" | jq -r '.t')
-  local shares=$(echo "$seal_status" | jq -r '.n')
-  local progress=$(echo "$seal_status" | jq -r '.progress')
+  local sealed
+  sealed=$(echo "$seal_status" | jq -r '.sealed') || true
+  local threshold
+  threshold=$(echo "$seal_status" | jq -r '.t') || true
+  local shares
+  shares=$(echo "$seal_status" | jq -r '.n') || true
 
   if [ "$sealed" == "false" ] && [ "$threshold" -gt 0 ] && [ "$shares" -gt 0 ]; then
     success "Vault seal configuration valid (threshold: $threshold/$shares, sealed: $sealed)"
@@ -291,8 +313,9 @@ test_secret_engine_mounts() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 7: Secret engine mounts validation"
 
-  local mounts=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/mounts")
+  local mounts
+  mounts=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/mounts") || true
 
   if [ -z "$mounts" ]; then
     fail "Could not retrieve mount points" "Secret engine mounts"
@@ -300,13 +323,18 @@ test_secret_engine_mounts() {
   fi
 
   # Check for required mounts
-  local has_secret=$(echo "$mounts" | jq -r '.data."secret/"' | grep -v null)
-  local has_pki=$(echo "$mounts" | jq -r '.data."pki/"' | grep -v null)
-  local has_pki_int=$(echo "$mounts" | jq -r '.data."pki_int/"' | grep -v null)
+  local has_secret
+  has_secret=$(echo "$mounts" | jq -r '.data."secret/"' | grep -v null) || true
+  local has_pki
+  has_pki=$(echo "$mounts" | jq -r '.data."pki/"' | grep -v null) || true
+  local has_pki_int
+  has_pki_int=$(echo "$mounts" | jq -r '.data."pki_int/"' | grep -v null) || true
 
   if [ -n "$has_secret" ] && [ -n "$has_pki" ] && [ -n "$has_pki_int" ]; then
-    local secret_type=$(echo "$mounts" | jq -r '.data."secret/".type')
-    local pki_type=$(echo "$mounts" | jq -r '.data."pki/".type')
+    local secret_type
+    secret_type=$(echo "$mounts" | jq -r '.data."secret/".type') || true
+    local pki_type
+    pki_type=$(echo "$mounts" | jq -r '.data."pki/".type') || true
     success "All required secret engines mounted (secret: $secret_type, pki: $pki_type)"
     return 0
   fi
@@ -322,8 +350,9 @@ test_vault_policies() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 8: Vault policies validation"
 
-  local policies=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/policy")
+  local policies
+  policies=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/policy") || true
 
   if [ -z "$policies" ]; then
     fail "Could not retrieve policies" "Vault policies"
@@ -331,18 +360,22 @@ test_vault_policies() {
   fi
 
   # Extract policy list from keys field
-  local policy_list=$(echo "$policies" | jq -r '.keys[]' 2> /dev/null || echo "")
+  local policy_list
+  policy_list=$(echo "$policies" | jq -r '.keys[]' 2> /dev/null || echo "") || true
 
   if [ -z "$policy_list" ]; then
     fail "Could not parse policy list" "Vault policies"
     return 1
   fi
 
-  local has_default=$(echo "$policy_list" | grep -c "default" 2> /dev/null | head -1 || echo "0")
-  local has_root=$(echo "$policy_list" | grep -c "root" 2> /dev/null | head -1 || echo "0")
+  local has_default
+  has_default=$(echo "$policy_list" | grep -c "default" 2> /dev/null | head -1 || echo "0") || true
+  local has_root
+  has_root=$(echo "$policy_list" | grep -c "root" 2> /dev/null | head -1 || echo "0") || true
 
   if [ "$has_default" -gt 0 ] && [ "$has_root" -gt 0 ]; then
-    local policy_count=$(echo "$policy_list" | wc -l 2> /dev/null | tr -d ' ' | head -1)
+    local policy_count
+    policy_count=$(echo "$policy_list" | wc -l 2> /dev/null | tr -d ' ' | head -1) || true
     success "Vault policies configured correctly ($policy_count policies including default and root)"
     return 0
   fi
@@ -359,8 +392,9 @@ test_vault_metrics() {
   info "Test 9: Vault performance metrics collection"
 
   # Test that we can retrieve metrics
-  local metrics=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/metrics?format=prometheus")
+  local metrics
+  metrics=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/metrics?format=prometheus") || true
 
   if [ -z "$metrics" ]; then
     fail "Could not retrieve Vault metrics" "Vault metrics"
@@ -385,9 +419,10 @@ test_vault_metrics() {
   fi
 
   # Check for key metrics if available
-  local has_requests=$(echo "$metrics" | grep -c "vault_core_handle_request" 2> /dev/null | head -1 || echo "0")
-  local has_memory=$(echo "$metrics" | grep -c "go_memstats" 2> /dev/null | head -1 || echo "0")
-  local has_runtime=$(echo "$metrics" | grep -c "vault_runtime" 2> /dev/null | head -1 || echo "0")
+  local has_requests
+  has_requests=$(echo "$metrics" | grep -c "vault_core_handle_request" 2> /dev/null | head -1 || echo "0") || true
+  local has_memory
+  has_memory=$(echo "$metrics" | grep -c "go_memstats" 2> /dev/null | head -1 || echo "0") || true
 
   if [ "$has_requests" -gt 0 ] || [ "$has_memory" -gt 0 ]; then
     success "Vault metrics collection working (request metrics: $has_requests, memory metrics: $has_memory)"
@@ -405,8 +440,9 @@ test_vault_audit() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 10: Vault audit configuration check"
 
-  local audit=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/audit")
+  local audit
+  audit=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/audit") || true
 
   # Audit may not be configured, which is okay for dev
   if [ -z "$audit" ]; then
@@ -415,7 +451,8 @@ test_vault_audit() {
   fi
 
   # If audit is configured, validate it
-  local audit_count=$(echo "$audit" | jq -r '.data | length')
+  local audit_count
+  audit_count=$(echo "$audit" | jq -r '.data | length') || true
   if [ "$audit_count" -ge 0 ]; then
     success "Vault audit configuration accessible ($audit_count audit devices)"
     return 0

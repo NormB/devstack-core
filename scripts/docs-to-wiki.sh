@@ -19,7 +19,6 @@ DRY_RUN=false
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Parse arguments
@@ -59,7 +58,8 @@ fi
 # Function to transform doc filename to wiki page name
 doc_to_wiki_name() {
   local file="$1"
-  local basename=$(basename "$file" .md)
+  local basename
+  basename=$(basename "$file" .md) || true
 
   # Special mappings
   case "$basename" in

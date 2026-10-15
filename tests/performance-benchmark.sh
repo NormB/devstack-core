@@ -8,7 +8,6 @@
 set -e
 
 # Colors
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
@@ -32,7 +31,6 @@ echo ""
 
 # Function to benchmark an endpoint
 benchmark_endpoint() {
-  local name=$1
   local url=$2
 
   # Warmup
@@ -46,9 +44,11 @@ benchmark_endpoint() {
   local failed=0
 
   for ((i = 1; i <= $ITERATIONS; i++)); do
-    local start=$(date +%s%N 2> /dev/null || gdate +%s%N)
+    local start
+    start=$(date +%s%N 2> /dev/null || gdate +%s%N) || true
     if curl -s -f -o /dev/null "$url" 2> /dev/null; then
-      local end=$(date +%s%N 2> /dev/null || gdate +%s%N)
+      local end
+      end=$(date +%s%N 2> /dev/null || gdate +%s%N) || true
       local duration=$(((end - start) / 1000000)) # Convert to ms
       total_time=$((total_time + duration))
       ((successful++))

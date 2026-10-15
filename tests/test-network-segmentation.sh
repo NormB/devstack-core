@@ -81,7 +81,7 @@ done
 
 # Test 9: Verify Vault is only on vault-network
 vault_networks=$(docker inspect dev-vault --format '{{range $key, $value := .NetworkSettings.Networks}}{{$key}} {{end}}' 2> /dev/null | tr ' ' '\n' | grep -v '^$')
-if echo "$vault_networks" | grep -q "vault-network" && [ $(echo "$vault_networks" | wc -l) -eq 1 ]; then
+if echo "$vault_networks" | grep -q "vault-network" && [ "$(echo "$vault_networks" | wc -l)" -eq 1 ]; then
   print_result "Vault isolated on vault-network only" "PASS"
 else
   print_result "Vault isolated on vault-network only" "FAIL" "Networks: $vault_networks"
@@ -133,7 +133,7 @@ else
 fi
 
 # Test 15: Verify Redis cluster nodes can communicate (via data-network)
-if docker exec dev-redis-1 redis-cli -h redis-2 -a $(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ~/.config/vault/root-token) dev-vault vault kv get -field=password secret/redis-1 2> /dev/null) PING 2> /dev/null | grep -q "PONG"; then
+if docker exec dev-redis-1 redis-cli -h redis-2 -a "$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat ~/.config/vault/root-token)" dev-vault vault kv get -field=password secret/redis-1 2> /dev/null)" PING 2> /dev/null | grep -q "PONG"; then
   print_result "Redis cluster nodes can communicate" "PASS"
 else
   print_result "Redis cluster nodes can communicate" "FAIL"

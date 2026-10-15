@@ -58,7 +58,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="reference-api"
-SERVICE_IP="${REFERENCE_API_IP:-172.20.0.30}"
 CERT_DIR="/app/certs"
 VAULT_CERT_DIR="/app/vault-certs"
 ENABLE_TLS="" # Will be read from Vault
@@ -179,17 +178,20 @@ wait_for_vault() {
 fetch_tls_config() {
   info "Fetching TLS configuration from Vault..."
 
-  local response=$(wget -qO- --no-check-certificate \
+  local response
+  local fetch_status=0
+  response=$(wget -qO- --no-check-certificate \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     warn "Failed to fetch configuration from Vault, using defaults"
     export ENABLE_TLS="false"
     return 0
   fi
 
-  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+  export ENABLE_TLS
 
   success "Configuration fetched: tls_enabled=$ENABLE_TLS"
 }

@@ -28,6 +28,7 @@ set -e
 
 # Service configuration
 SERVICE_NAME="redis-1" # All nodes fetch credentials from shared path
+# shellcheck disable=SC2034 # read by the log functions in scripts/lib/service-init-common.sh
 SERVICE_DISPLAY_NAME="Redis"
 REDIS_NODE_NAME="${REDIS_NODE:-redis-1}"
 VAULT_APPROLE_DIR="${VAULT_APPROLE_DIR:-/vault-approles/redis}"
@@ -54,11 +55,14 @@ fi
 fetch_credentials() {
   log_info "Fetching credentials and TLS setting from Vault..."
 
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
   local response
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
-  export REDIS_PASSWORD=$(extract_vault_field "$response" "password")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  REDIS_PASSWORD=$(extract_vault_field "$response" "password") || true
+  export REDIS_PASSWORD
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
     log_error "Invalid credentials received from Vault"

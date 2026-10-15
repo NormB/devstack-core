@@ -60,8 +60,10 @@ set -o pipefail # Exit if any command in pipe fails
 #######################################
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Default configuration
 readonly DEFAULT_OPENAPI_SPEC="${PROJECT_ROOT}/reference-apps/shared/openapi.yaml"
@@ -203,15 +205,18 @@ validate_openapi_spec() {
   fi
 
   # Check OpenAPI version
-  local openapi_version=$(yq eval '.openapi' "$OPENAPI_SPEC")
+  local openapi_version
+  openapi_version=$(yq eval '.openapi' "$OPENAPI_SPEC") || true
   if [[ ! "$openapi_version" =~ ^3\. ]]; then
     error "Unsupported OpenAPI version: $openapi_version (requires 3.x)"
     return 1
   fi
 
   # Check required fields
-  local title=$(yq eval '.info.title' "$OPENAPI_SPEC")
-  local paths_count=$(yq eval '.paths | length' "$OPENAPI_SPEC")
+  local title
+  title=$(yq eval '.info.title' "$OPENAPI_SPEC") || true
+  local paths_count
+  paths_count=$(yq eval '.paths | length' "$OPENAPI_SPEC") || true
 
   if [ "$title" == "null" ]; then
     error "OpenAPI spec missing required field: info.title"
@@ -255,7 +260,8 @@ check_prerequisites() {
     error "python3 is not installed. Please install Python 3.11+"
   fi
 
-  local python_version=$(python3 --version | awk '{print $2}')
+  local python_version
+  python_version=$(python3 --version | awk '{print $2}') || true
   info "Found Python $python_version"
 
   # Check yq
@@ -363,7 +369,8 @@ generate_models() {
   # Create __init__.py
   echo '"""Generated Pydantic models from OpenAPI specification."""' > "$models_dir/__init__.py"
 
-  local model_count=$(grep -c "^class " "$models_dir/generated.py" || echo "0")
+  local model_count
+  model_count=$(grep -c "^class " "$models_dir/generated.py" || echo "0") || true
   success "Generated $model_count Pydantic models"
 
   return 0
@@ -398,7 +405,8 @@ generate_routers() {
   mkdir -p "$routers_dir"
 
   # Extract tags from OpenAPI spec
-  local tags=$(yq eval '.tags[].name' "$OPENAPI_SPEC" | sort -u)
+  local tags
+  tags=$(yq eval '.tags[].name' "$OPENAPI_SPEC" | sort -u) || true
 
   # Create router stub for each tag
   while IFS= read -r tag; do
@@ -407,7 +415,8 @@ generate_routers() {
     fi
 
     # Convert tag to valid Python module name (lowercase, replace spaces with underscores)
-    local router_name=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_')
+    local router_name
+    router_name=$(echo "$tag" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_') || true
     local router_file="$routers_dir/${router_name}.py"
 
     info "  Creating router: $router_name"
@@ -438,7 +447,13 @@ EOF
   # Create __init__.py
   echo '"""API routers generated from OpenAPI specification."""' > "$routers_dir/__init__.py"
 
-  local router_count=$(ls -1 "$routers_dir"/*.py 2> /dev/null | grep -v __init__ | wc -l || echo "0")
+  local router_count=0
+  local router_file
+  for router_file in "$routers_dir"/*.py; do
+    if [[ -e "$router_file" && "$router_file" != *__init__* ]]; then
+      router_count=$((router_count + 1))
+    fi
+  done
   success "Generated $router_count router stubs"
 
   return 0
@@ -472,11 +487,6 @@ generate_main_app() {
   info "Generating main FastAPI application..."
 
   local app_file="$OUTPUT_DIR/app/main.py"
-
-  # Extract API metadata from spec
-  local api_title=$(yq eval '.info.title' "$OPENAPI_SPEC")
-  local api_version=$(yq eval '.info.version' "$OPENAPI_SPEC")
-  local api_description=$(yq eval '.info.description' "$OPENAPI_SPEC")
 
   cat > "$app_file" << 'EOF'
 """

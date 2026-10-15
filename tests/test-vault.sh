@@ -207,7 +207,8 @@ test_vault_unsealed() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 2: Vault is unsealed"
 
-  local status=$(docker exec dev-vault vault status -format=json 2> /dev/null | jq -r '.sealed')
+  local status
+  status=$(docker exec dev-vault vault status -format=json 2> /dev/null | jq -r '.sealed') || true
 
   if [ "$status" = "false" ]; then
     success "Vault is unsealed"
@@ -280,14 +281,17 @@ test_vault_bootstrap_pki() {
   info "Test 4: Vault PKI is bootstrapped (Root CA, Intermediate CA)"
 
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
   # Check if pki and pki_int are enabled
-  local pki_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki/"] // empty')
+  local pki_enabled
+  pki_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki/"] // empty') || true
 
-  local pki_int_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki_int/"] // empty')
+  local pki_int_enabled
+  pki_int_enabled=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/sys/mounts" | jq -r '.["pki_int/"] // empty') || true
 
   if [ -n "$pki_enabled" ] && [ -n "$pki_int_enabled" ]; then
     success "PKI engines are enabled"
@@ -330,14 +334,16 @@ test_vault_certificate_roles() {
   info "Test 5: Certificate roles exist for all services"
 
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
   local roles=("postgres-role" "mysql-role" "redis-1-role" "rabbitmq-role" "mongodb-role" "forgejo-role")
   local all_exist=true
 
   for role in "${roles[@]}"; do
-    local role_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-      "$VAULT_ADDR/v1/pki_int/roles/$role" 2> /dev/null | jq -r '.data // empty')
+    local role_exists
+    role_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/pki_int/roles/$role" 2> /dev/null | jq -r '.data // empty') || true
 
     if [ -z "$role_exists" ]; then
       warn "  Role missing: $role"
@@ -385,14 +391,16 @@ test_vault_secrets_stored() {
   info "Test 6: Service credentials stored in Vault"
 
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
   local services=("postgres" "mysql" "redis-1" "rabbitmq" "mongodb")
   local all_exist=true
 
   for service in "${services[@]}"; do
-    local secret=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-      "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null | jq -r '.data.data.password // empty')
+    local secret
+    secret=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+      "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null | jq -r '.data.data.password // empty') || true
 
     if [ -z "$secret" ]; then
       warn "  Credentials missing for: $service"
@@ -437,14 +445,19 @@ test_vault_postgres_credentials() {
   info "Test 7: PostgreSQL credentials are valid"
 
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
-  local response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/postgres" 2> /dev/null)
+  local response
+  response=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/postgres" 2> /dev/null) || true
 
-  local user=$(echo "$response" | jq -r '.data.data.user')
-  local password=$(echo "$response" | jq -r '.data.data.password')
-  local database=$(echo "$response" | jq -r '.data.data.database')
+  local user
+  user=$(echo "$response" | jq -r '.data.data.user') || true
+  local password
+  password=$(echo "$response" | jq -r '.data.data.password') || true
+  local database
+  database=$(echo "$response" | jq -r '.data.data.database') || true
 
   if [ "$user" = "devuser" ] && [ -n "$password" ] && [ "$database" = "devdb" ]; then
     success "PostgreSQL credentials are valid (user=$user, db=$database)"
@@ -482,15 +495,18 @@ test_vault_issue_certificate() {
   info "Test 8: Can issue certificate for PostgreSQL"
 
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
-  local cert_response=$(curl -sf -X POST \
+  local cert_response
+  cert_response=$(curl -sf -X POST \
     -H "X-Vault-Token: $VAULT_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"common_name":"postgres.dev-services.local","ttl":"1h"}' \
-    "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2> /dev/null)
+    "$VAULT_ADDR/v1/pki_int/issue/postgres-role" 2> /dev/null) || true
 
-  local certificate=$(echo "$cert_response" | jq -r '.data.certificate // empty')
+  local certificate
+  certificate=$(echo "$cert_response" | jq -r '.data.certificate // empty') || true
 
   if [ -n "$certificate" ]; then
     success "Certificate issued successfully"
@@ -576,11 +592,13 @@ test_management_commands() {
   # Test vault-status
   if "$PROJECT_ROOT/devstack" vault-status &> /dev/null; then
     # Test vault-token
-    local token=$("$PROJECT_ROOT/devstack" vault-token 2> /dev/null)
+    local token
+    token=$("$PROJECT_ROOT/devstack" vault-token 2> /dev/null) || true
 
     if [ -n "$token" ]; then
       # Test vault-show-password
-      local password=$("$PROJECT_ROOT/devstack" vault-show-password postgres 2> /dev/null)
+      local password
+      password=$("$PROJECT_ROOT/devstack" vault-show-password postgres 2> /dev/null) || true
 
       if [ -n "$password" ]; then
         success "Management commands work correctly"

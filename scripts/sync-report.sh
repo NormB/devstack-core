@@ -39,8 +39,10 @@ set -u
 set -o pipefail
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Configuration
 readonly CODE_FIRST_URL="${CODE_FIRST_URL:-http://localhost:8000}"
@@ -49,13 +51,12 @@ readonly SHARED_SPEC="${SHARED_SPEC:-${PROJECT_ROOT}/reference-apps/shared/opena
 readonly OUTPUT_FILE="${1:-/dev/stdout}"
 
 # Temporary directory
-readonly TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+TEMP_DIR=$(mktemp -d) || true
+readonly TEMP_DIR
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Colors
-readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
@@ -122,8 +123,10 @@ EOF
 EOF
 
   if [ -f "$SHARED_SPEC" ]; then
-    local endpoints=$(yq eval '.paths | length' "$SHARED_SPEC" 2> /dev/null || echo "?")
-    local schemas=$(yq eval '.components.schemas | length' "$SHARED_SPEC" 2> /dev/null || echo "?")
+    local endpoints
+    endpoints=$(yq eval '.paths | length' "$SHARED_SPEC" 2> /dev/null || echo "?") || true
+    local schemas
+    schemas=$(yq eval '.components.schemas | length' "$SHARED_SPEC" 2> /dev/null || echo "?") || true
     cat >> "$report_file" << EOF
 - **Endpoints:** ${endpoints}
 - **Schemas:** ${schemas}

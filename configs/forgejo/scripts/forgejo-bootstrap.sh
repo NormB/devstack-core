@@ -68,11 +68,13 @@ validate_inputs() {
   info "Validating configuration..."
 
   # Validate hostname format
+  # shellcheck disable=SC2154 # FORGEJO__server__DOMAIN is set in the forgejo service environment in docker-compose.yml
   if ! echo "$FORGEJO__server__DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
     error "Invalid FORGEJO__server__DOMAIN format: $FORGEJO__server__DOMAIN"
   fi
 
   # Validate database host format
+  # shellcheck disable=SC2154 # FORGEJO__database__HOST is set in the forgejo service environment in docker-compose.yml
   if ! echo "$FORGEJO__database__HOST" | grep -qE '^[a-zA-Z0-9._:-]+$'; then
     error "Invalid FORGEJO__database__HOST format: $FORGEJO__database__HOST"
   fi
@@ -104,9 +106,8 @@ fetch_credentials_from_vault() {
   fi
 
   # Validate token has read access
-  local token_test
-  token_test=$(wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/auth/token/lookup-self" 2>&1)
+  wget -qO- --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/auth/token/lookup-self" > /dev/null 2>&1
 
   if [ $? -ne 0 ]; then
     error "VAULT_TOKEN is invalid or Vault is unreachable"
@@ -188,11 +189,15 @@ run_installation() {
   sleep 3
 
   # URL encode sensitive parameters
-  local encoded_admin_pass=$(echo -n "$ADMIN_PASSWORD" | jq -sRr @uri)
-  local encoded_db_pass=$(echo -n "$DB_PASSWD" | jq -sRr @uri)
+  local encoded_admin_pass
+  encoded_admin_pass=$(echo -n "$ADMIN_PASSWORD" | jq -sRr @uri) || true
+  local encoded_db_pass
+  encoded_db_pass=$(echo -n "$DB_PASSWD" | jq -sRr @uri) || true
 
   # Create temporary file for POST data (avoids credential exposure in process list)
-  local tmpfile=$(mktemp)
+  local tmpfile
+  tmpfile=$(mktemp) || true
+  # shellcheck disable=SC2064 # expand now: tmpfile is local and out of scope when the trap runs
   trap "rm -f $tmpfile" EXIT
 
   # Write POST data to temp file
@@ -201,8 +206,7 @@ db_type=postgres&db_host=${DB_HOST}&db_user=${DB_USER}&db_passwd=${encoded_db_pa
 EOF
 
   # Submit installation using POST file (prevents credential exposure)
-  local install_response
-  install_response=$(wget -qO- --post-file="$tmpfile" http://localhost:3000/ 2> /dev/null) || {
+  wget -qO- --post-file="$tmpfile" http://localhost:3000/ > /dev/null 2>&1 || {
     warn "Installation API call completed (checking status...)"
   }
 

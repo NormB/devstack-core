@@ -22,9 +22,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -45,7 +42,8 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 
 # Always get credentials from Vault (ignore environment variables)
 if [ -f ~/.config/vault/root-token ]; then
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token) || true
+  export VAULT_TOKEN
 
   # Retrieve user and password from Vault
   POSTGRES_USER=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
@@ -80,7 +78,8 @@ wait_for_pgbouncer() {
 
   # First wait for container to be healthy
   while [ $attempt -lt $max_attempts ]; do
-    local health=$(docker inspect dev-pgbouncer --format='{{.State.Health.Status}}' 2> /dev/null)
+    local health
+    health=$(docker inspect dev-pgbouncer --format='{{.State.Health.Status}}' 2> /dev/null) || true
     if [ "$health" == "healthy" ]; then
       break
     fi
@@ -97,8 +96,9 @@ wait_for_pgbouncer() {
   attempt=0
   while [ $attempt -lt $max_attempts ]; do
     # Try to connect to the admin console
-    local result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-      -d pgbouncer -t -c "SHOW VERSION;" 2> /dev/null | tr -d ' ')
+    local result
+    result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+      -d pgbouncer -t -c "SHOW VERSION;" 2> /dev/null | tr -d ' ') || true
 
     if [ -n "$result" ] && [[ "$result" == *"PgBouncer"* ]]; then
       echo -e "${GREEN}[OK]${NC} PgBouncer is ready (${result})"
@@ -136,7 +136,8 @@ test_pgbouncer_health() {
     return 1
   fi
 
-  local health=$(docker inspect dev-pgbouncer --format='{{.State.Health.Status}}' 2> /dev/null)
+  local health
+  health=$(docker inspect dev-pgbouncer --format='{{.State.Health.Status}}' 2> /dev/null) || true
 
   if [ "$health" == "healthy" ]; then
     success "PgBouncer container healthy"
@@ -155,8 +156,9 @@ test_pool_statistics() {
   info "Test 2: Connection pool statistics"
 
   # Connect to pgbouncer admin console
-  local stats=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW STATS;" 2> /dev/null)
+  local stats
+  stats=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW STATS;" 2> /dev/null) || true
 
   if [ -z "$stats" ]; then
     fail "Could not retrieve pool statistics" "Pool statistics"
@@ -164,11 +166,13 @@ test_pool_statistics() {
   fi
 
   # Get pool info
-  local pools=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW POOLS;" 2> /dev/null)
+  local pools
+  pools=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW POOLS;" 2> /dev/null) || true
 
   if [ -n "$pools" ]; then
-    local pool_count=$(echo "$pools" | wc -l | tr -d ' ')
+    local pool_count
+    pool_count=$(echo "$pools" | wc -l | tr -d ' ') || true
     success "Pool statistics available ($pool_count pools configured)"
     return 0
   fi
@@ -185,13 +189,15 @@ test_database_connectivity() {
   info "Test 3: Database connectivity through PgBouncer"
 
   # Test connection through PgBouncer
-  local result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d postgres -t -c "SELECT 1;" 2> /dev/null | tr -d ' ')
+  local result
+  result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d postgres -t -c "SELECT 1;" 2> /dev/null | tr -d ' ') || true
 
   if [ "$result" == "1" ]; then
     # Get PostgreSQL version through PgBouncer
-    local version=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-      -d postgres -t -c "SELECT version();" 2> /dev/null | head -1)
+    local version
+    version=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+      -d postgres -t -c "SELECT version();" 2> /dev/null | head -1) || true
 
     if [ -n "$version" ]; then
       success "Database connectivity through PgBouncer working"
@@ -248,8 +254,9 @@ test_pooling_behavior() {
   info "Test 4: Connection pooling behavior"
 
   # Get initial pool state (should be 0 or very low)
-  local initial_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l)
+  local initial_clients
+  initial_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l) || true
 
   # Create multiple long-running connections (2 seconds each)
   # This gives us a much wider window to observe them
@@ -267,8 +274,9 @@ test_pooling_behavior() {
   local max_attempts=8
 
   while [ $attempts -lt $max_attempts ]; do
-    local current_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-      -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l)
+    local current_clients
+    current_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+      -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l) || true
 
     if [ "$current_clients" -gt "$max_clients" ]; then
       max_clients=$current_clients
@@ -310,12 +318,12 @@ test_concurrent_connections() {
       -d postgres -c "SELECT $i, pg_sleep(0.2);" &> /dev/null &
   done
 
-  local pids=$!
   sleep 1
 
   # Check if PgBouncer is handling connections
-  local server_conns=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW SERVERS;" 2> /dev/null | grep postgres | wc -l)
+  local server_conns
+  server_conns=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW SERVERS;" 2> /dev/null | grep postgres | wc -l) || true
 
   wait
 
@@ -336,16 +344,19 @@ test_pool_modes() {
   info "Test 6: Pool modes configuration"
 
   # Check current pool mode
-  local config=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW CONFIG;" 2> /dev/null)
+  local config
+  config=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW CONFIG;" 2> /dev/null) || true
 
   if [ -z "$config" ]; then
     fail "Could not retrieve pool configuration" "Pool modes"
     return 1
   fi
 
-  local pool_mode=$(echo "$config" | grep "pool_mode" | awk '{print $3}')
-  local default_pool_size=$(echo "$config" | grep "default_pool_size" | awk '{print $3}')
+  local pool_mode
+  pool_mode=$(echo "$config" | grep "pool_mode" | awk '{print $3}') || true
+  local default_pool_size
+  default_pool_size=$(echo "$config" | grep "default_pool_size" | awk '{print $3}') || true
 
   if [ -n "$pool_mode" ] && [ -n "$default_pool_size" ]; then
     success "Pool modes configured (mode: $pool_mode, pool size: $default_pool_size)"
@@ -364,14 +375,17 @@ test_admin_console() {
   info "Test 7: Admin console access and commands"
 
   # Test various admin commands
-  local databases=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW DATABASES;" 2> /dev/null)
+  local databases
+  databases=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW DATABASES;" 2> /dev/null) || true
 
-  local lists=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW LISTS;" 2> /dev/null)
+  local lists
+  lists=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW LISTS;" 2> /dev/null) || true
 
-  local version=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW VERSION;" 2> /dev/null)
+  local version
+  version=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW VERSION;" 2> /dev/null) || true
 
   if [ -n "$databases" ] && [ -n "$lists" ] && [ -n "$version" ]; then
     success "Admin console accessible (version: $(echo $version | tr -d ' '))"
@@ -389,15 +403,17 @@ test_connection_limits() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 8: Connection limit enforcement"
 
-  local config=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW CONFIG;" 2> /dev/null)
+  local config
+  config=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW CONFIG;" 2> /dev/null) || true
 
-  local max_client_conn=$(echo "$config" | grep "max_client_conn" | awk '{print $3}')
-  local max_db_connections=$(echo "$config" | grep "max_db_connections" | awk '{print $3}')
+  local max_client_conn
+  max_client_conn=$(echo "$config" | grep "max_client_conn" | awk '{print $3}') || true
 
   # Get current connection counts
-  local current_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l)
+  local current_clients
+  current_clients=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW CLIENTS;" 2> /dev/null | wc -l) || true
 
   if [ -n "$max_client_conn" ] && [ -n "$current_clients" ]; then
     success "Connection limits configured (max clients: $max_client_conn, current: $current_clients)"
@@ -416,8 +432,9 @@ test_query_routing() {
   info "Test 9: Query routing verification"
 
   # Execute a query and verify it goes through
-  local query_result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d postgres -t -c "SELECT current_database(), inet_server_addr(), inet_server_port();" 2> /dev/null)
+  local query_result
+  query_result=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d postgres -t -c "SELECT current_database(), inet_server_addr(), inet_server_port();" 2> /dev/null) || true
 
   if [ -z "$query_result" ]; then
     fail "Query routing failed" "Query routing"
@@ -425,8 +442,9 @@ test_query_routing() {
   fi
 
   # Check server connections after query
-  local servers=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
-    -d pgbouncer -t -c "SHOW SERVERS;" 2> /dev/null | grep "postgres")
+  local servers
+  servers=$(psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" \
+    -d pgbouncer -t -c "SHOW SERVERS;" 2> /dev/null | grep "postgres") || true
 
   if [ -n "$servers" ]; then
     success "Query routing working (queries successfully routed through PgBouncer)"
@@ -445,15 +463,19 @@ test_performance_comparison() {
   info "Test 10: Performance comparison (direct vs pooled)"
 
   # Test direct connection time
-  local direct_start=$(date +%s%N)
+  local direct_start
+  direct_start=$(date +%s%N) || true
   psql -h localhost -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d postgres -c "SELECT 1;" &> /dev/null
-  local direct_end=$(date +%s%N)
+  local direct_end
+  direct_end=$(date +%s%N) || true
   local direct_time=$(((direct_end - direct_start) / 1000000))
 
   # Test pooled connection time
-  local pooled_start=$(date +%s%N)
+  local pooled_start
+  pooled_start=$(date +%s%N) || true
   psql -h "$PGBOUNCER_HOST" -p "$PGBOUNCER_PORT" -U "$POSTGRES_USER" -d postgres -c "SELECT 1;" &> /dev/null
-  local pooled_end=$(date +%s%N)
+  local pooled_end
+  pooled_end=$(date +%s%N) || true
   local pooled_time=$(((pooled_end - pooled_start) / 1000000))
 
   if [ $? -eq 0 ]; then

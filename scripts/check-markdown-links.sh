@@ -59,7 +59,8 @@ print_fail() {
 check_file_link() {
   local source_file=$1
   local link_path=$2
-  local source_dir=$(dirname "$source_file")
+  local source_dir
+  source_dir=$(dirname "$source_file") || true
 
   # Remove anchor if present
   local file_path="${link_path%%#*}"
@@ -114,8 +115,9 @@ check_markdown_files() {
   while IFS= read -r file; do
     md_files+=("$file")
   done < <(cd "$PROJECT_ROOT" &&
-    ls -1 *.md .github/*.md docs/*.md reference-apps/*.md reference-apps/*/*.md tests/*.md 2> /dev/null |
-    grep -v node_modules || true)
+    for file in *.md .github/*.md docs/*.md reference-apps/*.md reference-apps/*/*.md tests/*.md; do
+      [[ -e "$file" && "$file" != *node_modules* ]] && printf '%s\n' "$file"
+    done | sort || true)
 
   TOTAL_FILES=${#md_files[@]}
   print_info "Found $TOTAL_FILES markdown files to check"
@@ -131,7 +133,8 @@ check_markdown_files() {
     echo -e "${BLUE}Checking:${NC} $md_file"
 
     # Extract all links
-    local links=$(extract_links "$full_path")
+    local links
+    links=$(extract_links "$full_path") || true
     local file_link_count=0
     local file_broken_count=0
 

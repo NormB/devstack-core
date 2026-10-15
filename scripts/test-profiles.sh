@@ -207,27 +207,22 @@ test_standard_profile() {
   # Test all databases accessible
   print_test "Database connectivity"
 
-  local all_dbs_ok=true
-
   if docker exec dev-postgres pg_isready -U dev_admin > /dev/null 2>&1; then
     print_pass "PostgreSQL accessible"
   else
     print_fail "PostgreSQL not accessible"
-    all_dbs_ok=false
   fi
 
   if docker exec dev-mysql mysqladmin ping > /dev/null 2>&1; then
     print_pass "MySQL accessible"
   else
     print_fail "MySQL not accessible"
-    all_dbs_ok=false
   fi
 
   if docker exec dev-mongodb mongosh --eval "db.adminCommand('ping')" --quiet > /dev/null 2>&1; then
     print_pass "MongoDB accessible"
   else
     print_fail "MongoDB not accessible"
-    all_dbs_ok=false
   fi
 
   cleanup
@@ -291,14 +286,11 @@ test_reference_profile() {
   # Test reference APIs
   print_test "Reference API accessibility"
 
-  local apis_ok=true
-
   for port in 8000 8001 8002 8003 8004; do
     if curl -s http://localhost:$port/health > /dev/null 2>&1; then
       print_pass "API on port $port accessible"
     else
       print_fail "API on port $port not accessible"
-      apis_ok=false
     fi
   done
 

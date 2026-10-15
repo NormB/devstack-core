@@ -235,9 +235,12 @@ fetch_credentials() {
 ################################################################################
 echo -e "${BLUE}[Vector Init]${NC} Fetching PostgreSQL credentials..."
 POSTGRES_CREDS=$(fetch_credentials "postgres")
-export POSTGRES_USER=$(echo "$POSTGRES_CREDS" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-export POSTGRES_PASSWORD=$(echo "$POSTGRES_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-export POSTGRES_DB=$(echo "$POSTGRES_CREDS" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+POSTGRES_USER=$(echo "$POSTGRES_CREDS" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+export POSTGRES_USER
+POSTGRES_PASSWORD=$(echo "$POSTGRES_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+export POSTGRES_PASSWORD
+POSTGRES_DB=$(echo "$POSTGRES_CREDS" | grep -o '"database":"[^"]*"' | cut -d'"' -f4) || true
+export POSTGRES_DB
 
 ################################################################################
 # Fetch MongoDB credentials from Vault
@@ -246,8 +249,10 @@ export POSTGRES_DB=$(echo "$POSTGRES_CREDS" | grep -o '"database":"[^"]*"' | cut
 ################################################################################
 echo -e "${BLUE}[Vector Init]${NC} Fetching MongoDB credentials..."
 MONGO_CREDS=$(fetch_credentials "mongodb")
-export MONGO_USER=$(echo "$MONGO_CREDS" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-export MONGO_PASSWORD=$(echo "$MONGO_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+MONGO_USER=$(echo "$MONGO_CREDS" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+export MONGO_USER
+MONGO_PASSWORD=$(echo "$MONGO_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+export MONGO_PASSWORD
 
 ################################################################################
 # Fetch Redis credentials for all 3 Redis instances
@@ -256,13 +261,16 @@ export MONGO_PASSWORD=$(echo "$MONGO_CREDS" | grep -o '"password":"[^"]*"' | cut
 ################################################################################
 echo -e "${BLUE}[Vector Init]${NC} Fetching Redis credentials..."
 REDIS_1_CREDS=$(fetch_credentials "redis-1")
-export REDIS_1_PASSWORD=$(echo "$REDIS_1_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+REDIS_1_PASSWORD=$(echo "$REDIS_1_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+export REDIS_1_PASSWORD
 
 REDIS_2_CREDS=$(fetch_credentials "redis-2")
-export REDIS_2_PASSWORD=$(echo "$REDIS_2_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+REDIS_2_PASSWORD=$(echo "$REDIS_2_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+export REDIS_2_PASSWORD
 
 REDIS_3_CREDS=$(fetch_credentials "redis-3")
-export REDIS_3_PASSWORD=$(echo "$REDIS_3_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+REDIS_3_PASSWORD=$(echo "$REDIS_3_CREDS" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+export REDIS_3_PASSWORD
 
 ################################################################################
 # Validate all credentials were successfully fetched and parsed

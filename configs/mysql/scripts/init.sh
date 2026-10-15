@@ -17,7 +17,6 @@
 #   VAULT_ADDR - Vault server address (default: http://vault:8200)
 #   VAULT_TOKEN - Authentication token for Vault API access (required)
 #   SERVICE_NAME - Service identifier for Vault secrets (set to "mysql")
-#   SERVICE_IP - MySQL service IP address (default: 172.20.0.12)
 #   CERT_DIR - Directory containing TLS certificates (/var/lib/mysql-certs)
 #   ENABLE_TLS - TLS enablement flag (read from Vault)
 #   MYSQL_ROOT_PASSWORD - Root user password (exported from Vault)
@@ -86,7 +85,6 @@ set -e
 VAULT_ADDR="${VAULT_ADDR:-http://vault:8200}"
 VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="mysql"
-SERVICE_IP="${MYSQL_IP:-172.20.0.12}"
 CERT_DIR="/var/lib/mysql-certs"
 ENABLE_TLS="" # Will be read from Vault
 
@@ -222,22 +220,29 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(curl -sf \
+  local response
+  local fetch_status=0
+  response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME")
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME") || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export MYSQL_ROOT_PASSWORD=$(echo "$response" | grep -o '"root_password":"[^"]*"' | cut -d'"' -f4)
-  export MYSQL_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-  export MYSQL_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-  export MYSQL_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+  MYSQL_ROOT_PASSWORD=$(echo "$response" | grep -o '"root_password":"[^"]*"' | cut -d'"' -f4) || true
+  export MYSQL_ROOT_PASSWORD
+  MYSQL_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+  export MYSQL_USER
+  MYSQL_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export MYSQL_PASSWORD
+  MYSQL_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4) || true
+  export MYSQL_DATABASE
 
   # Extract tls_enabled (default to false if not present)
-  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  local tls_value
+  tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "') || true
   export ENABLE_TLS="${tls_value:-false}"
 
   if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then

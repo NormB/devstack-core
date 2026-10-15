@@ -5,7 +5,6 @@ set -e
 SERVICE_NAME="golang-api"
 SERVICE_IP="${GOLANG_API_IP:-172.20.0.105}"
 CERT_DIR="/etc/ssl/certs/golang-api"
-VAULT_CERT_DIR="${HOME}/.config/vault/certs"
 MAX_RETRIES=30
 RETRY_DELAY=2
 
@@ -17,6 +16,7 @@ echo "=========================================="
 wait_for_vault() {
   echo "[INIT] Waiting for Vault to be ready..."
 
+  # shellcheck disable=SC3043 # busybox ash in the alpine runtime image supports local
   local retries=0
   while [ $retries -lt $MAX_RETRIES ]; do
     if wget -q --spider "${VAULT_ADDR}/v1/sys/health" 2> /dev/null; then

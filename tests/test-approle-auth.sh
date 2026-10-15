@@ -46,8 +46,6 @@ TESTS_FAILED=0
 TOTAL_TESTS=15
 
 # Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VAULT_ADDR="http://localhost:8200"
 VAULT_CONFIG_DIR="${HOME}/.config/vault"
 ROOT_TOKEN_FILE="${VAULT_CONFIG_DIR}/root-token"
@@ -107,7 +105,8 @@ setup_vault_token() {
     echo -e "${YELLOW}Please initialize Vault first:../devstack vault-init${NC}"
     return 1
   fi
-  export VAULT_TOKEN=$(cat "${ROOT_TOKEN_FILE}")
+  VAULT_TOKEN=$(cat "${ROOT_TOKEN_FILE}") || true
+  export VAULT_TOKEN
   export VAULT_ADDR="${VAULT_ADDR}"
 }
 
@@ -122,7 +121,7 @@ test_vault_accessible() {
   elif echo "${VAULT_STATUS}" | grep -q "connection refused"; then
     log_skip "Vault not running (skipping AppRole tests)"
     # Skip all remaining tests
-    for i in $(seq 2 $TOTAL_TESTS); do
+    for _ in $(seq 2 $TOTAL_TESTS); do
       ((TESTS_PASSED++))
     done
     exit 0
@@ -305,13 +304,13 @@ test_token_read_secrets() {
   fi
 
   # First, write a test secret we can read
-  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv put secret/test-key value=test-value 2>&1 > /dev/null || true
+  { docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv put secret/test-key value=test-value > /dev/null; } 2>&1 || true
 
   # Try to read the secret with AppRole token
   SECRET_READ=$(docker exec -e VAULT_TOKEN="${TEST_APPROLE_TOKEN}" dev-vault vault kv get secret/test-key 2>&1 || true)
 
   # Clean up test secret
-  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv delete secret/test-key 2>&1 > /dev/null || true
+  { docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv delete secret/test-key > /dev/null; } 2>&1 || true
 
   if echo "${SECRET_READ}" | grep -q "value.*test-value\|===="; then
     log_pass "AppRole token can read secrets"
@@ -407,10 +406,10 @@ test_cleanup() {
   log_test 15 "Cleanup removes AppRole configuration"
 
   # Delete AppRole role
-  DELETE_ROLE=$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault delete auth/approle/role/test-management 2>&1 || true)
+  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault delete auth/approle/role/test-management > /dev/null 2>&1 || true
 
   # Delete policy
-  DELETE_POLICY=$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault policy delete test-management-policy 2>&1 || true)
+  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault policy delete test-management-policy > /dev/null 2>&1 || true
 
   # Check role is gone
   ROLE_CHECK=$(docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault read auth/approle/role/test-management 2>&1 || true)

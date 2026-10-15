@@ -212,7 +212,7 @@ check_vault() {
     error "VAULT_TOKEN not set. Please set it or ensure ~/.config/vault/root-token exists"
   fi
 
-  for i in {1..30}; do
+  for _ in {1..30}; do
     if curl -sf -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/sys/health" > /dev/null 2>&1; then
       success "Vault is ready"
       return 0
@@ -296,7 +296,8 @@ setup_root_ca() {
     "$VAULT_ADDR/v1/sys/mounts/pki/tune" > /dev/null
 
   # Check if root CA already exists
-  local ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+  local ca_exists
+  ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
     "$VAULT_ADDR/v1/pki/ca/pem" 2> /dev/null || true)
 
   if [ -z "$ca_exists" ]; then
@@ -365,7 +366,8 @@ setup_intermediate_ca() {
     "$VAULT_ADDR/v1/sys/mounts/pki_int/tune" > /dev/null
 
   # Check if intermediate CA already exists
-  local int_ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+  local int_ca_exists
+  int_ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
     "$VAULT_ADDR/v1/pki_int/ca/pem" 2> /dev/null || true)
 
   if [ -z "$int_ca_exists" ]; then
@@ -395,7 +397,8 @@ setup_intermediate_ca() {
       "$VAULT_ADDR/v1/pki/root/sign-intermediate")
 
     SIGNED_CERT=$(echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.certificate')
-    CA_CHAIN=$(echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.ca_chain | join("\n")')
+    # jq fails, and set -e stops the script, when the response has no CA chain
+    echo "$SIGNED_CERT_RESPONSE" | jq -r '.data.ca_chain | join("\n")' > /dev/null
 
     # Set the signed certificate
     curl -sf -X POST \
@@ -443,14 +446,12 @@ setup_intermediate_ca() {
 #######################################
 create_cert_role() {
   local service=$1
-  local ip_address=$2
   local role_name="${service}-role"
 
   info "Creating certificate role for $service..."
 
-  # Build allowed domains and alt names
+  # Build allowed domains
   local allowed_domains="$service.dev-services.local,localhost"
-  local alt_names="$service,dev-$service,localhost"
 
   # Create the role
   curl -sf -X POST \
@@ -503,18 +504,21 @@ store_service_credentials() {
   local service=$1
 
   # Check if credentials already exist
-  local existing_creds=$(curl -sf \
+  local existing_creds
+  existing_creds=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null) || true
 
   if [ -n "$existing_creds" ] && echo "$existing_creds" | jq -e '.data.data' > /dev/null 2>&1; then
     # Check if tls_enabled field exists
-    local has_tls=$(echo "$existing_creds" | jq -r '.data.data.tls_enabled // "missing"')
+    local has_tls
+    has_tls=$(echo "$existing_creds" | jq -r '.data.data.tls_enabled // "missing"') || true
 
     if [ "$has_tls" = "missing" ] || [ "$has_tls" = "null" ]; then
       info "Adding tls_enabled field to existing credentials for $service..."
       # Add tls_enabled to existing credentials
-      local updated_creds=$(echo "$existing_creds" | jq '.data.data + {tls_enabled: true}')
+      local updated_creds
+      updated_creds=$(echo "$existing_creds" | jq '.data.data + {tls_enabled: true}') || true
       curl -sf -X POST \
         -H "X-Vault-Token: $VAULT_TOKEN" \
         -d "{\"data\": $updated_creds}" \
@@ -529,8 +533,10 @@ store_service_credentials() {
   info "Generating and storing credentials for $service..."
 
   # Generate passwords
-  local password=$(generate_password)
-  local root_password=$(generate_password)
+  local password
+  password=$(generate_password) || true
+  local root_password
+  root_password=$(generate_password) || true
 
   # Build credentials JSON based on service type
   # All services include tls_enabled flag (default: true)
@@ -562,9 +568,10 @@ store_service_credentials() {
           '{password: $password, tls_enabled: $tls_enabled}')
       else
         # Reuse redis-1 password for other nodes
-        local redis_password=$(curl -sf \
+        local redis_password
+        redis_password=$(curl -sf \
           -H "X-Vault-Token: $VAULT_TOKEN" \
-          "$VAULT_ADDR/v1/secret/data/redis-1" | jq -r '.data.data.password')
+          "$VAULT_ADDR/v1/secret/data/redis-1" | jq -r '.data.data.password') || true
         creds_json=$(jq -n \
           --arg password "$redis_password" \
           --argjson tls_enabled true \
@@ -681,7 +688,8 @@ create_service_policy() {
   info "Creating Vault policy for $service..."
 
   # Create policy HCL
-  local policy_hcl=$(
+  local policy_hcl
+  policy_hcl=$(
     cat << EOF
 # Policy for $service service
 # Read service credentials
@@ -703,7 +711,7 @@ path "pki_int/ca/pem" {
   capabilities = ["read"]
 }
 EOF
-  )
+  ) || true
 
   # Write policy to Vault
   curl -sf -X PUT \

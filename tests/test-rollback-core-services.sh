@@ -131,7 +131,8 @@ create_backup() {
 
   # Backup init scripts
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     if [ -f "configs/$config_dir/scripts/init-approle.sh" ]; then
       cp "configs/$config_dir/scripts/init-approle.sh" "$BACKUP_DIR/init-approle-$service.sh"
     fi
@@ -156,7 +157,8 @@ restore_from_backup() {
 
   # Restore init scripts
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     if [ -f "$BACKUP_DIR/init-approle-$service.sh" ]; then
       cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$config_dir/scripts/init-approle.sh"
     fi
@@ -195,7 +197,8 @@ phase1_baseline_validation() {
   for i in "${!SERVICES[@]}"; do
     local service="${SERVICES[$i]}"
     local container="${CONTAINERS[$i]}"
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
 
     echo ""
     echo -e "${YELLOW}Checking: $service ($container)${NC}"
@@ -263,15 +266,15 @@ phase2_rollback_execution() {
 
   # Step 1: Stop services (using docker compose to avoid VM shutdown)
   log_step "Stopping services..."
-  local service_list="${SERVICES[@]}"
-  if ! docker compose stop ${service_list}; then
+  if ! docker compose stop "${SERVICES[@]}"; then
     log_fail "Failed to stop services"
     return 1
   fi
   log_success "Services stopped"
 
   # Step 2: Get Vault token
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  export VAULT_TOKEN
   export VAULT_ADDR=http://localhost:8200
   log_step "Vault token loaded: ${VAULT_TOKEN:0:10}..."
 
@@ -279,9 +282,11 @@ phase2_rollback_execution() {
   log_step "Reverting init scripts to root token authentication..."
 
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     local init_script="configs/$config_dir/scripts/init.sh"
-    local service_entrypoint=$(get_service_entrypoint "$service")
+    local service_entrypoint
+    service_entrypoint=$(get_service_entrypoint "$service")
 
     cat > "$init_script" << EOFINIT
 #!/bin/bash
@@ -347,7 +352,7 @@ esac
 echo "Credentials fetched successfully using root token"
 
 # Execute original entrypoint and pass through command args from docker-compose.yml
-# The "$@" passes all arguments that Docker provides from the command: section
+# The "\$@" passes all arguments that Docker provides from the command: section
 exec $service_entrypoint "\$@"
 EOFINIT
 
@@ -408,8 +413,10 @@ phase3_validate_root_token() {
   local validation_fail=0
 
   # Get passwords from Vault for authentication testing
-  local VAULT_TOKEN=$(cat ~/.config/vault/root-token)
-  local REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
+  local VAULT_TOKEN
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  local REDIS_PASS
+  REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
     vault kv get -field=password secret/redis 2> /dev/null)
 
   for i in "${!CONTAINERS[@]}"; do
@@ -528,8 +535,7 @@ phase4_remigrate_to_approle() {
   fi
 
   log_step "Restarting services with AppRole..."
-  local service_list="${CONTAINERS[@]}"
-  if ! docker compose up -d ${service_list}; then
+  if ! docker compose up -d "${CONTAINERS[@]}"; then
     log_fail "Failed to restart services"
     return 1
   fi
@@ -556,7 +562,8 @@ phase5_final_validation() {
   for i in "${!SERVICES[@]}"; do
     local service="${SERVICES[$i]}"
     local container="${CONTAINERS[$i]}"
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
 
     echo ""
     echo -e "${YELLOW}Final Check: $service ($container)${NC}"
@@ -609,7 +616,6 @@ phase5_final_validation() {
 ################################################################################
 
 main() {
-  local overall_result=0
 
   # Safety check
   echo -e "${YELLOW}WARNING: This is a DESTRUCTIVE test${NC}"
