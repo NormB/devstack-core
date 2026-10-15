@@ -10,6 +10,7 @@ Usage:
 """
 
 import re
+import sys
 from pathlib import Path
 
 # Profile assignments for each service
@@ -195,4 +196,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

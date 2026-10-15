@@ -293,6 +293,9 @@ jobs:
             echo "ℹ No Python files to validate"
           fi
 
+      - name: Test scripts/add-profile-labels.py
+        run: bash tests/test-add-profile-labels.sh
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
