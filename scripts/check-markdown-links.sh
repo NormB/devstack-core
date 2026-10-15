@@ -96,8 +96,11 @@ extract_links() {
 
   # Extract markdown links: [text](url)
   # Also extract: [text]: url
-  grep -oE '\[([^]]+)\]\(([^)]+)\)|\[([^]]+)\]:\s*([^\s]+)' "$file" 2> /dev/null |
-    sed -E 's/\[([^]]+)\]\(([^)]+)\)/\2/; s/\[([^]]+)\]:\s*([^\s]+)/\2/' || true
+  # Lines inside fenced code blocks (``` or ~~~) are skipped: text such as
+  # `[key: string]: string` there is code, not a link.
+  awk '/^[[:space:]]*(```|~~~)/ { fence = !fence; next } !fence' "$file" 2> /dev/null |
+    grep -oE '\[([^]]+)\]\(([^)]+)\)|\[([^]]+)\]:[[:space:]]*([^[:space:]]+)' |
+    sed -E 's/\[([^]]+)\]\(([^)]+)\)/\2/; s/\[([^]]+)\]:[[:space:]]*([^[:space:]]+)/\2/' || true
 }
 
 # Check if a link is external (http/https)
@@ -141,8 +144,8 @@ check_markdown_files() {
     while IFS= read -r link; do
       [[ -z "$link" ]] && continue
 
-      ((TOTAL_LINKS++))
-      ((file_link_count++))
+      TOTAL_LINKS=$((TOTAL_LINKS + 1))
+      file_link_count=$((file_link_count + 1))
 
       # Skip external links (would require HTTP requests)
       if is_external_link "$link"; then
@@ -156,8 +159,8 @@ check_markdown_files() {
 
       # Check internal file link
       if ! check_file_link "$full_path" "$link"; then
-        ((BROKEN_LINKS++))
-        ((file_broken_count++))
+        BROKEN_LINKS=$((BROKEN_LINKS + 1))
+        file_broken_count=$((file_broken_count + 1))
         print_fail "Broken link: $link"
         BROKEN_LINK_LIST+=("$md_file: $link")
       fi

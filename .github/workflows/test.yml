@@ -232,6 +232,14 @@ jobs:
       - name: Check documentation accuracy
         run: bash tests/test-documentation-accuracy.sh
 
+      # scripts/check-markdown-links.sh checks relative file links without
+      # network access; its own tests run first.
+      - name: Test the local Markdown link checker
+        run: bash tests/test-check-markdown-links.sh
+
+      - name: Check local Markdown file links
+        run: bash scripts/check-markdown-links.sh
+
       - name: Validate required documentation sections
         run: |
           required_sections=(
