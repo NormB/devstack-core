@@ -196,7 +196,7 @@ sinks:
       - redis_exporter_3_scrape
       - cadvisor_scrape
       - rabbitmq_scrape
-    address: 0.0.0.0:9598  # Expose metrics on port 9598 for Prometheus to scrape
+    address: 0.0.0.0:9598 # Expose metrics on port 9598 for Prometheus to scrape
 
   # ---------------------------------------------------------------------------
   # Console - Debugging output (optional, comment out in production)
