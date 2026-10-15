@@ -150,7 +150,8 @@ test_check_expiration() {
   fi
 
   # Test 2.3: Validate JSON output structure
-  local json_output=$("$CHECK_SCRIPT" --json 2> /dev/null)
+  local json_output
+  json_output=$("$CHECK_SCRIPT" --json 2> /dev/null) || true
   if echo "$json_output" | python3 -m json.tool > /dev/null 2>&1; then
     pass "JSON output is valid JSON"
   else
@@ -181,7 +182,8 @@ test_check_expiration() {
   fi
 
   # Test 2.7: Output contains expected services
-  local output=$("$CHECK_SCRIPT" 2> /dev/null)
+  local output
+  output=$("$CHECK_SCRIPT" 2> /dev/null) || true
   if echo "$output" | grep -q "postgres"; then
     pass "Output contains postgres certificate info"
   else
@@ -189,8 +191,10 @@ test_check_expiration() {
   fi
 
   # Test 2.8: Verify certificate count matches
-  local cert_count=$(find "$HOME/.config/vault/certs" -name "server.crt" | wc -l | tr -d ' ')
-  local output_count=$(echo "$output" | grep -c "✓\|✗\|⚠" || true)
+  local cert_count
+  cert_count=$(find "$HOME/.config/vault/certs" -name "server.crt" | wc -l | tr -d ' ') || true
+  local output_count
+  output_count=$(echo "$output" | grep -c "✓\|✗\|⚠" || true)
   if [ "$output_count" -ge "$cert_count" ]; then
     pass "Output shows all certificates ($output_count >= $cert_count)"
   else
@@ -206,7 +210,8 @@ test_auto_renew() {
 
   # Test 3.1: Dry-run mode
   export VAULT_ADDR=http://localhost:8200
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null || echo "")
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null || echo "") || true
+  export VAULT_TOKEN
 
   if [ -z "$VAULT_TOKEN" ]; then
     fail "VAULT_TOKEN not set (cannot test renewal)"
@@ -254,12 +259,15 @@ test_auto_renew() {
     echo "$token_backup" > "$token_file"
     rm -f "$token_file.bak"
   fi
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
   # Test 3.5: Verify dry-run doesn't actually renew
-  local before_mod=$(stat -f %m "$HOME/.config/vault/certs/postgres/server.crt" 2> /dev/null || echo "0")
+  local before_mod
+  before_mod=$(stat -f %m "$HOME/.config/vault/certs/postgres/server.crt" 2> /dev/null || echo "0") || true
   "$RENEW_SCRIPT" --dry-run --service postgres > /dev/null 2>&1
-  local after_mod=$(stat -f %m "$HOME/.config/vault/certs/postgres/server.crt" 2> /dev/null || echo "0")
+  local after_mod
+  after_mod=$(stat -f %m "$HOME/.config/vault/certs/postgres/server.crt" 2> /dev/null || echo "0") || true
 
   if [ "$before_mod" = "$after_mod" ]; then
     pass "Dry-run mode doesn't modify certificates"
@@ -268,7 +276,8 @@ test_auto_renew() {
   fi
 
   # Test 3.6: Output contains summary
-  local output=$("$RENEW_SCRIPT" --dry-run 2>&1)
+  local output
+  output=$("$RENEW_SCRIPT" --dry-run 2>&1) || true
   if echo "$output" | grep -q "Renewal Summary"; then
     pass "Output contains renewal summary"
   else
@@ -316,7 +325,8 @@ test_cron_setup() {
   fi
 
   # Test 4.5: List installed cron jobs
-  local output=$("$CRON_SCRIPT" --list 2>&1)
+  local output
+  output=$("$CRON_SCRIPT" --list 2>&1) || true
   if echo "$output" | grep -q "auto-renew-certificates.sh"; then
     pass "List shows installed renewal job"
   else
@@ -398,7 +408,8 @@ test_integration() {
 
   # Step 2: Dry-run renewal
   export VAULT_ADDR=http://localhost:8200
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
   local renew_output=$("$RENEW_SCRIPT" --dry-run 2>&1)
   if [ $? -eq 0 ]; then
     pass "Step 2: Dry-run renewal completes"
@@ -416,7 +427,8 @@ test_integration() {
   fi
 
   # Test 6.2: Verify JSON parsing
-  local json=$("$CHECK_SCRIPT" --json 2> /dev/null)
+  local json
+  json=$("$CHECK_SCRIPT" --json 2> /dev/null) || true
   if echo "$json" | python3 -c "import json, sys; data=json.load(sys.stdin); assert 'certificates' in data" 2> /dev/null; then
     pass "JSON output has required 'certificates' field"
   else

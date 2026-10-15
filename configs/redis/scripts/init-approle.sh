@@ -57,8 +57,10 @@ fetch_credentials() {
   local response
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
-  export REDIS_PASSWORD=$(extract_vault_field "$response" "password")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  REDIS_PASSWORD=$(extract_vault_field "$response" "password") || true
+  export REDIS_PASSWORD
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
     log_error "Invalid credentials received from Vault"

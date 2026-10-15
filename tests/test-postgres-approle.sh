@@ -150,7 +150,8 @@ test_container_running() {
 test_approle_entrypoint() {
   local test_name="Container uses init-approle.sh entrypoint"
 
-  local entrypoint=$(docker inspect dev-postgres --format '{{json .Config.Entrypoint}}')
+  local entrypoint
+  entrypoint=$(docker inspect dev-postgres --format '{{json .Config.Entrypoint}}') || true
 
   if echo "$entrypoint" | /usr/bin/grep -q "init-approle.sh"; then
     print_result "$test_name" "PASS" "Entrypoint: init-approle.sh"
@@ -175,7 +176,8 @@ test_approle_mounted() {
 test_no_root_token() {
   local test_name="No VAULT_TOKEN in environment (root token removed)"
 
-  local env_vars=$(docker exec dev-postgres env)
+  local env_vars
+  env_vars=$(docker exec dev-postgres env) || true
 
   if echo "$env_vars" | /usr/bin/grep -q "^VAULT_TOKEN="; then
     print_result "$test_name" "FAIL" "VAULT_TOKEN still present in environment"
@@ -188,7 +190,8 @@ test_no_root_token() {
 test_approle_dir_set() {
   local test_name="VAULT_APPROLE_DIR environment variable is set"
 
-  local approle_dir=$(docker exec dev-postgres printenv VAULT_APPROLE_DIR 2> /dev/null || echo "")
+  local approle_dir
+  approle_dir=$(docker exec dev-postgres printenv VAULT_APPROLE_DIR 2> /dev/null || echo "") || true
 
   if [ -n "$approle_dir" ]; then
     print_result "$test_name" "PASS" "VAULT_APPROLE_DIR=$approle_dir"
@@ -212,7 +215,8 @@ test_postgres_started() {
 test_approle_auth_logs() {
   local test_name="AppRole authentication logs present"
 
-  local logs=$(docker compose logs postgres 2>&1)
+  local logs
+  logs=$(docker compose logs postgres 2>&1) || true
 
   if echo "$logs" | /usr/bin/grep -q "AppRole authentication successful"; then
     print_result "$test_name" "PASS" "AppRole authentication log found"
@@ -251,8 +255,9 @@ test_db_operations() {
   fi
 
   # Select test data
-  local result=$(docker compose exec -T postgres psql -U devuser -d devdb -t -c \
-    "SELECT message FROM approle_test WHERE message LIKE '%AppRole%';" 2>&1 | tr -d '[:space:]')
+  local result
+  result=$(docker compose exec -T postgres psql -U devuser -d devdb -t -c \
+    "SELECT message FROM approle_test WHERE message LIKE '%AppRole%';" 2>&1 | tr -d '[:space:]') || true
 
   if [ "$result" != "AppRoleauthenticationworks!" ]; then
     print_result "$test_name" "FAIL" "Failed to select data (got: $result)"
@@ -273,8 +278,10 @@ test_db_operations() {
 test_no_root_token_in_logs() {
   local test_name="No root token in container logs"
 
-  local logs=$(docker compose logs postgres 2>&1)
-  local root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "")
+  local logs
+  logs=$(docker compose logs postgres 2>&1) || true
+  local root_token
+  root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "") || true
 
   if [ -n "$root_token" ] && echo "$logs" | /usr/bin/grep -q "$root_token"; then
     print_result "$test_name" "FAIL" "Root token found in logs (security issue)"
@@ -287,13 +294,16 @@ test_no_root_token_in_logs() {
 test_temporary_token() {
   local test_name="Temporary token obtained via AppRole (not root token)"
 
-  local logs=$(docker compose logs postgres 2>&1)
-  local root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "")
+  local logs
+  logs=$(docker compose logs postgres 2>&1) || true
+  local root_token
+  root_token=$(cat ${VAULT_CONFIG_DIR}/root-token 2> /dev/null || echo "") || true
 
   # Look for "AppRole authentication successful (token: hvs.CAESIJ..." pattern
   if echo "$logs" | /usr/bin/grep -q "AppRole authentication successful (token: hvs\."; then
     # Extract the token from logs
-    local temp_token=$(echo "$logs" | /usr/bin/grep "AppRole authentication successful" | /usr/bin/grep -o "token: hvs\.[^)]*" | cut -d' ' -f2 | head -1)
+    local temp_token
+    temp_token=$(echo "$logs" | /usr/bin/grep "AppRole authentication successful" | /usr/bin/grep -o "token: hvs\.[^)]*" | cut -d' ' -f2 | head -1) || true
 
     if [ "$temp_token" = "$root_token" ]; then
       print_result "$test_name" "FAIL" "Using root token instead of temporary token"
@@ -310,8 +320,10 @@ test_policy_enforcement() {
   local test_name="Policy enforcement: postgres AppRole cannot access mysql secret"
 
   # Get postgres AppRole credentials
-  local role_id=$(cat "${APPROLE_DIR}/postgres/role-id" 2> /dev/null || echo "")
-  local secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id" 2> /dev/null || echo "")
+  local role_id
+  role_id=$(cat "${APPROLE_DIR}/postgres/role-id" 2> /dev/null || echo "") || true
+  local secret_id
+  secret_id=$(cat "${APPROLE_DIR}/postgres/secret-id" 2> /dev/null || echo "") || true
 
   if [ -z "$role_id" ] || [ -z "$secret_id" ]; then
     print_result "$test_name" "FAIL" "Cannot read postgres AppRole credentials"
@@ -319,10 +331,11 @@ test_policy_enforcement() {
   fi
 
   # Authenticate with postgres AppRole
-  local token=$(docker exec -e VAULT_ADDR=http://vault:8200 dev-vault \
+  local token
+  token=$(docker exec -e VAULT_ADDR=http://vault:8200 dev-vault \
     vault write -field=token auth/approle/login \
     role_id="$role_id" \
-    secret_id="$secret_id" 2> /dev/null || echo "")
+    secret_id="$secret_id" 2> /dev/null || echo "") || true
 
   if [ -z "$token" ]; then
     print_result "$test_name" "FAIL" "Failed to authenticate with postgres AppRole"

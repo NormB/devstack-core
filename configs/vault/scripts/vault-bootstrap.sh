@@ -296,7 +296,8 @@ setup_root_ca() {
     "$VAULT_ADDR/v1/sys/mounts/pki/tune" > /dev/null
 
   # Check if root CA already exists
-  local ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+  local ca_exists
+  ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
     "$VAULT_ADDR/v1/pki/ca/pem" 2> /dev/null || true)
 
   if [ -z "$ca_exists" ]; then
@@ -365,7 +366,8 @@ setup_intermediate_ca() {
     "$VAULT_ADDR/v1/sys/mounts/pki_int/tune" > /dev/null
 
   # Check if intermediate CA already exists
-  local int_ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
+  local int_ca_exists
+  int_ca_exists=$(curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
     "$VAULT_ADDR/v1/pki_int/ca/pem" 2> /dev/null || true)
 
   if [ -z "$int_ca_exists" ]; then
@@ -503,18 +505,21 @@ store_service_credentials() {
   local service=$1
 
   # Check if credentials already exist
-  local existing_creds=$(curl -sf \
+  local existing_creds
+  existing_creds=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$service" 2> /dev/null) || true
 
   if [ -n "$existing_creds" ] && echo "$existing_creds" | jq -e '.data.data' > /dev/null 2>&1; then
     # Check if tls_enabled field exists
-    local has_tls=$(echo "$existing_creds" | jq -r '.data.data.tls_enabled // "missing"')
+    local has_tls
+    has_tls=$(echo "$existing_creds" | jq -r '.data.data.tls_enabled // "missing"') || true
 
     if [ "$has_tls" = "missing" ] || [ "$has_tls" = "null" ]; then
       info "Adding tls_enabled field to existing credentials for $service..."
       # Add tls_enabled to existing credentials
-      local updated_creds=$(echo "$existing_creds" | jq '.data.data + {tls_enabled: true}')
+      local updated_creds
+      updated_creds=$(echo "$existing_creds" | jq '.data.data + {tls_enabled: true}') || true
       curl -sf -X POST \
         -H "X-Vault-Token: $VAULT_TOKEN" \
         -d "{\"data\": $updated_creds}" \
@@ -529,8 +534,10 @@ store_service_credentials() {
   info "Generating and storing credentials for $service..."
 
   # Generate passwords
-  local password=$(generate_password)
-  local root_password=$(generate_password)
+  local password
+  password=$(generate_password) || true
+  local root_password
+  root_password=$(generate_password) || true
 
   # Build credentials JSON based on service type
   # All services include tls_enabled flag (default: true)
@@ -562,9 +569,10 @@ store_service_credentials() {
           '{password: $password, tls_enabled: $tls_enabled}')
       else
         # Reuse redis-1 password for other nodes
-        local redis_password=$(curl -sf \
+        local redis_password
+        redis_password=$(curl -sf \
           -H "X-Vault-Token: $VAULT_TOKEN" \
-          "$VAULT_ADDR/v1/secret/data/redis-1" | jq -r '.data.data.password')
+          "$VAULT_ADDR/v1/secret/data/redis-1" | jq -r '.data.data.password') || true
         creds_json=$(jq -n \
           --arg password "$redis_password" \
           --argjson tls_enabled true \
@@ -681,7 +689,8 @@ create_service_policy() {
   info "Creating Vault policy for $service..."
 
   # Create policy HCL
-  local policy_hcl=$(
+  local policy_hcl
+  policy_hcl=$(
     cat << EOF
 # Policy for $service service
 # Read service credentials
@@ -703,7 +712,7 @@ path "pki_int/ca/pem" {
   capabilities = ["read"]
 }
 EOF
-  )
+  ) || true
 
   # Write policy to Vault
   curl -sf -X PUT \

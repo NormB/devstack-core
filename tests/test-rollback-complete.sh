@@ -67,7 +67,8 @@ setup_test_environment() {
   # Set Vault environment
   export VAULT_ADDR="http://localhost:8200"
   if [ -f ~/.config/vault/root-token ]; then
-    export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+    VAULT_TOKEN=$(cat ~/.config/vault/root-token) || true
+    export VAULT_TOKEN
   else
     log_error "Vault root token not found"
     exit 1
@@ -94,7 +95,8 @@ test_container_rollback() {
   test_start "Container State Rollback"
 
   # Get current postgres image
-  local original_image=$(docker inspect dev-postgres --format='{{.Config.Image}}')
+  local original_image
+  original_image=$(docker inspect dev-postgres --format='{{.Config.Image}}') || true
   log_info "Original image: $original_image"
 
   # Stop container
@@ -120,7 +122,8 @@ test_container_rollback() {
     return 1
   fi
 
-  local current_image=$(docker inspect dev-postgres --format='{{.Config.Image}}')
+  local current_image
+  current_image=$(docker inspect dev-postgres --format='{{.Config.Image}}') || true
   if [ "$original_image" != "$current_image" ]; then
     test_fail "Image mismatch after rollback"
     return 1
@@ -140,7 +143,8 @@ test_config_rollback() {
 
   # Backup original config
   cp "$config_file" "$TEST_BACKUP_DIR/postgresql.conf.backup"
-  local original_hash=$(md5sum "$config_file" | awk '{print $1}')
+  local original_hash
+  original_hash=$(md5sum "$config_file" | awk '{print $1}') || true
   log_info "Original config hash: $original_hash"
 
   # Corrupt configuration
@@ -148,7 +152,8 @@ test_config_rollback() {
   echo "invalid_setting = corrupt_value" >> "$config_file"
 
   # Verify configuration changed
-  local corrupted_hash=$(md5sum "$config_file" | awk '{print $1}')
+  local corrupted_hash
+  corrupted_hash=$(md5sum "$config_file" | awk '{print $1}') || true
   if [ "$original_hash" == "$corrupted_hash" ]; then
     test_fail "Configuration did not change"
     return 1
@@ -160,7 +165,8 @@ test_config_rollback() {
   cp "$TEST_BACKUP_DIR/postgresql.conf.backup" "$config_file"
 
   # Verify rollback
-  local restored_hash=$(md5sum "$config_file" | awk '{print $1}')
+  local restored_hash
+  restored_hash=$(md5sum "$config_file" | awk '{print $1}') || true
   if [ "$original_hash" != "$restored_hash" ]; then
     test_fail "Configuration rollback failed"
     return 1
@@ -192,7 +198,8 @@ test_volume_rollback() {
   docker exec dev-postgres psql -U postgres -d rollback_test -c "INSERT INTO test_data (value) VALUES ('before rollback');"
 
   # Verify data exists
-  local before_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs)
+  local before_count
+  before_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs) || true
   if [ "$before_count" != "1" ]; then
     test_fail "Failed to create test data"
     return 1
@@ -208,7 +215,8 @@ test_volume_rollback() {
   docker exec dev-postgres psql -U postgres -d rollback_test -c "DELETE FROM test_data;"
 
   # Verify data deleted
-  local after_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs)
+  local after_count
+  after_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs) || true
   if [ "$after_count" != "0" ]; then
     test_fail "Data deletion failed"
     return 1
@@ -220,13 +228,15 @@ test_volume_rollback() {
   docker exec -i dev-postgres psql -U postgres -d rollback_test < "$TEST_BACKUP_DIR/rollback_test.sql"
 
   # Verify rollback
-  local restored_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs)
+  local restored_count
+  restored_count=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT COUNT(*) FROM test_data;" | xargs) || true
   if [ "$restored_count" != "1" ]; then
     test_fail "Volume rollback failed (expected 1 row, got $restored_count)"
     return 1
   fi
 
-  local restored_value=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT value FROM test_data LIMIT 1;" | xargs)
+  local restored_value
+  restored_value=$(docker exec dev-postgres psql -U postgres -d rollback_test -t -c "SELECT value FROM test_data LIMIT 1;" | xargs) || true
   if [ "$restored_value" != "before rollback" ]; then
     test_fail "Volume rollback data mismatch"
     return 1
@@ -246,7 +256,8 @@ test_network_rollback() {
 
   # Get current network configuration
   local network_name="devstack_data-network"
-  local original_subnet=$(docker network inspect $network_name --format='{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+  local original_subnet
+  original_subnet=$(docker network inspect $network_name --format='{{range .IPAM.Config}}{{.Subnet}}{{end}}') || true
   log_info "Original subnet: $original_subnet"
 
   # Verify network exists
@@ -299,7 +310,8 @@ test_vault_secret_rollback() {
   vault kv put secret/rollback_test password="original_password" > /dev/null
 
   # Verify secret created
-  local original_password=$(vault kv get -field=password secret/rollback_test)
+  local original_password
+  original_password=$(vault kv get -field=password secret/rollback_test) || true
   if [ "$original_password" != "original_password" ]; then
     test_fail "Failed to create test secret"
     return 1
@@ -307,7 +319,8 @@ test_vault_secret_rollback() {
   test_pass "Test secret created"
 
   # Backup secret (get version)
-  local original_version=$(vault kv metadata get secret/rollback_test | grep "Current Version:" | awk '{print $3}')
+  local original_version
+  original_version=$(vault kv metadata get secret/rollback_test | grep "Current Version:" | awk '{print $3}') || true
   log_info "Original version: $original_version"
 
   # Update secret (simulate change)
@@ -315,7 +328,8 @@ test_vault_secret_rollback() {
   vault kv put secret/rollback_test password="corrupted_password" > /dev/null
 
   # Verify update
-  local corrupted_password=$(vault kv get -field=password secret/rollback_test)
+  local corrupted_password
+  corrupted_password=$(vault kv get -field=password secret/rollback_test) || true
   if [ "$corrupted_password" != "corrupted_password" ]; then
     test_fail "Secret update failed"
     return 1
@@ -327,7 +341,8 @@ test_vault_secret_rollback() {
   vault kv rollback -version=$original_version secret/rollback_test > /dev/null
 
   # Verify rollback
-  local restored_password=$(vault kv get -field=password secret/rollback_test)
+  local restored_password
+  restored_password=$(vault kv get -field=password secret/rollback_test) || true
   if [ "$restored_password" != "original_password" ]; then
     test_fail "Vault secret rollback failed"
     return 1
@@ -397,8 +412,10 @@ test_full_environment_rollback() {
   log_info "Creating environment snapshot..."
 
   # Get current state
-  local services=$(docker compose ps --services)
-  local running_count=$(docker compose ps | grep -c "running" || echo "0")
+  local services
+  services=$(docker compose ps --services) || true
+  local running_count
+  running_count=$(docker compose ps | grep -c "running" || echo "0") || true
   log_info "Currently running services: $running_count"
 
   # Create full backup
@@ -419,7 +436,8 @@ test_full_environment_rollback() {
   sleep 5
 
   # Verify all services stopped
-  local stopped_count=$(docker compose ps | grep -c "running" || echo "0")
+  local stopped_count
+  stopped_count=$(docker compose ps | grep -c "running" || echo "0") || true
   if [ "$stopped_count" != "0" ]; then
     test_fail "Not all services stopped"
     return 1
@@ -435,7 +453,8 @@ test_full_environment_rollback() {
   local timeout=120
   local elapsed=0
   while [ $elapsed -lt $timeout ]; do
-    local healthy_count=$(docker compose ps | grep -c "healthy" || echo "0")
+    local healthy_count
+    healthy_count=$(docker compose ps | grep -c "healthy" || echo "0") || true
     if [ $healthy_count -ge 3 ]; then # At least core services healthy
       break
     fi
@@ -445,7 +464,8 @@ test_full_environment_rollback() {
   done
 
   # Verify critical services are running
-  local final_running=$(docker compose ps | grep -c "running" || echo "0")
+  local final_running
+  final_running=$(docker compose ps | grep -c "running" || echo "0") || true
   if [ $final_running -lt 3 ]; then # At least vault, postgres, redis-1
     test_fail "Environment rollback incomplete (only $final_running services running)"
     return 1

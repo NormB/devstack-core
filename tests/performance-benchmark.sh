@@ -46,9 +46,11 @@ benchmark_endpoint() {
   local failed=0
 
   for ((i = 1; i <= $ITERATIONS; i++)); do
-    local start=$(date +%s%N 2> /dev/null || gdate +%s%N)
+    local start
+    start=$(date +%s%N 2> /dev/null || gdate +%s%N) || true
     if curl -s -f -o /dev/null "$url" 2> /dev/null; then
-      local end=$(date +%s%N 2> /dev/null || gdate +%s%N)
+      local end
+      end=$(date +%s%N 2> /dev/null || gdate +%s%N) || true
       local duration=$(((end - start) / 1000000)) # Convert to ms
       total_time=$((total_time + duration))
       ((successful++))

@@ -74,7 +74,8 @@ test_service() {
     ((PASS++))
   elif [ "$container" = "dev-reference-api" ]; then
     # For Python apps, verify the token type instead of log message
-    local token_prefix=$(docker exec $container python -c "from app.services.vault import vault_client; print(vault_client.vault_token[:10] if vault_client.vault_token else 'NONE')" 2> /dev/null)
+    local token_prefix
+    token_prefix=$(docker exec $container python -c "from app.services.vault import vault_client; print(vault_client.vault_token[:10] if vault_client.vault_token else 'NONE')" 2> /dev/null) || true
     if [[ "$token_prefix" == hvs.CAESIE* ]] || [[ "$token_prefix" == hvs.CAESI* ]]; then
       echo -e "  ${GREEN}✓${NC} AppRole token verified (service token: ${token_prefix})"
       ((PASS++))

@@ -249,21 +249,26 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(curl -sf \
+  local response
+  response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || true
 
   if [ $? -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-  export MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-  export MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4)
+  MONGO_INITDB_ROOT_USERNAME=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_ROOT_USERNAME
+  MONGO_INITDB_ROOT_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_ROOT_PASSWORD
+  MONGO_INITDB_DATABASE=$(echo "$response" | grep -o '"database":"[^"]*"' | cut -d'"' -f4) || true
+  export MONGO_INITDB_DATABASE
 
   # Extract tls_enabled (default to false if not present)
-  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  local tls_value
+  tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "') || true
   export ENABLE_TLS="${tls_value:-false}"
 
   if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then

@@ -166,7 +166,8 @@ get_tls_status_from_vault() {
   local service_name="$1"
   # Always use localhost for tests running on host machine
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     echo "false"
@@ -218,7 +219,8 @@ test_mysql_healthy() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 2: MySQL is healthy"
 
-  local health=$(docker inspect dev-mysql --format='{{.State.Health.Status}}' 2> /dev/null)
+  local health
+  health=$(docker inspect dev-mysql --format='{{.State.Health.Status}}' 2> /dev/null) || true
 
   if [ "$health" = "healthy" ]; then
     success "MySQL is healthy"
@@ -244,7 +246,8 @@ test_mysql_vault_integration() {
   info "Test 3: MySQL initialized with Vault credentials"
 
   # Check logs for Vault integration messages
-  local logs=$(docker logs dev-mysql 2>&1)
+  local logs
+  logs=$(docker logs dev-mysql 2>&1) || true
 
   if echo "$logs" | grep -q "Vault is ready" &&
     echo "$logs" | grep -q "Credentials fetched"; then
@@ -273,7 +276,8 @@ test_mysql_connection() {
   info "Test 4: Can connect to MySQL with Vault password (real client)"
 
   # Test connection using Python client (real external connection, not docker exec)
-  local result=$(run_python "$MYSQL_CLIENT" --test connection 2>&1)
+  local result
+  result=$(run_python "$MYSQL_CLIENT" --test connection 2>&1) || true
 
   if echo "$result" | grep -q "✓ connection: success"; then
     success "Connection successful with Vault password (verified from outside container)"
@@ -301,10 +305,12 @@ test_mysql_version() {
   info "Test 5: MySQL version query works (real client)"
 
   # Test version query using Python client
-  local result=$(run_python "$MYSQL_CLIENT" --test version 2>&1)
+  local result
+  result=$(run_python "$MYSQL_CLIENT" --test version 2>&1) || true
 
   if echo "$result" | grep -q "✓ version: success"; then
-    local version=$(echo "$result" | grep "MySQL version:" | head -1)
+    local version
+    version=$(echo "$result" | grep "MySQL version:" | head -1) || true
     success "$version"
     return 0
   else
@@ -331,7 +337,8 @@ test_mysql_create_table() {
   info "Test 6: Can create table and insert data (real client)"
 
   # Test table operations using Python client
-  local result=$(run_python "$MYSQL_CLIENT" --test table 2>&1)
+  local result
+  result=$(run_python "$MYSQL_CLIENT" --test table 2>&1) || true
 
   if echo "$result" | grep -q "✓ table: success"; then
     success "Created table and inserted data successfully (verified from outside container)"
@@ -362,13 +369,16 @@ test_mysql_tls_available() {
 
   # Test SSL connection using Python client - this is the REAL test
   # It connects from outside the container and verifies SSL status
-  local result=$(run_python "$MYSQL_CLIENT" --test ssl 2>&1)
+  local result
+  result=$(run_python "$MYSQL_CLIENT" --test ssl 2>&1) || true
 
   if echo "$result" | grep -q "✓ ssl: success"; then
     # Check if SSL is actually enabled
     if echo "$result" | grep -q '"ssl_enabled": true'; then
-      local ssl_version=$(echo "$result" | grep "ssl_version" | head -1)
-      local ssl_cipher=$(echo "$result" | grep "ssl_cipher" | head -1)
+      local ssl_version
+      ssl_version=$(echo "$result" | grep "ssl_version" | head -1) || true
+      local ssl_cipher
+      ssl_cipher=$(echo "$result" | grep "ssl_cipher" | head -1) || true
       success "SSL connection verified from external client"
       info "  $ssl_version"
       info "  $ssl_cipher"
@@ -404,7 +414,8 @@ test_mysql_ssl_connection() {
   info "Test 8: SSL certificate verification with verify-full mode (if TLS enabled)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "mysql")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "mysql") || true
 
   if [ "$tls_enabled" = "true" ]; then
     # Note: mysql.connector has limitations with self-signed certificate chain verification
@@ -439,14 +450,16 @@ test_mysql_encrypted_operations() {
   info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "mysql")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "mysql") || true
 
   if [ "$tls_enabled" = "true" ]; then
     local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
     if [ -f "$ca_file" ]; then
       # Test table operations with SSL enabled
-      local result=$(run_python "$MYSQL_CLIENT" --test table --ssl --ca-cert "$ca_file" 2>&1)
+      local result
+      result=$(run_python "$MYSQL_CLIENT" --test table --ssl --ca-cert "$ca_file" 2>&1) || true
 
       if echo "$result" | grep -q "✓ table: success"; then
         # Verify connection was encrypted
@@ -499,8 +512,10 @@ test_no_plaintext_passwords() {
 
   if [ -f "$PROJECT_ROOT/.env" ]; then
     # Check if old MYSQL_PASSWORD or MYSQL_ROOT_PASSWORD variables exist with values
-    local old_password=$(grep "^MYSQL_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
-    local old_root_password=$(grep "^MYSQL_ROOT_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
+    local old_password
+    old_password=$(grep "^MYSQL_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2) || true
+    local old_root_password
+    old_root_password=$(grep "^MYSQL_ROOT_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2) || true
 
     if [ -z "$old_password" ] && [ -z "$old_root_password" ]; then
       success "No plaintext MySQL passwords in .env"

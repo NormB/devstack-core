@@ -225,18 +225,23 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(curl -sf \
+  local response
+  response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || true
 
   if [ $? -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
-  export POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user')
-  export POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
-  export POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database')
-  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  POSTGRES_USER=$(echo "$response" | jq -r '.data.data.user') || true
+  export POSTGRES_USER
+  POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.password') || true
+  export POSTGRES_PASSWORD
+  POSTGRES_DB=$(echo "$response" | jq -r '.data.data.database') || true
+  export POSTGRES_DB
+  ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+  export ENABLE_TLS
 
   if [ -z "$POSTGRES_USER" ] || [ "$POSTGRES_USER" = "null" ]; then
     error "Invalid credentials received from Vault"

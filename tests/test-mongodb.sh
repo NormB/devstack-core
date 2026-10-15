@@ -168,7 +168,8 @@ get_tls_status_from_vault() {
   local service_name="$1"
   # Always use localhost for tests running on host machine
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     echo "false"
@@ -220,7 +221,8 @@ test_mongodb_healthy() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 2: MongoDB is healthy"
 
-  local health=$(docker inspect dev-mongodb --format='{{.State.Health.Status}}' 2> /dev/null)
+  local health
+  health=$(docker inspect dev-mongodb --format='{{.State.Health.Status}}' 2> /dev/null) || true
 
   if [ "$health" = "healthy" ]; then
     success "MongoDB is healthy"
@@ -246,7 +248,8 @@ test_mongodb_vault_integration() {
   info "Test 3: MongoDB initialized with Vault credentials"
 
   # Check logs for Vault integration messages
-  local logs=$(docker logs dev-mongodb 2>&1)
+  local logs
+  logs=$(docker logs dev-mongodb 2>&1) || true
 
   if echo "$logs" | grep -q "Vault is ready" &&
     echo "$logs" | grep -q "Credentials fetched"; then
@@ -275,7 +278,8 @@ test_mongodb_connection() {
   info "Test 4: Can connect to MongoDB with Vault password (real client)"
 
   # Test connection using Python client (real external connection, not docker exec)
-  local result=$(run_python "$MONGODB_CLIENT" --test connection 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test connection 2>&1) || true
 
   if echo "$result" | grep -q "✓ connection: success"; then
     success "Connection successful with Vault password (verified from outside container)"
@@ -303,10 +307,12 @@ test_mongodb_version() {
   info "Test 5: MongoDB version query works (real client)"
 
   # Test version query using Python client
-  local result=$(run_python "$MONGODB_CLIENT" --test version 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test version 2>&1) || true
 
   if echo "$result" | grep -q "✓ version: success"; then
-    local version=$(echo "$result" | grep "MongoDB version:" | head -1)
+    local version
+    version=$(echo "$result" | grep "MongoDB version:" | head -1) || true
     success "$version"
     return 0
   else
@@ -333,7 +339,8 @@ test_mongodb_operations() {
   info "Test 6: Can perform document operations (real client)"
 
   # Test document operations using Python client
-  local result=$(run_python "$MONGODB_CLIENT" --test operations 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test operations 2>&1) || true
 
   if echo "$result" | grep -q "✓ operations: success"; then
     success "Document insert, find, and delete successful (verified from outside container)"
@@ -361,10 +368,12 @@ test_mongodb_databases() {
   info "Test 7: Can list databases (real client)"
 
   # Test listing databases using Python client
-  local result=$(run_python "$MONGODB_CLIENT" --test databases 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test databases 2>&1) || true
 
   if echo "$result" | grep -q "✓ databases: success"; then
-    local count=$(echo "$result" | grep "Found" | head -1)
+    local count
+    count=$(echo "$result" | grep "Found" | head -1) || true
     success "Database listing successful: $count"
     return 0
   else
@@ -390,7 +399,8 @@ test_mongodb_authentication() {
   info "Test 8: Authentication works (real client)"
 
   # Test authentication using Python client
-  local result=$(run_python "$MONGODB_CLIENT" --test authentication 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test authentication 2>&1) || true
 
   if echo "$result" | grep -q "✓ authentication: success"; then
     success "Authentication successful"
@@ -421,7 +431,8 @@ test_mongodb_tls_available() {
   info "Test 9: SSL/TLS connection verification (real client)"
 
   # Test SSL connection using Python client
-  local result=$(run_python "$MONGODB_CLIENT" --test ssl 2>&1)
+  local result
+  result=$(run_python "$MONGODB_CLIENT" --test ssl 2>&1) || true
 
   if echo "$result" | grep -q "✓ ssl: success"; then
     # Check if SSL is actually being used
@@ -460,14 +471,16 @@ test_mongodb_ssl_connection() {
   info "Test 10: SSL certificate verification with CA (if TLS enabled)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "mongodb")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "mongodb") || true
 
   if [ "$tls_enabled" = "true" ]; then
     local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
     if [ -f "$ca_file" ]; then
       # Test with SSL enabled and CA verification
-      local result=$(run_python "$MONGODB_CLIENT" --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+      local result
+      result=$(run_python "$MONGODB_CLIENT" --test ssl --ssl --ca-cert "$ca_file" 2>&1) || true
 
       if echo "$result" | grep -q "✓ ssl: success"; then
         if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
@@ -512,14 +525,16 @@ test_mongodb_encrypted_operations() {
   info "Test 11: Perform encrypted operations (real SSL/TLS data transfer)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "mongodb")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "mongodb") || true
 
   if [ "$tls_enabled" = "true" ]; then
     local ca_file="${HOME}/.config/vault/ca/ca-bundle.pem"
 
     if [ -f "$ca_file" ]; then
       # Test document operations with SSL enabled
-      local result=$(run_python "$MONGODB_CLIENT" --test operations --ssl --ca-cert "$ca_file" 2>&1)
+      local result
+      result=$(run_python "$MONGODB_CLIENT" --test operations --ssl --ca-cert "$ca_file" 2>&1) || true
 
       if echo "$result" | grep -q "✓ operations: success"; then
         # Verify connection was encrypted
@@ -571,7 +586,8 @@ test_no_plaintext_passwords() {
 
   if [ -f "$PROJECT_ROOT/.env" ]; then
     # Check if old MONGODB_PASSWORD variable exists with a value
-    local old_password=$(grep "^MONGODB_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
+    local old_password
+    old_password=$(grep "^MONGODB_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2) || true
 
     if [ -z "$old_password" ]; then
       success "No plaintext MongoDB password in .env"

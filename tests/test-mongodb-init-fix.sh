@@ -66,7 +66,8 @@ export VAULT_ADDR="http://localhost:8200"
 if [ ! -f ~/.config/vault/root-token ]; then
   error "Vault root token not found!"
 fi
-export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+VAULT_TOKEN=$(cat ~/.config/vault/root-token) || true
+export VAULT_TOKEN
 success "Vault token loaded"
 
 info "Test 7: Fetch and validate MongoDB credentials from Vault"

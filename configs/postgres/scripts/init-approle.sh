@@ -58,10 +58,14 @@ fetch_credentials() {
   local response
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
-  export POSTGRES_USER=$(extract_vault_field "$response" "user")
-  export POSTGRES_PASSWORD=$(extract_vault_field "$response" "password")
-  export POSTGRES_DB=$(extract_vault_field "$response" "database")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  POSTGRES_USER=$(extract_vault_field "$response" "user") || true
+  export POSTGRES_USER
+  POSTGRES_PASSWORD=$(extract_vault_field "$response" "password") || true
+  export POSTGRES_PASSWORD
+  POSTGRES_DB=$(extract_vault_field "$response" "database") || true
+  export POSTGRES_DB
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$POSTGRES_USER" ] || [ "$POSTGRES_USER" = "null" ]; then
     log_error "Invalid credentials received from Vault"

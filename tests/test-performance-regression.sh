@@ -134,17 +134,21 @@ test_mysql_insert() {
   }
 
   # Benchmark bulk insert (1000 rows)
-  local start=$(date +%s.%N)
+  local start
+  start=$(date +%s.%N) || true
   docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e \
     "INSERT INTO perf_test (name, value) SELECT CONCAT('test_', n), FLOOR(RAND() * 1000) FROM (SELECT @row := @row + 1 AS n FROM (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) a, (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) b, (SELECT 0 UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) c, (SELECT @row := 0) r LIMIT 1000) nums;" 2> /dev/null || {
     fail "Failed to execute bulk insert"
     docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e "DROP TABLE IF EXISTS perf_test;" 2> /dev/null || true
     return
   }
-  local end=$(date +%s.%N)
+  local end
+  end=$(date +%s.%N) || true
 
-  local duration=$(echo "$end - $start" | bc)
-  local rows_per_sec=$(echo "1000 / $duration" | bc)
+  local duration
+  duration=$(echo "$end - $start" | bc) || true
+  local rows_per_sec
+  rows_per_sec=$(echo "1000 / $duration" | bc) || true
 
   # Cleanup
   docker exec -e MYSQL_PWD="$MYSQL_PASSWORD" dev-mysql mysql -u "$MYSQL_USER" "$MYSQL_DATABASE" -e \

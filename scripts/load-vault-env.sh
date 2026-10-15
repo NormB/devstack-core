@@ -159,9 +159,10 @@ read_vault_secret() {
   local vault_token="${VAULT_TOKEN:-}"
 
   # Fetch secret from Vault and extract specific field
-  local value=$(curl -sf -H "X-Vault-Token: $vault_token" \
+  local value
+  value=$(curl -sf -H "X-Vault-Token: $vault_token" \
     "$vault_addr/v1/secret/data/$path" |
-    jq -r ".data.data.${field}" 2> /dev/null)
+    jq -r ".data.data.${field}" 2> /dev/null) || true
 
   if [ "$value" == "null" ] || [ -z "$value" ]; then
     return 1

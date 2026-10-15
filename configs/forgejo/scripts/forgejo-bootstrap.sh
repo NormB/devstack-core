@@ -188,11 +188,14 @@ run_installation() {
   sleep 3
 
   # URL encode sensitive parameters
-  local encoded_admin_pass=$(echo -n "$ADMIN_PASSWORD" | jq -sRr @uri)
-  local encoded_db_pass=$(echo -n "$DB_PASSWD" | jq -sRr @uri)
+  local encoded_admin_pass
+  encoded_admin_pass=$(echo -n "$ADMIN_PASSWORD" | jq -sRr @uri) || true
+  local encoded_db_pass
+  encoded_db_pass=$(echo -n "$DB_PASSWD" | jq -sRr @uri) || true
 
   # Create temporary file for POST data (avoids credential exposure in process list)
-  local tmpfile=$(mktemp)
+  local tmpfile
+  tmpfile=$(mktemp) || true
   trap "rm -f $tmpfile" EXIT
 
   # Write POST data to temp file

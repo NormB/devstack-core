@@ -58,10 +58,14 @@ fetch_credentials() {
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
   # Now using jq for proper JSON parsing (fixed from grep/sed)
-  export MONGO_INITDB_ROOT_USERNAME=$(extract_vault_field "$response" "user")
-  export MONGO_INITDB_ROOT_PASSWORD=$(extract_vault_field "$response" "password")
-  export MONGO_INITDB_DATABASE=$(extract_vault_field "$response" "database")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  MONGO_INITDB_ROOT_USERNAME=$(extract_vault_field "$response" "user") || true
+  export MONGO_INITDB_ROOT_USERNAME
+  MONGO_INITDB_ROOT_PASSWORD=$(extract_vault_field "$response" "password") || true
+  export MONGO_INITDB_ROOT_PASSWORD
+  MONGO_INITDB_DATABASE=$(extract_vault_field "$response" "database") || true
+  export MONGO_INITDB_DATABASE
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$MONGO_INITDB_ROOT_USERNAME" ] || [ -z "$MONGO_INITDB_ROOT_PASSWORD" ]; then
     log_error "Invalid credentials received from Vault"

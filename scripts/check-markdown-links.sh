@@ -59,7 +59,8 @@ print_fail() {
 check_file_link() {
   local source_file=$1
   local link_path=$2
-  local source_dir=$(dirname "$source_file")
+  local source_dir
+  source_dir=$(dirname "$source_file") || true
 
   # Remove anchor if present
   local file_path="${link_path%%#*}"
@@ -131,7 +132,8 @@ check_markdown_files() {
     echo -e "${BLUE}Checking:${NC} $md_file"
 
     # Extract all links
-    local links=$(extract_links "$full_path")
+    local links
+    links=$(extract_links "$full_path") || true
     local file_link_count=0
     local file_broken_count=0
 

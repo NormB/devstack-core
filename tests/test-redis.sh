@@ -178,7 +178,8 @@ get_tls_status_from_vault() {
   local service_name="$1"
   # Always use localhost for tests running on host machine
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     echo "false"
@@ -250,7 +251,8 @@ test_redis_healthy() {
 
   local healthy=0
   for node in 1 2 3; do
-    local health=$(docker inspect "dev-redis-$node" --format='{{.State.Health.Status}}' 2> /dev/null)
+    local health
+    health=$(docker inspect "dev-redis-$node" --format='{{.State.Health.Status}}' 2> /dev/null) || true
     if [ "$health" = "healthy" ]; then
       healthy=$((healthy + 1))
     fi
@@ -288,7 +290,8 @@ test_redis_vault_integration() {
 
   local vault_init=0
   for node in 1 2 3; do
-    local logs=$(docker logs "dev-redis-$node" 2>&1)
+    local logs
+    logs=$(docker logs "dev-redis-$node" 2>&1) || true
     if echo "$logs" | grep -q "Vault is ready" &&
       echo "$logs" | grep -q "Credentials fetched"; then
       vault_init=$((vault_init + 1))
@@ -331,7 +334,8 @@ test_redis_connections() {
   local connected=0
   for node in 1 2 3; do
     local port=$((6378 + node))
-    local result=$(run_python "$REDIS_CLIENT" --port $port --service "redis-$node" --test connection 2>&1)
+    local result
+    result=$(run_python "$REDIS_CLIENT" --port $port --service "redis-$node" --test connection 2>&1) || true
 
     if echo "$result" | grep -q "✓ connection: success"; then
       connected=$((connected + 1))
@@ -370,10 +374,12 @@ test_redis_info() {
   info "Test 5: Redis INFO command works (real client)"
 
   # Test redis-1 as representative
-  local result=$(run_python "$REDIS_CLIENT" --test info 2>&1)
+  local result
+  result=$(run_python "$REDIS_CLIENT" --test info 2>&1) || true
 
   if echo "$result" | grep -q "✓ info: success"; then
-    local version=$(echo "$result" | grep "Redis version:" | head -1)
+    local version
+    version=$(echo "$result" | grep "Redis version:" | head -1) || true
     success "$version"
     return 0
   else
@@ -407,7 +413,8 @@ test_redis_operations() {
   info "Test 6: Can perform SET/GET operations (real client)"
 
   # Test redis-1 as representative
-  local result=$(run_python "$REDIS_CLIENT" --test operations 2>&1)
+  local result
+  result=$(run_python "$REDIS_CLIENT" --test operations 2>&1) || true
 
   if echo "$result" | grep -q "✓ operations: success"; then
     success "SET/GET operations successful (verified from outside container)"
@@ -454,7 +461,8 @@ test_redis_tls_available() {
   info "Test 7: SSL/TLS connection verification (real client)"
 
   # Check if TLS is enabled in Vault
-  local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "redis-1") || true
 
   if [ "$tls_enabled" = "true" ]; then
     # TLS is enabled - test SSL connection on TLS port with CA certificate
@@ -466,7 +474,8 @@ test_redis_tls_available() {
       return 1
     fi
 
-    local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+    local result
+    result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1) || true
 
     if echo "$result" | grep -q "✓ ssl: success"; then
       if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
@@ -483,7 +492,8 @@ test_redis_tls_available() {
     fi
   else
     # TLS is disabled - test plain connection on standard port
-    local result=$(run_python "$REDIS_CLIENT" --test ssl 2>&1)
+    local result
+    result=$(run_python "$REDIS_CLIENT" --test ssl 2>&1) || true
 
     if echo "$result" | grep -q "✓ ssl: success"; then
       if echo "$result" | grep -q '"connection_type": "plain"'; then
@@ -527,13 +537,15 @@ test_redis_ssl_connection() {
   info "Test 8: SSL certificate verification with CA (if TLS enabled)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "redis-1") || true
 
   if [ "$tls_enabled" = "true" ]; then
     # Verify Redis actually supports TLS before attempting SSL connection
     # Test on TLS port (6390) with SSL enabled
     local redis_tls_port=6390
-    local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
+    local redis_tls_check
+    redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1) || true
 
     if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
       # Both Vault claims TLS AND Redis actually supports it
@@ -541,7 +553,8 @@ test_redis_ssl_connection() {
 
       if [ -f "$ca_file" ]; then
         # Test with SSL enabled and CA verification on TLS port
-        local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1)
+        local result
+        result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "$ca_file" 2>&1) || true
 
         if echo "$result" | grep -q "✓ ssl: success"; then
           if echo "$result" | grep -q '"connection_type": "SSL/TLS"'; then
@@ -599,13 +612,15 @@ test_redis_encrypted_operations() {
   info "Test 9: Perform encrypted operations (real SSL/TLS data transfer)"
 
   # Check if TLS is enabled from Vault
-  local tls_enabled=$(get_tls_status_from_vault "redis-1")
+  local tls_enabled
+  tls_enabled=$(get_tls_status_from_vault "redis-1") || true
 
   if [ "$tls_enabled" = "true" ]; then
     # Verify Redis actually supports TLS before attempting SSL connection
     # Test on TLS port (6390) with SSL enabled
     local redis_tls_port=6390
-    local redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1)
+    local redis_tls_check
+    redis_tls_check=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test ssl --ssl --ca-cert "${HOME}/.config/vault/ca/ca-chain.pem" 2>&1) || true
 
     if echo "$redis_tls_check" | grep -q '"connection_type": "SSL/TLS"'; then
       # Both Vault claims TLS AND Redis actually supports it
@@ -613,7 +628,8 @@ test_redis_encrypted_operations() {
 
       if [ -f "$ca_file" ]; then
         # Test Redis operations with SSL enabled on TLS port
-        local result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test operations --ssl --ca-cert "$ca_file" 2>&1)
+        local result
+        result=$(run_python "$REDIS_CLIENT" --port $redis_tls_port --test operations --ssl --ca-cert "$ca_file" 2>&1) || true
 
         if echo "$result" | grep -q "✓ operations: success"; then
           # Verify connection was encrypted
@@ -676,7 +692,8 @@ test_redis_cluster_info() {
   info "Test 10: Redis cluster configuration"
 
   # Test redis-1 cluster info
-  local result=$(run_python "$REDIS_CLIENT" --test cluster 2>&1)
+  local result
+  result=$(run_python "$REDIS_CLIENT" --test cluster 2>&1) || true
 
   if echo "$result" | grep -q "✓ cluster:"; then
     if echo "$result" | grep -q "enabled"; then
@@ -718,7 +735,8 @@ test_no_plaintext_passwords() {
 
   if [ -f "$PROJECT_ROOT/.env" ]; then
     # Check if old REDIS_PASSWORD variable exists with a value
-    local old_password=$(grep "^REDIS_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2)
+    local old_password
+    old_password=$(grep "^REDIS_PASSWORD=" "$PROJECT_ROOT/.env" 2> /dev/null | grep -v "^#" | cut -d= -f2) || true
 
     if [ -z "$old_password" ]; then
       success "No plaintext Redis password in .env"

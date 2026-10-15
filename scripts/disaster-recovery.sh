@@ -64,7 +64,8 @@ log_step() {
 
 # Timer functions
 get_elapsed_time() {
-  local end_time=$(date +%s)
+  local end_time
+  end_time=$(date +%s) || true
   local elapsed=$((end_time - START_TIME))
   local minutes=$((elapsed / 60))
   local seconds=$((elapsed % 60))
@@ -387,8 +388,10 @@ start_services() {
   local max_wait=180 # 3 minutes
 
   while [[ $wait_time -lt $max_wait ]]; do
-    local healthy_count=$(docker compose ps | grep "healthy" | wc -l)
-    local total_count=$(docker compose ps | grep "Up" | wc -l)
+    local healthy_count
+    healthy_count=$(docker compose ps | grep "healthy" | wc -l) || true
+    local total_count
+    total_count=$(docker compose ps | grep "Up" | wc -l) || true
 
     if [[ $total_count -gt 0 ]] && [[ $healthy_count -eq $total_count ]]; then
       log_success "✓ All $total_count services are healthy"
@@ -423,13 +426,15 @@ restore_databases() {
   local db_backup_dir
   if [[ -d "$BACKUP_DIR/databases" ]]; then
     # Latest backup structure
-    local latest=$(ls -t "$BACKUP_DIR/databases" | head -1)
+    local latest
+    latest=$(ls -t "$BACKUP_DIR/databases" | head -1) || true
     if [[ -n "$latest" ]]; then
       db_backup_dir="$BACKUP_DIR/databases/$latest"
     fi
   elif [[ -d "$BACKUP_DIR/backups" ]]; then
     # Old backup structure
-    local latest=$(ls -t "$BACKUP_DIR/backups" | head -1)
+    local latest
+    latest=$(ls -t "$BACKUP_DIR/backups" | head -1) || true
     if [[ -n "$latest" ]]; then
       db_backup_dir="$BACKUP_DIR/backups/$latest"
     fi
@@ -508,8 +513,10 @@ verify_recovery() {
   fi
 
   # Overall health check
-  local healthy_count=$(docker compose ps | grep "healthy" | wc -l)
-  local total_count=$(docker compose ps | grep "Up" | wc -l)
+  local healthy_count
+  healthy_count=$(docker compose ps | grep "healthy" | wc -l) || true
+  local total_count
+  total_count=$(docker compose ps | grep "Up" | wc -l) || true
 
   log_info "Service health: $healthy_count/$total_count healthy"
 

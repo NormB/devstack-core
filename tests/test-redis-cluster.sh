@@ -148,7 +148,8 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 ################################################################################
 get_redis_password() {
   export VAULT_ADDR="http://localhost:8200"
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
+  export VAULT_TOKEN
 
   curl -sf -H "X-Vault-Token: $VAULT_TOKEN" \
     "$VAULT_ADDR/v1/secret/data/redis-1" 2> /dev/null |
@@ -258,8 +259,9 @@ test_cluster_enabled() {
   local enabled_count=0
 
   for i in 1 2 3; do
-    local cluster_enabled=$(docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" \
-      INFO cluster 2> /dev/null | grep "cluster_enabled:1" || echo "")
+    local cluster_enabled
+    cluster_enabled=$(docker exec dev-redis-$i redis-cli -a "$REDIS_PASSWORD" \
+      INFO cluster 2> /dev/null | grep "cluster_enabled:1" || echo "") || true
 
     if [ -n "$cluster_enabled" ]; then
       enabled_count=$((enabled_count + 1))
@@ -299,10 +301,12 @@ test_cluster_initialized() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 4: Cluster is initialized"
 
-  local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-    CLUSTER INFO 2> /dev/null)
+  local cluster_info
+  cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER INFO 2> /dev/null) || true
 
-  local cluster_state=$(echo "$cluster_info" | grep "cluster_state:" | cut -d: -f2 | tr -d '\r')
+  local cluster_state
+  cluster_state=$(echo "$cluster_info" | grep "cluster_state:" | cut -d: -f2 | tr -d '\r') || true
 
   if [ "$cluster_state" = "ok" ]; then
     success "Cluster is initialized and state is OK"
@@ -337,11 +341,13 @@ test_all_slots_assigned() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 5: All 16384 slots are assigned"
 
-  local cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-    CLUSTER INFO 2> /dev/null)
+  local cluster_info
+  cluster_info=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER INFO 2> /dev/null) || true
 
-  local slots_assigned=$(echo "$cluster_info" | grep "cluster_slots_assigned:" |
-    cut -d: -f2 | tr -d '\r')
+  local slots_assigned
+  slots_assigned=$(echo "$cluster_info" | grep "cluster_slots_assigned:" |
+    cut -d: -f2 | tr -d '\r') || true
 
   if [ "$slots_assigned" = "16384" ]; then
     success "All 16384 hash slots are assigned"
@@ -375,10 +381,12 @@ test_three_masters() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 6: Cluster has 3 master nodes"
 
-  local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-    CLUSTER NODES 2> /dev/null)
+  local cluster_nodes
+  cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER NODES 2> /dev/null) || true
 
-  local master_count=$(echo "$cluster_nodes" | grep -c "master" || echo "0")
+  local master_count
+  master_count=$(echo "$cluster_nodes" | grep -c "master" || echo "0") || true
 
   if [ "$master_count" = "3" ]; then
     success "Cluster has 3 master nodes"
@@ -413,8 +421,9 @@ test_slot_distribution() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 7: Slots are distributed across all masters"
 
-  local cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-    CLUSTER NODES 2> /dev/null)
+  local cluster_nodes
+  cluster_nodes=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER NODES 2> /dev/null) || true
 
   local masters_with_slots=0
 
@@ -471,12 +480,15 @@ test_data_sharding() {
     SET test_key_3 "value3" &> /dev/null
 
   # Retrieve values
-  local val1=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-    GET test_key_1 2> /dev/null)
-  local val2=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-    GET test_key_2 2> /dev/null)
-  local val3=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
-    GET test_key_3 2> /dev/null)
+  local val1
+  val1=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_1 2> /dev/null) || true
+  local val2
+  val2=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_2 2> /dev/null) || true
+  local val3
+  val3=$(docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET test_key_3 2> /dev/null) || true
 
   # Cleanup
   docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
@@ -522,8 +534,9 @@ test_automatic_redirection() {
     SET redirect_test "test_value" &> /dev/null
 
   # Try to get it from node 2 (should redirect automatically)
-  local value=$(docker exec dev-redis-2 redis-cli -c -a "$REDIS_PASSWORD" \
-    GET redirect_test 2> /dev/null)
+  local value
+  value=$(docker exec dev-redis-2 redis-cli -c -a "$REDIS_PASSWORD" \
+    GET redirect_test 2> /dev/null) || true
 
   # Cleanup
   docker exec dev-redis-1 redis-cli -c -a "$REDIS_PASSWORD" \
@@ -563,8 +576,9 @@ test_vault_password_integration() {
 
   if [ -n "$REDIS_PASSWORD" ]; then
     # Try to authenticate with the password
-    local auth_result=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-      AUTH "$REDIS_PASSWORD" 2>&1)
+    local auth_result
+    auth_result=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+      AUTH "$REDIS_PASSWORD" 2>&1) || true
 
     if echo "$auth_result" | grep -qE "OK|already authenticated"; then
       success "Vault password authentication works"
@@ -601,8 +615,9 @@ test_cluster_health_check() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 11: Cluster health check comprehensive test"
 
-  local check_output=$(docker exec dev-redis-1 redis-cli --cluster check \
-    172.20.2.13:6379 -a "$REDIS_PASSWORD" 2>&1)
+  local check_output
+  check_output=$(docker exec dev-redis-1 redis-cli --cluster check \
+    172.20.2.13:6379 -a "$REDIS_PASSWORD" 2>&1) || true
 
   if echo "$check_output" | grep -q "\[OK\] All 16384 slots covered"; then
     success "Comprehensive cluster health check passed"
@@ -638,8 +653,9 @@ test_cluster_keyslot() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 12: Keyslot calculation works"
 
-  local keyslot=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
-    CLUSTER KEYSLOT "test_key" 2> /dev/null)
+  local keyslot
+  keyslot=$(docker exec dev-redis-1 redis-cli -a "$REDIS_PASSWORD" \
+    CLUSTER KEYSLOT "test_key" 2> /dev/null) || true
 
   # Keyslot should be a number between 0 and 16383
   if [ "$keyslot" -ge 0 ] && [ "$keyslot" -le 16383 ] 2> /dev/null; then

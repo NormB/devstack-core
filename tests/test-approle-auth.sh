@@ -107,7 +107,8 @@ setup_vault_token() {
     echo -e "${YELLOW}Please initialize Vault first:../devstack vault-init${NC}"
     return 1
   fi
-  export VAULT_TOKEN=$(cat "${ROOT_TOKEN_FILE}")
+  VAULT_TOKEN=$(cat "${ROOT_TOKEN_FILE}") || true
+  export VAULT_TOKEN
   export VAULT_ADDR="${VAULT_ADDR}"
 }
 

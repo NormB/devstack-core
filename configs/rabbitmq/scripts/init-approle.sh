@@ -58,10 +58,14 @@ fetch_credentials() {
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
   # Now using jq for proper JSON parsing (fixed from grep/sed)
-  export RABBITMQ_DEFAULT_USER=$(extract_vault_field "$response" "user")
-  export RABBITMQ_DEFAULT_PASS=$(extract_vault_field "$response" "password")
-  export RABBITMQ_DEFAULT_VHOST=$(extract_vault_field "$response" "vhost")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  RABBITMQ_DEFAULT_USER=$(extract_vault_field "$response" "user") || true
+  export RABBITMQ_DEFAULT_USER
+  RABBITMQ_DEFAULT_PASS=$(extract_vault_field "$response" "password") || true
+  export RABBITMQ_DEFAULT_PASS
+  RABBITMQ_DEFAULT_VHOST=$(extract_vault_field "$response" "vhost") || true
+  export RABBITMQ_DEFAULT_VHOST
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then
     log_error "Invalid credentials received from Vault"

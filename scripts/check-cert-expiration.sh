@@ -78,7 +78,8 @@ get_cert_expiration() {
     return
   fi
 
-  local expiration=$(openssl x509 -in "$cert_file" -noout -enddate 2> /dev/null | cut -d= -f2)
+  local expiration
+  expiration=$(openssl x509 -in "$cert_file" -noout -enddate 2> /dev/null | cut -d= -f2) || true
   if [ -z "$expiration" ]; then
     echo "0"
     return
@@ -91,14 +92,16 @@ get_cert_expiration() {
 # Get days until expiration
 get_days_until_expiration() {
   local cert_file="$1"
-  local expiration_epoch=$(get_cert_expiration "$cert_file")
+  local expiration_epoch
+  expiration_epoch=$(get_cert_expiration "$cert_file") || true
 
   if [ "$expiration_epoch" -eq 0 ]; then
     echo "-999"
     return
   fi
 
-  local now_epoch=$(date +%s)
+  local now_epoch
+  now_epoch=$(date +%s) || true
   local seconds_until_expiration=$((expiration_epoch - now_epoch))
   local days_until_expiration=$((seconds_until_expiration / 86400))
 
@@ -121,8 +124,10 @@ check_certificate() {
     return
   fi
 
-  local days_remaining=$(get_days_until_expiration "$cert_file")
-  local subject=$(get_cert_subject "$cert_file")
+  local days_remaining
+  days_remaining=$(get_days_until_expiration "$cert_file") || true
+  local subject
+  subject=$(get_cert_subject "$cert_file") || true
 
   if [ "$days_remaining" -eq -999 ]; then
     echo "ERROR|$service|Cannot parse certificate"
@@ -295,7 +300,8 @@ output_nagios() {
 
 # Main execution
 main() {
-  local services=$(get_services)
+  local services
+  services=$(get_services) || true
 
   if [ -z "$services" ]; then
     echo "No certificates found in $CERT_BASE_DIR"

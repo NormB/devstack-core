@@ -230,16 +230,18 @@ login_with_approle() {
 fetch_credentials() {
   info "Fetching credentials from Vault (service: $REDIS_NODE)..."
 
-  local response=$(wget -qO- \
+  local response
+  response=$(wget -qO- \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null) || true
 
   if [ $? -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
+  REDIS_PASSWORD=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export REDIS_PASSWORD
 
   if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
     error "Invalid password received from Vault"

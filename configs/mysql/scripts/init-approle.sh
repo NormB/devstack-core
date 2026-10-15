@@ -57,11 +57,16 @@ fetch_credentials() {
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
   # Now using jq for proper JSON parsing (fixed from grep/sed)
-  export MYSQL_ROOT_PASSWORD=$(extract_vault_field "$response" "root_password")
-  export MYSQL_USER=$(extract_vault_field "$response" "user")
-  export MYSQL_PASSWORD=$(extract_vault_field "$response" "password")
-  export MYSQL_DATABASE=$(extract_vault_field "$response" "database")
-  export ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false")
+  MYSQL_ROOT_PASSWORD=$(extract_vault_field "$response" "root_password") || true
+  export MYSQL_ROOT_PASSWORD
+  MYSQL_USER=$(extract_vault_field "$response" "user") || true
+  export MYSQL_USER
+  MYSQL_PASSWORD=$(extract_vault_field "$response" "password") || true
+  export MYSQL_PASSWORD
+  MYSQL_DATABASE=$(extract_vault_field "$response" "database") || true
+  export MYSQL_DATABASE
+  ENABLE_TLS=$(extract_vault_field "$response" "tls_enabled" "false") || true
+  export ENABLE_TLS
 
   if [ -z "$MYSQL_ROOT_PASSWORD" ] || [ "$MYSQL_ROOT_PASSWORD" = "null" ]; then
     log_error "Invalid credentials received from Vault"

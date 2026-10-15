@@ -222,21 +222,26 @@ wait_for_vault() {
 fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
-  local response=$(wget -qO- --no-check-certificate \
+  local response
+  response=$(wget -qO- --no-check-certificate \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || true
 
   if [ $? -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 
   # Parse JSON using grep/sed (no jq required)
-  export RABBITMQ_DEFAULT_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4)
-  export RABBITMQ_DEFAULT_PASS=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4)
-  export RABBITMQ_DEFAULT_VHOST=$(echo "$response" | grep -o '"vhost":"[^"]*"' | cut -d'"' -f4)
+  RABBITMQ_DEFAULT_USER=$(echo "$response" | grep -o '"user":"[^"]*"' | cut -d'"' -f4) || true
+  export RABBITMQ_DEFAULT_USER
+  RABBITMQ_DEFAULT_PASS=$(echo "$response" | grep -o '"password":"[^"]*"' | cut -d'"' -f4) || true
+  export RABBITMQ_DEFAULT_PASS
+  RABBITMQ_DEFAULT_VHOST=$(echo "$response" | grep -o '"vhost":"[^"]*"' | cut -d'"' -f4) || true
+  export RABBITMQ_DEFAULT_VHOST
 
   # Extract tls_enabled (default to false if not present)
-  local tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+  local tls_value
+  tls_value=$(echo "$response" | grep -o '"tls_enabled":[^,}]*' | cut -d':' -f2 | tr -d ' "') || true
   export ENABLE_TLS="${tls_value:-false}"
 
   if [ -z "$RABBITMQ_DEFAULT_USER" ] || [ -z "$RABBITMQ_DEFAULT_PASS" ]; then

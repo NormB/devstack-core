@@ -50,7 +50,8 @@ print_summary() {
 
 # Test 1: Vault secrets have tls_enabled=true
 export VAULT_ADDR=http://localhost:8200
-export VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token)
+VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) || true
+export VAULT_TOKEN
 
 for service in postgres mysql mongodb redis-1 rabbitmq; do
   tls_enabled=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$VAULT_TOKEN dev-vault vault kv get -field=tls_enabled secret/$service 2> /dev/null || echo "false")

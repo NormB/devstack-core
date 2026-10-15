@@ -59,7 +59,8 @@ fi
 # Function to transform doc filename to wiki page name
 doc_to_wiki_name() {
   local file="$1"
-  local basename=$(basename "$file" .md)
+  local basename
+  basename=$(basename "$file" .md) || true
 
   # Special mappings
   case "$basename" in

@@ -46,7 +46,8 @@ POSTGRES_DB="${POSTGRES_DB:-devdb}"
 
 # Always get credentials from Vault (ignore environment variables)
 if [ -f ~/.config/vault/root-token ]; then
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token) || true
+  export VAULT_TOKEN
 
   # Retrieve user, database, and password from Vault
   POSTGRES_USER=$(curl -s -H "X-Vault-Token: $VAULT_TOKEN" \
@@ -93,8 +94,9 @@ test_transaction_isolation() {
   info "Test 1: Transaction isolation levels"
 
   # Test READ COMMITTED (default)
-  local result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SHOW transaction_isolation;" 2> /dev/null | tr -d ' ')
+  local result
+  result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SHOW transaction_isolation;" 2> /dev/null | tr -d ' ') || true
 
   if [ -z "$result" ]; then
     fail "Could not query transaction isolation level" "Transaction isolation"
@@ -122,8 +124,9 @@ test_concurrent_connections() {
   info "Test 2: Concurrent connection handling"
 
   # Get current connection count
-  local baseline_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ')
+  local baseline_conns
+  baseline_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ') || true
 
   if [ -z "$baseline_conns" ]; then
     fail "Could not query connection count" "Concurrent connections"
@@ -139,8 +142,9 @@ test_concurrent_connections() {
   sleep 0.5
 
   # Check peak connection count
-  local peak_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ')
+  local peak_conns
+  peak_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ') || true
 
   wait
 
@@ -175,12 +179,14 @@ EOF
   fi
 
   # Test EXPLAIN output
-  local explain_output=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "EXPLAIN SELECT * FROM perf_test WHERE id < 100;" 2> /dev/null)
+  local explain_output
+  explain_output=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "EXPLAIN SELECT * FROM perf_test WHERE id < 100;" 2> /dev/null) || true
 
   # Test EXPLAIN ANALYZE for timing information
-  local analyze_output=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "EXPLAIN ANALYZE SELECT COUNT(*) FROM perf_test;" 2> /dev/null | grep -i "execution time")
+  local analyze_output
+  analyze_output=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "EXPLAIN ANALYZE SELECT COUNT(*) FROM perf_test;" 2> /dev/null | grep -i "execution time") || true
 
   # Cleanup
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -202,15 +208,18 @@ test_encoding_collation() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 4: Database encoding and collation"
 
-  local encoding=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SHOW server_encoding;" 2> /dev/null | tr -d ' ')
+  local encoding
+  encoding=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SHOW server_encoding;" 2> /dev/null | tr -d ' ') || true
 
   # Query collation and ctype from pg_database (they're not runtime parameters)
-  local collation=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT datcollate FROM pg_database WHERE datname = 'postgres';" 2> /dev/null | tr -d ' ')
+  local collation
+  collation=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT datcollate FROM pg_database WHERE datname = 'postgres';" 2> /dev/null | tr -d ' ') || true
 
-  local ctype=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT datctype FROM pg_database WHERE datname = 'postgres';" 2> /dev/null | tr -d ' ')
+  local ctype
+  ctype=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT datctype FROM pg_database WHERE datname = 'postgres';" 2> /dev/null | tr -d ' ') || true
 
   if [ -n "$encoding" ] && [ -n "$collation" ] && [ -n "$ctype" ]; then
     success "Database encoding configured (encoding: $encoding, collation: $collation, ctype: $ctype)"
@@ -229,8 +238,9 @@ test_extensions() {
   info "Test 5: Extension availability and functionality"
 
   # Check available extensions
-  local available_exts=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM pg_available_extensions;" 2> /dev/null | tr -d ' ')
+  local available_exts
+  available_exts=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM pg_available_extensions;" 2> /dev/null | tr -d ' ') || true
 
   if [ -z "$available_exts" ] || [ "$available_exts" -eq 0 ]; then
     fail "No extensions available" "Extensions"
@@ -272,8 +282,9 @@ EOF
     "ANALYZE vacuum_test;" &> /dev/null
 
   # Check statistics
-  local stats=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT n_tup_ins FROM pg_stat_user_tables WHERE relname='vacuum_test';" 2> /dev/null | tr -d ' ')
+  local stats
+  stats=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT n_tup_ins FROM pg_stat_user_tables WHERE relname='vacuum_test';" 2> /dev/null | tr -d ' ') || true
 
   # Run VACUUM
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -318,12 +329,14 @@ EOF
   fi
 
   # Verify indexes exist
-  local index_count=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM pg_indexes WHERE tablename='index_test';" 2> /dev/null | tr -d ' ')
+  local index_count
+  index_count=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM pg_indexes WHERE tablename='index_test';" 2> /dev/null | tr -d ' ') || true
 
   # Check if index is used in query plan
-  local uses_index=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "EXPLAIN SELECT * FROM index_test WHERE email='user500@example.com';" 2> /dev/null | grep -c "idx_email")
+  local uses_index
+  uses_index=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "EXPLAIN SELECT * FROM index_test WHERE email='user500@example.com';" 2> /dev/null | grep -c "idx_email") || true
 
   # Cleanup
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -355,12 +368,14 @@ INSERT INTO json_test (data) VALUES
 EOF
 
   # Test JSONB queries
-  local json_query=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT data->>'name' FROM json_test WHERE data->>'age' = '30';" 2> /dev/null | tr -d ' ')
+  local json_query
+  json_query=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT data->>'name' FROM json_test WHERE data->>'age' = '30';" 2> /dev/null | tr -d ' ') || true
 
   # Test JSONB operators
-  local jsonb_contains=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM json_test WHERE data @> '{\"tags\": [\"developer\"]}';" 2> /dev/null | tr -d ' ')
+  local jsonb_contains
+  jsonb_contains=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM json_test WHERE data @> '{\"tags\": [\"developer\"]}';" 2> /dev/null | tr -d ' ') || true
 
   # Cleanup
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -395,15 +410,17 @@ CREATE INDEX idx_fts ON fts_test USING GIN(tsv);
 EOF
 
   # Test full-text search
-  local search_result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT title FROM fts_test WHERE tsv @@ to_tsquery('english', 'PostgreSQL');" 2> /dev/null | grep -c "PostgreSQL")
+  local search_result
+  search_result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT title FROM fts_test WHERE tsv @@ to_tsquery('english', 'PostgreSQL');" 2> /dev/null | grep -c "PostgreSQL") || true
 
   # Test ranked search
-  local ranked_result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+  local ranked_result
+  ranked_result=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
     "SELECT title, ts_rank(tsv, to_tsquery('english', 'database')) as rank
          FROM fts_test
          WHERE tsv @@ to_tsquery('english', 'database')
-         ORDER BY rank DESC;" 2> /dev/null | grep -c "PostgreSQL")
+         ORDER BY rank DESC;" 2> /dev/null | grep -c "PostgreSQL") || true
 
   # Cleanup
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
@@ -426,18 +443,21 @@ test_connection_limits() {
   info "Test 10: Connection limit configuration"
 
   # Check max connections setting
-  local max_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SHOW max_connections;" 2> /dev/null | tr -d ' ')
+  local max_conns
+  max_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SHOW max_connections;" 2> /dev/null | tr -d ' ') || true
 
   # Check current connections
-  local current_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ')
+  local current_conns
+  current_conns=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT count(*) FROM pg_stat_activity;" 2> /dev/null | tr -d ' ') || true
 
   # Check connection statistics
-  local stats=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+  local stats
+  stats=$(psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
     "SELECT numbackends, xact_commit, xact_rollback
          FROM pg_stat_database
-         WHERE datname='postgres';" 2> /dev/null)
+         WHERE datname='postgres';" 2> /dev/null) || true
 
   if [ -n "$max_conns" ] && [ -n "$current_conns" ] && [ -n "$stats" ]; then
     local usage_pct=$((current_conns * 100 / max_conns))

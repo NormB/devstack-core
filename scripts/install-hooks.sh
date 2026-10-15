@@ -24,8 +24,10 @@ set -u
 set -o pipefail
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Colors
 readonly RED='\033[0;31m'
@@ -61,7 +63,8 @@ install_precommit_hook() {
 
   # Backup existing hook if present
   if [ -f "$hook_dest" ]; then
-    local backup="${hook_dest}.backup.$(date +%Y%m%d_%H%M%S)"
+    local backup
+    backup="${hook_dest}.backup.$(date +%Y%m%d_%H%M%S)" || true
     info "Backing up existing hook to: $backup"
     mv "$hook_dest" "$backup"
   fi

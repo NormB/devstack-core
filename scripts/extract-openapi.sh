@@ -51,8 +51,10 @@ set -o pipefail # Exit if any command in pipe fails
 #######################################
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Default configuration
 readonly DEFAULT_CODE_FIRST_URL="http://localhost:8000"
@@ -181,7 +183,8 @@ warn() {
 #   fi
 #######################################
 wait_for_api_healthy() {
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s) || true
   local end_time=$((start_time + TIMEOUT))
   local attempt=1
   local max_backoff=10
@@ -244,7 +247,8 @@ extract_openapi_spec() {
   info "Extracting OpenAPI spec from ${url}..."
 
   # Download spec to temporary file
-  local temp_file=$(mktemp)
+  local temp_file
+  temp_file=$(mktemp) || true
   if ! curl -sf "$url" -o "$temp_file"; then
     rm -f "$temp_file"
     error "Failed to download OpenAPI spec from ${url}"
@@ -259,14 +263,16 @@ extract_openapi_spec() {
   fi
 
   # Create output directory if needed
-  local output_dir=$(dirname "$OUTPUT_FILE")
+  local output_dir
+  output_dir=$(dirname "$OUTPUT_FILE") || true
   mkdir -p "$output_dir"
 
   # Move to final location
   mv "$temp_file" "$OUTPUT_FILE"
 
   # Show file info
-  local file_size=$(du -h "$OUTPUT_FILE" | cut -f1)
+  local file_size
+  file_size=$(du -h "$OUTPUT_FILE" | cut -f1) || true
   success "OpenAPI spec saved to ${OUTPUT_FILE} (${file_size})"
 
   return 0
@@ -295,10 +301,14 @@ display_spec_summary() {
   info "Specification Summary:"
 
   # Extract key information using jq
-  local title=$(jq -r '.info.title // "Unknown"' "$OUTPUT_FILE")
-  local version=$(jq -r '.info.version // "Unknown"' "$OUTPUT_FILE")
-  local endpoint_count=$(jq -r '.paths | length' "$OUTPUT_FILE")
-  local schema_count=$(jq -r '.components.schemas | length' "$OUTPUT_FILE")
+  local title
+  title=$(jq -r '.info.title // "Unknown"' "$OUTPUT_FILE") || true
+  local version
+  version=$(jq -r '.info.version // "Unknown"' "$OUTPUT_FILE") || true
+  local endpoint_count
+  endpoint_count=$(jq -r '.paths | length' "$OUTPUT_FILE") || true
+  local schema_count
+  schema_count=$(jq -r '.components.schemas | length' "$OUTPUT_FILE") || true
 
   echo "  Title: $title"
   echo "  Version: $version"

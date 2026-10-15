@@ -41,8 +41,10 @@ set -u
 set -o pipefail
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Configuration
 readonly DEFAULT_SHARED_SPEC="${PROJECT_ROOT}/reference-apps/shared/openapi.yaml"
@@ -82,7 +84,8 @@ create_backup() {
     return 0
   fi
 
-  local backup_dir="${OUTPUT_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
+  local backup_dir
+  backup_dir="${OUTPUT_DIR}.backup.$(date +%Y%m%d_%H%M%S)" || true
   info "Creating backup: $backup_dir"
 
   if [ -d "$OUTPUT_DIR" ]; then
@@ -116,7 +119,8 @@ regenerate_models() {
     --enable-faux-immutability \
     2>&1 || error "Failed to regenerate models"
 
-  local model_count=$(grep -c "^class " "${models_dir}/generated.py" || echo "0")
+  local model_count
+  model_count=$(grep -c "^class " "${models_dir}/generated.py" || echo "0") || true
   success "Regenerated $model_count Pydantic models"
 }
 
@@ -139,7 +143,8 @@ check_main_app() {
   fi
 
   # Extract routers from OpenAPI tags
-  local tags=$(yq eval '.tags[].name' "$SHARED_SPEC" | sort -u)
+  local tags
+  tags=$(yq eval '.tags[].name' "$SHARED_SPEC" | sort -u) || true
 
   info "Expected routers based on OpenAPI tags:"
   echo "$tags" | sed 's/^/  - /'

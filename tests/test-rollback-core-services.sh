@@ -131,7 +131,8 @@ create_backup() {
 
   # Backup init scripts
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     if [ -f "configs/$config_dir/scripts/init-approle.sh" ]; then
       cp "configs/$config_dir/scripts/init-approle.sh" "$BACKUP_DIR/init-approle-$service.sh"
     fi
@@ -156,7 +157,8 @@ restore_from_backup() {
 
   # Restore init scripts
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     if [ -f "$BACKUP_DIR/init-approle-$service.sh" ]; then
       cp "$BACKUP_DIR/init-approle-$service.sh" "configs/$config_dir/scripts/init-approle.sh"
     fi
@@ -195,7 +197,8 @@ phase1_baseline_validation() {
   for i in "${!SERVICES[@]}"; do
     local service="${SERVICES[$i]}"
     local container="${CONTAINERS[$i]}"
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
 
     echo ""
     echo -e "${YELLOW}Checking: $service ($container)${NC}"
@@ -271,7 +274,8 @@ phase2_rollback_execution() {
   log_success "Services stopped"
 
   # Step 2: Get Vault token
-  export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  export VAULT_TOKEN
   export VAULT_ADDR=http://localhost:8200
   log_step "Vault token loaded: ${VAULT_TOKEN:0:10}..."
 
@@ -279,9 +283,11 @@ phase2_rollback_execution() {
   log_step "Reverting init scripts to root token authentication..."
 
   for service in "${SERVICES[@]}"; do
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
     local init_script="configs/$config_dir/scripts/init.sh"
-    local service_entrypoint=$(get_service_entrypoint "$service")
+    local service_entrypoint
+    service_entrypoint=$(get_service_entrypoint "$service")
 
     cat > "$init_script" << EOFINIT
 #!/bin/bash
@@ -408,8 +414,10 @@ phase3_validate_root_token() {
   local validation_fail=0
 
   # Get passwords from Vault for authentication testing
-  local VAULT_TOKEN=$(cat ~/.config/vault/root-token)
-  local REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
+  local VAULT_TOKEN
+  VAULT_TOKEN=$(cat ~/.config/vault/root-token)
+  local REDIS_PASS
+  REDIS_PASS=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$VAULT_TOKEN" dev-vault \
     vault kv get -field=password secret/redis 2> /dev/null)
 
   for i in "${!CONTAINERS[@]}"; do
@@ -556,7 +564,8 @@ phase5_final_validation() {
   for i in "${!SERVICES[@]}"; do
     local service="${SERVICES[$i]}"
     local container="${CONTAINERS[$i]}"
-    local config_dir=$(get_config_dir "$service")
+    local config_dir
+    config_dir=$(get_config_dir "$service")
 
     echo ""
     echo -e "${YELLOW}Final Check: $service ($container)${NC}"

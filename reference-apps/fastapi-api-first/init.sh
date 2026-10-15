@@ -179,9 +179,10 @@ wait_for_vault() {
 fetch_tls_config() {
   info "Fetching TLS configuration from Vault..."
 
-  local response=$(wget -qO- --no-check-certificate \
+  local response
+  response=$(wget -qO- --no-check-certificate \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null)
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || true
 
   if [ $? -ne 0 ] || [ -z "$response" ]; then
     warn "Failed to fetch configuration from Vault, using defaults"
@@ -189,7 +190,8 @@ fetch_tls_config() {
     return 0
   fi
 
-  export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+  ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+  export ENABLE_TLS
 
   success "Configuration fetched: tls_enabled=$ENABLE_TLS"
 }

@@ -222,16 +222,18 @@ fetch_credentials() {
         apk add --no-cache jq > /dev/null 2>&1
     fi
 
-    local response=$(wget -qO- --no-check-certificate \
+    local response
+    response=$(wget -qO- --no-check-certificate \
         --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null)
+        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null) || true
 
     if [ $? -ne 0 ] || [ -z "$response" ]; then
         error "Failed to fetch credentials from Vault"
     fi
 
     REDIS_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
-    export ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"')
+    ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+    export ENABLE_TLS
 
     if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
         error "Invalid password received from Vault"

@@ -150,7 +150,8 @@ test_vault_response_time() {
   info "Performance Test 1: Vault API response time"
 
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     warn "Vault token not found, skipping test"
@@ -158,10 +159,12 @@ test_vault_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local response=$(curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" 2> /dev/null)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -217,10 +220,12 @@ test_postgres_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local result=$(run_python lib/postgres_client.py --test version 2>&1)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -276,10 +281,12 @@ test_mysql_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local result=$(run_python lib/mysql_client.py --test version 2>&1)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -335,10 +342,12 @@ test_mongodb_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local result=$(run_python lib/mongodb_client.py --test version 2>&1)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -393,10 +402,12 @@ test_redis_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local result=$(run_python lib/redis_client.py --test info 2>&1)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -453,10 +464,12 @@ test_rabbitmq_response_time() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local result=$(run_python lib/rabbitmq_client.py --test version 2>&1)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -515,10 +528,12 @@ test_fastapi_response_time() {
 
   local url="http://localhost:8000/"
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local response=$(curl -sf "$url" 2> /dev/null)
   local exit_code=$?
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
 
   local duration_ms=$(((end - start) / 1000000))
 
@@ -575,7 +590,8 @@ test_concurrent_connections() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
 
   # Run 10 concurrent connections
   local pids=()
@@ -592,7 +608,8 @@ test_concurrent_connections() {
     fi
   done
 
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
   local duration_ms=$(((end - start) / 1000000))
 
   if [ $failed -eq 0 ]; then
@@ -637,7 +654,8 @@ test_vault_under_load() {
   info "Performance Test 9: Vault under load (20 sequential requests)"
 
   local vault_addr="http://localhost:8200"
-  local vault_token=$(cat ~/.config/vault/root-token 2> /dev/null)
+  local vault_token
+  vault_token=$(cat ~/.config/vault/root-token 2> /dev/null) || true
 
   if [ -z "$vault_token" ]; then
     warn "Vault token not found, skipping test"
@@ -645,7 +663,8 @@ test_vault_under_load() {
     return 0
   fi
 
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local failed=0
 
   for i in {1..20}; do
@@ -654,7 +673,8 @@ test_vault_under_load() {
     fi
   done
 
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
   local duration_ms=$(((end - start) / 1000000))
   local avg_ms=$((duration_ms / 20))
 
@@ -706,7 +726,8 @@ test_api_under_load() {
   fi
 
   local url="http://localhost:8000/"
-  local start=$(date +%s%N)
+  local start
+  start=$(date +%s%N) || true
   local failed=0
 
   for i in {1..50}; do
@@ -715,7 +736,8 @@ test_api_under_load() {
     fi
   done
 
-  local end=$(date +%s%N)
+  local end
+  end=$(date +%s%N) || true
   local duration_ms=$(((end - start) / 1000000))
   local avg_ms=$((duration_ms / 50))
 

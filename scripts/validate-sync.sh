@@ -47,8 +47,10 @@ set -o pipefail # Exit if any command in pipe fails
 #######################################
 
 # Script directory and project root
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || true
+readonly SCRIPT_DIR
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")" || true
+readonly PROJECT_ROOT
 
 # Default configuration
 readonly DEFAULT_CODE_FIRST_URL="http://localhost:8000"
@@ -63,7 +65,8 @@ readonly SHARED_SPEC="${SHARED_SPEC:-$DEFAULT_SHARED_SPEC}"
 readonly STRICT="${STRICT:-$DEFAULT_STRICT}"
 
 # Temporary directory for comparison
-readonly TEMP_DIR=$(mktemp -d)
+TEMP_DIR=$(mktemp -d) || true
+readonly TEMP_DIR
 trap "rm -rf $TEMP_DIR" EXIT
 
 # Color codes for output
@@ -326,13 +329,15 @@ validate_spec_schema() {
   fi
 
   # Check required OpenAPI fields
-  local openapi_version=$(yq eval '.openapi' "$spec")
+  local openapi_version
+  openapi_version=$(yq eval '.openapi' "$spec") || true
   if [[ ! "$openapi_version" =~ ^3\. ]]; then
     error "${name} spec has invalid OpenAPI version: $openapi_version" 1
     return 1
   fi
 
-  local title=$(yq eval '.info.title' "$spec")
+  local title
+  title=$(yq eval '.info.title' "$spec") || true
   if [ "$title" == "null" ] || [ -z "$title" ]; then
     error "${name} spec missing required field: info.title" 1
     return 1

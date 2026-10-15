@@ -75,7 +75,8 @@ install_cron_jobs() {
   fi
 
   # Create temp file with existing crontab + new jobs
-  local temp_cron=$(mktemp)
+  local temp_cron
+  temp_cron=$(mktemp) || true
 
   # Get existing crontab (if any)
   crontab -l 2> /dev/null > "$temp_cron" || true
