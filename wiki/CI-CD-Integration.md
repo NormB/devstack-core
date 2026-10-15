@@ -144,7 +144,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Print message
         run: echo "Hello from Forgejo Actions!"
 ```
@@ -164,27 +164,27 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Start services
         run: |
           docker compose up -d vault postgres redis-1
           sleep 10
-      
+
       - name: Run tests
         run: |
           ./tests/run-all-tests.sh
-      
+
       - name: Upload test results
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: test-results
           path: test-results/
-      
+
       - name: Cleanup
         if: always()
         run: docker compose down -v
@@ -206,35 +206,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install flake8 black pylint mypy
-      
+
       - name: Run flake8
         run: flake8 reference-apps/fastapi/app/
-      
+
       - name: Run black
         run: black --check reference-apps/fastapi/app/
-      
+
       - name: Run pylint
         run: pylint reference-apps/fastapi/app/
-  
+
   lint-go:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-      
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -254,7 +254,7 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16
@@ -265,7 +265,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -273,20 +273,20 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         working-directory: reference-apps/fastapi
         run: |
           pip install -e ".[dev]"
-      
+
       - name: Run pytest
         working-directory: reference-apps/fastapi
         env:
@@ -294,7 +294,7 @@ jobs:
           REDIS_URL: redis://redis:6379
         run: |
           pytest tests/ -v --cov=app --cov-report=xml
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -315,41 +315,41 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Start DevStack Core
         run: |
           docker compose up -d
           ./devstack.sh vault-init
           ./devstack.sh vault-bootstrap
-      
+
       - name: Wait for services
         run: |
           timeout 120 bash -c 'until docker exec postgres pg_isready; do sleep 2; done'
           timeout 120 bash -c 'until docker exec redis-1 redis-cli ping; do sleep 2; done'
-      
+
       - name: Run integration tests
         run: |
           ./tests/test-vault.sh
           ./tests/test-postgres.sh
           ./tests/test-redis-cluster.sh
           ./tests/test-fastapi.sh
-      
+
       - name: Collect logs
         if: failure()
         run: |
           mkdir -p logs
           docker compose logs > logs/docker-compose.log
-      
+
       - name: Upload logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: failure-logs
           path: logs/
-      
+
       - name: Cleanup
         if: always()
         run: docker compose down -v
@@ -371,20 +371,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      
+
       - name: Login to Registry
         uses: docker/login-action@v2
         with:
           registry: localhost:5000
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-      
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v4
@@ -394,7 +394,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=sha
-      
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
@@ -419,16 +419,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
@@ -453,22 +453,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Build image
         run: |
           docker build -t reference-api:staging reference-apps/fastapi
-      
+
       - name: Deploy to staging
         run: |
           docker compose -f docker-compose.staging.yml up -d reference-api
-      
+
       - name: Health check
         run: |
           timeout 60 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
-      
+
       - name: Run smoke tests
         run: |
           curl -f http://localhost:8000/health
@@ -489,26 +489,26 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Pull latest image
         run: docker pull myregistry/reference-api:${{ github.event.release.tag_name }}
-      
+
       - name: Backup database
         run: |
           ./devstack.sh backup
-      
+
       - name: Deploy
         run: |
           docker compose pull reference-api
           docker compose up -d reference-api
-      
+
       - name: Health check
         run: |
           timeout 120 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
-      
+
       - name: Rollback on failure
         if: failure()
         run: |
@@ -550,11 +550,11 @@ jobs:
           # Install Vault CLI
           wget https://releases.hashicorp.com/vault/1.15.0/vault_1.15.0_linux_amd64.zip
           unzip vault_1.15.0_linux_amd64.zip
-          
+
           # Get secrets
           export DB_PASSWORD=$(./vault kv get -field=password secret/postgres)
           echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
-      
+
       - name: Use secrets
         run: |
           echo "Database password retrieved from Vault"
@@ -576,7 +576,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Notify Slack on success
         if: success()
@@ -597,7 +597,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-      
+
       - name: Notify Slack on failure
         if: failure()
         uses: slackapi/slack-github-action@v1
@@ -679,11 +679,11 @@ jobs:
   test-unit:
     runs-on: ubuntu-latest
     steps: [...]
-  
+
   test-integration:
     runs-on: ubuntu-latest
     steps: [...]
-  
+
   lint:
     runs-on: ubuntu-latest
     steps: [...]

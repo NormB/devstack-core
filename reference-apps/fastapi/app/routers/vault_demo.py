@@ -24,9 +24,9 @@ async def get_secret_example(
         ...,
         min_length=1,
         max_length=50,
-        pattern=r'^[a-zA-Z0-9_-]+$',
-        description="Service name (alphanumeric, hyphens, underscores only)"
-    )
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Service name (alphanumeric, hyphens, underscores only)",
+    ),
 ) -> SecretResponse:
     """
     Example: Fetch a secret from Vault
@@ -44,14 +44,13 @@ async def get_secret_example(
     # Don't return passwords in real applications!
     # This is just a demonstration
     safe_secret = {
-        k: "***" if "password" in k.lower() else v
-        for k, v in secret.items()
+        k: "***" if "password" in k.lower() else v for k, v in secret.items()
     }
 
     return SecretResponse(
         service=service_name,
         data=safe_secret,
-        note="Passwords are masked. In real apps, use credentials internally, never return them."
+        note="Passwords are masked. In real apps, use credentials internally, never return them.",
     )
 
 
@@ -62,16 +61,16 @@ async def get_secret_key_example(
         ...,
         min_length=1,
         max_length=50,
-        pattern=r'^[a-zA-Z0-9_-]+$',
-        description="Service name (alphanumeric, hyphens, underscores only)"
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Service name (alphanumeric, hyphens, underscores only)",
     ),
     key: str = Path(
         ...,
         min_length=1,
         max_length=100,
-        pattern=r'^[a-zA-Z0-9_-]+$',
-        description="Secret key name (alphanumeric, hyphens, underscores only)"
-    )
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Secret key name (alphanumeric, hyphens, underscores only)",
+    ),
 ) -> SecretKeyResponse:
     """
     Example: Fetch a specific key from a secret
@@ -92,8 +91,5 @@ async def get_secret_key_example(
         value = "***"
 
     return SecretKeyResponse(
-        service=service_name,
-        key=key,
-        value=value,
-        note="Sensitive values are masked"
+        service=service_name, key=key, value=value, note="Sensitive values are masked"
     )

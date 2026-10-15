@@ -13,7 +13,7 @@ from app.models.requests import (
     QueueNameParam,
     CacheSetRequest,
     MessagePublishRequest,
-    SecretKeyParam
+    SecretKeyParam,
 )
 
 

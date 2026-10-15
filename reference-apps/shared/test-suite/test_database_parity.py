@@ -39,7 +39,9 @@ class TestDatabaseEndpoints:
         data = response.json()
         assert isinstance(data, dict)
 
-    async def test_database_endpoints_structure_matches(self, both_api_urls, http_client):
+    async def test_database_endpoints_structure_matches(
+        self, both_api_urls, http_client
+    ):
         """Verify both implementations return identical database response structure."""
         databases = ["postgres", "mysql", "mongodb"]
 
@@ -52,15 +54,17 @@ class TestDatabaseEndpoints:
             )
 
             # Both should have same status code
-            assert code_first_response.status_code == api_first_response.status_code, \
-                f"Status codes don't match for {db}"
+            assert (
+                code_first_response.status_code == api_first_response.status_code
+            ), f"Status codes don't match for {db}"
 
             # Both should return same response keys
             code_first_data = code_first_response.json()
             api_first_data = api_first_response.json()
 
-            assert set(code_first_data.keys()) == set(api_first_data.keys()), \
-                f"Response keys don't match for {db}"
+            assert set(code_first_data.keys()) == set(
+                api_first_data.keys()
+            ), f"Response keys don't match for {db}"
 
 
 @pytest.mark.parity
@@ -126,7 +130,14 @@ class TestDatabaseHealthChecks:
 
     async def test_health_checks_parity(self, both_api_urls, http_client):
         """Verify both implementations return identical health check structures."""
-        health_endpoints = ["postgres", "mysql", "mongodb", "redis", "rabbitmq", "vault"]
+        health_endpoints = [
+            "postgres",
+            "mysql",
+            "mongodb",
+            "redis",
+            "rabbitmq",
+            "vault",
+        ]
 
         for endpoint in health_endpoints:
             code_first_response = await http_client.get(
@@ -144,5 +155,6 @@ class TestDatabaseHealthChecks:
             api_first_data = api_first_response.json()
 
             # Response structure should match
-            assert set(code_first_data.keys()) == set(api_first_data.keys()), \
-                f"Health check keys don't match for {endpoint}"
+            assert set(code_first_data.keys()) == set(
+                api_first_data.keys()
+            ), f"Health check keys don't match for {endpoint}"

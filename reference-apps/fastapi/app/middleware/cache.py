@@ -24,22 +24,12 @@ from prometheus_client import Counter
 logger = logging.getLogger(__name__)
 
 # Prometheus metrics for cache
-cache_hits = Counter(
-    'cache_hits_total',
-    'Total cache hits',
-    ['endpoint']
-)
+cache_hits = Counter("cache_hits_total", "Total cache hits", ["endpoint"])
 
-cache_misses = Counter(
-    'cache_misses_total',
-    'Total cache misses',
-    ['endpoint']
-)
+cache_misses = Counter("cache_misses_total", "Total cache misses", ["endpoint"])
 
 cache_invalidations = Counter(
-    'cache_invalidations_total',
-    'Total cache invalidations',
-    ['pattern']
+    "cache_invalidations_total", "Total cache invalidations", ["pattern"]
 )
 
 
@@ -121,7 +111,9 @@ async def invalidate_cache_pattern(pattern: str, redis_client: aioredis.Redis):
             # Delete all matching keys
             await redis_client.delete(*keys)
             cache_invalidations.labels(pattern=pattern).inc(len(keys))
-            logger.info(f"Invalidated {len(keys)} cache keys matching pattern: {pattern}")
+            logger.info(
+                f"Invalidated {len(keys)} cache keys matching pattern: {pattern}"
+            )
         else:
             logger.debug(f"No cache keys found matching pattern: {pattern}")
 
@@ -174,10 +166,7 @@ class CacheManager:
             await self.redis_client.ping()
 
             # Initialize FastAPI Cache
-            FastAPICache.init(
-                RedisBackend(self.redis_client),
-                prefix=prefix
-            )
+            FastAPICache.init(RedisBackend(self.redis_client), prefix=prefix)
 
             self.enabled = True
             # Log success without exposing credentials (URL may contain password)

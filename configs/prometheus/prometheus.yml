@@ -25,12 +25,12 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # FastAPI Reference Application
+  # Health check endpoint (for service discovery)
+  # If FastAPI doesn't expose /metrics, we can use a custom exporter
   - job_name: 'reference-api'
     metrics_path: '/metrics'
     static_configs:
       - targets: ['reference-api:8000']
-    # Health check endpoint (for service discovery)
-    # If FastAPI doesn't expose /metrics, we can use a custom exporter
 
   # Forgejo Git Server
   - job_name: 'forgejo'
@@ -48,7 +48,7 @@ scrape_configs:
   - job_name: 'vector'
     static_configs:
       - targets: ['vector:9598']
-    honor_labels: true  # Preserve labels from scraped metrics
+    honor_labels: true # Preserve labels from scraped metrics
 
   # PostgreSQL Exporter (REPLACED BY VECTOR - postgres-exporter container removed)
   # - job_name: 'postgres'
@@ -102,9 +102,9 @@ scrape_configs:
   - job_name: 'voip-nodes'
     static_configs:
       - targets:
-          - '192.168.105.2:9100'  # sip-1 (OpenSIPS)
-          - '192.168.105.6:9100'  # pbx-1 (Asterisk)
-          - '192.168.105.5:9100'  # media-1 (RTPEngine)
+          - '192.168.105.2:9100' # sip-1 (OpenSIPS)
+          - '192.168.105.6:9100' # pbx-1 (Asterisk)
+          - '192.168.105.5:9100' # media-1 (RTPEngine)
     relabel_configs:
       - source_labels: [__address__]
         regex: '192.168.105.2:.*'
@@ -136,7 +136,7 @@ scrape_configs:
     metrics_path: '/v1/sys/metrics'
     params:
       format: ['prometheus']
-    bearer_token: '${VAULT_TOKEN}'  # Will be substituted from environment
+    bearer_token: '${VAULT_TOKEN}' # Will be substituted from environment
     static_configs:
       - targets: ['vault:8200']
     scheme: http

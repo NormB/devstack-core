@@ -56,7 +56,7 @@ def run_command(
     capture: bool = False,
     env: Optional[Dict[str, str]] = None,
     input_data: Optional[str] = None,
-    cwd: Optional[Path] = None
+    cwd: Optional[Path] = None,
 ) -> Tuple[int, str, str]:
     """
     Run a shell command with optional environment variables.
@@ -88,7 +88,7 @@ def run_command(
                 text=True,
                 env=cmd_env,
                 input=input_data,
-                cwd=cwd
+                cwd=cwd,
             )
             return result.returncode, result.stdout, result.stderr
         else:
@@ -98,7 +98,7 @@ def run_command(
                 env=cmd_env,
                 input=input_data,
                 text=True if input_data else False,
-                cwd=cwd
+                cwd=cwd,
             )
             return result.returncode, "", ""
     except subprocess.CalledProcessError as e:
@@ -108,10 +108,16 @@ def run_command(
             if capture and e.stderr:
                 console.print(f"[red]{e.stderr}[/red]")
             sys.exit(e.returncode)
-        return e.returncode, getattr(e, 'stdout', '') or '', getattr(e, 'stderr', '') or ''
+        return (
+            e.returncode,
+            getattr(e, "stdout", "") or "",
+            getattr(e, "stderr", "") or "",
+        )
     except FileNotFoundError:
         console.print(f"[red]Command not found: {cmd[0]}[/red]")
-        console.print(f"[yellow]Make sure {cmd[0]} is installed and in your PATH[/yellow]")
+        console.print(
+            f"[yellow]Make sure {cmd[0]} is installed and in your PATH[/yellow]"
+        )
         sys.exit(1)
 
 
@@ -176,7 +182,9 @@ def get_profile_services(profile: str) -> List[str]:
         return profiles_config["custom_profiles"][profile].get("services", [])
 
     console.print(f"[red]Error: Unknown profile '{profile}'[/red]")
-    console.print("[yellow]Available profiles: minimal, standard, full, reference[/yellow]")
+    console.print(
+        "[yellow]Available profiles: minimal, standard, full, reference[/yellow]"
+    )
     sys.exit(1)
 
 
@@ -188,9 +196,7 @@ def check_colima_status() -> bool:
         True if Colima is running, False otherwise
     """
     returncode, stdout, stderr = run_command(
-        ["colima", "status", "-p", COLIMA_PROFILE],
-        check=False,
-        capture=True
+        ["colima", "status", "-p", COLIMA_PROFILE], check=False, capture=True
     )
     output = (stdout + stderr).lower()
     return returncode == 0 and "running" in output

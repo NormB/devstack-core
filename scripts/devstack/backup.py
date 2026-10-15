@@ -30,11 +30,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Any
 
-from .utils import (
-    console,
-    calculate_file_checksum,
-    VAULT_CONFIG_DIR
-)
+from .utils import console, calculate_file_checksum, VAULT_CONFIG_DIR
 
 
 def create_backup_manifest(
@@ -43,7 +39,7 @@ def create_backup_manifest(
     base_backup: Optional[str] = None,
     previous_backup: Optional[str] = None,
     start_time: Optional[float] = None,
-    encrypted: bool = False
+    encrypted: bool = False,
 ) -> Dict[str, Any]:
     """
     Create a backup manifest file with metadata and checksums.
@@ -77,14 +73,14 @@ def create_backup_manifest(
         "config": {},
         "total_size_bytes": 0,
         "duration_seconds": round(duration, 2),
-        "vault_approle_used": True
+        "vault_approle_used": True,
     }
 
     if encrypted:
         manifest["encryption"] = {
             "algorithm": "AES256",
             "method": "GPG symmetric",
-            "passphrase_hint": "vault-backup-passphrase"
+            "passphrase_hint": "vault-backup-passphrase",
         }
 
     # Database backup files
@@ -92,7 +88,7 @@ def create_backup_manifest(
         "postgres": "postgres_all.sql",
         "mysql": "mysql_all.sql",
         "mongodb": "mongodb_dump.archive",
-        "forgejo": "forgejo_data.tar.gz"
+        "forgejo": "forgejo_data.tar.gz",
     }
 
     for db_name, filename in db_files.items():
@@ -106,7 +102,7 @@ def create_backup_manifest(
                 "type": backup_type if db_name == "forgejo" else "full",
                 "file": actual_file.name,
                 "size_bytes": file_size,
-                "checksum": f"sha256:{calculate_file_checksum(actual_file)}"
+                "checksum": f"sha256:{calculate_file_checksum(actual_file)}",
             }
 
             if encrypted:
@@ -128,7 +124,7 @@ def create_backup_manifest(
         config_entry: Dict[str, Any] = {
             "env_file": actual_env.name,
             "size_bytes": file_size,
-            "checksum": f"sha256:{calculate_file_checksum(actual_env)}"
+            "checksum": f"sha256:{calculate_file_checksum(actual_env)}",
         }
 
         if encrypted:
@@ -139,7 +135,7 @@ def create_backup_manifest(
 
     # Write manifest
     manifest_file = backup_dir / "manifest.json"
-    with open(manifest_file, 'w') as f:
+    with open(manifest_file, "w") as f:
         json.dump(manifest, f, indent=2)
 
     return manifest
@@ -168,7 +164,7 @@ def find_latest_full_backup(backups_dir: Optional[Path] = None) -> Optional[str]
         manifest_file = backup_dir / "manifest.json"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r') as f:
+                with open(manifest_file, "r") as f:
                     manifest = json.load(f)
                     if manifest.get("backup_type") == "full":
                         return backup_dir.name
@@ -202,7 +198,7 @@ def setup_backup_passphrase() -> bool:
     console.print("[cyan]Creating a passphrase will enable encrypted backups.[/cyan]\n")
 
     response = input("Create encryption passphrase? (y/n): ").strip().lower()
-    if response != 'y':
+    if response != "y":
         console.print("[yellow]Encryption setup cancelled.[/yellow]\n")
         return False
 
@@ -282,15 +278,18 @@ def encrypt_file_gpg(file_path: Path, passphrase: str) -> bool:
             [
                 "gpg",
                 "--symmetric",
-                "--cipher-algo", "AES256",
+                "--cipher-algo",
+                "AES256",
                 "--batch",
                 "--yes",
-                "--passphrase", passphrase,
-                "--output", str(encrypted_path),
-                str(file_path)
+                "--passphrase",
+                passphrase,
+                "--output",
+                str(encrypted_path),
+                str(file_path),
             ],
             capture_output=True,
-            check=False
+            check=False,
         )
 
         if result.returncode != 0:
@@ -307,9 +306,7 @@ def encrypt_file_gpg(file_path: Path, passphrase: str) -> bool:
 
 
 def decrypt_file_gpg(
-    encrypted_path: Path,
-    passphrase: str,
-    output_path: Optional[Path] = None
+    encrypted_path: Path, passphrase: str, output_path: Optional[Path] = None
 ) -> bool:
     """
     Decrypt a GPG-encrypted file.
@@ -336,12 +333,14 @@ def decrypt_file_gpg(
                 "--decrypt",
                 "--batch",
                 "--yes",
-                "--passphrase", passphrase,
-                "--output", str(output_path),
-                str(encrypted_path)
+                "--passphrase",
+                passphrase,
+                "--output",
+                str(output_path),
+                str(encrypted_path),
             ],
             capture_output=True,
-            check=False
+            check=False,
         )
 
         if result.returncode != 0:
@@ -380,7 +379,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
         "files_total": 0,
         "errors": [],
         "warnings": [],
-        "details": []
+        "details": [],
     }
 
     manifest_file = backup_dir / "manifest.json"
@@ -389,7 +388,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
         return False, report
 
     try:
-        with open(manifest_file, 'r') as f:
+        with open(manifest_file, "r") as f:
             manifest = json.load(f)
     except json.JSONDecodeError as e:
         report["errors"].append(f"Manifest is corrupted: {e}")
@@ -424,11 +423,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
         if not file_path.exists():
             report["errors"].append(f"{filename}: File missing")
             report["files_failed"] += 1
-            report["details"].append({
-                "file": filename,
-                "status": "missing",
-                "size": 0
-            })
+            report["details"].append({"file": filename, "status": "missing", "size": 0})
             continue
 
         try:
@@ -437,11 +432,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
 
             if actual_checksum == expected_checksum:
                 report["files_verified"] += 1
-                report["details"].append({
-                    "file": filename,
-                    "status": "ok",
-                    "size": file_size
-                })
+                report["details"].append(
+                    {"file": filename, "status": "ok", "size": file_size}
+                )
             else:
                 report["files_failed"] += 1
                 report["errors"].append(
@@ -449,19 +442,13 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
                     f"  Expected: {expected_checksum[:16]}...\n"
                     f"  Actual:   {actual_checksum[:16]}..."
                 )
-                report["details"].append({
-                    "file": filename,
-                    "status": "checksum_mismatch",
-                    "size": file_size
-                })
+                report["details"].append(
+                    {"file": filename, "status": "checksum_mismatch", "size": file_size}
+                )
         except Exception as e:
             report["files_failed"] += 1
             report["errors"].append(f"{filename}: Verification error: {e}")
-            report["details"].append({
-                "file": filename,
-                "status": "error",
-                "size": 0
-            })
+            report["details"].append({"file": filename, "status": "error", "size": 0})
 
     # Verify config file
     if "config" in manifest and manifest["config"]:
@@ -474,11 +461,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
             if not file_path.exists():
                 report["errors"].append(f"{filename}: File missing")
                 report["files_failed"] += 1
-                report["details"].append({
-                    "file": filename,
-                    "status": "missing",
-                    "size": 0
-                })
+                report["details"].append(
+                    {"file": filename, "status": "missing", "size": 0}
+                )
             else:
                 try:
                     actual_checksum = calculate_file_checksum(file_path)
@@ -486,11 +471,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
 
                     if actual_checksum == expected_checksum:
                         report["files_verified"] += 1
-                        report["details"].append({
-                            "file": filename,
-                            "status": "ok",
-                            "size": file_size
-                        })
+                        report["details"].append(
+                            {"file": filename, "status": "ok", "size": file_size}
+                        )
                     else:
                         report["files_failed"] += 1
                         report["errors"].append(
@@ -498,22 +481,22 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict[str, Any]]:  #
                             f"  Expected: {expected_checksum[:16]}...\n"
                             f"  Actual:   {actual_checksum[:16]}..."
                         )
-                        report["details"].append({
-                            "file": filename,
-                            "status": "checksum_mismatch",
-                            "size": file_size
-                        })
+                        report["details"].append(
+                            {
+                                "file": filename,
+                                "status": "checksum_mismatch",
+                                "size": file_size,
+                            }
+                        )
                 except Exception as e:
                     report["files_failed"] += 1
                     report["errors"].append(f"{filename}: Verification error: {e}")
-                    report["details"].append({
-                        "file": filename,
-                        "status": "error",
-                        "size": 0
-                    })
+                    report["details"].append(
+                        {"file": filename, "status": "error", "size": 0}
+                    )
 
     success = (
-        report["files_failed"] == 0 and
-        report["files_verified"] == report["files_total"]
+        report["files_failed"] == 0
+        and report["files_verified"] == report["files_total"]
     )
     return success, report

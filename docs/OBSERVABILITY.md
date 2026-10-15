@@ -327,7 +327,7 @@ time=2025-10-21T21:59:07.298Z level=ERROR source=config.go:146 msg="failed to va
    git clone https://github.com/prometheus/mysqld_exporter.git /tmp/mysqld-exporter-build
    cd /tmp/mysqld-exporter-build
    GOOS=linux GOARCH=arm64 make build
-   
+
    # Verified ELF binary for Linux ARM64
    file mysqld_exporter
    # Output: ELF 64-bit LSB executable, ARM aarch64
@@ -700,7 +700,7 @@ Update container metrics dashboards to:
    ```bash
    # From macOS, build for Linux ARM64
    GOOS=linux GOARCH=arm64 make build
-   
+
    # Verify binary
    file mysqld_exporter
    # Should show: ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked
@@ -715,15 +715,15 @@ Update container metrics dashboards to:
    ```dockerfile
    # Dockerfile.source
    FROM alpine:3.18
-   
+
    RUN apk add --no-cache wget ca-certificates mariadb-connector-c libstdc++
-   
+
    COPY mysqld_exporter /bin/mysqld_exporter
    RUN chmod +x /bin/mysqld_exporter
-   
+
    COPY init.sh /init/init.sh
    RUN chmod +x /init/init.sh
-   
+
    ENTRYPOINT ["/init/init.sh"]
    CMD ["--web.listen-address=:9104", "--log.level=debug"]
    ```

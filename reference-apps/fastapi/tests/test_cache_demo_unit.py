@@ -18,7 +18,7 @@ class TestCacheDemoGetValue:
 
     async def test_get_existing_value(self):
         """Test getting an existing cache value"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.get.return_value = "cached_value"
             mock_client.ttl.return_value = 300
@@ -35,7 +35,7 @@ class TestCacheDemoGetValue:
 
     async def test_get_nonexistent_value(self):
         """Test getting a non-existent cache value"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.get.return_value = None
             mock_client.ttl.return_value = -2
@@ -51,7 +51,7 @@ class TestCacheDemoGetValue:
 
     async def test_get_value_with_no_expiration(self):
         """Test getting a value with no TTL"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.get.return_value = "persistent_value"
             mock_client.ttl.return_value = -1  # No expiration
@@ -65,7 +65,7 @@ class TestCacheDemoGetValue:
 
     async def test_get_value_redis_error(self):
         """Test getting value when Redis fails"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.get.side_effect = Exception("Redis connection failed")
             mock_get_client.return_value = mock_client
@@ -84,7 +84,7 @@ class TestCacheDemoSetValue:
 
     async def test_set_value_without_ttl(self):
         """Test setting a cache value without TTL"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.set = AsyncMock()
             mock_client.close = AsyncMock()
@@ -101,7 +101,7 @@ class TestCacheDemoSetValue:
 
     async def test_set_value_with_ttl(self):
         """Test setting a cache value with TTL"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.setex = AsyncMock()
             mock_client.close = AsyncMock()
@@ -118,7 +118,7 @@ class TestCacheDemoSetValue:
 
     async def test_set_value_redis_error(self):
         """Test setting value when Redis fails"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.set.side_effect = Exception("Redis write failed")
             mock_get_client.return_value = mock_client
@@ -137,7 +137,7 @@ class TestCacheDemoDeleteValue:
 
     async def test_delete_existing_key(self):
         """Test deleting an existing cache key"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.delete.return_value = 1  # 1 key deleted
             mock_client.close = AsyncMock()
@@ -153,7 +153,7 @@ class TestCacheDemoDeleteValue:
 
     async def test_delete_nonexistent_key(self):
         """Test deleting a non-existent cache key"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.delete.return_value = 0  # No keys deleted
             mock_client.close = AsyncMock()
@@ -167,7 +167,7 @@ class TestCacheDemoDeleteValue:
 
     async def test_delete_value_redis_error(self):
         """Test deleting value when Redis fails"""
-        with patch('app.routers.cache_demo.get_redis_client') as mock_get_client:
+        with patch("app.routers.cache_demo.get_redis_client") as mock_get_client:
             mock_client = AsyncMock()
             mock_client.delete.side_effect = Exception("Redis delete failed")
             mock_get_client.return_value = mock_client
@@ -188,8 +188,8 @@ class TestGetRedisClient:
         """Test getting Redis client with Vault credentials"""
         from app.routers.cache_demo import get_redis_client
 
-        with patch('app.routers.cache_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.cache_demo.redis.Redis') as mock_redis_class:
+        with patch("app.routers.cache_demo.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.cache_demo.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_password"}
 
                 mock_client = MagicMock()

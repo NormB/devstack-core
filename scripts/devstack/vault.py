@@ -77,15 +77,20 @@ def get_vault_approle_token(service: str = "management") -> Optional[str]:
 
         returncode, token, _ = run_command(
             [
-                "docker", "exec",
-                "-e", "VAULT_ADDR=http://localhost:8200",
-                "dev-vault", "vault", "write", "-field=token",
+                "docker",
+                "exec",
+                "-e",
+                "VAULT_ADDR=http://localhost:8200",
+                "dev-vault",
+                "vault",
+                "write",
+                "-field=token",
                 "auth/approle/login",
                 f"role_id={role_id}",
-                f"secret_id={secret_id}"
+                f"secret_id={secret_id}",
             ],
             capture=True,
-            check=False
+            check=False,
         )
 
         if returncode == 0 and token:
@@ -97,11 +102,7 @@ def get_vault_approle_token(service: str = "management") -> Optional[str]:
         return None
 
 
-def get_vault_secret(
-    path: str,
-    field: str,
-    use_approle: bool = True
-) -> Optional[str]:
+def get_vault_secret(path: str, field: str, use_approle: bool = True) -> Optional[str]:
     """
     Retrieve a secret from Vault KV store.
 
@@ -124,13 +125,21 @@ def get_vault_secret(
         if token:
             returncode, value, _ = run_command(
                 [
-                    "docker", "exec",
-                    "-e", f"VAULT_TOKEN={token}",
-                    "-e", "VAULT_ADDR=http://localhost:8200",
-                    "dev-vault", "vault", "kv", "get", f"-field={field}", path
+                    "docker",
+                    "exec",
+                    "-e",
+                    f"VAULT_TOKEN={token}",
+                    "-e",
+                    "VAULT_ADDR=http://localhost:8200",
+                    "dev-vault",
+                    "vault",
+                    "kv",
+                    "get",
+                    f"-field={field}",
+                    path,
                 ],
                 capture=True,
-                check=False
+                check=False,
             )
             if returncode == 0 and value:
                 return value.strip()
@@ -142,13 +151,21 @@ def get_vault_secret(
 
     returncode, value, _ = run_command(
         [
-            "docker", "exec",
-            "-e", f"VAULT_TOKEN={token}",
-            "-e", "VAULT_ADDR=http://localhost:8200",
-            "dev-vault", "vault", "kv", "get", f"-field={field}", path
+            "docker",
+            "exec",
+            "-e",
+            f"VAULT_TOKEN={token}",
+            "-e",
+            "VAULT_ADDR=http://localhost:8200",
+            "dev-vault",
+            "vault",
+            "kv",
+            "get",
+            f"-field={field}",
+            path,
         ],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode == 0 and value:
@@ -165,12 +182,17 @@ def check_vault_health() -> bool:
     """
     returncode, stdout, _ = run_command(
         [
-            "docker", "exec",
-            "-e", "VAULT_ADDR=http://localhost:8200",
-            "dev-vault", "vault", "status", "-format=json"
+            "docker",
+            "exec",
+            "-e",
+            "VAULT_ADDR=http://localhost:8200",
+            "dev-vault",
+            "vault",
+            "status",
+            "-format=json",
         ],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode not in [0, 2]:  # 0 = unsealed, 2 = sealed
@@ -178,6 +200,7 @@ def check_vault_health() -> bool:
 
     try:
         import json
+
         status = json.loads(stdout)
         return not status.get("sealed", True)
     except (json.JSONDecodeError, KeyError):
@@ -197,6 +220,7 @@ def get_vault_unseal_keys() -> Optional[list]:
 
     try:
         import json
+
         with open(keys_file) as f:
             data = json.load(f)
             return data.get("unseal_keys_b64") or data.get("keys")

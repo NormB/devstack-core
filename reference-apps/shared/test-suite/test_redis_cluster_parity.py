@@ -62,16 +62,18 @@ class TestRedisClusterEndpoints:
             )
 
             # Both should have same status code
-            assert code_first_response.status_code == api_first_response.status_code, \
-                f"Status codes don't match for /redis/cluster/{endpoint}"
+            assert (
+                code_first_response.status_code == api_first_response.status_code
+            ), f"Status codes don't match for /redis/cluster/{endpoint}"
 
             # Both should return JSON
             code_first_data = code_first_response.json()
             api_first_data = api_first_response.json()
 
             # Response structure should match
-            assert set(code_first_data.keys()) == set(api_first_data.keys()), \
-                f"Response keys don't match for /redis/cluster/{endpoint}"
+            assert set(code_first_data.keys()) == set(
+                api_first_data.keys()
+            ), f"Response keys don't match for /redis/cluster/{endpoint}"
 
 
 @pytest.mark.parity

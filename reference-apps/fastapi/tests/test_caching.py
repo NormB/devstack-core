@@ -11,7 +11,7 @@ from app.middleware.cache import (
     generate_cache_key,
     CacheManager,
     invalidate_cache_pattern,
-    invalidate_cache_key
+    invalidate_cache_key,
 )
 
 
@@ -62,9 +62,7 @@ class TestCacheKeyGeneration:
         mock_request.query_params = {}
 
         key = generate_cache_key(
-            mock_func,
-            namespace="custom_namespace",
-            request=mock_request
+            mock_func, namespace="custom_namespace", request=mock_request
         )
 
         assert key.startswith("custom_namespace:")
@@ -108,8 +106,8 @@ class TestCacheManager:
     @pytest.mark.asyncio
     async def test_cache_manager_init(self, mock_redis):
         """Test cache manager initialization"""
-        with patch('app.middleware.cache.aioredis.from_url', return_value=mock_redis):
-            with patch('app.middleware.cache.FastAPICache.init') as mock_init:
+        with patch("app.middleware.cache.aioredis.from_url", return_value=mock_redis):
+            with patch("app.middleware.cache.FastAPICache.init") as mock_init:
                 manager = CacheManager()
                 await manager.init("redis://localhost:6379", prefix="test:")
 
@@ -120,7 +118,10 @@ class TestCacheManager:
     @pytest.mark.asyncio
     async def test_cache_manager_init_failure(self):
         """Test cache manager handles initialization failure gracefully"""
-        with patch('app.middleware.cache.aioredis.from_url', side_effect=Exception("Connection failed")):
+        with patch(
+            "app.middleware.cache.aioredis.from_url",
+            side_effect=Exception("Connection failed"),
+        ):
             manager = CacheManager()
             await manager.init("redis://localhost:6379")
 
@@ -145,7 +146,9 @@ class TestCacheManager:
         manager.enabled = True
 
         # Mock scan_iter to return some keys
-        mock_redis.scan_iter.return_value = mock_async_iterator(["cache:key1", "cache:key2"])
+        mock_redis.scan_iter.return_value = mock_async_iterator(
+            ["cache:key1", "cache:key2"]
+        )
 
         await manager.clear_all()
 
@@ -160,6 +163,7 @@ class TestCacheInvalidation:
 
     async def test_invalidate_cache_pattern(self, mock_redis):
         """Test invalidating cache by pattern"""
+
         # Create async generator for scan_iter
         async def mock_scan():
             for key in ["cache:test:1", "cache:test:2"]:
@@ -175,6 +179,7 @@ class TestCacheInvalidation:
 
     async def test_invalidate_cache_pattern_no_matches(self, mock_redis):
         """Test invalidating pattern with no matches"""
+
         # Empty async iterator
         async def mock_scan():
             return
@@ -204,18 +209,20 @@ class TestCacheInvalidation:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach"
+)
 @pytest.mark.cache
 class TestEndpointCaching:
     """Test caching behavior on actual endpoints"""
 
     def test_cached_endpoint_returns_same_response(self, client):
         """Test that cached endpoint returns consistent response"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.return_value = {
                 "user": "test_user",
                 "password": "test_pass",
-                "database": "test_db"
+                "database": "test_db",
             }
 
             # First request
@@ -232,11 +239,8 @@ class TestEndpointCaching:
 
     def test_cache_reduces_backend_calls(self, client):
         """Test that caching reduces calls to backend"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
-            mock_get.return_value = {
-                "user": "test_user",
-                "password": "test_pass"
-            }
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
+            mock_get.return_value = {"user": "test_user", "password": "test_pass"}
 
             # Make multiple requests
             for _ in range(5):
@@ -250,10 +254,10 @@ class TestEndpointCaching:
 
     def test_different_params_different_cache(self, client):
         """Test that different parameters use different cache entries"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = [
                 {"user": "postgres_user", "password": "pass1"},
-                {"user": "mysql_user", "password": "pass2"}
+                {"user": "mysql_user", "password": "pass2"},
             ]
 
             response1 = client.get("/examples/vault/secret/postgres")
@@ -296,10 +300,14 @@ class TestCacheConfiguration:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach"
+)
 @pytest.mark.cache
 @pytest.mark.slow
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestCacheTTL:
     """Test cache TTL expiration"""
 
@@ -307,11 +315,8 @@ class TestCacheTTL:
         """Test that cache expires after TTL (integration test)"""
         # Note: This test requires actual cache to be working
         # and is marked as slow because it needs to wait for expiration
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
-            mock_get.side_effect = [
-                {"value": "first"},
-                {"value": "second"}
-            ]
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
+            mock_get.side_effect = [{"value": "first"}, {"value": "second"}]
 
             # First request
             response1 = client.get("/examples/vault/secret/test")
@@ -333,11 +338,7 @@ class TestCacheMetrics:
 
     def test_cache_metrics_defined(self):
         """Test that cache metrics are defined"""
-        from app.middleware.cache import (
-            cache_hits,
-            cache_misses,
-            cache_invalidations
-        )
+        from app.middleware.cache import cache_hits, cache_misses, cache_invalidations
 
         assert cache_hits is not None
         assert cache_misses is not None

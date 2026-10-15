@@ -13,25 +13,29 @@ from app.main import app
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestPostgresEndpoints:
     """Test PostgreSQL demo endpoints"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_postgres_query_success(self, client):
         """Test successful PostgreSQL query"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.asyncpg.connect') as mock_connect:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.asyncpg.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_conn = AsyncMock()
@@ -49,12 +53,12 @@ class TestPostgresEndpoints:
 
     def test_postgres_query_connection_failure(self, client):
         """Test PostgreSQL connection failure"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.asyncpg.connect') as mock_connect:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.asyncpg.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
                 mock_connect.side_effect = Exception("Connection failed")
 
@@ -65,7 +69,7 @@ class TestPostgresEndpoints:
 
     def test_postgres_query_vault_failure(self, client):
         """Test PostgreSQL query when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/databases/postgres/query")
@@ -74,25 +78,29 @@ class TestPostgresEndpoints:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestMySQLEndpoints:
     """Test MySQL demo endpoints"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_mysql_query_success(self, client):
         """Test successful MySQL query"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.aiomysql.connect') as mock_connect:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.aiomysql.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_cursor = AsyncMock()
@@ -116,12 +124,12 @@ class TestMySQLEndpoints:
 
     def test_mysql_query_connection_failure(self, client):
         """Test MySQL connection failure"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.aiomysql.connect') as mock_connect:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.aiomysql.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
                 mock_connect.side_effect = Exception("Connection refused")
 
@@ -132,7 +140,7 @@ class TestMySQLEndpoints:
 
     def test_mysql_query_vault_failure(self, client):
         """Test MySQL query when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/databases/mysql/query")
@@ -141,29 +149,39 @@ class TestMySQLEndpoints:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestMongoDBEndpoints:
     """Test MongoDB demo endpoints"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_mongodb_query_success(self, client):
         """Test successful MongoDB query"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient') as mock_client_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient"
+            ) as mock_client_class:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_db = AsyncMock()
-                mock_db.list_collection_names.return_value = ["users", "products", "orders"]
+                mock_db.list_collection_names.return_value = [
+                    "users",
+                    "products",
+                    "orders",
+                ]
 
                 mock_client = MagicMock()
                 mock_client.__getitem__.return_value = mock_db
@@ -180,12 +198,14 @@ class TestMongoDBEndpoints:
 
     def test_mongodb_query_connection_failure(self, client):
         """Test MongoDB connection failure"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient') as mock_client_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient"
+            ) as mock_client_class:
                 mock_vault.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
                 mock_client_class.side_effect = Exception("Connection timeout")
 
@@ -196,7 +216,7 @@ class TestMongoDBEndpoints:
 
     def test_mongodb_query_vault_failure(self, client):
         """Test MongoDB query when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/databases/mongodb/query")
@@ -205,14 +225,18 @@ class TestMongoDBEndpoints:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestDatabaseIntegration:
     """Integration tests for database endpoints"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -221,7 +245,7 @@ class TestDatabaseIntegration:
         endpoints = [
             "/examples/databases/postgres/query",
             "/examples/databases/mysql/query",
-            "/examples/databases/mongodb/query"
+            "/examples/databases/mongodb/query",
         ]
 
         for endpoint in endpoints:
@@ -231,17 +255,17 @@ class TestDatabaseIntegration:
 
     def test_database_endpoints_return_json(self, client):
         """Test that all database endpoints return JSON"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.return_value = {
                 "user": "test",
                 "password": "test",
-                "database": "test"
+                "database": "test",
             }
 
             endpoints = [
                 "/examples/databases/postgres/query",
                 "/examples/databases/mysql/query",
-                "/examples/databases/mongodb/query"
+                "/examples/databases/mongodb/query",
             ]
 
             for endpoint in endpoints:

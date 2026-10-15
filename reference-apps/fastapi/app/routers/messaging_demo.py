@@ -13,10 +13,7 @@ import json
 
 from app.config import settings
 from app.services.vault import vault_client
-from app.models.responses import (
-    MessagePublishResponse,
-    QueueInfoResponse
-)
+from app.models.responses import MessagePublishResponse, QueueInfoResponse
 
 router = APIRouter()
 
@@ -34,13 +31,10 @@ async def publish_message(
         ...,
         min_length=1,
         max_length=100,
-        pattern=r'^[a-zA-Z0-9_.-]+$',
-        description="Queue name (alphanumeric and: - _ . only)"
+        pattern=r"^[a-zA-Z0-9_.-]+$",
+        description="Queue name (alphanumeric and: - _ . only)",
     ),
-    message: dict = Body(
-        ...,
-        description="Message payload (JSON object, max 1MB)"
-    )
+    message: dict = Body(..., description="Message payload (JSON object, max 1MB)"),
 ) -> MessagePublishResponse:
     """Example: Publish a message to a queue"""
     try:
@@ -49,7 +43,7 @@ async def publish_message(
         if message_size > 1_000_000:  # 1MB limit
             raise HTTPException(
                 status_code=413,
-                detail=f"Message size ({message_size} bytes) exceeds 1MB limit"
+                detail=f"Message size ({message_size} bytes) exceeds 1MB limit",
             )
 
         if not message:
@@ -70,9 +64,7 @@ async def publish_message(
         await connection.close()
 
         return MessagePublishResponse(
-            queue=queue_name,
-            message=message,
-            action="published"
+            queue=queue_name, message=message, action="published"
         )
     except HTTPException:
         raise
@@ -86,9 +78,9 @@ async def get_queue_info(
         ...,
         min_length=1,
         max_length=100,
-        pattern=r'^[a-zA-Z0-9_.-]+$',
-        description="Queue name (alphanumeric and: - _ . only)"
-    )
+        pattern=r"^[a-zA-Z0-9_.-]+$",
+        description="Queue name (alphanumeric and: - _ . only)",
+    ),
 ) -> QueueInfoResponse:
     """Example: Get information about a queue"""
     try:
@@ -104,10 +96,7 @@ async def get_queue_info(
             # Queue doesn't exist
             await connection.close()
             return QueueInfoResponse(
-                queue=queue_name,
-                exists=False,
-                message_count=None,
-                consumer_count=None
+                queue=queue_name, exists=False, message_count=None, consumer_count=None
             )
 
         await connection.close()
@@ -116,7 +105,7 @@ async def get_queue_info(
             queue=queue_name,
             exists=True,
             message_count=message_count,
-            consumer_count=consumer_count
+            consumer_count=consumer_count,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Queue info failed: {str(e)}")

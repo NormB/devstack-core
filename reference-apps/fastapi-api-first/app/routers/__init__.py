@@ -6,7 +6,7 @@ from . import (
     database_examples,
     cache_examples,
     messaging_examples,
-    redis_cluster
+    redis_cluster,
 )
 
 __all__ = [
@@ -15,5 +15,5 @@ __all__ = [
     "database_examples",
     "cache_examples",
     "messaging_examples",
-    "redis_cluster"
+    "redis_cluster",
 ]

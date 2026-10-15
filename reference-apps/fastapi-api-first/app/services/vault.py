@@ -41,11 +41,15 @@ class VaultClient:
                 logger.info("Successfully authenticated to Vault using AppRole")
             except Exception as e:
                 # Fall back to token-based auth if AppRole fails
-                logger.warning(f"AppRole authentication failed: {e}, falling back to token-based auth")
+                logger.warning(
+                    f"AppRole authentication failed: {e}, falling back to token-based auth"
+                )
                 self.vault_token = settings.VAULT_TOKEN
         else:
             # Use token-based authentication
-            logger.info("Using token-based authentication (AppRole directory not found)")
+            logger.info(
+                "Using token-based authentication (AppRole directory not found)"
+            )
             self.vault_token = settings.VAULT_TOKEN
 
         self.headers = {"X-Vault-Token": self.vault_token}
@@ -68,29 +72,29 @@ class VaultClient:
 
         # Read role_id and secret_id from filesystem
         try:
-            with open(role_id_path, 'r') as f:
+            with open(role_id_path, "r") as f:
                 role_id = f.read().strip()
-            with open(secret_id_path, 'r') as f:
+            with open(secret_id_path, "r") as f:
                 secret_id = f.read().strip()
         except FileNotFoundError as e:
             raise VaultUnavailableError(
                 message=f"AppRole credentials not found: {e}",
                 secret_path="approle",
-                details={"role_id_path": role_id_path, "secret_id_path": secret_id_path}
+                details={
+                    "role_id_path": role_id_path,
+                    "secret_id_path": secret_id_path,
+                },
             )
         except Exception as e:
             raise VaultUnavailableError(
                 message=f"Error reading AppRole credentials: {e}",
                 secret_path="approle",
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
         # Authenticate with Vault
         url = urljoin(f"{self.vault_addr}/", "v1/auth/approle/login")
-        payload = {
-            "role_id": role_id,
-            "secret_id": secret_id
-        }
+        payload = {"role_id": role_id, "secret_id": secret_id}
 
         try:
             with httpx.Client() as client:
@@ -102,7 +106,7 @@ class VaultClient:
                     raise VaultUnavailableError(
                         message="Invalid response from AppRole login",
                         secret_path="approle",
-                        details={"response": data}
+                        details={"response": data},
                     )
 
                 return data["auth"]["client_token"]
@@ -111,7 +115,7 @@ class VaultClient:
             raise VaultUnavailableError(
                 message=f"AppRole authentication failed: {e}",
                 secret_path="approle",
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
     def _validate_secret_path(self, path: str) -> str:
@@ -131,12 +135,16 @@ class VaultClient:
         path = path.strip("/")
 
         # Only allow alphanumeric, hyphens, underscores, and forward slashes
-        if not re.match(r'^[a-zA-Z0-9/_-]+$', path):
-            raise ValueError(f"Invalid secret path: {path}. Only alphanumeric characters, hyphens, underscores, and forward slashes are allowed.")
+        if not re.match(r"^[a-zA-Z0-9/_-]+$", path):
+            raise ValueError(
+                f"Invalid secret path: {path}. Only alphanumeric characters, hyphens, underscores, and forward slashes are allowed."
+            )
 
         # Prevent path traversal
         if ".." in path:
-            raise ValueError(f"Invalid secret path: {path}. Path traversal sequences are not allowed.")
+            raise ValueError(
+                f"Invalid secret path: {path}. Path traversal sequences are not allowed."
+            )
 
         return path
 
@@ -172,7 +180,7 @@ class VaultClient:
                         resource_type="secret",
                         resource_id=path,
                         message=f"Secret '{path}' not found in Vault",
-                        details={"secret_path": path, "key": key}
+                        details={"secret_path": path, "key": key},
                     )
 
                 # Handle 403 (permission denied)
@@ -180,7 +188,7 @@ class VaultClient:
                     raise VaultUnavailableError(
                         message="Permission denied accessing Vault secret",
                         secret_path=path,
-                        details={"status_code": 403}
+                        details={"status_code": 403},
                     )
 
                 response.raise_for_status()
@@ -195,7 +203,7 @@ class VaultClient:
                             resource_type="secret_key",
                             resource_id=f"{path}/{key}",
                             message=f"Key '{key}' not found in secret '{path}'",
-                            details={"secret_path": path, "key": key}
+                            details={"secret_path": path, "key": key},
                         )
                     return {key: secret_data.get(key)}
 
@@ -209,28 +217,28 @@ class VaultClient:
             raise VaultUnavailableError(
                 message="Timeout connecting to Vault",
                 secret_path=path,
-                details={"error": str(e), "timeout": "5.0s"}
+                details={"error": str(e), "timeout": "5.0s"},
             )
         except httpx.ConnectError as e:
             logger.error(f"Connection error to Vault: {e}")
             raise VaultUnavailableError(
                 message="Cannot connect to Vault server",
                 secret_path=path,
-                details={"error": str(e), "vault_address": self.vault_addr}
+                details={"error": str(e), "vault_address": self.vault_addr},
             )
         except httpx.HTTPError as e:
             logger.error(f"HTTP error fetching secret from Vault: {e}")
             raise VaultUnavailableError(
                 message=f"Vault returned an error: {e}",
                 secret_path=path,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
         except Exception as e:
             logger.error(f"Unexpected error fetching secret: {e}")
             raise VaultUnavailableError(
                 message=f"Unexpected error accessing Vault: {e}",
                 secret_path=path,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
     async def check_health(self) -> Dict[str, Any]:
@@ -239,10 +247,7 @@ class VaultClient:
 
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{url}?standbyok=true",
-                    timeout=5.0
-                )
+                response = await client.get(f"{url}?standbyok=true", timeout=5.0)
 
                 return {
                     "status": "healthy" if response.status_code == 200 else "unhealthy",
@@ -252,10 +257,7 @@ class VaultClient:
                 }
         except Exception as e:
             logger.error(f"Vault health check failed: {e}")
-            return {
-                "status": "unhealthy",
-                "error": "Health check failed"
-            }
+            return {"status": "unhealthy", "error": "Health check failed"}
 
 
 # Global Vault client instance

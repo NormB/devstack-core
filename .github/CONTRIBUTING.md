@@ -209,7 +209,9 @@ We welcome code contributions! Here are the types of contributions we're looking
 
 - Use `bash` (not `sh`)
 - Include shebang: `#!/bin/bash`
-- Use 4-space indentation
+- Use 2-space indentation. The shfmt hook in `.pre-commit-config.yaml`
+  (`shfmt -i 2 -ci -sr`) is the source of truth for formatting; run
+  `pre-commit run shfmt --files <script>` to apply it
 - Quote variables: `"$VARIABLE"`
 - Use `[[` instead of `[` for conditionals
 - Add comments for complex logic

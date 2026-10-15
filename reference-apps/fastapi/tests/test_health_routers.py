@@ -17,8 +17,10 @@ class TestHealthEndpoints:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -32,11 +34,11 @@ class TestHealthEndpoints:
 
     def test_vault_health_check(self, client):
         """Test Vault health check"""
-        with patch('app.routers.health.vault_client.check_health') as mock_check:
+        with patch("app.routers.health.vault_client.check_health") as mock_check:
             mock_check.return_value = {
                 "status": "healthy",
                 "initialized": True,
-                "sealed": False
+                "sealed": False,
             }
 
             response = client.get("/health/vault")
@@ -45,15 +47,17 @@ class TestHealthEndpoints:
             data = response.json()
             assert data["status"] == "healthy"
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_all_health_checks_healthy(self, client):
         """Test all health checks when all services are healthy"""
-        with patch('app.routers.health.check_vault') as mock_vault:
-            with patch('app.routers.health.check_postgres') as mock_pg:
-                with patch('app.routers.health.check_mysql') as mock_mysql:
-                    with patch('app.routers.health.check_mongodb') as mock_mongo:
-                        with patch('app.routers.health.check_redis') as mock_redis:
-                            with patch('app.routers.health.check_rabbitmq') as mock_rmq:
+        with patch("app.routers.health.check_vault") as mock_vault:
+            with patch("app.routers.health.check_postgres") as mock_pg:
+                with patch("app.routers.health.check_mysql") as mock_mysql:
+                    with patch("app.routers.health.check_mongodb") as mock_mongo:
+                        with patch("app.routers.health.check_redis") as mock_redis:
+                            with patch("app.routers.health.check_rabbitmq") as mock_rmq:
                                 # Mock all services as healthy
                                 mock_vault.return_value = {"status": "healthy"}
                                 mock_pg.return_value = {"status": "healthy"}
@@ -73,18 +77,23 @@ class TestHealthEndpoints:
                                     for svc in data["services"].values()
                                 )
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_all_health_checks_degraded(self, client):
         """Test all health checks when some services are unhealthy"""
-        with patch('app.routers.health.check_vault') as mock_vault:
-            with patch('app.routers.health.check_postgres') as mock_pg:
-                with patch('app.routers.health.check_mysql') as mock_mysql:
-                    with patch('app.routers.health.check_mongodb') as mock_mongo:
-                        with patch('app.routers.health.check_redis') as mock_redis:
-                            with patch('app.routers.health.check_rabbitmq') as mock_rmq:
+        with patch("app.routers.health.check_vault") as mock_vault:
+            with patch("app.routers.health.check_postgres") as mock_pg:
+                with patch("app.routers.health.check_mysql") as mock_mysql:
+                    with patch("app.routers.health.check_mongodb") as mock_mongo:
+                        with patch("app.routers.health.check_redis") as mock_redis:
+                            with patch("app.routers.health.check_rabbitmq") as mock_rmq:
                                 # Mock some services as unhealthy
                                 mock_vault.return_value = {"status": "healthy"}
-                                mock_pg.return_value = {"status": "unhealthy", "error": "Connection failed"}
+                                mock_pg.return_value = {
+                                    "status": "unhealthy",
+                                    "error": "Connection failed",
+                                }
                                 mock_mysql.return_value = {"status": "healthy"}
                                 mock_mongo.return_value = {"status": "healthy"}
                                 mock_redis.return_value = {"status": "healthy"}
@@ -107,11 +116,11 @@ class TestHealthCheckFunctions:
         """Test vault health check when healthy"""
         from app.routers.health import check_vault
 
-        with patch('app.routers.health.vault_client.check_health') as mock_check:
+        with patch("app.routers.health.vault_client.check_health") as mock_check:
             mock_check.return_value = {
                 "status": "healthy",
                 "initialized": True,
-                "sealed": False
+                "sealed": False,
             }
 
             result = await check_vault()
@@ -123,7 +132,7 @@ class TestHealthCheckFunctions:
         """Test vault health check when unhealthy"""
         from app.routers.health import check_vault
 
-        with patch('app.routers.health.vault_client.check_health') as mock_check:
+        with patch("app.routers.health.vault_client.check_health") as mock_check:
             mock_check.side_effect = Exception("Connection failed")
 
             result = await check_vault()
@@ -135,12 +144,12 @@ class TestHealthCheckFunctions:
         """Test PostgreSQL health check when healthy"""
         from app.routers.health import check_postgres
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.asyncpg.connect') as mock_connect:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.asyncpg.connect") as mock_connect:
                 mock_secret.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_conn = AsyncMock()
@@ -156,9 +165,13 @@ class TestHealthCheckFunctions:
         """Test PostgreSQL health check when unhealthy"""
         from app.routers.health import check_postgres
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.asyncpg.connect') as mock_connect:
-                mock_secret.return_value = {"user": "test", "password": "test", "database": "test"}
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.asyncpg.connect") as mock_connect:
+                mock_secret.return_value = {
+                    "user": "test",
+                    "password": "test",
+                    "database": "test",
+                }
                 mock_connect.side_effect = Exception("Connection refused")
 
                 result = await check_postgres()
@@ -170,8 +183,8 @@ class TestHealthCheckFunctions:
         """Test Redis cluster health check"""
         from app.routers.health import check_redis
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.redis.Redis') as mock_redis_class:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.redis.Redis") as mock_redis_class:
                 mock_secret.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
@@ -181,12 +194,17 @@ class TestHealthCheckFunctions:
                     "role": "master",
                     "cluster_enabled": 1,
                     "connected_clients": 5,
-                    "used_memory_human": "1.5M"
+                    "used_memory_human": "1.5M",
                 }
-                mock_client.execute_command.return_value = "cluster_state:ok\ncluster_slots_assigned:16384"
+                mock_client.execute_command.return_value = (
+                    "cluster_state:ok\ncluster_slots_assigned:16384"
+                )
                 mock_redis_class.return_value = mock_client
 
-                with patch('app.routers.health.settings.REDIS_NODES', "localhost:6379,localhost:6380,localhost:6381"):
+                with patch(
+                    "app.routers.health.settings.REDIS_NODES",
+                    "localhost:6379,localhost:6380,localhost:6381",
+                ):
                     result = await check_redis()
 
                     assert result["status"] in ["healthy", "degraded"]
@@ -197,12 +215,12 @@ class TestHealthCheckFunctions:
         """Test MySQL health check when healthy"""
         from app.routers.health import check_mysql
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.aiomysql.connect') as mock_connect:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.aiomysql.connect") as mock_connect:
                 mock_secret.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_cursor = AsyncMock()
@@ -225,9 +243,13 @@ class TestHealthCheckFunctions:
         """Test MySQL health check when unhealthy"""
         from app.routers.health import check_mysql
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.aiomysql.connect') as mock_connect:
-                mock_secret.return_value = {"user": "test", "password": "test", "database": "test"}
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.aiomysql.connect") as mock_connect:
+                mock_secret.return_value = {
+                    "user": "test",
+                    "password": "test",
+                    "database": "test",
+                }
                 mock_connect.side_effect = Exception("Connection refused")
 
                 result = await check_mysql()
@@ -240,12 +262,14 @@ class TestHealthCheckFunctions:
         """Test MongoDB health check when healthy"""
         from app.routers.health import check_mongodb
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.motor.motor_asyncio.AsyncIOMotorClient') as mock_client_class:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch(
+                "app.routers.health.motor.motor_asyncio.AsyncIOMotorClient"
+            ) as mock_client_class:
                 mock_secret.return_value = {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_db = AsyncMock()
@@ -265,7 +289,7 @@ class TestHealthCheckFunctions:
         """Test MongoDB health check when unhealthy"""
         from app.routers.health import check_mongodb
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
             mock_secret.side_effect = Exception("Vault connection failed")
 
             result = await check_mongodb()
@@ -277,11 +301,11 @@ class TestHealthCheckFunctions:
         """Test RabbitMQ health check when healthy"""
         from app.routers.health import check_rabbitmq
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.aio_pika.connect_robust') as mock_connect:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.aio_pika.connect_robust") as mock_connect:
                 mock_secret.return_value = {
                     "user": "test_user",
-                    "password": "test_pass"
+                    "password": "test_pass",
                 }
 
                 mock_channel = AsyncMock()
@@ -300,8 +324,8 @@ class TestHealthCheckFunctions:
         """Test RabbitMQ health check when unhealthy"""
         from app.routers.health import check_rabbitmq
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
-            with patch('app.routers.health.aio_pika.connect_robust') as mock_connect:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
+            with patch("app.routers.health.aio_pika.connect_robust") as mock_connect:
                 mock_secret.return_value = {"user": "test", "password": "test"}
                 mock_connect.side_effect = Exception("Connection timeout")
 
@@ -314,7 +338,7 @@ class TestHealthCheckFunctions:
         """Test Redis health check when unhealthy"""
         from app.routers.health import check_redis
 
-        with patch('app.routers.health.vault_client.get_secret') as mock_secret:
+        with patch("app.routers.health.vault_client.get_secret") as mock_secret:
             mock_secret.side_effect = Exception("Vault connection failed")
 
             result = await check_redis()

@@ -30,7 +30,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0  # Full history for better secret detection
+          fetch-depth: 0 # Full history for better secret detection
 
       - name: TruffleHog Secret Scan
         uses: trufflesecurity/trufflehog@main

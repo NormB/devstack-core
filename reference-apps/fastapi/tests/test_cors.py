@@ -23,10 +23,7 @@ class TestCORSHeaders:
 
     def test_cors_headers_on_get_request(self):
         """Test that CORS headers are present on GET requests"""
-        response = client.get(
-            "/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/", headers={"Origin": "http://localhost:3000"})
 
         assert response.status_code == 200
 
@@ -34,13 +31,15 @@ class TestCORSHeaders:
         assert "access-control-allow-origin" in response.headers
         # When Origin header is sent, CORS middleware echoes it back (not "*")
         # This is correct CORS behavior when allow_origins includes "*"
-        assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+        assert (
+            response.headers["access-control-allow-origin"] == "http://localhost:3000"
+        )
 
     def test_cors_headers_on_post_request(self):
         """Test that CORS headers are present on POST requests"""
         response = client.post(
             "/examples/cache/test-key?value=test",
-            headers={"Origin": "http://localhost:3000"}
+            headers={"Origin": "http://localhost:3000"},
         )
 
         # Check for CORS headers (may be 200 or 500 depending on Redis)
@@ -48,10 +47,7 @@ class TestCORSHeaders:
 
     def test_exposed_headers_include_request_id(self):
         """Test that X-Request-ID is exposed via CORS"""
-        response = client.get(
-            "/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/", headers={"Origin": "http://localhost:3000"})
 
         assert response.status_code == 200
 
@@ -72,7 +68,7 @@ class TestCORSPreflightRequests:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
-            }
+            },
         )
 
         # Preflight should return 200
@@ -90,7 +86,7 @@ class TestCORSPreflightRequests:
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "content-type",
-            }
+            },
         )
 
         assert response.status_code == 200
@@ -108,7 +104,7 @@ class TestCORSPreflightRequests:
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
                 "Access-Control-Request-Headers": "X-API-Key",
-            }
+            },
         )
 
         assert response.status_code == 200
@@ -126,7 +122,7 @@ class TestCORSPreflightRequests:
             headers={
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
-            }
+            },
         )
 
         assert response.status_code == 200
@@ -142,10 +138,7 @@ class TestCORSMethods:
 
     def test_get_method_allowed(self):
         """Test GET method works with CORS"""
-        response = client.get(
-            "/health/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/health/", headers={"Origin": "http://localhost:3000"})
 
         assert response.status_code == 200
         assert "access-control-allow-origin" in response.headers
@@ -156,8 +149,8 @@ class TestCORSMethods:
             "/examples/cache/test?value=test",
             headers={
                 "Origin": "http://localhost:3000",
-                "Content-Type": "application/json"
-            }
+                "Content-Type": "application/json",
+            },
         )
 
         # Should have CORS headers regardless of business logic result
@@ -166,8 +159,7 @@ class TestCORSMethods:
     def test_delete_method_allowed(self):
         """Test DELETE method works with CORS"""
         response = client.delete(
-            "/examples/cache/test",
-            headers={"Origin": "http://localhost:3000"}
+            "/examples/cache/test", headers={"Origin": "http://localhost:3000"}
         )
 
         # Should have CORS headers
@@ -187,10 +179,7 @@ class TestCORSOrigins:
         ]
 
         for origin in origins:
-            response = client.get(
-                "/",
-                headers={"Origin": origin}
-            )
+            response = client.get("/", headers={"Origin": origin})
 
             assert response.status_code == 200
             assert "access-control-allow-origin" in response.headers
@@ -214,7 +203,7 @@ class TestCORSHeaderConfiguration:
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "Content-Type",
-            }
+            },
         )
 
         assert response.status_code == 200
@@ -231,7 +220,7 @@ class TestCORSHeaderConfiguration:
                 "Origin": "http://localhost:3000",
                 "Access-Control-Request-Method": "GET",
                 "Access-Control-Request-Headers": "Authorization",
-            }
+            },
         )
 
         assert response.status_code == 200
@@ -248,10 +237,7 @@ class TestCORSWithRateLimiting:
         """Test that rate-limited responses still include CORS headers"""
         # Make multiple requests to potentially trigger rate limiting
         # (though unlikely with our limits)
-        response = client.get(
-            "/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/", headers={"Origin": "http://localhost:3000"})
 
         # Even if rate limited, should have CORS headers
         assert "access-control-allow-origin" in response.headers
@@ -262,10 +248,7 @@ class TestCORSConfiguration:
 
     def test_cors_allows_credentials_configuration(self):
         """Test that credentials configuration is present when appropriate"""
-        response = client.get(
-            "/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/", headers={"Origin": "http://localhost:3000"})
 
         # In debug mode with allow_origins=["*"], credentials should be false
         # This is checked by the presence/absence of access-control-allow-credentials
@@ -280,10 +263,7 @@ class TestCORSConfiguration:
         origins = ["http://localhost:3000", "http://localhost:8080"]
 
         for origin in origins:
-            response = client.get(
-                "/health/",
-                headers={"Origin": origin}
-            )
+            response = client.get("/health/", headers={"Origin": origin})
 
             assert response.status_code == 200
             assert "access-control-allow-origin" in response.headers

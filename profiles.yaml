@@ -84,10 +84,10 @@ profiles:
 
     # Key environment overrides (documented)
     env_overrides:
-      REDIS_CLUSTER_ENABLED: "false"        # Single Redis node
-      REDIS_CLUSTER_INIT_REQUIRED: "false"  # Skip cluster initialization
-      POSTGRES_MAX_CONNECTIONS: "50"        # Reduced for minimal workload
-      VAULT_HEALTH_INTERVAL: "30s"          # Faster health checks
+      REDIS_CLUSTER_ENABLED: "false" # Single Redis node
+      REDIS_CLUSTER_INIT_REQUIRED: "false" # Skip cluster initialization
+      POSTGRES_MAX_CONNECTIONS: "50" # Reduced for minimal workload
+      VAULT_HEALTH_INTERVAL: "30s" # Faster health checks
 
     # Services that are explicitly EXCLUDED from this profile
     excluded_services:
@@ -177,12 +177,12 @@ profiles:
     env_file: "configs/profiles/standard.env"
 
     env_overrides:
-      REDIS_CLUSTER_ENABLED: "true"         # Enable Redis cluster mode
-      REDIS_CLUSTER_INIT_REQUIRED: "true"   # Cluster init needed
-      POSTGRES_MAX_CONNECTIONS: "100"       # Standard connection limit
-      MYSQL_MAX_CONNECTIONS: "100"          # MySQL connections
-      MONGODB_MAX_CONNECTIONS: "100"        # MongoDB connections
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: "0.5"  # RabbitMQ memory limit
+      REDIS_CLUSTER_ENABLED: "true" # Enable Redis cluster mode
+      REDIS_CLUSTER_INIT_REQUIRED: "true" # Cluster init needed
+      POSTGRES_MAX_CONNECTIONS: "100" # Standard connection limit
+      MYSQL_MAX_CONNECTIONS: "100" # MySQL connections
+      MONGODB_MAX_CONNECTIONS: "100" # MongoDB connections
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: "0.5" # RabbitMQ memory limit
 
     # Services excluded from this profile
     excluded_services:
@@ -294,11 +294,11 @@ profiles:
       # Observability-specific settings
       ENABLE_METRICS: "true"
       ENABLE_LOGS: "true"
-      PROMETHEUS_SCRAPE_INTERVAL: "15s"      # Metrics collection frequency
-      PROMETHEUS_RETENTION_TIME: "15d"       # Keep 15 days of metrics
-      LOKI_RETENTION_PERIOD: "744h"          # 31 days of logs
-      GRAFANA_INSTALL_PLUGINS: "true"        # Install additional plugins
-      VECTOR_LOG_LEVEL: "info"               # Vector logging verbosity
+      PROMETHEUS_SCRAPE_INTERVAL: "15s" # Metrics collection frequency
+      PROMETHEUS_RETENTION_TIME: "15d" # Keep 15 days of metrics
+      LOKI_RETENTION_PERIOD: "744h" # 31 days of logs
+      GRAFANA_INSTALL_PLUGINS: "true" # Install additional plugins
+      VECTOR_LOG_LEVEL: "info" # Vector logging verbosity
 
     # No excluded services - this is the complete suite
     excluded_services: []
@@ -393,7 +393,7 @@ profiles:
       ENABLE_REFERENCE_APPS: "true"
       REFERENCE_API_LOG_LEVEL: "info"
       REFERENCE_API_ENABLE_METRICS: "true"
-      REFERENCE_API_ENABLE_TLS: "true"       # Enable HTTPS endpoints
+      REFERENCE_API_ENABLE_TLS: "true" # Enable HTTPS endpoints
 
     # No excluded services - reference apps don't exclude infrastructure
     excluded_services: []
@@ -504,7 +504,7 @@ custom_profiles:
     env_file: "configs/profiles/git-only.env"
 
     env_overrides:
-      POSTGRES_MAX_CONNECTIONS: "25"  # Forgejo doesn't need many
+      POSTGRES_MAX_CONNECTIONS: "25" # Forgejo doesn't need many
       FORGEJO_RUNNER_ENABLED: "false" # Disable CI/CD runner
 
     tags:
@@ -545,7 +545,7 @@ custom_profiles:
     env_file: "configs/profiles/api-dev.env"
 
     env_overrides:
-      REDIS_CLUSTER_ENABLED: "false"  # Single Redis for simpler setup
+      REDIS_CLUSTER_ENABLED: "false" # Single Redis for simpler setup
       ENABLE_METRICS: "false"
       REFERENCE_API_LOG_LEVEL: "debug"
 

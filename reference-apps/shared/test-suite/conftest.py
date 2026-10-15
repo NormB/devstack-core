@@ -55,10 +55,7 @@ async def both_api_urls():
 
     Returns dict: {"code-first": url1, "api-first": url2}
     """
-    return {
-        "code-first": CODE_FIRST_URL,
-        "api-first": API_FIRST_URL
-    }
+    return {"code-first": CODE_FIRST_URL, "api-first": API_FIRST_URL}
 
 
 def pytest_configure(config):
@@ -69,9 +66,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "comparison: Tests that directly compare responses from both APIs"
     )
-    config.addinivalue_line(
-        "markers", "health: Health check tests"
-    )
+    config.addinivalue_line("markers", "health: Health check tests")
     config.addinivalue_line(
         "markers", "integration: Integration tests requiring running services"
     )

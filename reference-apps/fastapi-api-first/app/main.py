@@ -12,7 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import (
+    Counter,
+    Histogram,
+    Gauge,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 import logging
 import sys
 import time
@@ -25,7 +31,7 @@ from app.routers import (
     database_examples,
     cache_examples,
     messaging_examples,
-    redis_cluster
+    redis_cluster,
 )
 from app.config import settings
 from app.middleware.exception_handlers import register_exception_handlers
@@ -35,7 +41,7 @@ from app.services.vault import vault_client
 # Configure structured JSON logging (matches code-first implementation)
 log_handler = logging.StreamHandler(sys.stdout)
 formatter = jsonlogger.JsonFormatter(
-    '%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(method)s %(path)s %(status_code)s %(duration_ms)s'
+    "%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(method)s %(path)s %(status_code)s %(duration_ms)s"
 )
 log_handler.setFormatter(formatter)
 logger = logging.getLogger(__name__)
@@ -48,28 +54,18 @@ logging.getLogger().addHandler(log_handler)
 
 # Prometheus metrics
 http_requests_total = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
 )
 
 http_request_duration_seconds = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request latency',
-    ['method', 'endpoint']
+    "http_request_duration_seconds", "HTTP request latency", ["method", "endpoint"]
 )
 
 http_requests_in_progress = Gauge(
-    'http_requests_in_progress',
-    'HTTP requests in progress',
-    ['method', 'endpoint']
+    "http_requests_in_progress", "HTTP requests in progress", ["method", "endpoint"]
 )
 
-app_info = Gauge(
-    'app_info',
-    'Application information',
-    ['version', 'name']
-)
+app_info = Gauge("app_info", "Application information", ["version", "name"])
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -86,10 +82,10 @@ app = FastAPI(
 # Configure CORS
 # In production, replace "*" with specific allowed origins
 CORS_ORIGINS = [
-    "http://localhost:3000",   # React/Next.js dev server
-    "http://localhost:8000",   # FastAPI code-first
-    "http://localhost:8001",   # FastAPI API-first
-    "http://localhost:8080",   # Common dev port
+    "http://localhost:3000",  # React/Next.js dev server
+    "http://localhost:8000",  # FastAPI code-first
+    "http://localhost:8001",  # FastAPI API-first
+    "http://localhost:8080",  # Common dev port
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
     "http://127.0.0.1:8001",
@@ -137,15 +133,12 @@ async def metrics_middleware(request: Request, call_next):
 
         # Record metrics
         http_requests_total.labels(
-            method=method,
-            endpoint=endpoint,
-            status=response.status_code
+            method=method, endpoint=endpoint, status=response.status_code
         ).inc()
 
-        http_request_duration_seconds.labels(
-            method=method,
-            endpoint=endpoint
-        ).observe(duration)
+        http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(
+            duration
+        )
 
         # Log request with structured data (matches code-first implementation)
         logger.info(
@@ -155,8 +148,8 @@ async def metrics_middleware(request: Request, call_next):
                 "method": method,
                 "path": endpoint,
                 "status_code": response.status_code,
-                "duration_ms": round(duration * 1000, 2)
-            }
+                "duration_ms": round(duration * 1000, 2),
+            },
         )
 
         # Add headers
@@ -168,11 +161,7 @@ async def metrics_middleware(request: Request, call_next):
     except Exception as e:
         # Record error metrics
         duration = time.time() - start_time
-        http_requests_total.labels(
-            method=method,
-            endpoint=endpoint,
-            status=500
-        ).inc()
+        http_requests_total.labels(method=method, endpoint=endpoint, status=500).inc()
 
         # Log error with structured data
         logger.error(
@@ -182,9 +171,9 @@ async def metrics_middleware(request: Request, call_next):
                 "method": method,
                 "path": endpoint,
                 "status_code": 500,
-                "duration_ms": round(duration * 1000, 2)
+                "duration_ms": round(duration * 1000, 2),
             },
-            exc_info=True
+            exc_info=True,
         )
         raise
 
@@ -212,7 +201,9 @@ async def startup_event():
         # Get Redis password from Vault
         redis_creds = await vault_client.get_secret("redis-1")
         redis_password = redis_creds.get("password", "")
-        redis_url = f"redis://:{redis_password}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+        redis_url = (
+            f"redis://:{redis_password}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+        )
         await cache_manager.init(redis_url, prefix="cache:")
     except Exception as e:
         logger.error(f"Failed to initialize cache: {e}")
@@ -223,8 +214,8 @@ async def startup_event():
         extra={
             "vault_address": settings.VAULT_ADDR,
             "redis_cache_enabled": cache_manager.enabled,
-            "version": "1.1.0"
-        }
+            "version": "1.1.0",
+        },
     )
     logger.info("Application ready")
 
@@ -257,12 +248,12 @@ async def root(request: Request):
                 "allowed_origins": "localhost:3000, localhost:8000, localhost:8080",
                 "allowed_methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
                 "credentials": True,
-                "max_age": "600s"
+                "max_age": "600s",
             },
             "rate_limiting": {
                 "general_endpoints": "100/minute",
                 "metrics_endpoint": "1000/minute",
-                "health_checks": "200/minute"
+                "health_checks": "200/minute",
             },
             "request_validation": {
                 "max_request_size": "10MB",
@@ -270,8 +261,8 @@ async def root(request: Request):
                     "application/json",
                     "application/x-www-form-urlencoded",
                     "multipart/form-data",
-                    "text/plain"
-                ]
+                    "text/plain",
+                ],
             },
             "circuit_breakers": {
                 "enabled": True,
@@ -281,25 +272,25 @@ async def root(request: Request):
                     "mysql",
                     "mongodb",
                     "redis",
-                    "rabbitmq"
+                    "rabbitmq",
                 ],
                 "failure_threshold": 5,
-                "reset_timeout": "60s"
-            }
+                "reset_timeout": "60s",
+            },
         },
         "redis_cluster": {
             "nodes": "/redis/cluster/nodes",
             "slots": "/redis/cluster/slots",
             "info": "/redis/cluster/info",
-            "node_info": "/redis/nodes/{node_name}/info"
+            "node_info": "/redis/nodes/{node_name}/info",
         },
         "examples": {
             "vault": "/examples/vault",
             "databases": "/examples/database",
             "cache": "/examples/cache",
-            "messaging": "/examples/messaging"
+            "messaging": "/examples/messaging",
         },
-        "note": "This is a reference implementation, not production code"
+        "note": "This is a reference implementation, not production code",
     }
 
 
@@ -307,7 +298,4 @@ async def root(request: Request):
 @limiter.limit("1000/minute")  # High limit for metrics scraping
 async def metrics(request: Request):
     """Prometheus metrics endpoint"""
-    return Response(
-        content=generate_latest(),
-        media_type=CONTENT_TYPE_LATEST
-    )
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)

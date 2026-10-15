@@ -25,15 +25,10 @@ class TestVaultClientGetSecret:
     async def test_get_secret_success(self, vault_client, mock_httpx_client):
         """Test successful secret retrieval"""
         mock_httpx_client.get.return_value.json.return_value = {
-            "data": {
-                "data": {
-                    "user": "test_user",
-                    "password": "test_pass"
-                }
-            }
+            "data": {"data": {"user": "test_user", "password": "test_pass"}}
         }
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await vault_client.get_secret("postgres")
 
             assert result["user"] == "test_user"
@@ -47,12 +42,12 @@ class TestVaultClientGetSecret:
                 "data": {
                     "user": "test_user",
                     "password": "test_pass",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
             }
         }
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             result = await vault_client.get_secret("postgres", key="user")
 
             assert result == {"user": "test_user"}
@@ -60,14 +55,16 @@ class TestVaultClientGetSecret:
             assert "database" not in result
 
     @pytest.mark.asyncio
-    async def test_get_secret_404_raises_not_found(self, vault_client, vault_404_response):
+    async def test_get_secret_404_raises_not_found(
+        self, vault_client, vault_404_response
+    ):
         """Test that 404 response raises ResourceNotFoundError"""
         mock_client = AsyncMock()
         mock_client.get.return_value = vault_404_response
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(ResourceNotFoundError) as exc_info:
                 await vault_client.get_secret("nonexistent")
 
@@ -76,14 +73,16 @@ class TestVaultClientGetSecret:
             assert "not found" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
-    async def test_get_secret_403_raises_vault_unavailable(self, vault_client, vault_403_response):
+    async def test_get_secret_403_raises_vault_unavailable(
+        self, vault_client, vault_403_response
+    ):
         """Test that 403 response raises VaultUnavailableError"""
         mock_client = AsyncMock()
         mock_client.get.return_value = vault_403_response
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await vault_client.get_secret("test")
 
@@ -91,18 +90,15 @@ class TestVaultClientGetSecret:
             assert exc_info.value.details["status_code"] == 403
 
     @pytest.mark.asyncio
-    async def test_get_secret_key_not_found_raises_error(self, vault_client, mock_httpx_client):
+    async def test_get_secret_key_not_found_raises_error(
+        self, vault_client, mock_httpx_client
+    ):
         """Test that requesting non-existent key raises ResourceNotFoundError"""
         mock_httpx_client.get.return_value.json.return_value = {
-            "data": {
-                "data": {
-                    "user": "test_user",
-                    "password": "test_pass"
-                }
-            }
+            "data": {"data": {"user": "test_user", "password": "test_pass"}}
         }
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx_client):
+        with patch("httpx.AsyncClient", return_value=mock_httpx_client):
             with pytest.raises(ResourceNotFoundError) as exc_info:
                 await vault_client.get_secret("postgres", key="nonexistent_key")
 
@@ -117,7 +113,7 @@ class TestVaultClientGetSecret:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await vault_client.get_secret("test")
 
@@ -125,14 +121,16 @@ class TestVaultClientGetSecret:
             assert exc_info.value.details["timeout"] == "5.0s"
 
     @pytest.mark.asyncio
-    async def test_get_secret_connection_error_raises_vault_unavailable(self, vault_client):
+    async def test_get_secret_connection_error_raises_vault_unavailable(
+        self, vault_client
+    ):
         """Test that connection error raises VaultUnavailableError"""
         mock_client = AsyncMock()
         mock_client.get.side_effect = httpx.ConnectError("Connection refused")
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await vault_client.get_secret("test")
 
@@ -146,29 +144,29 @@ class TestVaultClientGetSecret:
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "Server error",
-            request=MagicMock(),
-            response=mock_response
+            "Server error", request=MagicMock(), response=mock_response
         )
         mock_client.get.return_value = mock_response
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await vault_client.get_secret("test")
 
             assert "vault returned an error" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
-    async def test_get_secret_unexpected_error_raises_vault_unavailable(self, vault_client):
+    async def test_get_secret_unexpected_error_raises_vault_unavailable(
+        self, vault_client
+    ):
         """Test that unexpected errors raise VaultUnavailableError"""
         mock_client = AsyncMock()
         mock_client.get.side_effect = Exception("Unexpected error")
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await vault_client.get_secret("test")
 
@@ -194,7 +192,7 @@ class TestVaultClientCheckHealth:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await vault_client.check_health()
 
             assert result["status"] == "healthy"
@@ -211,7 +209,7 @@ class TestVaultClientCheckHealth:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await vault_client.check_health()
 
             assert result["status"] == "unhealthy"
@@ -227,7 +225,7 @@ class TestVaultClientCheckHealth:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await vault_client.check_health()
 
             assert result["initialized"] is False
@@ -242,7 +240,7 @@ class TestVaultClientCheckHealth:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await vault_client.check_health()
 
             assert result["standby"] is True
@@ -255,7 +253,7 @@ class TestVaultClientCheckHealth:
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             result = await vault_client.check_health()
 
             assert result["status"] == "unhealthy"
@@ -268,7 +266,7 @@ class TestVaultClientInitialization:
 
     def test_vault_client_initializes_with_settings(self):
         """Test that VaultClient uses settings"""
-        with patch('app.services.vault.settings') as mock_settings:
+        with patch("app.services.vault.settings") as mock_settings:
             mock_settings.VAULT_ADDR = "http://test-vault:8200"
             mock_settings.VAULT_TOKEN = "test-token"
 
@@ -297,7 +295,7 @@ class TestVaultServiceIntegration:
                 "data": {
                     "user": "integration_test_user",
                     "password": "integration_test_pass",
-                    "host": "localhost"
+                    "host": "localhost",
                 }
             }
         }
@@ -306,7 +304,7 @@ class TestVaultServiceIntegration:
         mock_httpx.__aenter__.return_value = mock_httpx
         mock_httpx.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx):
+        with patch("httpx.AsyncClient", return_value=mock_httpx):
             # Get full secret
             secret = await client.get_secret("test")
             assert secret["user"] == "integration_test_user"
@@ -331,14 +329,14 @@ class TestVaultServiceIntegration:
         mock_httpx.__aenter__.return_value = mock_httpx
         mock_httpx.__aexit__.return_value = None
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx):
+        with patch("httpx.AsyncClient", return_value=mock_httpx):
             with pytest.raises(ResourceNotFoundError):
                 await client.get_secret("nonexistent")
 
         # Test timeout -> VaultUnavailableError
         mock_httpx.get.side_effect = httpx.TimeoutException("Timeout")
 
-        with patch('httpx.AsyncClient', return_value=mock_httpx):
+        with patch("httpx.AsyncClient", return_value=mock_httpx):
             with pytest.raises(VaultUnavailableError) as exc_info:
                 await client.get_secret("test")
             assert "timeout" in str(exc_info.value).lower()

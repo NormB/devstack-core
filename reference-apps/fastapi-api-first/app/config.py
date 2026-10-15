@@ -40,7 +40,9 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = int(os.getenv("RABBITMQ_PORT", "5672"))
 
     # Redis Cluster nodes
-    REDIS_NODES: str = os.getenv("REDIS_NODES", "redis-1:6379,redis-2:6379,redis-3:6379")
+    REDIS_NODES: str = os.getenv(
+        "REDIS_NODES", "redis-1:6379,redis-2:6379,redis-3:6379"
+    )
 
     class Config:
         env_file = ".env"

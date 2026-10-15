@@ -1423,4 +1423,3 @@ vault kv get secret/myapp/config
 6. Script sleeps indefinitely (zero CPU overhead)
 
 See [Vault Auto-Unseal](#vault-auto-unseal) for detailed information.
-

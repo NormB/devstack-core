@@ -394,4 +394,3 @@ Your VoIP App
 ├── Vault: API keys, SIP credentials
 └── Forgejo: Source code, deployment scripts
 ```
-

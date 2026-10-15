@@ -52,7 +52,10 @@ repos:
     rev: v0.10.0
     hooks:
       - id: yamlfmt
-        args: [-formatter, "retain_line_breaks=true"]
+        # drop_merge_tag keeps `<<:` merge keys as written instead of
+        # `!!merge <<:`; scan_folded_as_literal keeps the line breaks of
+        # folded (>) scalars such as the vault entrypoint.
+        args: [-formatter, "retain_line_breaks=true,drop_merge_tag=true,scan_folded_as_literal=true"]
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli

@@ -78,5 +78,5 @@ scrape_configs:
 limits_config:
   # Prevent overwhelming Loki
   readline_rate_enabled: true
-  readline_rate: 10000  # 10k lines/sec max
-  readline_burst: 20000  # 20k burst
+  readline_rate: 10000 # 10k lines/sec max
+  readline_burst: 20000 # 20k burst
