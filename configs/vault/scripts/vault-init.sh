@@ -274,7 +274,11 @@ unseal_vault() {
   fi
 
   # Extract unseal keys (we need 3 out of 5)
-  local keys=($(cat "$VAULT_KEYS_FILE" | grep -o '"[^"]*"' | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3))
+  local keys=()
+  local key
+  while IFS= read -r key; do
+    keys+=("$key")
+  done < <(grep -o '"[^"]*"' "$VAULT_KEYS_FILE" | grep '^"[A-Za-z0-9+/=]\{44\}"$' | tr -d '"' | head -3)
 
   if [ ${#keys[@]} -lt 3 ]; then
     error "Could not extract enough unseal keys from $VAULT_KEYS_FILE"

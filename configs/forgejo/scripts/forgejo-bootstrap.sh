@@ -195,6 +195,7 @@ run_installation() {
   # Create temporary file for POST data (avoids credential exposure in process list)
   local tmpfile
   tmpfile=$(mktemp) || true
+  # shellcheck disable=SC2064 # expand now: tmpfile is local and out of scope when the trap runs
   trap "rm -f $tmpfile" EXIT
 
   # Write POST data to temp file

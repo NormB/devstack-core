@@ -53,7 +53,7 @@ readonly OUTPUT_FILE="${1:-/dev/stdout}"
 # Temporary directory
 TEMP_DIR=$(mktemp -d) || true
 readonly TEMP_DIR
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Colors
 readonly GREEN='\033[0;32m'

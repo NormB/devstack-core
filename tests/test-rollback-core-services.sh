@@ -266,8 +266,7 @@ phase2_rollback_execution() {
 
   # Step 1: Stop services (using docker compose to avoid VM shutdown)
   log_step "Stopping services..."
-  local service_list="${SERVICES[@]}"
-  if ! docker compose stop ${service_list}; then
+  if ! docker compose stop "${SERVICES[@]}"; then
     log_fail "Failed to stop services"
     return 1
   fi
@@ -536,8 +535,7 @@ phase4_remigrate_to_approle() {
   fi
 
   log_step "Restarting services with AppRole..."
-  local service_list="${CONTAINERS[@]}"
-  if ! docker compose up -d ${service_list}; then
+  if ! docker compose up -d "${CONTAINERS[@]}"; then
     log_fail "Failed to restart services"
     return 1
   fi

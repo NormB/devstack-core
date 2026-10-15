@@ -67,7 +67,7 @@ readonly STRICT="${STRICT:-$DEFAULT_STRICT}"
 # Temporary directory for comparison
 TEMP_DIR=$(mktemp -d) || true
 readonly TEMP_DIR
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Color codes for output
 readonly RED='\033[0;31m'

@@ -106,7 +106,7 @@ else
 fi
 
 # Test 8
-password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault vault kv get -field=password secret/mongodb 2> /dev/null)
+password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault vault kv get -field=password secret/mongodb 2> /dev/null)
 if docker compose exec -T mongodb mongosh -u devuser -p ${password} --authenticationDatabase admin --eval "db.runCommand({ping: 1})" > /dev/null 2>&1; then
   print_result "Database connection works with AppRole credentials" "PASS"
 else

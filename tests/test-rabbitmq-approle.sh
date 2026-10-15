@@ -106,9 +106,9 @@ else
 fi
 
 # Test 8: RabbitMQ connection with AppRole credentials
-user=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault vault kv get -field=user secret/rabbitmq 2> /dev/null)
-password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault vault kv get -field=password secret/rabbitmq 2> /dev/null)
-vhost=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault vault kv get -field=vhost secret/rabbitmq 2> /dev/null)
+user=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault vault kv get -field=user secret/rabbitmq 2> /dev/null)
+password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault vault kv get -field=password secret/rabbitmq 2> /dev/null)
+vhost=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault vault kv get -field=vhost secret/rabbitmq 2> /dev/null)
 
 if [ -n "$user" ] && [ -n "$password" ]; then
   # Test management API connection

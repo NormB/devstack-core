@@ -230,7 +230,7 @@ test_db_connection() {
 
   # Get credentials from Vault
   local password
-  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault \
+  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault \
     vault kv get -field=password secret/mysql 2> /dev/null) || true
 
   if docker compose exec -T mysql mysql -u devuser -p${password} -D devdb -e "SELECT 1" > /dev/null 2>&1; then
@@ -246,7 +246,7 @@ test_db_operations() {
 
   # Get credentials from Vault
   local password
-  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN=$(cat ${VAULT_CONFIG_DIR}/root-token) dev-vault \
+  password=$(docker exec -e VAULT_ADDR=http://vault:8200 -e VAULT_TOKEN="$(cat "${VAULT_CONFIG_DIR}/root-token")" dev-vault \
     vault kv get -field=password secret/mysql 2> /dev/null) || true
 
   # Create test table

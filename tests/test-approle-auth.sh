@@ -304,13 +304,13 @@ test_token_read_secrets() {
   fi
 
   # First, write a test secret we can read
-  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv put secret/test-key value=test-value 2>&1 > /dev/null || true
+  { docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv put secret/test-key value=test-value > /dev/null; } 2>&1 || true
 
   # Try to read the secret with AppRole token
   SECRET_READ=$(docker exec -e VAULT_TOKEN="${TEST_APPROLE_TOKEN}" dev-vault vault kv get secret/test-key 2>&1 || true)
 
   # Clean up test secret
-  docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv delete secret/test-key 2>&1 > /dev/null || true
+  { docker exec -e VAULT_TOKEN="${VAULT_TOKEN}" dev-vault vault kv delete secret/test-key > /dev/null; } 2>&1 || true
 
   if echo "${SECRET_READ}" | grep -q "value.*test-value\|===="; then
     log_pass "AppRole token can read secrets"

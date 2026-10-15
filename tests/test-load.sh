@@ -98,7 +98,7 @@ test_sustained_load() {
   start_time=$(date +%s) || true
   local end_time=$((start_time + SUSTAINED_DURATION))
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     local pids=()
 
     # Launch concurrent requests
@@ -170,7 +170,7 @@ test_spike_load() {
   start_time=$(date +%s) || true
   local end_time=$((start_time + SPIKE_DURATION))
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     local pids=()
 
     # Launch spike of concurrent requests
@@ -238,7 +238,7 @@ test_gradual_ramp() {
   local user_increment
   user_increment=$(echo "($RAMP_END - $RAMP_START) / ($RAMP_DURATION / $step_duration)" | bc) || true
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     print_info "Current load: $current_users concurrent users"
 
     local pids=()

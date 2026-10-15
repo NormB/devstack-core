@@ -191,7 +191,7 @@ wait_for_api_healthy() {
 
   info "Waiting for API to be healthy at ${CODE_FIRST_URL}..."
 
-  while [ $(date +%s) -lt $end_time ]; do
+  while [ "$(date +%s)" -lt "$end_time" ]; do
     # Try health endpoint
     if curl -sf "${CODE_FIRST_URL}/health" > /dev/null 2>&1; then
       local elapsed=$(($(date +%s) - start_time))
