@@ -1,4 +1,4 @@
-FROM codeberg.org/forgejo/forgejo:1.21.11-0
+FROM codeberg.org/forgejo/forgejo:17.0.0
 
 # Install dependencies for Vault integration (needs root). Staying root at
 # the end is deliberate: see the note above ENTRYPOINT.
