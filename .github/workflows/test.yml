@@ -133,6 +133,12 @@ jobs:
 
           echo "✓ All scripts have proper shebangs"
 
+      # tests/lib/common.sh is sourced by test-negative.sh and
+      # test-performance.sh; this checks it and runs both scripts with no
+      # stack, where every service test reports itself as skipped.
+      - name: Test the shared shell test library
+        run: bash tests/test-common-lib.sh
+
   validate-configs:
     name: Validate Configuration Files
     runs-on: ubuntu-latest

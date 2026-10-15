@@ -85,7 +85,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
+# shellcheck disable=SC2034 # listed in the header; nothing reads it yet
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load common test library
@@ -109,18 +109,18 @@ run_python() {
 
 # Test counters
 TESTS_RUN=0
-# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
+# shellcheck disable=SC2034 # read by tests/lib/common.sh, sourced above
 TESTS_PASSED=0
-# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
+# shellcheck disable=SC2034 # read by tests/lib/common.sh, sourced above
 TESTS_FAILED=0
-# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
+# shellcheck disable=SC2034 # read by tests/lib/common.sh, sourced above
 declare -a FAILED_TESTS=()
 
 # Performance thresholds (milliseconds)
 VAULT_THRESHOLD=200
 API_THRESHOLD=500
 DB_QUERY_THRESHOLD=1000
-# shellcheck disable=SC2034 # for tests/lib/common.sh, sourced above; .gitignore excludes it from the repository
+# shellcheck disable=SC2034 # listed in the header; nothing reads it yet
 DB_CONNECTION_THRESHOLD=2000
 
 ################################################################################
