@@ -10,16 +10,16 @@ from .circuit_breaker import (
     redis_breaker,
     rabbitmq_breaker,
     with_circuit_breaker,
-    ServiceUnavailableError
+    ServiceUnavailableError,
 )
 
 __all__ = [
-    'vault_breaker',
-    'postgres_breaker',
-    'mysql_breaker',
-    'mongodb_breaker',
-    'redis_breaker',
-    'rabbitmq_breaker',
-    'with_circuit_breaker',
-    'ServiceUnavailableError'
+    "vault_breaker",
+    "postgres_breaker",
+    "mysql_breaker",
+    "mongodb_breaker",
+    "redis_breaker",
+    "rabbitmq_breaker",
+    "with_circuit_breaker",
+    "ServiceUnavailableError",
 ]

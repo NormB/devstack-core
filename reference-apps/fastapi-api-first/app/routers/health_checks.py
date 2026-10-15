@@ -36,10 +36,7 @@ async def check_vault() -> Dict[str, Any]:
     """Check Vault health"""
     try:
         health = await vault_client.check_health()
-        return {
-            "status": health.get("status", "unknown"),
-            "details": health
-        }
+        return {"status": health.get("status", "unknown"), "details": health}
     except Exception:
         return {"status": "unhealthy", "error": "Vault health check failed"}
 
@@ -57,7 +54,7 @@ async def check_postgres() -> Dict[str, Any]:
             user=creds.get("user"),
             password=creds.get("password"),
             database=creds.get("database"),
-            timeout=5.0
+            timeout=5.0,
         )
 
         # Simple query
@@ -66,7 +63,7 @@ async def check_postgres() -> Dict[str, Any]:
 
         return {
             "status": "healthy",
-            "version": version.split(",")[0] if version else "unknown"
+            "version": version.split(",")[0] if version else "unknown",
         }
     except Exception as e:
         logger.error(f"PostgreSQL health check failed: {e}")
@@ -86,7 +83,7 @@ async def check_mysql() -> Dict[str, Any]:
             user=creds.get("user"),
             password=creds.get("password"),
             db=creds.get("database"),
-            connect_timeout=5
+            connect_timeout=5,
         )
 
         async with conn.cursor() as cursor:
@@ -95,10 +92,7 @@ async def check_mysql() -> Dict[str, Any]:
 
         conn.close()
 
-        return {
-            "status": "healthy",
-            "version": version[0] if version else "unknown"
-        }
+        return {"status": "healthy", "version": version[0] if version else "unknown"}
     except Exception as e:
         logger.error(f"MySQL health check failed: {e}")
         return {"status": "unhealthy", "error": "MySQL connection failed"}
@@ -115,21 +109,17 @@ async def check_mongodb() -> Dict[str, Any]:
 
         # Connect and test
         client = motor.motor_asyncio.AsyncIOMotorClient(
-            uri,
-            serverSelectionTimeoutMS=5000
+            uri, serverSelectionTimeoutMS=5000
         )
 
         # Ping to verify connection
-        await client.admin.command('ping')
+        await client.admin.command("ping")
 
         # Get server info
         server_info = await client.server_info()
         client.close()
 
-        return {
-            "status": "healthy",
-            "version": server_info.get("version", "unknown")
-        }
+        return {"status": "healthy", "version": server_info.get("version", "unknown")}
     except Exception as e:
         logger.error(f"MongoDB health check failed: {e}")
         return {"status": "unhealthy", "error": "MongoDB connection failed"}
@@ -159,7 +149,7 @@ async def check_redis() -> Dict[str, Any]:
                     port=int(port),
                     password=password,
                     decode_responses=True,
-                    socket_connect_timeout=5
+                    socket_connect_timeout=5,
                 )
 
                 # Test ping
@@ -182,29 +172,35 @@ async def check_redis() -> Dict[str, Any]:
                                     cluster_info_dict[key] = value
                         # Update cluster state from the first node that provides it
                         if cluster_state == "unknown":
-                            cluster_state = cluster_info_dict.get("cluster_state", "unknown")
+                            cluster_state = cluster_info_dict.get(
+                                "cluster_state", "unknown"
+                            )
                     except Exception as e:
                         logger.error(f"Failed to get cluster info: {e}")
 
                 await client.close()
 
-                nodes.append({
-                    "host": host,
-                    "port": int(port),
-                    "status": "healthy" if ping_response else "unhealthy",
-                    "version": info.get("redis_version", "unknown"),
-                    "role": info.get("role", "unknown"),
-                    "connected_clients": info.get("connected_clients", 0),
-                    "used_memory_human": info.get("used_memory_human", "unknown")
-                })
+                nodes.append(
+                    {
+                        "host": host,
+                        "port": int(port),
+                        "status": "healthy" if ping_response else "unhealthy",
+                        "version": info.get("redis_version", "unknown"),
+                        "role": info.get("role", "unknown"),
+                        "connected_clients": info.get("connected_clients", 0),
+                        "used_memory_human": info.get("used_memory_human", "unknown"),
+                    }
+                )
 
             except Exception:
-                nodes.append({
-                    "host": host,
-                    "port": int(port),
-                    "status": "unhealthy",
-                    "error": "Node connection failed"
-                })
+                nodes.append(
+                    {
+                        "host": host,
+                        "port": int(port),
+                        "status": "unhealthy",
+                        "error": "Node connection failed",
+                    }
+                )
 
         # Overall health is healthy if all nodes are healthy
         all_healthy = all(node.get("status") == "healthy" for node in nodes)
@@ -214,7 +210,7 @@ async def check_redis() -> Dict[str, Any]:
             "cluster_enabled": cluster_enabled,
             "cluster_state": cluster_state,
             "nodes": nodes,
-            "total_nodes": len(nodes)
+            "total_nodes": len(nodes),
         }
     except Exception as e:
         logger.error(f"Redis health check failed: {e}")
@@ -228,7 +224,7 @@ async def check_rabbitmq() -> Dict[str, Any]:
         creds = await vault_client.get_secret("rabbitmq")
 
         # Get vhost (default to 'dev_vhost' if not in vault)
-        vhost = creds.get('vhost', 'dev_vhost')
+        vhost = creds.get("vhost", "dev_vhost")
 
         # Build connection string with vhost
         url = f"amqp://{creds.get('user')}:{creds.get('password')}@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}/{vhost}"
@@ -239,9 +235,7 @@ async def check_rabbitmq() -> Dict[str, Any]:
         # Connection successful - RabbitMQ is healthy
         await connection.close()
 
-        return {
-            "status": "healthy"
-        }
+        return {"status": "healthy"}
     except Exception as e:
         logger.error(f"RabbitMQ health check failed: {e}")
         return {"status": "unhealthy", "error": "RabbitMQ connection failed"}
@@ -302,14 +296,10 @@ async def health_all():
 
     # Determine overall status
     all_healthy = all(
-        service.get("status") == "healthy"
-        for service in results.values()
+        service.get("status") == "healthy" for service in results.values()
     )
 
-    return {
-        "status": "healthy" if all_healthy else "degraded",
-        "services": results
-    }
+    return {"status": "healthy" if all_healthy else "degraded", "services": results}
 
 
 @router.get("/")

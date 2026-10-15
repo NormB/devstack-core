@@ -12,11 +12,7 @@ import redis.asyncio as redis
 
 from app.config import settings
 from app.services.vault import vault_client
-from app.models import (
-    CacheGetResponse,
-    CacheSetResponse,
-    CacheDeleteResponse
-)
+from app.models import CacheGetResponse, CacheSetResponse, CacheDeleteResponse
 
 router = APIRouter(prefix="/examples/cache", tags=["Cache Examples"])
 
@@ -29,7 +25,7 @@ async def get_redis_client():
         port=settings.REDIS_PORT,
         password=creds.get("password"),
         decode_responses=True,
-        socket_connect_timeout=5
+        socket_connect_timeout=5,
     )
 
 
@@ -39,9 +35,9 @@ async def get_cache_value(
         ...,
         min_length=1,
         max_length=200,
-        pattern=r'^[a-zA-Z0-9_:.-]+$',
-        description="Cache key (alphanumeric and: - _ : . only)"
-    )
+        pattern=r"^[a-zA-Z0-9_:.-]+$",
+        description="Cache key (alphanumeric and: - _ : . only)",
+    ),
 ) -> CacheGetResponse:
     """Example: Get a value from cache"""
     try:
@@ -54,10 +50,7 @@ async def get_cache_value(
             return CacheGetResponse(key=key, value=None, exists=False, ttl=None)
 
         return CacheGetResponse(
-            key=key,
-            value=value,
-            exists=True,
-            ttl=ttl if ttl > 0 else "no expiration"
+            key=key, value=value, exists=True, ttl=ttl if ttl > 0 else "no expiration"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cache get failed: {str(e)}")
@@ -69,21 +62,15 @@ async def set_cache_value(
         ...,
         min_length=1,
         max_length=200,
-        pattern=r'^[a-zA-Z0-9_:.-]+$',
-        description="Cache key (alphanumeric and: - _ : . only)"
+        pattern=r"^[a-zA-Z0-9_:.-]+$",
+        description="Cache key (alphanumeric and: - _ : . only)",
     ),
     value: str = Query(
-        ...,
-        min_length=0,
-        max_length=10000,
-        description="Value to cache (max 10KB)"
+        ..., min_length=0, max_length=10000, description="Value to cache (max 10KB)"
     ),
     ttl: int = Query(
-        None,
-        ge=1,
-        le=86400,
-        description="Time to live in seconds (1s to 24h)"
-    )
+        None, ge=1, le=86400, description="Time to live in seconds (1s to 24h)"
+    ),
 ) -> CacheSetResponse:
     """Example: Set a value in cache with optional TTL"""
     try:
@@ -96,12 +83,7 @@ async def set_cache_value(
 
         await client.close()
 
-        return CacheSetResponse(
-            key=key,
-            value=value,
-            ttl=ttl,
-            action="set"
-        )
+        return CacheSetResponse(key=key, value=value, ttl=ttl, action="set")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cache set failed: {str(e)}")
 
@@ -112,9 +94,9 @@ async def delete_cache_value(
         ...,
         min_length=1,
         max_length=200,
-        pattern=r'^[a-zA-Z0-9_:.-]+$',
-        description="Cache key (alphanumeric and: - _ : . only)"
-    )
+        pattern=r"^[a-zA-Z0-9_:.-]+$",
+        description="Cache key (alphanumeric and: - _ : . only)",
+    ),
 ) -> CacheDeleteResponse:
     """Example: Delete a value from cache"""
     try:
@@ -122,10 +104,6 @@ async def delete_cache_value(
         deleted = await client.delete(key)
         await client.close()
 
-        return CacheDeleteResponse(
-            key=key,
-            deleted=bool(deleted),
-            action="delete"
-        )
+        return CacheDeleteResponse(key=key, deleted=bool(deleted), action="delete")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Cache delete failed: {str(e)}")

@@ -17,13 +17,13 @@ class CacheDeleteResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    key: Annotated[str, Field(description='Cache key', title='Key')]
+    key: Annotated[str, Field(description="Cache key", title="Key")]
     deleted: Annotated[
-        bool, Field(description='Whether key was deleted', title='Deleted')
+        bool, Field(description="Whether key was deleted", title="Deleted")
     ]
     action: Annotated[
-        Optional[str], Field(description='Action performed', title='Action')
-    ] = 'delete'
+        Optional[str], Field(description="Action performed", title="Action")
+    ] = "delete"
 
 
 class CacheGetResponse(BaseModel):
@@ -34,17 +34,17 @@ class CacheGetResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    key: Annotated[str, Field(description='Cache key', title='Key')]
+    key: Annotated[str, Field(description="Cache key", title="Key")]
     value: Annotated[
         Optional[str],
-        Field(description='Cached value (null if not found)', title='Value'),
+        Field(description="Cached value (null if not found)", title="Value"),
     ] = None
     exists: Annotated[
-        bool, Field(description='Whether key exists in cache', title='Exists')
+        bool, Field(description="Whether key exists in cache", title="Exists")
     ]
     ttl: Annotated[
         Optional[Union[int, str]],
-        Field(description="Time to live in seconds or 'no expiration'", title='Ttl'),
+        Field(description="Time to live in seconds or 'no expiration'", title="Ttl"),
     ] = None
 
 
@@ -56,17 +56,17 @@ class CacheSetResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    key: Annotated[str, Field(description='Cache key', title='Key')]
-    value: Annotated[str, Field(description='Value that was set', title='Value')]
+    key: Annotated[str, Field(description="Cache key", title="Key")]
+    value: Annotated[str, Field(description="Value that was set", title="Value")]
     ttl: Annotated[
         Optional[int],
         Field(
-            description='Time to live in seconds (null if no expiration)', title='Ttl'
+            description="Time to live in seconds (null if no expiration)", title="Ttl"
         ),
     ] = None
     action: Annotated[
-        Optional[str], Field(description='Action performed', title='Action')
-    ] = 'set'
+        Optional[str], Field(description="Action performed", title="Action")
+    ] = "set"
 
 
 class MessagePublishResponse(BaseModel):
@@ -77,13 +77,13 @@ class MessagePublishResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    queue: Annotated[str, Field(description='Queue name', title='Queue')]
+    queue: Annotated[str, Field(description="Queue name", title="Queue")]
     message: Annotated[
-        dict[str, Any], Field(description='Message that was published', title='Message')
+        dict[str, Any], Field(description="Message that was published", title="Message")
     ]
     action: Annotated[
-        Optional[str], Field(description='Action performed', title='Action')
-    ] = 'published'
+        Optional[str], Field(description="Action performed", title="Action")
+    ] = "published"
 
 
 class QueueInfoResponse(BaseModel):
@@ -94,14 +94,14 @@ class QueueInfoResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    queue: Annotated[str, Field(description='Queue name', title='Queue')]
-    exists: Annotated[bool, Field(description='Whether queue exists', title='Exists')]
+    queue: Annotated[str, Field(description="Queue name", title="Queue")]
+    exists: Annotated[bool, Field(description="Whether queue exists", title="Exists")]
     message_count: Annotated[
         Optional[int],
-        Field(description='Number of messages in queue', title='Message Count'),
+        Field(description="Number of messages in queue", title="Message Count"),
     ] = None
     consumer_count: Annotated[
-        Optional[int], Field(description='Number of consumers', title='Consumer Count')
+        Optional[int], Field(description="Number of consumers", title="Consumer Count")
     ] = None
 
 
@@ -113,13 +113,13 @@ class SecretKeyResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    service: Annotated[str, Field(description='Service name', title='Service')]
-    key: Annotated[str, Field(description='Secret key name', title='Key')]
+    service: Annotated[str, Field(description="Service name", title="Service")]
+    key: Annotated[str, Field(description="Secret key name", title="Key")]
     value: Annotated[
         Optional[str],
-        Field(description='Secret value (sensitive values masked)', title='Value'),
+        Field(description="Secret value (sensitive values masked)", title="Value"),
     ] = None
-    note: Annotated[str, Field(description='Additional information', title='Note')]
+    note: Annotated[str, Field(description="Additional information", title="Note")]
 
 
 class SecretResponse(BaseModel):
@@ -130,25 +130,25 @@ class SecretResponse(BaseModel):
     class Config:
         allow_mutation = False
 
-    service: Annotated[str, Field(description='Service name', title='Service')]
+    service: Annotated[str, Field(description="Service name", title="Service")]
     data: Annotated[
         dict[str, Any],
-        Field(description='Secret data (passwords masked)', title='Data'),
+        Field(description="Secret data (passwords masked)", title="Data"),
     ]
-    note: Annotated[str, Field(description='Additional information', title='Note')]
+    note: Annotated[str, Field(description="Additional information", title="Note")]
 
 
 class ValidationError(BaseModel):
     class Config:
         allow_mutation = False
 
-    loc: Annotated[list[Union[str, int]], Field(title='Location')]
-    msg: Annotated[str, Field(title='Message')]
-    type: Annotated[str, Field(title='Error Type')]
+    loc: Annotated[list[Union[str, int]], Field(title="Location")]
+    msg: Annotated[str, Field(title="Message")]
+    type: Annotated[str, Field(title="Error Type")]
 
 
 class HTTPValidationError(BaseModel):
     class Config:
         allow_mutation = False
 
-    detail: Annotated[Optional[list[ValidationError]], Field(title='Detail')] = None
+    detail: Annotated[Optional[list[ValidationError]], Field(title="Detail")] = None

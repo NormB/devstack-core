@@ -8,9 +8,18 @@ from urllib.parse import urlparse, urlunparse
 
 # Sensitive field names that should be redacted in logs
 SENSITIVE_KEYS: Set[str] = {
-    'password', 'secret', 'token', 'key', 'auth',
-    'credential', 'api_key', 'private', 'passwd',
-    'pwd', 'authorization', 'x-vault-token'
+    "password",
+    "secret",
+    "token",
+    "key",
+    "auth",
+    "credential",
+    "api_key",
+    "private",
+    "passwd",
+    "pwd",
+    "authorization",
+    "x-vault-token",
 }
 
 
@@ -37,14 +46,16 @@ def redact_sensitive(data: Dict[str, Any]) -> Dict[str, Any]:
 
         # Check if key contains any sensitive keyword
         if any(sensitive in key_lower for sensitive in SENSITIVE_KEYS):
-            result[key] = '[REDACTED]'
+            result[key] = "[REDACTED]"
         elif isinstance(value, dict):
             # Recursively redact nested dicts
             result[key] = redact_sensitive(value)
         elif isinstance(value, list):
             # Handle lists of dicts
-            result[key] = [redact_sensitive(item) if isinstance(item, dict) else item
-                          for item in value]
+            result[key] = [
+                redact_sensitive(item) if isinstance(item, dict) else item
+                for item in value
+            ]
         else:
             result[key] = value
 
@@ -71,11 +82,12 @@ def sanitize_log_string(value: str) -> str:
     if not isinstance(value, str):
         return str(value)
 
-    return (value
-            .replace('\n', '\\n')
-            .replace('\r', '\\r')
-            .replace('\t', '\\t')
-            .replace('\x00', '\\x00'))  # Null byte
+    return (
+        value.replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+        .replace("\x00", "\\x00")
+    )  # Null byte
 
 
 def redact_url_password(url: str) -> str:
@@ -109,19 +121,21 @@ def redact_url_password(url: str) -> str:
 
         # Reconstruct URL without credentials
         # Replace netloc (which contains user:pass@host:port) with just host:port
-        safe_netloc = parsed.hostname or ''
+        safe_netloc = parsed.hostname or ""
         if parsed.port:
             safe_netloc = f"{safe_netloc}:{parsed.port}"
 
         # Reconstruct the URL
-        safe_url = urlunparse((
-            parsed.scheme,
-            safe_netloc,
-            parsed.path,
-            parsed.params,
-            parsed.query,
-            parsed.fragment
-        ))
+        safe_url = urlunparse(
+            (
+                parsed.scheme,
+                safe_netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
 
         return safe_url
 

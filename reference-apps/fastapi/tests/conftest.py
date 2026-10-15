@@ -21,8 +21,10 @@ def client():
     Create a test client for the FastAPI application
     """
     # Disable cache initialization for tests
-    with patch('app.middleware.cache.FastAPICache.init'):
-        with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+    with patch("app.middleware.cache.FastAPICache.init"):
+        with patch(
+            "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+        ):
             with TestClient(app) as test_client:
                 yield test_client
 
@@ -40,17 +42,17 @@ def mock_vault_client():
     """
     Mock VaultClient for testing without actual Vault connection
     """
-    with patch('app.services.vault.vault_client') as mock:
-        mock.get_secret = AsyncMock(return_value={
-            "user": "test_user",
-            "password": "test_password",
-            "database": "test_db"
-        })
-        mock.check_health = AsyncMock(return_value={
-            "status": "healthy",
-            "initialized": True,
-            "sealed": False
-        })
+    with patch("app.services.vault.vault_client") as mock:
+        mock.get_secret = AsyncMock(
+            return_value={
+                "user": "test_user",
+                "password": "test_password",
+                "database": "test_db",
+            }
+        )
+        mock.check_health = AsyncMock(
+            return_value={"status": "healthy", "initialized": True, "sealed": False}
+        )
         yield mock
 
 
@@ -86,7 +88,7 @@ def sample_vault_secret():
         "password": "test_password",
         "database": "test_db",
         "host": "localhost",
-        "port": "5432"
+        "port": "5432",
     }
 
 
@@ -99,7 +101,7 @@ def sample_request_context():
         "request_id": "test-request-123",
         "method": "GET",
         "path": "/test",
-        "status_code": 200
+        "status_code": 200,
     }
 
 
@@ -172,8 +174,8 @@ def mock_cache_backend():
     """
     Mock cache backend for testing caching without Redis
     """
-    with patch('app.middleware.cache.FastAPICache.init') as mock_init:
-        with patch('app.middleware.cache.FastAPICache.get_coder') as mock_coder:
+    with patch("app.middleware.cache.FastAPICache.init") as mock_init:
+        with patch("app.middleware.cache.FastAPICache.get_coder") as mock_coder:
             mock_coder.return_value = MagicMock()
             yield mock_init
 
@@ -183,7 +185,9 @@ def mock_async_iterator():
     """
     Create a proper async iterator for testing
     """
+
     async def async_iter(items):
         for item in items:
             yield item
+
     return async_iter

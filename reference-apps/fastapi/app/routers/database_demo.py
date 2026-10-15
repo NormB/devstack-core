@@ -32,7 +32,7 @@ async def postgres_example():
             user=creds.get("user"),
             password=creds.get("password"),
             database=creds.get("database"),
-            timeout=5.0
+            timeout=5.0,
         )
 
         # Execute query
@@ -42,10 +42,12 @@ async def postgres_example():
         return {
             "database": "PostgreSQL",
             "query": "SELECT current_timestamp",
-            "result": str(result)
+            "result": str(result),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PostgreSQL query failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"PostgreSQL query failed: {str(e)}"
+        )
 
 
 @router.get("/mysql/query")
@@ -62,7 +64,7 @@ async def mysql_example():
             user=creds.get("user"),
             password=creds.get("password"),
             db=creds.get("database"),
-            connect_timeout=5
+            connect_timeout=5,
         )
 
         async with conn.cursor() as cursor:
@@ -74,7 +76,7 @@ async def mysql_example():
         return {
             "database": "MySQL",
             "query": "SELECT NOW()",
-            "result": str(result[0]) if result else None
+            "result": str(result[0]) if result else None,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MySQL query failed: {str(e)}")
@@ -89,7 +91,9 @@ async def mongodb_example():
 
         # Connect
         uri = f"mongodb://{creds.get('user')}:{creds.get('password')}@{settings.MONGODB_HOST}:{settings.MONGODB_PORT}"
-        client = motor.motor_asyncio.AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+        client = motor.motor_asyncio.AsyncIOMotorClient(
+            uri, serverSelectionTimeoutMS=5000
+        )
 
         # Access database
         db = client[creds.get("database", "dev_database")]
@@ -101,7 +105,7 @@ async def mongodb_example():
         return {
             "database": "MongoDB",
             "collections": collections,
-            "count": len(collections)
+            "count": len(collections),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MongoDB query failed: {str(e)}")

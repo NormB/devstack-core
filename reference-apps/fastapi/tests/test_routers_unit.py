@@ -9,7 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException
 
 
-@pytest.mark.skip(reason="Tests outdated cache functions that no longer exist - see test_cache_demo_unit.py for current tests")
+@pytest.mark.skip(
+    reason="Tests outdated cache functions that no longer exist - see test_cache_demo_unit.py for current tests"
+)
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestCacheDemoRouters:
@@ -19,7 +21,7 @@ class TestCacheDemoRouters:
         """Test get_cached_data with cache miss"""
         from app.routers.cache_demo import get_cached_data
 
-        with patch('app.routers.cache_demo.cache_manager') as mock_cache:
+        with patch("app.routers.cache_demo.cache_manager") as mock_cache:
             mock_cache.enabled = False  # Simulate cache not enabled
 
             result = await get_cached_data()
@@ -32,7 +34,7 @@ class TestCacheDemoRouters:
         """Test cache invalidation"""
         from app.routers.cache_demo import invalidate_cache_endpoint
 
-        with patch('app.routers.cache_demo.cache_manager') as mock_cache:
+        with patch("app.routers.cache_demo.cache_manager") as mock_cache:
             mock_cache.enabled = True
             mock_cache.redis_client = AsyncMock()
 
@@ -45,7 +47,7 @@ class TestCacheDemoRouters:
         """Test clearing all cache"""
         from app.routers.cache_demo import clear_all_cache
 
-        with patch('app.routers.cache_demo.cache_manager') as mock_cache:
+        with patch("app.routers.cache_demo.cache_manager") as mock_cache:
             mock_cache.enabled = True
             mock_cache.clear_all = AsyncMock()
 
@@ -58,7 +60,7 @@ class TestCacheDemoRouters:
         """Test clearing cache when disabled"""
         from app.routers.cache_demo import clear_all_cache
 
-        with patch('app.routers.cache_demo.cache_manager') as mock_cache:
+        with patch("app.routers.cache_demo.cache_manager") as mock_cache:
             mock_cache.enabled = False
 
             with pytest.raises(HTTPException) as exc_info:
@@ -76,12 +78,12 @@ class TestDatabaseDemoRouters:
         """Test PostgreSQL query"""
         from app.routers.database_demo import postgres_example
 
-        with patch('app.routers.database_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.asyncpg.connect') as mock_connect:
+        with patch("app.routers.database_demo.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.asyncpg.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test",
                     "password": "test",
-                    "database": "test"
+                    "database": "test",
                 }
 
                 mock_conn = AsyncMock()
@@ -98,9 +100,13 @@ class TestDatabaseDemoRouters:
         """Test PostgreSQL query failure"""
         from app.routers.database_demo import postgres_example
 
-        with patch('app.routers.database_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.asyncpg.connect') as mock_connect:
-                mock_vault.return_value = {"user": "test", "password": "test", "database": "test"}
+        with patch("app.routers.database_demo.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.asyncpg.connect") as mock_connect:
+                mock_vault.return_value = {
+                    "user": "test",
+                    "password": "test",
+                    "database": "test",
+                }
                 mock_connect.side_effect = Exception("Connection failed")
 
                 with pytest.raises(HTTPException) as exc_info:
@@ -113,12 +119,12 @@ class TestDatabaseDemoRouters:
         """Test MySQL query"""
         from app.routers.database_demo import mysql_example
 
-        with patch('app.routers.database_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.aiomysql.connect') as mock_connect:
+        with patch("app.routers.database_demo.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.database_demo.aiomysql.connect") as mock_connect:
                 mock_vault.return_value = {
                     "user": "test",
                     "password": "test",
-                    "database": "test"
+                    "database": "test",
                 }
 
                 mock_cursor = AsyncMock()
@@ -141,12 +147,14 @@ class TestDatabaseDemoRouters:
         """Test MongoDB query"""
         from app.routers.database_demo import mongodb_example
 
-        with patch('app.routers.database_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient') as mock_client_class:
+        with patch("app.routers.database_demo.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.database_demo.motor.motor_asyncio.AsyncIOMotorClient"
+            ) as mock_client_class:
                 mock_vault.return_value = {
                     "user": "test",
                     "password": "test",
-                    "database": "test_db"
+                    "database": "test_db",
                 }
 
                 mock_db = AsyncMock()
@@ -174,12 +182,11 @@ class TestMessagingDemoRouters:
         """Test publishing message to RabbitMQ"""
         from app.routers.messaging_demo import publish_message
 
-        with patch('app.routers.messaging_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.messaging_demo.aio_pika.connect_robust') as mock_connect:
-                mock_vault.return_value = {
-                    "user": "test",
-                    "password": "test"
-                }
+        with patch("app.routers.messaging_demo.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.messaging_demo.aio_pika.connect_robust"
+            ) as mock_connect:
+                mock_vault.return_value = {"user": "test", "password": "test"}
 
                 mock_exchange = AsyncMock()
                 mock_exchange.publish = AsyncMock()
@@ -194,8 +201,7 @@ class TestMessagingDemoRouters:
                 mock_connect.return_value = mock_connection
 
                 result = await publish_message(
-                    message="test message",
-                    routing_key="test.key"
+                    message="test message", routing_key="test.key"
                 )
 
                 assert result["status"] == "published"
@@ -205,8 +211,10 @@ class TestMessagingDemoRouters:
         """Test publish message failure"""
         from app.routers.messaging_demo import publish_message
 
-        with patch('app.routers.messaging_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.messaging_demo.aio_pika.connect_robust') as mock_connect:
+        with patch("app.routers.messaging_demo.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.messaging_demo.aio_pika.connect_robust"
+            ) as mock_connect:
                 mock_vault.return_value = {"user": "test", "password": "test"}
                 mock_connect.side_effect = Exception("Connection failed")
 
@@ -220,8 +228,10 @@ class TestMessagingDemoRouters:
         """Test consuming messages from RabbitMQ"""
         from app.routers.messaging_demo import consume_messages
 
-        with patch('app.routers.messaging_demo.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.messaging_demo.aio_pika.connect_robust') as mock_connect:
+        with patch("app.routers.messaging_demo.vault_client.get_secret") as mock_vault:
+            with patch(
+                "app.routers.messaging_demo.aio_pika.connect_robust"
+            ) as mock_connect:
                 mock_vault.return_value = {"user": "test", "password": "test"}
 
                 # Mock message
@@ -260,8 +270,8 @@ class TestRedisClusterRouters:
         """Test getting cluster nodes"""
         from app.routers.redis_cluster import get_cluster_nodes
 
-        with patch('app.routers.redis_cluster.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.routers.redis_cluster.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test"}
 
                 mock_client = AsyncMock()
@@ -278,7 +288,7 @@ class TestRedisClusterRouters:
         """Test cluster nodes failure"""
         from app.routers.redis_cluster import get_cluster_nodes
 
-        with patch('app.routers.redis_cluster.vault_client.get_secret') as mock_vault:
+        with patch("app.routers.redis_cluster.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault failed")
 
             result = await get_cluster_nodes()
@@ -289,12 +299,14 @@ class TestRedisClusterRouters:
         """Test getting cluster info"""
         from app.routers.redis_cluster import get_cluster_info
 
-        with patch('app.routers.redis_cluster.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.routers.redis_cluster.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test"}
 
                 mock_client = AsyncMock()
-                mock_client.execute_command.return_value = "cluster_state:ok\ncluster_slots_assigned:16384"
+                mock_client.execute_command.return_value = (
+                    "cluster_state:ok\ncluster_slots_assigned:16384"
+                )
                 mock_client.close = AsyncMock()
                 mock_redis_class.return_value = mock_client
 
@@ -313,7 +325,9 @@ class TestRedisClusterRouters:
         assert "Invalid node name" in result["error"]
 
 
-@pytest.mark.skip(reason="Cannot test route handlers directly due to cache decorators - need TestClient")
+@pytest.mark.skip(
+    reason="Cannot test route handlers directly due to cache decorators - need TestClient"
+)
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestVaultDemoRouters:
@@ -323,11 +337,11 @@ class TestVaultDemoRouters:
         """Test getting Vault secret"""
         from app.routers.vault_demo import get_secret_example as get_secret
 
-        with patch('app.routers.vault_demo.vault_client.get_secret') as mock_get:
+        with patch("app.routers.vault_demo.vault_client.get_secret") as mock_get:
             mock_get.return_value = {
                 "user": "test_user",
                 "password": "test_password",
-                "database": "test_db"
+                "database": "test_db",
             }
 
             result = await get_secret(secret_name="postgres")
@@ -340,7 +354,7 @@ class TestVaultDemoRouters:
         """Test getting specific key from Vault secret"""
         from app.routers.vault_demo import get_secret_example as get_secret
 
-        with patch('app.routers.vault_demo.vault_client.get_secret') as mock_get:
+        with patch("app.routers.vault_demo.vault_client.get_secret") as mock_get:
             mock_get.return_value = {"password": "secret123"}
 
             result = await get_secret(secret_name="postgres", key="password")

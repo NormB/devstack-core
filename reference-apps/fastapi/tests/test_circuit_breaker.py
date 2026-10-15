@@ -21,7 +21,7 @@ from app.middleware.circuit_breaker import (
     # The decorator raises this module's own ServiceUnavailableError, a plain
     # Exception subclass, not app.exceptions.ServiceUnavailableError; the
     # tests pin the class actually raised.
-    ServiceUnavailableError
+    ServiceUnavailableError,
 )
 
 
@@ -106,10 +106,7 @@ class TestCircuitBreakerBehavior:
 
     def test_circuit_breaker_creation(self):
         """Test creating a circuit breaker"""
-        cb = pybreaker.CircuitBreaker(
-            fail_max=3,
-            reset_timeout=10
-        )
+        cb = pybreaker.CircuitBreaker(fail_max=3, reset_timeout=10)
 
         assert cb.fail_max == 3
         assert cb.reset_timeout == 10

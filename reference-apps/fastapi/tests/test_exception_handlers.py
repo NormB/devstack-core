@@ -13,30 +13,34 @@ from app.main import app
 from app.exceptions import (
     VaultUnavailableError,
     ResourceNotFoundError,
-    ServiceUnavailableError
+    ServiceUnavailableError,
 )
 
 
 @pytest.mark.unit
 @pytest.mark.exceptions
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestExceptionHandlers:
     """Test exception handler functions"""
 
     def client(self):
         """Create test client"""
         from unittest.mock import MagicMock
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_vault_unavailable_returns_503(self, client):
         """Test that VaultUnavailableError returns 503"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = VaultUnavailableError(
-                message="Vault is down",
-                secret_path="test"
+                message="Vault is down", secret_path="test"
             )
 
             response = client.get("/examples/vault/secret/test")
@@ -50,11 +54,11 @@ class TestExceptionHandlers:
 
     def test_resource_not_found_returns_404(self, client):
         """Test that ResourceNotFoundError returns 404"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = ResourceNotFoundError(
                 resource_type="secret",
                 resource_id="nonexistent",
-                message="Secret not found"
+                message="Secret not found",
             )
 
             response = client.get("/examples/vault/secret/nonexistent")
@@ -78,10 +82,9 @@ class TestExceptionHandlers:
 
     def test_service_unavailable_includes_retry_suggestion(self, client):
         """Test that service unavailable errors include retry suggestion"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = ServiceUnavailableError(
-                service_name="test-service",
-                message="Service is down"
+                service_name="test-service", message="Service is down"
             )
 
             response = client.get("/examples/vault/secret/test")
@@ -93,7 +96,7 @@ class TestExceptionHandlers:
 
     def test_request_id_in_response_header(self, client):
         """Test that request ID is included in response headers"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = VaultUnavailableError()
 
             response = client.get("/examples/vault/secret/test")
@@ -105,11 +108,11 @@ class TestExceptionHandlers:
 
     def test_error_details_preserved(self, client):
         """Test that error details are preserved in response"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = VaultUnavailableError(
                 message="Connection timeout",
                 secret_path="secret/test",
-                details={"timeout": "5.0s", "attempt": 3}
+                details={"timeout": "5.0s", "attempt": 3},
             )
 
             response = client.get("/examples/vault/secret/test")
@@ -122,15 +125,20 @@ class TestExceptionHandlers:
 
 @pytest.mark.integration
 @pytest.mark.exceptions
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestEndToEndExceptionHandling:
     """Test end-to-end exception handling through actual endpoints"""
 
     def client(self):
         """Create test client"""
         from unittest.mock import MagicMock
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -177,35 +185,41 @@ class TestEndToEndExceptionHandling:
 
 @pytest.mark.unit
 @pytest.mark.exceptions
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestErrorLogging:
     """Test that errors are properly logged"""
 
     def client(self):
         """Create test client"""
         from unittest.mock import MagicMock
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_error_logged_with_context(self, client, caplog):
         """Test that errors are logged with proper context"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = VaultUnavailableError(
-                message="Test error",
-                secret_path="test"
+                message="Test error", secret_path="test"
             )
 
             client.get("/examples/vault/secret/test")
 
             # Check that error was logged
-            assert any("VaultUnavailableError" in record.message for record in caplog.records)
+            assert any(
+                "VaultUnavailableError" in record.message for record in caplog.records
+            )
             assert any("Test error" in record.message for record in caplog.records)
 
     def test_unhandled_exception_logged(self, client, caplog):
         """Test that unhandled exceptions are logged"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             # Simulate an unexpected error
             mock_get.side_effect = RuntimeError("Unexpected error")
 
@@ -215,27 +229,34 @@ class TestErrorLogging:
             assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
             # Check error was logged
-            assert any("Unexpected error" in record.message for record in caplog.records)
+            assert any(
+                "Unexpected error" in record.message for record in caplog.records
+            )
 
 
 @pytest.mark.unit
 @pytest.mark.exceptions
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestDebugMode:
     """Test debug mode behavior"""
 
     def client(self):
         """Create test client"""
         from unittest.mock import MagicMock
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_debug_info_included_when_debug_enabled(self, client):
         """Test that debug info is included when DEBUG=True"""
-        with patch('app.config.settings.DEBUG', True):
-            with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.config.settings.DEBUG", True):
+            with patch("app.services.vault.vault_client.get_secret") as mock_get:
                 mock_get.side_effect = VaultUnavailableError(message="Test error")
 
                 response = client.get("/examples/vault/secret/test")
@@ -247,8 +268,8 @@ class TestDebugMode:
 
     def test_debug_info_excluded_when_debug_disabled(self, client):
         """Test that debug info is excluded when DEBUG=False"""
-        with patch('app.config.settings.DEBUG', False):
-            with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.config.settings.DEBUG", False):
+            with patch("app.services.vault.vault_client.get_secret") as mock_get:
                 mock_get.side_effect = VaultUnavailableError(message="Test error")
 
                 response = client.get("/examples/vault/secret/test")
@@ -260,15 +281,20 @@ class TestDebugMode:
 
 @pytest.mark.unit
 @pytest.mark.exceptions
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestPrometheusMetrics:
     """Test that errors are tracked in Prometheus metrics"""
 
     def client(self):
         """Create test client"""
         from unittest.mock import MagicMock
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -278,19 +304,17 @@ class TestPrometheusMetrics:
 
         # Get initial count
         initial_count = error_counter.labels(
-            error_type="VaultUnavailableError",
-            status_code=503
+            error_type="VaultUnavailableError", status_code=503
         )._value.get()
 
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.side_effect = VaultUnavailableError()
 
             client.get("/examples/vault/secret/test")
 
         # Check count increased
         final_count = error_counter.labels(
-            error_type="VaultUnavailableError",
-            status_code=503
+            error_type="VaultUnavailableError", status_code=503
         )._value.get()
 
         assert final_count > initial_count

@@ -38,8 +38,9 @@ class TestRootEndpoint:
         api_first_data = api_first_response.json()
 
         # Keys should match
-        assert set(code_first_data.keys()) == set(api_first_data.keys()), \
-            f"Root endpoint keys don't match: {code_first_data.keys()} vs {api_first_data.keys()}"
+        assert (
+            set(code_first_data.keys()) == set(api_first_data.keys())
+        ), f"Root endpoint keys don't match: {code_first_data.keys()} vs {api_first_data.keys()}"
 
 
 @pytest.mark.parity
@@ -75,8 +76,9 @@ class TestOpenAPISpec:
         api_first_spec = api_first_response.json()
 
         # Compare paths (endpoints)
-        assert set(code_first_spec["paths"].keys()) == set(api_first_spec["paths"].keys()), \
-            "OpenAPI paths don't match between implementations"
+        assert set(code_first_spec["paths"].keys()) == set(
+            api_first_spec["paths"].keys()
+        ), "OpenAPI paths don't match between implementations"
 
     async def test_openapi_version_format(self, api_url, http_client):
         """Test OpenAPI specification version format."""

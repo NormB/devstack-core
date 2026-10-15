@@ -45,7 +45,7 @@ async def get_cluster_nodes():
             port=settings.REDIS_PORT,
             password=password,
             decode_responses=True,
-            socket_connect_timeout=5
+            socket_connect_timeout=5,
         )
 
         # Get cluster nodes information
@@ -91,32 +91,39 @@ async def get_cluster_nodes():
             host, port = host_port.rsplit(":", 1)
 
             # Determine role
-            role = "master" if "master" in flags else "replica" if "slave" in flags else "unknown"
+            role = (
+                "master"
+                if "master" in flags
+                else "replica"
+                if "slave" in flags
+                else "unknown"
+            )
 
-            nodes.append({
-                "node_id": node_id,
-                "host": host,
-                "port": int(port),
-                "role": role,
-                "flags": flags.split(","),
-                "master_id": master_id,
-                "ping_sent": ping_sent,
-                "pong_recv": pong_recv,
-                "config_epoch": int(config_epoch),
-                "link_state": link_state,
-                "slots_count": len(slots),
-                "slot_ranges": slot_ranges
-            })
+            nodes.append(
+                {
+                    "node_id": node_id,
+                    "host": host,
+                    "port": int(port),
+                    "role": role,
+                    "flags": flags.split(","),
+                    "master_id": master_id,
+                    "ping_sent": ping_sent,
+                    "pong_recv": pong_recv,
+                    "config_epoch": int(config_epoch),
+                    "link_state": link_state,
+                    "slots_count": len(slots),
+                    "slot_ranges": slot_ranges,
+                }
+            )
 
-        return {
-            "status": "success",
-            "total_nodes": len(nodes),
-            "nodes": nodes
-        }
+        return {"status": "success", "total_nodes": len(nodes), "nodes": nodes}
 
     except Exception as e:
         logger.error(f"Failed to get cluster nodes: {e}")
-        return {"status": "error", "error": "Failed to retrieve cluster nodes information"}
+        return {
+            "status": "error",
+            "error": "Failed to retrieve cluster nodes information",
+        }
 
 
 @router.get("/cluster/slots")
@@ -140,7 +147,7 @@ async def get_cluster_slots():
             port=settings.REDIS_PORT,
             password=password,
             decode_responses=False,  # CLUSTER SLOTS returns binary data
-            socket_connect_timeout=5
+            socket_connect_timeout=5,
         )
 
         # Get cluster slots information
@@ -157,49 +164,68 @@ async def get_cluster_slots():
             master_info = slot_info[2]
 
             # Master node info
-            master_host = master_info[0].decode() if isinstance(master_info[0], bytes) else master_info[0]
+            master_host = (
+                master_info[0].decode()
+                if isinstance(master_info[0], bytes)
+                else master_info[0]
+            )
             master_port = master_info[1]
-            master_id = master_info[2].decode() if isinstance(master_info[2], bytes) else master_info[2]
+            master_id = (
+                master_info[2].decode()
+                if isinstance(master_info[2], bytes)
+                else master_info[2]
+            )
 
             # Replica info (if any)
             replicas = []
             for i in range(3, len(slot_info)):
                 replica_info = slot_info[i]
-                replica_host = replica_info[0].decode() if isinstance(replica_info[0], bytes) else replica_info[0]
+                replica_host = (
+                    replica_info[0].decode()
+                    if isinstance(replica_info[0], bytes)
+                    else replica_info[0]
+                )
                 replica_port = replica_info[1]
-                replica_id = replica_info[2].decode() if isinstance(replica_info[2], bytes) else replica_info[2]
-                replicas.append({
-                    "host": replica_host,
-                    "port": replica_port,
-                    "node_id": replica_id
-                })
+                replica_id = (
+                    replica_info[2].decode()
+                    if isinstance(replica_info[2], bytes)
+                    else replica_info[2]
+                )
+                replicas.append(
+                    {"host": replica_host, "port": replica_port, "node_id": replica_id}
+                )
 
             slots_in_range = end_slot - start_slot + 1
             total_slots += slots_in_range
 
-            slot_distribution.append({
-                "start_slot": start_slot,
-                "end_slot": end_slot,
-                "slots_count": slots_in_range,
-                "master": {
-                    "host": master_host,
-                    "port": master_port,
-                    "node_id": master_id
-                },
-                "replicas": replicas
-            })
+            slot_distribution.append(
+                {
+                    "start_slot": start_slot,
+                    "end_slot": end_slot,
+                    "slots_count": slots_in_range,
+                    "master": {
+                        "host": master_host,
+                        "port": master_port,
+                        "node_id": master_id,
+                    },
+                    "replicas": replicas,
+                }
+            )
 
         return {
             "status": "success",
             "total_slots": total_slots,
             "max_slots": 16384,
             "coverage_percentage": round((total_slots / 16384) * 100, 2),
-            "slot_distribution": slot_distribution
+            "slot_distribution": slot_distribution,
         }
 
     except Exception as e:
         logger.error(f"Failed to get cluster slots: {e}")
-        return {"status": "error", "error": "Failed to retrieve cluster slot distribution"}
+        return {
+            "status": "error",
+            "error": "Failed to retrieve cluster slot distribution",
+        }
 
 
 @router.get("/cluster/info")
@@ -226,7 +252,7 @@ async def get_cluster_info():
             port=settings.REDIS_PORT,
             password=password,
             decode_responses=True,
-            socket_connect_timeout=5
+            socket_connect_timeout=5,
         )
 
         # Get cluster info
@@ -244,10 +270,7 @@ async def get_cluster_info():
                 except ValueError:
                     cluster_info[key] = value
 
-        return {
-            "status": "success",
-            "cluster_info": cluster_info
-        }
+        return {"status": "success", "cluster_info": cluster_info}
 
     except Exception as e:
         logger.error(f"Failed to get cluster info: {e}")
@@ -270,7 +293,7 @@ async def get_node_info(node_name: str):
         if node_name not in valid_nodes:
             return {
                 "status": "error",
-                "error": f"Invalid node name. Must be one of: {', '.join(valid_nodes)}"
+                "error": f"Invalid node name. Must be one of: {', '.join(valid_nodes)}",
             }
 
         # Fetch credentials from Vault
@@ -283,18 +306,14 @@ async def get_node_info(node_name: str):
             port=6379,
             password=password,
             decode_responses=True,
-            socket_connect_timeout=5
+            socket_connect_timeout=5,
         )
 
         # Get comprehensive server info
         info = await client.info("all")
         await client.close()
 
-        return {
-            "status": "success",
-            "node": node_name,
-            "info": info
-        }
+        return {"status": "success", "node": node_name, "info": info}
 
     except Exception as e:
         # Log error without user-controlled input to prevent log injection

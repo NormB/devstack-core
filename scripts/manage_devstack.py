@@ -64,7 +64,9 @@ except ImportError as e:
 # ==============================================================================
 
 # Paths
-SCRIPT_DIR = Path(__file__).parent.parent.resolve()  # Project root (one level up from scripts/)
+SCRIPT_DIR = Path(
+    __file__
+).parent.parent.resolve()  # Project root (one level up from scripts/)
 PROFILES_FILE = SCRIPT_DIR / "profiles.yaml"
 COMPOSE_FILE = SCRIPT_DIR / "docker-compose.yml"
 ENV_FILE = SCRIPT_DIR / ".env"
@@ -84,12 +86,13 @@ console = Console()
 # Utility Functions
 # ==============================================================================
 
+
 def run_command(
     cmd: List[str],
     check: bool = True,
     capture: bool = False,
     env: Optional[Dict[str, str]] = None,
-    input: Optional[str] = None
+    input: Optional[str] = None,
 ) -> Tuple[int, str, str]:
     """
     Run a shell command with optional environment variables.
@@ -117,11 +120,17 @@ def run_command(
                 capture_output=True,
                 text=True,
                 env=cmd_env,
-                input=input
+                input=input,
             )
             return result.returncode, result.stdout, result.stderr
         else:
-            result = subprocess.run(cmd, check=check, env=cmd_env, input=input, text=True if input else False)
+            result = subprocess.run(
+                cmd,
+                check=check,
+                env=cmd_env,
+                input=input,
+                text=True if input else False,
+            )
             return result.returncode, "", ""
     except subprocess.CalledProcessError as e:
         if check:
@@ -133,7 +142,9 @@ def run_command(
         return e.returncode, e.stdout if capture else "", e.stderr if capture else ""
     except FileNotFoundError:
         console.print(f"[red]Command not found: {cmd[0]}[/red]")
-        console.print(f"[yellow]Make sure {cmd[0]} is installed and in your PATH[/yellow]")
+        console.print(
+            f"[yellow]Make sure {cmd[0]} is installed and in your PATH[/yellow]"
+        )
         sys.exit(1)
 
 
@@ -171,16 +182,16 @@ def get_profile_services(profile: str) -> List[str]:
         return profiles_config["custom_profiles"][profile].get("services", [])
 
     console.print(f"[red]Error: Unknown profile '{profile}'[/red]")
-    console.print("[yellow]Available profiles: minimal, standard, full, reference[/yellow]")
+    console.print(
+        "[yellow]Available profiles: minimal, standard, full, reference[/yellow]"
+    )
     sys.exit(1)
 
 
 def check_colima_status() -> bool:
     """Check if Colima is running."""
     returncode, stdout, stderr = run_command(
-        ["colima", "status", "-p", COLIMA_PROFILE],
-        check=False,
-        capture=True
+        ["colima", "status", "-p", COLIMA_PROFILE], check=False, capture=True
     )
     # Colima outputs to stderr, so check both stdout and stderr
     output = (stdout + stderr).lower()
@@ -230,14 +241,20 @@ def get_vault_approle_token(service: str = "management") -> Optional[str]:
         # Authenticate via AppRole using docker exec
         returncode, token, _ = run_command(
             [
-                "docker", "exec", "-e", "VAULT_ADDR=http://localhost:8200",
-                "dev-vault", "vault", "write", "-field=token",
+                "docker",
+                "exec",
+                "-e",
+                "VAULT_ADDR=http://localhost:8200",
+                "dev-vault",
+                "vault",
+                "write",
+                "-field=token",
                 "auth/approle/login",
                 f"role_id={role_id}",
-                f"secret_id={secret_id}"
+                f"secret_id={secret_id}",
             ],
             capture=True,
-            check=False
+            check=False,
         )
 
         if returncode == 0 and token:
@@ -270,12 +287,21 @@ def get_vault_secret(path: str, field: str, use_approle: bool = True) -> Optiona
         if token:
             returncode, value, _ = run_command(
                 [
-                    "docker", "exec", "-e", f"VAULT_TOKEN={token}",
-                    "-e", "VAULT_ADDR=http://localhost:8200",
-                    "dev-vault", "vault", "kv", "get", f"-field={field}", path
+                    "docker",
+                    "exec",
+                    "-e",
+                    f"VAULT_TOKEN={token}",
+                    "-e",
+                    "VAULT_ADDR=http://localhost:8200",
+                    "dev-vault",
+                    "vault",
+                    "kv",
+                    "get",
+                    f"-field={field}",
+                    path,
                 ],
                 capture=True,
-                check=False
+                check=False,
             )
             if returncode == 0 and value:
                 return value.strip()
@@ -287,12 +313,21 @@ def get_vault_secret(path: str, field: str, use_approle: bool = True) -> Optiona
 
     returncode, value, _ = run_command(
         [
-            "docker", "exec", "-e", f"VAULT_TOKEN={token}",
-            "-e", "VAULT_ADDR=http://localhost:8200",
-            "dev-vault", "vault", "kv", "get", f"-field={field}", path
+            "docker",
+            "exec",
+            "-e",
+            f"VAULT_TOKEN={token}",
+            "-e",
+            "VAULT_ADDR=http://localhost:8200",
+            "dev-vault",
+            "vault",
+            "kv",
+            "get",
+            f"-field={field}",
+            path,
         ],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode == 0 and value:
@@ -317,11 +352,14 @@ def calculate_file_checksum(file_path: Path) -> str:
     return sha256_hash.hexdigest()
 
 
-def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
-                          base_backup: Optional[str] = None,
-                          previous_backup: Optional[str] = None,
-                          start_time: float = None,
-                          encrypted: bool = False) -> Dict:
+def create_backup_manifest(
+    backup_dir: Path,
+    backup_type: str = "full",
+    base_backup: Optional[str] = None,
+    previous_backup: Optional[str] = None,
+    start_time: float = None,
+    encrypted: bool = False,
+) -> Dict:
     """
     Create a backup manifest file with metadata and checksums.
 
@@ -350,7 +388,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
         "config": {},
         "total_size_bytes": 0,
         "duration_seconds": round(duration, 2),
-        "vault_approle_used": True
+        "vault_approle_used": True,
     }
 
     # Add encryption metadata if encrypted
@@ -358,7 +396,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
         manifest["encryption"] = {
             "algorithm": "AES256",
             "method": "GPG symmetric",
-            "passphrase_hint": "vault-backup-passphrase"
+            "passphrase_hint": "vault-backup-passphrase",
         }
 
     # Track database backups
@@ -366,7 +404,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
         "postgres": "postgres_all.sql",
         "mysql": "mysql_all.sql",
         "mongodb": "mongodb_dump.archive",
-        "forgejo": "forgejo_data.tar.gz"
+        "forgejo": "forgejo_data.tar.gz",
     }
 
     for db_name, filename in db_files.items():
@@ -382,7 +420,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
                 "type": backup_type if db_name == "forgejo" else "full",
                 "file": actual_file.name,
                 "size_bytes": file_size,
-                "checksum": f"sha256:{calculate_file_checksum(actual_file)}"
+                "checksum": f"sha256:{calculate_file_checksum(actual_file)}",
             }
 
             # Add original filename if encrypted
@@ -406,7 +444,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
         config_entry = {
             "env_file": actual_env.name,
             "size_bytes": file_size,
-            "checksum": f"sha256:{calculate_file_checksum(actual_env)}"
+            "checksum": f"sha256:{calculate_file_checksum(actual_env)}",
         }
 
         if encrypted:
@@ -417,7 +455,7 @@ def create_backup_manifest(backup_dir: Path, backup_type: str = "full",
 
     # Write manifest
     manifest_file = backup_dir / "manifest.json"
-    with open(manifest_file, 'w') as f:
+    with open(manifest_file, "w") as f:
         json.dump(manifest, f, indent=2)
 
     return manifest
@@ -441,7 +479,7 @@ def find_latest_full_backup() -> Optional[str]:
         manifest_file = backup_dir / "manifest.json"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r') as f:
+                with open(manifest_file, "r") as f:
                     manifest = json.load(f)
                     if manifest.get("backup_type") == "full":
                         return backup_dir.name
@@ -476,7 +514,7 @@ def setup_backup_passphrase() -> bool:
     console.print("[cyan]Creating a passphrase will enable encrypted backups.[/cyan]\n")
 
     response = input("Create encryption passphrase? (y/n): ").strip().lower()
-    if response != 'y':
+    if response != "y":
         console.print("[yellow]Encryption setup cancelled.[/yellow]\n")
         return False
 
@@ -557,15 +595,18 @@ def encrypt_file_gpg(file_path: Path, passphrase: str) -> bool:
             [
                 "gpg",
                 "--symmetric",
-                "--cipher-algo", "AES256",
+                "--cipher-algo",
+                "AES256",
                 "--batch",
                 "--yes",
-                "--passphrase", passphrase,
-                "--output", str(encrypted_path),
-                str(file_path)
+                "--passphrase",
+                passphrase,
+                "--output",
+                str(encrypted_path),
+                str(file_path),
             ],
             capture_output=True,
-            check=False
+            check=False,
         )
 
         if result.returncode != 0:
@@ -582,7 +623,9 @@ def encrypt_file_gpg(file_path: Path, passphrase: str) -> bool:
         return False
 
 
-def decrypt_file_gpg(encrypted_path: Path, passphrase: str, output_path: Optional[Path] = None) -> bool:
+def decrypt_file_gpg(
+    encrypted_path: Path, passphrase: str, output_path: Optional[Path] = None
+) -> bool:
     """
     Decrypt a GPG-encrypted file.
 
@@ -610,12 +653,14 @@ def decrypt_file_gpg(encrypted_path: Path, passphrase: str, output_path: Optiona
                 "--decrypt",
                 "--batch",
                 "--yes",
-                "--passphrase", passphrase,
-                "--output", str(output_path),
-                str(encrypted_path)
+                "--passphrase",
+                passphrase,
+                "--output",
+                str(output_path),
+                str(encrypted_path),
             ],
             capture_output=True,
-            check=False
+            check=False,
         )
 
         if result.returncode != 0:
@@ -653,7 +698,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
         "files_total": 0,
         "errors": [],
         "warnings": [],
-        "details": []
+        "details": [],
     }
 
     # Load manifest
@@ -663,7 +708,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
         return False, report
 
     try:
-        with open(manifest_file, 'r') as f:
+        with open(manifest_file, "r") as f:
             manifest = json.load(f)
     except json.JSONDecodeError as e:
         report["errors"].append(f"Manifest is corrupted: {e}")
@@ -699,11 +744,7 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
         if not file_path.exists():
             report["errors"].append(f"{filename}: File missing")
             report["files_failed"] += 1
-            report["details"].append({
-                "file": filename,
-                "status": "missing",
-                "size": 0
-            })
+            report["details"].append({"file": filename, "status": "missing", "size": 0})
             continue
 
         # Verify checksum
@@ -713,11 +754,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
 
             if actual_checksum == expected_checksum:
                 report["files_verified"] += 1
-                report["details"].append({
-                    "file": filename,
-                    "status": "ok",
-                    "size": file_size
-                })
+                report["details"].append(
+                    {"file": filename, "status": "ok", "size": file_size}
+                )
             else:
                 report["files_failed"] += 1
                 report["errors"].append(
@@ -725,19 +764,13 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
                     f"  Expected: {expected_checksum[:16]}...\n"
                     f"  Actual:   {actual_checksum[:16]}..."
                 )
-                report["details"].append({
-                    "file": filename,
-                    "status": "checksum_mismatch",
-                    "size": file_size
-                })
+                report["details"].append(
+                    {"file": filename, "status": "checksum_mismatch", "size": file_size}
+                )
         except Exception as e:
             report["files_failed"] += 1
             report["errors"].append(f"{filename}: Verification error: {e}")
-            report["details"].append({
-                "file": filename,
-                "status": "error",
-                "size": 0
-            })
+            report["details"].append({"file": filename, "status": "error", "size": 0})
 
     # Verify config file
     if "config" in manifest and manifest["config"]:
@@ -750,11 +783,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
             if not file_path.exists():
                 report["errors"].append(f"{filename}: File missing")
                 report["files_failed"] += 1
-                report["details"].append({
-                    "file": filename,
-                    "status": "missing",
-                    "size": 0
-                })
+                report["details"].append(
+                    {"file": filename, "status": "missing", "size": 0}
+                )
             else:
                 try:
                     actual_checksum = calculate_file_checksum(file_path)
@@ -762,11 +793,9 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
 
                     if actual_checksum == expected_checksum:
                         report["files_verified"] += 1
-                        report["details"].append({
-                            "file": filename,
-                            "status": "ok",
-                            "size": file_size
-                        })
+                        report["details"].append(
+                            {"file": filename, "status": "ok", "size": file_size}
+                        )
                     else:
                         report["files_failed"] += 1
                         report["errors"].append(
@@ -774,28 +803,32 @@ def verify_backup_integrity(backup_dir: Path) -> Tuple[bool, Dict]:  # noqa: C90
                             f"  Expected: {expected_checksum[:16]}...\n"
                             f"  Actual:   {actual_checksum[:16]}..."
                         )
-                        report["details"].append({
-                            "file": filename,
-                            "status": "checksum_mismatch",
-                            "size": file_size
-                        })
+                        report["details"].append(
+                            {
+                                "file": filename,
+                                "status": "checksum_mismatch",
+                                "size": file_size,
+                            }
+                        )
                 except Exception as e:
                     report["files_failed"] += 1
                     report["errors"].append(f"{filename}: Verification error: {e}")
-                    report["details"].append({
-                        "file": filename,
-                        "status": "error",
-                        "size": 0
-                    })
+                    report["details"].append(
+                        {"file": filename, "status": "error", "size": 0}
+                    )
 
     # Success if all files verified
-    success = report["files_failed"] == 0 and report["files_verified"] == report["files_total"]
+    success = (
+        report["files_failed"] == 0
+        and report["files_verified"] == report["files_total"]
+    )
     return success, report
 
 
 # ==============================================================================
 # CLI Commands
 # ==============================================================================
+
 
 @click.group()
 @click.version_option(version="1.0.0", prog_name="devstack")
@@ -893,14 +926,14 @@ def cli():
     multiple=True,
     default=["standard"],
     help="Service profile(s) to start (can specify multiple)",
-    show_default=True
+    show_default=True,
 )
 @click.option(
     "--detach/--no-detach",
     "-d",
     default=True,
     help="Run services in background (detached mode)",
-    show_default=True
+    show_default=True,
 )
 def start(profile: Tuple[str], detach: bool):
     """
@@ -946,8 +979,9 @@ def start(profile: Tuple[str], detach: bool):
     # Validate profiles
     profiles_config = load_profiles_config()
     for p in profile:
-        if p not in profiles_config.get("profiles", {}) and \
-           p not in profiles_config.get("custom_profiles", {}):
+        if p not in profiles_config.get(
+            "profiles", {}
+        ) and p not in profiles_config.get("custom_profiles", {}):
             console.print(f"[red]Error: Unknown profile '{p}'[/red]")
             console.print("\n[yellow]Available profiles:[/yellow]")
             for prof_name in profiles_config.get("profiles", {}).keys():
@@ -963,26 +997,36 @@ def start(profile: Tuple[str], detach: bool):
         profile_env = load_profile_env(p)
         merged_env.update(profile_env)
         if profile_env:
-            console.print(f"[dim]Loaded {len(profile_env)} environment overrides from {p}.env[/dim]")
+            console.print(
+                f"[dim]Loaded {len(profile_env)} environment overrides from {p}.env[/dim]"
+            )
 
     # Step 1: Check/Start Colima
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=console
+        console=console,
     ) as progress:
         task = progress.add_task("Checking Colima VM status...", total=None)
 
         if not check_colima_status():
             progress.update(task, description="Starting Colima VM...")
-            run_command([
-                "colima", "start",
-                "-p", COLIMA_PROFILE,
-                "--cpu", COLIMA_CPU,
-                "--memory", COLIMA_MEMORY,
-                "--disk", COLIMA_DISK,
-                "--network-address"
-            ], env=merged_env)
+            run_command(
+                [
+                    "colima",
+                    "start",
+                    "-p",
+                    COLIMA_PROFILE,
+                    "--cpu",
+                    COLIMA_CPU,
+                    "--memory",
+                    COLIMA_MEMORY,
+                    "--disk",
+                    COLIMA_DISK,
+                    "--network-address",
+                ],
+                env=merged_env,
+            )
             console.print("[green]✓ Colima VM started[/green]")
         else:
             progress.update(task, description="Colima VM already running")
@@ -1017,8 +1061,7 @@ def start(profile: Tuple[str], detach: bool):
 
     # Show service status
     _, stdout, _ = run_command(
-        ["docker", "compose", "ps", "--format", "table"],
-        capture=True
+        ["docker", "compose", "ps", "--format", "table"], capture=True
     )
     console.print(stdout)
 
@@ -1038,10 +1081,7 @@ def start(profile: Tuple[str], detach: bool):
 
 @cli.command()
 @click.option(
-    "--profile",
-    "-p",
-    multiple=True,
-    help="Only stop services from specific profile(s)"
+    "--profile", "-p", multiple=True, help="Only stop services from specific profile(s)"
 )
 def stop(profile: Optional[Tuple[str]]):
     """
@@ -1085,11 +1125,13 @@ def stop(profile: Optional[Tuple[str]]):
         services_to_stop = []
 
         for p in profile:
-            if p in profiles_config.get('profiles', {}):
-                profile_services = profiles_config['profiles'][p].get('services', [])
+            if p in profiles_config.get("profiles", {}):
+                profile_services = profiles_config["profiles"][p].get("services", [])
                 services_to_stop.extend(profile_services)
-            elif p in profiles_config.get('custom_profiles', {}):
-                profile_services = profiles_config['custom_profiles'][p].get('services', [])
+            elif p in profiles_config.get("custom_profiles", {}):
+                profile_services = profiles_config["custom_profiles"][p].get(
+                    "services", []
+                )
                 services_to_stop.extend(profile_services)
             else:
                 console.print(f"[red]✗ Unknown profile:[/red] {p}")
@@ -1103,10 +1145,16 @@ def stop(profile: Optional[Tuple[str]]):
             # Convert service names to container names (dev-<service>)
             container_names = [f"dev-{svc}" for svc in services_to_stop]
             cmd = ["docker", "stop"] + container_names
-            run_command(cmd, check=False)  # Don't fail if some containers aren't running
-            console.print(f"\n[green]✓ Stopped {len(services_to_stop)} services from profile(s): {', '.join(profile)}[/green]")
+            run_command(
+                cmd, check=False
+            )  # Don't fail if some containers aren't running
+            console.print(
+                f"\n[green]✓ Stopped {len(services_to_stop)} services from profile(s): {', '.join(profile)}[/green]"
+            )
         else:
-            console.print("[yellow]⚠ No services found for specified profile(s)[/yellow]")
+            console.print(
+                "[yellow]⚠ No services found for specified profile(s)[/yellow]"
+            )
     else:
         # Stop everything
         console.print("[yellow]Stopping all services and Colima VM...[/yellow]\n")
@@ -1140,9 +1188,7 @@ def status():
 
         # Get Colima info
         _, stdout, _ = run_command(
-            ["colima", "list", "-p", COLIMA_PROFILE],
-            capture=True,
-            check=False
+            ["colima", "list", "-p", COLIMA_PROFILE], capture=True, check=False
         )
         if stdout:
             console.print(stdout)
@@ -1155,9 +1201,7 @@ def status():
     console.print("[cyan]Docker Services:[/cyan]\n")
 
     _, stdout, _ = run_command(
-        ["docker", "compose", "ps", "--format", "table"],
-        capture=True,
-        check=False
+        ["docker", "compose", "ps", "--format", "table"], capture=True, check=False
     )
 
     if stdout and "NAME" in stdout:
@@ -1185,9 +1229,7 @@ def health():
 
     # Get list of running containers
     _, stdout, _ = run_command(
-        ["docker", "compose", "ps", "--format", "json"],
-        capture=True,
-        check=False
+        ["docker", "compose", "ps", "--format", "json"], capture=True, check=False
     )
 
     if not stdout:
@@ -1231,18 +1273,13 @@ def health():
 
 @cli.command()
 @click.argument("service", required=False)
-@click.option(
-    "--follow",
-    "-f",
-    is_flag=True,
-    help="Follow log output (like tail -f)"
-)
+@click.option("--follow", "-f", is_flag=True, help="Follow log output (like tail -f)")
 @click.option(
     "--tail",
     "-n",
     default=100,
     help="Number of lines to show from end of logs",
-    show_default=True
+    show_default=True,
 )
 def logs(service: Optional[str], follow: bool, tail: int):
     """
@@ -1306,7 +1343,7 @@ def logs(service: Optional[str], follow: bool, tail: int):
     "-s",
     default="sh",
     help="Shell to use (sh, bash, etc.)",
-    show_default=True
+    show_default=True,
 )
 def shell(service: str, shell: str):
     """
@@ -1343,10 +1380,7 @@ def shell(service: str, shell: str):
     console.print(f"\n[cyan]Opening shell in {service}...[/cyan]")
     console.print("[dim]Type 'exit' to close the shell[/dim]\n")
 
-    run_command(
-        ["docker", "compose", "exec", service, shell],
-        check=False
-    )
+    run_command(["docker", "compose", "exec", service, shell], check=False)
 
     console.print(f"\n[dim]Closed shell in {service}[/dim]\n")
 
@@ -1401,8 +1435,7 @@ def ip():
         return
 
     _, stdout, _ = run_command(
-        ["colima", "ls", "-p", COLIMA_PROFILE, "-j"],
-        capture=True
+        ["colima", "ls", "-p", COLIMA_PROFILE, "-j"], capture=True
     )
 
     try:
@@ -1438,9 +1471,7 @@ def restart():
 
     # Show status
     _, stdout, _ = run_command(
-        ["docker", "compose", "ps", "--format", "table"],
-        capture=True,
-        check=False
+        ["docker", "compose", "ps", "--format", "table"], capture=True, check=False
     )
     if stdout:
         console.print(stdout)
@@ -1493,19 +1524,19 @@ def reset():
     "--incremental",
     "-i",
     is_flag=True,
-    help="Create incremental backup (Forgejo only, databases remain full)"
+    help="Create incremental backup (Forgejo only, databases remain full)",
 )
 @click.option(
     "--full",
     "-f",
     is_flag=True,
-    help="Force full backup (default if no base backup exists)"
+    help="Force full backup (default if no base backup exists)",
 )
 @click.option(
     "--encrypt",
     "-e",
     is_flag=True,
-    help="Encrypt backup files with GPG (AES256 symmetric encryption)"
+    help="Encrypt backup files with GPG (AES256 symmetric encryption)",
 )
 def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it before adding branches
     """
@@ -1566,7 +1597,9 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
             previous_backup = base_backup
             console.print(f"[cyan]Incremental backup based on:[/cyan] {base_backup}")
         else:
-            console.print("[yellow]No full backup found, creating full backup instead[/yellow]")
+            console.print(
+                "[yellow]No full backup found, creating full backup instead[/yellow]"
+            )
             backup_type = "full"
 
     if backup_type == "full":
@@ -1584,31 +1617,50 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=console
+        console=console,
     ) as progress:
         # Backup PostgreSQL
         task = progress.add_task("Backing up PostgreSQL...", total=None)
         # Get PostgreSQL password from Vault using AppRole
-        postgres_pass = get_vault_secret("secret/postgres", "password", use_approle=True)
+        postgres_pass = get_vault_secret(
+            "secret/postgres", "password", use_approle=True
+        )
 
         if postgres_pass:
             # Use PGPASSWORD environment variable for authentication
             env = os.environ.copy()
-            env['PGPASSWORD'] = postgres_pass
+            env["PGPASSWORD"] = postgres_pass
             returncode, stdout, _ = run_command(
-                ["docker", "compose", "exec", "-T", "-e", f"PGPASSWORD={postgres_pass}",
-                 "postgres", "pg_dumpall", "-U", "devuser"],
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "-T",
+                    "-e",
+                    f"PGPASSWORD={postgres_pass}",
+                    "postgres",
+                    "pg_dumpall",
+                    "-U",
+                    "devuser",
+                ],
                 capture=True,
                 check=False,
-                env=env
+                env=env,
             )
             if returncode == 0:
                 (backup_dir / "postgres_all.sql").write_text(stdout)
-                progress.update(task, description="[green]✓ PostgreSQL backed up[/green]")
+                progress.update(
+                    task, description="[green]✓ PostgreSQL backed up[/green]"
+                )
             else:
-                progress.update(task, description="[yellow]⚠ PostgreSQL backup failed[/yellow]")
+                progress.update(
+                    task, description="[yellow]⚠ PostgreSQL backup failed[/yellow]"
+                )
         else:
-            progress.update(task, description="[yellow]⚠ PostgreSQL backup skipped (no password)[/yellow]")
+            progress.update(
+                task,
+                description="[yellow]⚠ PostgreSQL backup skipped (no password)[/yellow]",
+            )
 
         # Backup MySQL
         task = progress.add_task("Backing up MySQL...", total=None)
@@ -1619,48 +1671,88 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
         if mysql_pass:
             # Use docker exec directly to properly pass environment variables
             returncode, stdout, stderr = run_command(
-                ["docker", "exec", "-e", f"MYSQL_PWD={mysql_pass}",
-                 "dev-mysql", "mysqldump", "-u", mysql_user, "--all-databases", "--no-tablespaces"],
+                [
+                    "docker",
+                    "exec",
+                    "-e",
+                    f"MYSQL_PWD={mysql_pass}",
+                    "dev-mysql",
+                    "mysqldump",
+                    "-u",
+                    mysql_user,
+                    "--all-databases",
+                    "--no-tablespaces",
+                ],
                 capture=True,
-                check=False
+                check=False,
             )
             if returncode == 0:
                 (backup_dir / "mysql_all.sql").write_text(stdout)
                 progress.update(task, description="[green]✓ MySQL backed up[/green]")
             else:
                 error_msg = stderr.strip() if stderr else f"exit code {returncode}"
-                progress.update(task, description=f"[yellow]⚠ MySQL backup failed: {error_msg}[/yellow]")
+                progress.update(
+                    task,
+                    description=f"[yellow]⚠ MySQL backup failed: {error_msg}[/yellow]",
+                )
         else:
-            progress.update(task, description="[yellow]⚠ MySQL backup skipped (no password)[/yellow]")
+            progress.update(
+                task,
+                description="[yellow]⚠ MySQL backup skipped (no password)[/yellow]",
+            )
 
         # Backup MongoDB
         task = progress.add_task("Backing up MongoDB...", total=None)
         # Get MongoDB credentials from Vault using AppRole
-        mongo_user = get_vault_secret("secret/mongodb", "user", use_approle=True) or "devuser"
+        mongo_user = (
+            get_vault_secret("secret/mongodb", "user", use_approle=True) or "devuser"
+        )
         mongo_pass = get_vault_secret("secret/mongodb", "password", use_approle=True)
 
         if mongo_pass:
             try:
                 # Use docker exec to pass authentication credentials
                 result = subprocess.run(
-                    ["docker", "exec", "dev-mongodb", "mongodump",
-                     "--username", mongo_user,
-                     "--password", mongo_pass,
-                     "--authenticationDatabase", "admin",
-                     "--archive"],
+                    [
+                        "docker",
+                        "exec",
+                        "dev-mongodb",
+                        "mongodump",
+                        "--username",
+                        mongo_user,
+                        "--password",
+                        mongo_pass,
+                        "--authenticationDatabase",
+                        "admin",
+                        "--archive",
+                    ],
                     capture_output=True,
-                    check=False
+                    check=False,
                 )
                 if result.returncode == 0:
                     (backup_dir / "mongodb_dump.archive").write_bytes(result.stdout)
-                    progress.update(task, description="[green]✓ MongoDB backed up[/green]")
+                    progress.update(
+                        task, description="[green]✓ MongoDB backed up[/green]"
+                    )
                 else:
-                    stderr_msg = result.stderr.decode() if result.stderr else f"exit code {result.returncode}"
-                    progress.update(task, description=f"[yellow]⚠ MongoDB backup failed: {stderr_msg[:50]}[/yellow]")
+                    stderr_msg = (
+                        result.stderr.decode()
+                        if result.stderr
+                        else f"exit code {result.returncode}"
+                    )
+                    progress.update(
+                        task,
+                        description=f"[yellow]⚠ MongoDB backup failed: {stderr_msg[:50]}[/yellow]",
+                    )
             except Exception as e:
-                progress.update(task, description=f"[yellow]⚠ MongoDB backup error: {e}[/yellow]")
+                progress.update(
+                    task, description=f"[yellow]⚠ MongoDB backup error: {e}[/yellow]"
+                )
         else:
-            progress.update(task, description="[yellow]⚠ MongoDB backup skipped (no password)[/yellow]")
+            progress.update(
+                task,
+                description="[yellow]⚠ MongoDB backup skipped (no password)[/yellow]",
+            )
 
         # Backup Forgejo (incremental support with rsync)
         task = progress.add_task("Backing up Forgejo...", total=None)
@@ -1670,28 +1762,50 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
                 # Note: This is a simplified approach - full tar backup is used for now
                 # as rsync requires host filesystem access, not practical with Docker volumes
                 # Future enhancement: Use docker cp + rsync on host
-                progress.update(task, description="[yellow]ℹ Forgejo: Using full backup (incremental via rsync not yet supported)[/yellow]")
+                progress.update(
+                    task,
+                    description="[yellow]ℹ Forgejo: Using full backup (incremental via rsync not yet supported)[/yellow]",
+                )
 
             # Perform full tarball backup (works for both full and incremental)
             result = subprocess.run(
-                ["docker", "compose", "exec", "-T", "forgejo", "tar", "czf", "-", "/data"],
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "-T",
+                    "forgejo",
+                    "tar",
+                    "czf",
+                    "-",
+                    "/data",
+                ],
                 capture_output=True,
-                check=False
+                check=False,
             )
             if result.returncode == 0:
                 (backup_dir / "forgejo_data.tar.gz").write_bytes(result.stdout)
                 if backup_type == "incremental":
-                    progress.update(task, description="[green]✓ Forgejo backed up (full)[/green]")
+                    progress.update(
+                        task, description="[green]✓ Forgejo backed up (full)[/green]"
+                    )
                 else:
-                    progress.update(task, description="[green]✓ Forgejo backed up[/green]")
+                    progress.update(
+                        task, description="[green]✓ Forgejo backed up[/green]"
+                    )
             else:
-                progress.update(task, description="[yellow]⚠ Forgejo backup failed[/yellow]")
+                progress.update(
+                    task, description="[yellow]⚠ Forgejo backup failed[/yellow]"
+                )
         except Exception as e:
-            progress.update(task, description=f"[yellow]⚠ Forgejo backup error: {e}[/yellow]")
+            progress.update(
+                task, description=f"[yellow]⚠ Forgejo backup error: {e}[/yellow]"
+            )
 
         # Backup .env file
         if ENV_FILE.exists():
             import shutil
+
             shutil.copy(ENV_FILE, backup_dir / ".env.backup")
             progress.add_task("[green]✓ .env file backed up[/green]", total=None)
 
@@ -1702,7 +1816,10 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
             # Get or create passphrase
             passphrase = get_backup_passphrase(prompt_if_missing=True)
             if not passphrase:
-                progress.update(task, description="[red]✗ Encryption cancelled (no passphrase)[/red]")
+                progress.update(
+                    task,
+                    description="[red]✗ Encryption cancelled (no passphrase)[/red]",
+                )
                 encrypt = False  # Disable encryption for manifest
             else:
                 # List of files to encrypt
@@ -1721,9 +1838,15 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
                         failed_count += 1
 
                 if failed_count == 0:
-                    progress.update(task, description=f"[green]✓ {encrypted_count} files encrypted[/green]")
+                    progress.update(
+                        task,
+                        description=f"[green]✓ {encrypted_count} files encrypted[/green]",
+                    )
                 else:
-                    progress.update(task, description=f"[yellow]⚠ {encrypted_count} encrypted, {failed_count} failed[/yellow]")
+                    progress.update(
+                        task,
+                        description=f"[yellow]⚠ {encrypted_count} encrypted, {failed_count} failed[/yellow]",
+                    )
 
         # Generate backup manifest with checksums
         task = progress.add_task("Generating backup manifest...", total=None)
@@ -1735,21 +1858,29 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
                 base_backup=base_backup,
                 previous_backup=previous_backup,
                 start_time=start_time,
-                encrypted=encrypt
+                encrypted=encrypt,
             )
             progress.update(task, description="[green]✓ Manifest created[/green]")
         except Exception as e:
-            progress.update(task, description=f"[yellow]⚠ Manifest creation failed: {e}[/yellow]")
+            progress.update(
+                task, description=f"[yellow]⚠ Manifest creation failed: {e}[/yellow]"
+            )
 
     # Show backup summary
     console.print(f"\n[green]✓ Backup completed:[/green] {backup_dir}")
     console.print(f"[cyan]Backup type:[/cyan] {backup_type}")
 
     if manifest:
-        console.print(f"[cyan]Total size:[/cyan] {manifest['total_size_bytes']:,} bytes ({manifest['total_size_bytes'] / 1024:.1f} KB)")
+        console.print(
+            f"[cyan]Total size:[/cyan] {manifest['total_size_bytes']:,} bytes ({manifest['total_size_bytes'] / 1024:.1f} KB)"
+        )
         console.print(f"[cyan]Duration:[/cyan] {manifest['duration_seconds']} seconds")
-        console.print(f"[cyan]Files backed up:[/cyan] {len(manifest['databases'])} databases + config")
-        console.print(f"[cyan]Encrypted:[/cyan] {'Yes (AES256)' if manifest['encrypted'] else 'No'}")
+        console.print(
+            f"[cyan]Files backed up:[/cyan] {len(manifest['databases'])} databases + config"
+        )
+        console.print(
+            f"[cyan]Encrypted:[/cyan] {'Yes (AES256)' if manifest['encrypted'] else 'No'}"
+        )
 
         if backup_type == "incremental":
             console.print(f"[cyan]Base backup:[/cyan] {base_backup}")
@@ -1757,9 +1888,7 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
         # Fallback if manifest creation failed
         try:
             result = subprocess.run(
-                ["/usr/bin/du", "-sh", str(backup_dir)],
-                capture_output=True,
-                text=True
+                ["/usr/bin/du", "-sh", str(backup_dir)], capture_output=True, text=True
             )
             size = result.stdout.split()[0]
             console.print(f"[cyan]Backup size:[/cyan] {size}")
@@ -1771,7 +1900,7 @@ def backup(incremental, full, encrypt):  # noqa: C901 -- known complex; split it
 
 
 @cli.command()
-@click.argument('backup_name', required=False)
+@click.argument("backup_name", required=False)
 def restore(backup_name):  # noqa: C901 -- known complex; split it before adding branches
     """
     Restore service data from a backup directory.
@@ -1832,6 +1961,7 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
         backups = sorted([d for d in backups_dir.iterdir() if d.is_dir()], reverse=True)
 
         from rich.table import Table
+
         table = Table(show_header=True, header_style="bold cyan")
         table.add_column("Backup Name", style="yellow")
         table.add_column("Date", style="green")
@@ -1841,6 +1971,7 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
             # Parse timestamp from directory name (YYYYMMDD_HHMMSS)
             try:
                 from datetime import datetime
+
                 date_str = backup.name
                 dt = datetime.strptime(date_str, "%Y%m%d_%H%M%S")
                 formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -1849,11 +1980,10 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
 
             # Get size
             import subprocess
+
             try:
                 result = subprocess.run(
-                    ["du", "-sh", str(backup)],
-                    capture_output=True,
-                    text=True
+                    ["du", "-sh", str(backup)], capture_output=True, text=True
                 )
                 size = result.stdout.split()[0]
             except Exception:
@@ -1862,7 +1992,9 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
             table.add_row(backup.name, formatted_date, size)
 
         console.print(table)
-        console.print("\n[cyan]To restore a backup:[/cyan] ./devstack restore BACKUP_NAME\n")
+        console.print(
+            "\n[cyan]To restore a backup:[/cyan] ./devstack restore BACKUP_NAME\n"
+        )
         return
 
     # Validate backup exists
@@ -1879,10 +2011,13 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
         return
 
     # Confirm restoration
-    console.print(f"[yellow]⚠️  WARNING: This will OVERWRITE current data with backup from {backup_name}[/yellow]\n")
+    console.print(
+        f"[yellow]⚠️  WARNING: This will OVERWRITE current data with backup from {backup_name}[/yellow]\n"
+    )
     console.print("[red]This operation cannot be undone![/red]\n")
 
     import click
+
     if not click.confirm("Are you sure you want to continue?", default=False):
         console.print("\n[yellow]Restore cancelled.[/yellow]\n")
         return
@@ -1896,7 +2031,7 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
 
     if manifest_file.exists():
         try:
-            with open(manifest_file, 'r') as f:
+            with open(manifest_file, "r") as f:
                 manifest = json.load(f)
                 is_encrypted = manifest.get("encrypted", False)
         except Exception as e:
@@ -1907,66 +2042,117 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
         console.print("[cyan]This backup is encrypted.[/cyan]")
         passphrase = get_backup_passphrase(prompt_if_missing=True)
         if not passphrase:
-            console.print("[red]Error: Passphrase required for encrypted backup[/red]\n")
+            console.print(
+                "[red]Error: Passphrase required for encrypted backup[/red]\n"
+            )
             return
         console.print("[green]✓ Passphrase loaded[/green]\n")
 
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        console=console
+        console=console,
     ) as progress:
         # Restore PostgreSQL
-        postgres_backup = backup_dir / "postgres_all.sql.gpg" if is_encrypted else backup_dir / "postgres_all.sql"
+        postgres_backup = (
+            backup_dir / "postgres_all.sql.gpg"
+            if is_encrypted
+            else backup_dir / "postgres_all.sql"
+        )
         if postgres_backup.exists():
             task = progress.add_task("Restoring PostgreSQL...", total=None)
             try:
                 if is_encrypted:
                     # Decrypt to temporary file
                     import tempfile
-                    with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as temp_file:
+
+                    with tempfile.NamedTemporaryFile(
+                        mode="w", suffix=".sql", delete=False
+                    ) as temp_file:
                         temp_path = Path(temp_file.name)
 
                     if decrypt_file_gpg(postgres_backup, passphrase, temp_path):
-                        with open(temp_path, 'r') as f:
+                        with open(temp_path, "r") as f:
                             returncode, _, _ = run_command(
-                                ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "dev_admin", "postgres"],
+                                [
+                                    "docker",
+                                    "compose",
+                                    "exec",
+                                    "-T",
+                                    "postgres",
+                                    "psql",
+                                    "-U",
+                                    "dev_admin",
+                                    "postgres",
+                                ],
                                 capture=False,
                                 check=False,
-                                input=f.read()
+                                input=f.read(),
                             )
                         temp_path.unlink()  # Clean up temp file
                     else:
-                        progress.update(task, description="[red]✗ PostgreSQL decryption failed[/red]")
+                        progress.update(
+                            task,
+                            description="[red]✗ PostgreSQL decryption failed[/red]",
+                        )
                         returncode = 1
                 else:
-                    with open(postgres_backup, 'r') as f:
+                    with open(postgres_backup, "r") as f:
                         returncode, _, _ = run_command(
-                            ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "dev_admin", "postgres"],
+                            [
+                                "docker",
+                                "compose",
+                                "exec",
+                                "-T",
+                                "postgres",
+                                "psql",
+                                "-U",
+                                "dev_admin",
+                                "postgres",
+                            ],
                             capture=False,
                             check=False,
-                            input=f.read()
+                            input=f.read(),
                         )
 
                 if returncode == 0:
-                    progress.update(task, description="[green]✓ PostgreSQL restored[/green]")
+                    progress.update(
+                        task, description="[green]✓ PostgreSQL restored[/green]"
+                    )
                 else:
-                    progress.update(task, description="[yellow]⚠ PostgreSQL restore failed[/yellow]")
+                    progress.update(
+                        task, description="[yellow]⚠ PostgreSQL restore failed[/yellow]"
+                    )
             except Exception as e:
-                progress.update(task, description=f"[red]✗ PostgreSQL restore error: {e}[/red]")
+                progress.update(
+                    task, description=f"[red]✗ PostgreSQL restore error: {e}[/red]"
+                )
 
         # Restore MySQL
-        mysql_backup = backup_dir / "mysql_all.sql.gpg" if is_encrypted else backup_dir / "mysql_all.sql"
+        mysql_backup = (
+            backup_dir / "mysql_all.sql.gpg"
+            if is_encrypted
+            else backup_dir / "mysql_all.sql"
+        )
         if mysql_backup.exists():
             task = progress.add_task("Restoring MySQL...", total=None)
             # Get MySQL password from Vault
             token = get_vault_token()
             if token:
                 returncode, mysql_pass, _ = run_command(
-                    ["docker", "exec", "dev-vault", "vault", "kv", "get", "-field=password", "secret/mysql"],
+                    [
+                        "docker",
+                        "exec",
+                        "dev-vault",
+                        "vault",
+                        "kv",
+                        "get",
+                        "-field=password",
+                        "secret/mysql",
+                    ],
                     capture=True,
                     check=False,
-                    env={"VAULT_TOKEN": token, "VAULT_ADDR": "http://localhost:8200"}
+                    env={"VAULT_TOKEN": token, "VAULT_ADDR": "http://localhost:8200"},
                 )
                 mysql_pass = mysql_pass.strip() if returncode == 0 else ""
             else:
@@ -1976,153 +2162,270 @@ def restore(backup_name):  # noqa: C901 -- known complex; split it before adding
                 try:
                     # Use MYSQL_PWD environment variable to avoid password exposure in process list
                     env = os.environ.copy()
-                    env['MYSQL_PWD'] = mysql_pass
+                    env["MYSQL_PWD"] = mysql_pass
 
                     if is_encrypted:
                         # Decrypt to temporary file
                         import tempfile
-                        with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as temp_file:
+
+                        with tempfile.NamedTemporaryFile(
+                            mode="w", suffix=".sql", delete=False
+                        ) as temp_file:
                             temp_path = Path(temp_file.name)
 
                         if decrypt_file_gpg(mysql_backup, passphrase, temp_path):
-                            with open(temp_path, 'r') as f:
+                            with open(temp_path, "r") as f:
                                 returncode, _, _ = run_command(
-                                    ["docker", "compose", "exec", "-T", "-e", f"MYSQL_PWD={mysql_pass}",
-                                     "mysql", "mysql", "-u", "root"],
+                                    [
+                                        "docker",
+                                        "compose",
+                                        "exec",
+                                        "-T",
+                                        "-e",
+                                        f"MYSQL_PWD={mysql_pass}",
+                                        "mysql",
+                                        "mysql",
+                                        "-u",
+                                        "root",
+                                    ],
                                     capture=False,
                                     check=False,
                                     input=f.read(),
-                                    env=env
+                                    env=env,
                                 )
                             temp_path.unlink()  # Clean up temp file
                         else:
-                            progress.update(task, description="[red]✗ MySQL decryption failed[/red]")
+                            progress.update(
+                                task, description="[red]✗ MySQL decryption failed[/red]"
+                            )
                             returncode = 1
                     else:
-                        with open(mysql_backup, 'r') as f:
+                        with open(mysql_backup, "r") as f:
                             returncode, _, _ = run_command(
-                                ["docker", "compose", "exec", "-T", "-e", f"MYSQL_PWD={mysql_pass}",
-                                 "mysql", "mysql", "-u", "root"],
+                                [
+                                    "docker",
+                                    "compose",
+                                    "exec",
+                                    "-T",
+                                    "-e",
+                                    f"MYSQL_PWD={mysql_pass}",
+                                    "mysql",
+                                    "mysql",
+                                    "-u",
+                                    "root",
+                                ],
                                 capture=False,
                                 check=False,
                                 input=f.read(),
-                                env=env
+                                env=env,
                             )
 
                     if returncode == 0:
-                        progress.update(task, description="[green]✓ MySQL restored[/green]")
+                        progress.update(
+                            task, description="[green]✓ MySQL restored[/green]"
+                        )
                     else:
-                        progress.update(task, description="[yellow]⚠ MySQL restore failed[/yellow]")
+                        progress.update(
+                            task, description="[yellow]⚠ MySQL restore failed[/yellow]"
+                        )
                 except Exception as e:
-                    progress.update(task, description=f"[red]✗ MySQL restore error: {e}[/red]")
+                    progress.update(
+                        task, description=f"[red]✗ MySQL restore error: {e}[/red]"
+                    )
             else:
-                progress.update(task, description="[yellow]⚠ MySQL restore skipped (no password)[/yellow]")
+                progress.update(
+                    task,
+                    description="[yellow]⚠ MySQL restore skipped (no password)[/yellow]",
+                )
 
         # Restore MongoDB
-        mongodb_backup = backup_dir / "mongodb_dump.archive.gpg" if is_encrypted else backup_dir / "mongodb_dump.archive"
+        mongodb_backup = (
+            backup_dir / "mongodb_dump.archive.gpg"
+            if is_encrypted
+            else backup_dir / "mongodb_dump.archive"
+        )
         if mongodb_backup.exists():
             task = progress.add_task("Restoring MongoDB...", total=None)
             try:
                 import subprocess
+
                 if is_encrypted:
                     # Decrypt to temporary file
                     import tempfile
-                    with tempfile.NamedTemporaryFile(suffix='.archive', delete=False) as temp_file:
+
+                    with tempfile.NamedTemporaryFile(
+                        suffix=".archive", delete=False
+                    ) as temp_file:
                         temp_path = Path(temp_file.name)
 
                     if decrypt_file_gpg(mongodb_backup, passphrase, temp_path):
-                        with open(temp_path, 'rb') as f:
+                        with open(temp_path, "rb") as f:
                             result = subprocess.run(
-                                ["docker", "compose", "exec", "-T", "mongodb", "mongorestore", "--archive", "--drop"],
+                                [
+                                    "docker",
+                                    "compose",
+                                    "exec",
+                                    "-T",
+                                    "mongodb",
+                                    "mongorestore",
+                                    "--archive",
+                                    "--drop",
+                                ],
                                 input=f.read(),
                                 capture_output=True,
-                                check=False
+                                check=False,
                             )
                         temp_path.unlink()  # Clean up temp file
                     else:
-                        progress.update(task, description="[red]✗ MongoDB decryption failed[/red]")
+                        progress.update(
+                            task, description="[red]✗ MongoDB decryption failed[/red]"
+                        )
                         result = subprocess.CompletedProcess([], 1)
                 else:
-                    with open(mongodb_backup, 'rb') as f:
+                    with open(mongodb_backup, "rb") as f:
                         result = subprocess.run(
-                            ["docker", "compose", "exec", "-T", "mongodb", "mongorestore", "--archive", "--drop"],
+                            [
+                                "docker",
+                                "compose",
+                                "exec",
+                                "-T",
+                                "mongodb",
+                                "mongorestore",
+                                "--archive",
+                                "--drop",
+                            ],
                             input=f.read(),
                             capture_output=True,
-                            check=False
+                            check=False,
                         )
 
                 if result.returncode == 0:
-                    progress.update(task, description="[green]✓ MongoDB restored[/green]")
+                    progress.update(
+                        task, description="[green]✓ MongoDB restored[/green]"
+                    )
                 else:
-                    progress.update(task, description="[yellow]⚠ MongoDB restore failed[/yellow]")
+                    progress.update(
+                        task, description="[yellow]⚠ MongoDB restore failed[/yellow]"
+                    )
             except Exception as e:
-                progress.update(task, description=f"[red]✗ MongoDB restore error: {e}[/red]")
+                progress.update(
+                    task, description=f"[red]✗ MongoDB restore error: {e}[/red]"
+                )
 
         # Restore Forgejo
-        forgejo_backup = backup_dir / "forgejo_data.tar.gz.gpg" if is_encrypted else backup_dir / "forgejo_data.tar.gz"
+        forgejo_backup = (
+            backup_dir / "forgejo_data.tar.gz.gpg"
+            if is_encrypted
+            else backup_dir / "forgejo_data.tar.gz"
+        )
         if forgejo_backup.exists():
             task = progress.add_task("Restoring Forgejo...", total=None)
             try:
                 import subprocess  # Explicit import to prevent UnboundLocalError
+
                 if is_encrypted:
                     # Decrypt to temporary file
                     import tempfile
-                    with tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False) as temp_file:
+
+                    with tempfile.NamedTemporaryFile(
+                        suffix=".tar.gz", delete=False
+                    ) as temp_file:
                         temp_path = Path(temp_file.name)
 
                     if decrypt_file_gpg(forgejo_backup, passphrase, temp_path):
-                        with open(temp_path, 'rb') as f:
+                        with open(temp_path, "rb") as f:
                             result = subprocess.run(
-                                ["docker", "compose", "exec", "-T", "forgejo", "sh", "-c", "rm -rf /data/* && tar xzf - -C /"],
+                                [
+                                    "docker",
+                                    "compose",
+                                    "exec",
+                                    "-T",
+                                    "forgejo",
+                                    "sh",
+                                    "-c",
+                                    "rm -rf /data/* && tar xzf - -C /",
+                                ],
                                 input=f.read(),
                                 capture_output=True,
-                                check=False
+                                check=False,
                             )
                         temp_path.unlink()  # Clean up temp file
                     else:
-                        progress.update(task, description="[red]✗ Forgejo decryption failed[/red]")
+                        progress.update(
+                            task, description="[red]✗ Forgejo decryption failed[/red]"
+                        )
                         result = subprocess.CompletedProcess([], 1)
                 else:
-                    with open(forgejo_backup, 'rb') as f:
+                    with open(forgejo_backup, "rb") as f:
                         result = subprocess.run(
-                            ["docker", "compose", "exec", "-T", "forgejo", "sh", "-c", "rm -rf /data/* && tar xzf - -C /"],
+                            [
+                                "docker",
+                                "compose",
+                                "exec",
+                                "-T",
+                                "forgejo",
+                                "sh",
+                                "-c",
+                                "rm -rf /data/* && tar xzf - -C /",
+                            ],
                             input=f.read(),
                             capture_output=True,
-                            check=False
+                            check=False,
                         )
 
                 if result.returncode == 0:
-                    progress.update(task, description="[green]✓ Forgejo restored[/green]")
+                    progress.update(
+                        task, description="[green]✓ Forgejo restored[/green]"
+                    )
                 else:
-                    progress.update(task, description="[yellow]⚠ Forgejo restore failed[/yellow]")
+                    progress.update(
+                        task, description="[yellow]⚠ Forgejo restore failed[/yellow]"
+                    )
             except Exception as e:
-                progress.update(task, description=f"[red]✗ Forgejo restore error: {e}[/red]")
+                progress.update(
+                    task, description=f"[red]✗ Forgejo restore error: {e}[/red]"
+                )
 
         # Restore .env file
-        env_backup = backup_dir / ".env.backup.gpg" if is_encrypted else backup_dir / ".env.backup"
+        env_backup = (
+            backup_dir / ".env.backup.gpg"
+            if is_encrypted
+            else backup_dir / ".env.backup"
+        )
         if env_backup.exists():
             task = progress.add_task("Restoring .env file...", total=None)
             try:
                 if is_encrypted:
                     # Decrypt directly to .env file
                     if decrypt_file_gpg(env_backup, passphrase, ENV_FILE):
-                        progress.update(task, description="[green]✓ .env file restored[/green]")
+                        progress.update(
+                            task, description="[green]✓ .env file restored[/green]"
+                        )
                     else:
-                        progress.update(task, description="[red]✗ .env decryption failed[/red]")
+                        progress.update(
+                            task, description="[red]✗ .env decryption failed[/red]"
+                        )
                 else:
                     import shutil
+
                     shutil.copy(env_backup, ENV_FILE)
-                    progress.update(task, description="[green]✓ .env file restored[/green]")
+                    progress.update(
+                        task, description="[green]✓ .env file restored[/green]"
+                    )
             except Exception as e:
-                progress.update(task, description=f"[red]✗ .env restore error: {e}[/red]")
+                progress.update(
+                    task, description=f"[red]✗ .env restore error: {e}[/red]"
+                )
 
     console.print(f"\n[green]✓ Restore completed from:[/green] {backup_dir}")
-    console.print("[yellow]⚠  Restart services to apply changes:[/yellow] ./devstack restart\n")
+    console.print(
+        "[yellow]⚠  Restart services to apply changes:[/yellow] ./devstack restart\n"
+    )
 
 
 @cli.command()
-@click.argument('backup_name', required=False)
-@click.option('--all', 'verify_all', is_flag=True, help='Verify all backups')
+@click.argument("backup_name", required=False)
+@click.option("--all", "verify_all", is_flag=True, help="Verify all backups")
 def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it before adding branches
     """
     Verify backup integrity using checksums from manifest.
@@ -2183,7 +2486,7 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
             manifest_file = backup / "manifest.json"
             if manifest_file.exists():
                 try:
-                    with open(manifest_file, 'r') as f:
+                    with open(manifest_file, "r") as f:
                         manifest = json.load(f)
 
                     backup_type = manifest.get("backup_type", "unknown")
@@ -2192,10 +2495,7 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
                     size_kb = total_size / 1024
 
                     table.add_row(
-                        backup.name,
-                        backup_type,
-                        encrypted,
-                        f"{size_kb:.1f} KB"
+                        backup.name, backup_type, encrypted, f"{size_kb:.1f} KB"
                     )
                 except Exception:
                     table.add_row(backup.name, "?", "?", "?")
@@ -2203,7 +2503,9 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
                 table.add_row(backup.name, "no manifest", "-", "-")
 
         console.print(table)
-        console.print("\n[cyan]Tip:[/cyan] Run [green]./devstack verify <backup_id>[/green] to verify a backup\n")
+        console.print(
+            "\n[cyan]Tip:[/cyan] Run [green]./devstack verify <backup_id>[/green] to verify a backup\n"
+        )
         return
 
     # Verify single backup
@@ -2221,11 +2523,17 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
         manifest_file = backup_dir / "manifest.json"
         if manifest_file.exists():
             try:
-                with open(manifest_file, 'r') as f:
+                with open(manifest_file, "r") as f:
                     manifest = json.load(f)
-                console.print(f"[cyan]Backup Type:[/cyan] {manifest.get('backup_type', 'unknown')}")
-                console.print(f"[cyan]Encrypted:[/cyan] {'Yes (AES256)' if manifest.get('encrypted') else 'No'}")
-                console.print(f"[cyan]Timestamp:[/cyan] {manifest.get('timestamp', 'unknown')}")
+                console.print(
+                    f"[cyan]Backup Type:[/cyan] {manifest.get('backup_type', 'unknown')}"
+                )
+                console.print(
+                    f"[cyan]Encrypted:[/cyan] {'Yes (AES256)' if manifest.get('encrypted') else 'No'}"
+                )
+                console.print(
+                    f"[cyan]Timestamp:[/cyan] {manifest.get('timestamp', 'unknown')}"
+                )
             except Exception:
                 # Manifest file missing or invalid - skip metadata display
                 pass
@@ -2238,27 +2546,33 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
         duration = time.time() - start_time
 
         # Show file verification results
-        console.print(f"[cyan]Files Verified:[/cyan] {report['files_verified']}/{report['files_total']}\n")
+        console.print(
+            f"[cyan]Files Verified:[/cyan] {report['files_verified']}/{report['files_total']}\n"
+        )
 
-        for detail in report['details']:
-            filename = detail['file']
-            status = detail['status']
-            size = detail['size']
+        for detail in report["details"]:
+            filename = detail["file"]
+            status = detail["status"]
+            size = detail["size"]
 
             if status == "ok":
                 size_display = f"({size / 1024:.1f} KB)" if size > 0 else ""
                 console.print(f"[green]✓ {filename}[/green] {size_display}")
             elif status == "missing":
-                console.print(f"[red]✗ {filename}[/red] [yellow](FILE MISSING)[/yellow]")
+                console.print(
+                    f"[red]✗ {filename}[/red] [yellow](FILE MISSING)[/yellow]"
+                )
             elif status == "checksum_mismatch":
-                console.print(f"[red]✗ {filename}[/red] [yellow](CHECKSUM MISMATCH)[/yellow]")
+                console.print(
+                    f"[red]✗ {filename}[/red] [yellow](CHECKSUM MISMATCH)[/yellow]"
+                )
             else:
                 console.print(f"[red]✗ {filename}[/red] [yellow](ERROR)[/yellow]")
 
         # Show errors
-        if report['errors']:
+        if report["errors"]:
             console.print("\n[red]Errors:[/red]")
-            for error in report['errors']:
+            for error in report["errors"]:
                 console.print(f"  [red]•[/red] {error}")
 
         # Summary
@@ -2268,7 +2582,9 @@ def verify(backup_name, verify_all):  # noqa: C901 -- known complex; split it be
             console.print("\n[green]✓ Backup verification PASSED[/green]\n")
             sys.exit(0)
         else:
-            console.print(f"\n[red]✗ Backup verification FAILED ({report['files_failed']} errors)[/red]")
+            console.print(
+                f"\n[red]✗ Backup verification FAILED ({report['files_failed']} errors)[/red]"
+            )
             console.print("\n[yellow]Recommendations:[/yellow]")
             console.print("  • Restore from an earlier backup")
             console.print("  • Run backup again to create new verified backup\n")
@@ -2331,7 +2647,9 @@ def vault_init():
 
     vault_init_script = SCRIPT_DIR / "configs" / "vault" / "scripts" / "vault-init.sh"
     if not vault_init_script.exists():
-        console.print(f"[red]Error: Vault initialization script not found at {vault_init_script}[/red]\n")
+        console.print(
+            f"[red]Error: Vault initialization script not found at {vault_init_script}[/red]\n"
+        )
         return
 
     console.print("[yellow]Running Vault initialization script...[/yellow]\n")
@@ -2373,7 +2691,9 @@ def vault_unseal():
         unseal_keys = keys_data.get("unseal_keys_b64", [])[:3]
 
     if len(unseal_keys) < 3:
-        console.print(f"[red]Error: Not enough unseal keys in {vault_keys_file}[/red]\n")
+        console.print(
+            f"[red]Error: Not enough unseal keys in {vault_keys_file}[/red]\n"
+        )
         return
 
     # Unseal with first 3 keys
@@ -2381,7 +2701,7 @@ def vault_unseal():
         console.print(f"[dim]Unsealing with key {i}/3...[/dim]")
         run_command(
             ["docker", "exec", "dev-vault", "vault", "operator", "unseal", key],
-            check=False
+            check=False,
         )
 
     console.print("\n[green]✓ Vault unsealed successfully[/green]\n")
@@ -2428,7 +2748,9 @@ def vault_token():
     token_file = VAULT_CONFIG_DIR / "root-token"
     if not token_file.exists():
         console.print("[red]Error: Root token file not found[/red]", file=sys.stderr)
-        console.print("[yellow]Run './devstack vault-init' first[/yellow]", file=sys.stderr)
+        console.print(
+            "[yellow]Run './devstack vault-init' first[/yellow]", file=sys.stderr
+        )
         sys.exit(1)
 
     # Print raw token to stdout (no formatting)
@@ -2459,22 +2781,25 @@ def vault_bootstrap():
         console.print("[yellow]Start with:[/yellow] ./devstack start\n")
         return
 
-    vault_bootstrap_script = SCRIPT_DIR / "configs" / "vault" / "scripts" / "vault-bootstrap.sh"
+    vault_bootstrap_script = (
+        SCRIPT_DIR / "configs" / "vault" / "scripts" / "vault-bootstrap.sh"
+    )
     if not vault_bootstrap_script.exists():
-        console.print(f"[red]Error: Vault bootstrap script not found at {vault_bootstrap_script}[/red]\n")
+        console.print(
+            f"[red]Error: Vault bootstrap script not found at {vault_bootstrap_script}[/red]\n"
+        )
         return
 
     # Set Vault environment variables
     token = get_vault_token()
     if not token:
-        console.print("[red]Error: VAULT_TOKEN not set and root token file not found[/red]")
+        console.print(
+            "[red]Error: VAULT_TOKEN not set and root token file not found[/red]"
+        )
         console.print("[yellow]Run './devstack vault-init' first[/yellow]\n")
         return
 
-    env = {
-        "VAULT_ADDR": "http://localhost:8200",
-        "VAULT_TOKEN": token
-    }
+    env = {"VAULT_ADDR": "http://localhost:8200", "VAULT_TOKEN": token}
 
     console.print("[yellow]Running Vault PKI and secrets bootstrap...[/yellow]\n")
     run_command(["bash", str(vault_bootstrap_script)], env=env)
@@ -2484,19 +2809,43 @@ def vault_bootstrap():
     forgejo_sql = SCRIPT_DIR / "configs" / "postgres" / "02-create-forgejo-db.sql"
     if forgejo_sql.exists():
         returncode, _, _ = run_command(
-            ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "devuser", "-d", "postgres"],
+            [
+                "docker",
+                "compose",
+                "exec",
+                "-T",
+                "postgres",
+                "psql",
+                "-U",
+                "devuser",
+                "-d",
+                "postgres",
+            ],
             check=False,
-            capture=True
+            capture=True,
         )
         if returncode == 0:
             # SQL file exists for reference but not used in automated initialization
             run_command(
-                ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "devuser", "-d", "postgres"],
-                check=False
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "-T",
+                    "postgres",
+                    "psql",
+                    "-U",
+                    "devuser",
+                    "-d",
+                    "postgres",
+                ],
+                check=False,
             )
             console.print("[green]✓ Forgejo database created successfully[/green]")
         else:
-            console.print("[yellow]⚠ Forgejo database may already exist or PostgreSQL is not ready[/yellow]")
+            console.print(
+                "[yellow]⚠ Forgejo database may already exist or PostgreSQL is not ready[/yellow]"
+            )
 
     console.print("\n[green]✓ Vault bootstrap completed[/green]\n")
 
@@ -2521,8 +2870,12 @@ def vault_ca_cert():
     ca_file = VAULT_CONFIG_DIR / "ca" / "ca-chain.pem"
 
     if not ca_file.exists():
-        console.print(f"[red]Error: CA certificate not found at: {ca_file}[/red]", file=sys.stderr)
-        console.print("[yellow]Run './devstack vault-bootstrap' first[/yellow]", file=sys.stderr)
+        console.print(
+            f"[red]Error: CA certificate not found at: {ca_file}[/red]", file=sys.stderr
+        )
+        console.print(
+            "[yellow]Run './devstack vault-bootstrap' first[/yellow]", file=sys.stderr
+        )
         sys.exit(1)
 
     # Print raw certificate to stdout (no formatting)
@@ -2579,10 +2932,21 @@ def vault_show_password(service: str):
       - Redis nodes share the same password (stored in secret/redis-1)
     """
     # Validate service
-    valid_services = ["postgres", "mysql", "redis-1", "redis-2", "redis-3", "rabbitmq", "mongodb", "forgejo"]
+    valid_services = [
+        "postgres",
+        "mysql",
+        "redis-1",
+        "redis-2",
+        "redis-3",
+        "rabbitmq",
+        "mongodb",
+        "forgejo",
+    ]
     if service not in valid_services:
         console.print(f"[red]Error: Invalid service '{service}'[/red]")
-        console.print(f"\n[yellow]Available services:[/yellow] {', '.join(valid_services)}\n")
+        console.print(
+            f"\n[yellow]Available services:[/yellow] {', '.join(valid_services)}\n"
+        )
         sys.exit(1)
 
     # Get token
@@ -2600,24 +2964,42 @@ def vault_show_password(service: str):
         console.print(f"[cyan]Fetching credentials for service: {service}[/cyan]\n")
 
         _, admin_user, _ = run_command(
-            ["docker", "exec", "dev-vault", "sh", "-c",
-             f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_user secret/{service}"],
+            [
+                "docker",
+                "exec",
+                "dev-vault",
+                "sh",
+                "-c",
+                f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_user secret/{service}",
+            ],
             capture=True,
-            check=False
+            check=False,
         )
 
         _, admin_email, _ = run_command(
-            ["docker", "exec", "dev-vault", "sh", "-c",
-             f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_email secret/{service}"],
+            [
+                "docker",
+                "exec",
+                "dev-vault",
+                "sh",
+                "-c",
+                f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_email secret/{service}",
+            ],
             capture=True,
-            check=False
+            check=False,
         )
 
         _, password, _ = run_command(
-            ["docker", "exec", "dev-vault", "sh", "-c",
-             f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_password secret/{service}"],
+            [
+                "docker",
+                "exec",
+                "dev-vault",
+                "sh",
+                "-c",
+                f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=admin_password secret/{service}",
+            ],
             capture=True,
-            check=False
+            check=False,
         )
 
         admin_user = admin_user.strip()
@@ -2625,8 +3007,12 @@ def vault_show_password(service: str):
         password = password.strip()
 
         if not admin_user or admin_user == "null" or not password or password == "null":
-            console.print(f"[red]Error: Could not retrieve credentials for {service}[/red]")
-            console.print(f"[yellow]Make sure credentials exist: vault kv get secret/{service}[/yellow]\n")
+            console.print(
+                f"[red]Error: Could not retrieve credentials for {service}[/red]"
+            )
+            console.print(
+                f"[yellow]Make sure credentials exist: vault kv get secret/{service}[/yellow]\n"
+            )
             sys.exit(1)
 
         console.print("[green]✓ Forgejo Admin Credentials:[/green]")
@@ -2638,17 +3024,27 @@ def vault_show_password(service: str):
         console.print(f"[cyan]Fetching password for service: {service}[/cyan]\n")
 
         _, password, _ = run_command(
-            ["docker", "exec", "dev-vault", "sh", "-c",
-             f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=password secret/{service}"],
+            [
+                "docker",
+                "exec",
+                "dev-vault",
+                "sh",
+                "-c",
+                f"export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=password secret/{service}",
+            ],
             capture=True,
-            check=False
+            check=False,
         )
 
         password = password.strip()
 
         if not password or password == "null":
-            console.print(f"[red]Error: Could not retrieve password for {service}[/red]")
-            console.print("[yellow]Make sure the service exists in Vault: vault kv list secret/[/yellow]\n")
+            console.print(
+                f"[red]Error: Could not retrieve password for {service}[/red]"
+            )
+            console.print(
+                "[yellow]Make sure the service exists in Vault: vault kv list secret/[/yellow]\n"
+            )
             sys.exit(1)
 
         console.print(f"[green]✓ Password for {service}:[/green]")
@@ -2677,7 +3073,7 @@ def forgejo_init():
     returncode, stdout, _ = run_command(
         ["docker", "compose", "ps", "forgejo", "--format", "json"],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode != 0 or "running" not in stdout.lower():
@@ -2689,7 +3085,7 @@ def forgejo_init():
 
     returncode, _, _ = run_command(
         ["docker", "compose", "exec", "forgejo", "/usr/local/bin/forgejo-bootstrap.sh"],
-        check=False
+        check=False,
     )
 
     if returncode == 0:
@@ -2711,26 +3107,36 @@ def redis_cluster_init():
     returncode, stdout, _ = run_command(
         ["docker", "ps", "--filter", "name=dev-redis-1", "--format", "{{.Names}}"],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode != 0 or "dev-redis-1" not in stdout:
         console.print("[red]Error: Redis containers are not running[/red]")
-        console.print("[yellow]Start with: ./devstack start --profile standard[/yellow]\n")
+        console.print(
+            "[yellow]Start with: ./devstack start --profile standard[/yellow]\n"
+        )
         return
 
     # Get Redis password from Vault
     if not check_vault_token():
         console.print("[yellow]Warning: Vault token not found[/yellow]")
-        console.print("[yellow]Cannot initialize cluster without Vault credentials[/yellow]\n")
+        console.print(
+            "[yellow]Cannot initialize cluster without Vault credentials[/yellow]\n"
+        )
         return
 
     # Retrieve password from Vault (using token from inside container)
     returncode, redis_password, _ = run_command(
-        ["docker", "exec", "dev-vault", "sh", "-c",
-         "export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=password secret/redis-1"],
+        [
+            "docker",
+            "exec",
+            "dev-vault",
+            "sh",
+            "-c",
+            "export VAULT_TOKEN=$(cat /vault-keys/root-token) && vault kv get -field=password secret/redis-1",
+        ],
         capture=True,
-        check=False
+        check=False,
     )
 
     if returncode != 0:
@@ -2741,16 +3147,24 @@ def redis_cluster_init():
     redis_password = redis_password.strip()
 
     # Call the bash script with the password
-    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "configs", "redis", "scripts", "redis-cluster-init.sh")
+    script_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "configs",
+        "redis",
+        "scripts",
+        "redis-cluster-init.sh",
+    )
     returncode, stdout, stderr = run_command(
         ["bash", script_path],
         capture=False,
         check=False,
-        env={"REDIS_PASSWORD": redis_password}
+        env={"REDIS_PASSWORD": redis_password},
     )
 
     if returncode != 0:
-        console.print(f"[red]Error: Redis cluster initialization failed (exit code {returncode})[/red]\n")
+        console.print(
+            f"[red]Error: Redis cluster initialization failed (exit code {returncode})[/red]\n"
+        )
     else:
         console.print()  # Extra newline for spacing
 

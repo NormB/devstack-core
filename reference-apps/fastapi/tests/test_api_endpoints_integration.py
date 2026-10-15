@@ -114,8 +114,10 @@ class TestMetricsEndpoint:
 
             assert response.status_code == 200
             # Prometheus metrics use text/plain
-            assert "text/plain" in response.headers["content-type"] or \
-                   "text" in response.headers["content-type"]
+            assert (
+                "text/plain" in response.headers["content-type"]
+                or "text" in response.headers["content-type"]
+            )
 
 
 @pytest.mark.integration
@@ -165,8 +167,8 @@ class TestCORSHeaders:
                 "/health/",
                 headers={
                     "Origin": "http://localhost:3000",
-                    "Access-Control-Request-Method": "GET"
-                }
+                    "Access-Control-Request-Method": "GET",
+                },
             )
 
             # Preflight should return 200
@@ -218,8 +220,10 @@ class TestInputValidation:
                 response = client.get(f"/examples/cache/{invalid_key}")
 
                 # Should return validation error
-                assert response.status_code in [400, 422], \
-                    f"Invalid key should be rejected: {invalid_key}"
+                assert response.status_code in [
+                    400,
+                    422,
+                ], f"Invalid key should be rejected: {invalid_key}"
 
             # Note: Slashes in path parameters are handled by routing before validation,
             # so "key/with/slashes" results in 404 (not found route) rather than 422 (validation error)
@@ -228,10 +232,7 @@ class TestInputValidation:
         """Test messaging endpoint validates payload."""
         with TestClient(app) as client:
             # Test with missing fields
-            response = client.post(
-                "/examples/messaging/publish",
-                json={}
-            )
+            response = client.post("/examples/messaging/publish", json={})
 
             # Should return validation error
             assert response.status_code == 422
@@ -245,13 +246,17 @@ class TestInputValidation:
             # then fails when trying to fetch that secret from Vault (503)
             invalid_names_with_expected_codes = [
                 ("invalid service", [400, 422]),  # Validation error for space
-                ("service/name", [404, 503]),     # Routes to different endpoint, then fails
-                ("service@name", [400, 422]),     # Validation error for @
-                ("", [404, 422]),                 # Empty string - routing or validation error
+                (
+                    "service/name",
+                    [404, 503],
+                ),  # Routes to different endpoint, then fails
+                ("service@name", [400, 422]),  # Validation error for @
+                ("", [404, 422]),  # Empty string - routing or validation error
             ]
 
             for invalid_name, expected_codes in invalid_names_with_expected_codes:
                 response = client.get(f"/examples/vault/secret/{invalid_name}")
 
-                assert response.status_code in expected_codes, \
-                    f"Invalid service name '{invalid_name}' returned {response.status_code}, expected one of {expected_codes}"
+                assert (
+                    response.status_code in expected_codes
+                ), f"Invalid service name '{invalid_name}' returned {response.status_code}, expected one of {expected_codes}"

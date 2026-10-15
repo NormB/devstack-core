@@ -20,7 +20,7 @@ from app.exceptions import (
     AuthenticationError,
     RateLimitError,
     CircuitBreakerError,
-    TimeoutError
+    TimeoutError,
 )
 
 
@@ -32,9 +32,7 @@ class TestBaseAPIException:
     def test_base_exception_creation(self):
         """Test creating a base API exception"""
         exc = BaseAPIException(
-            message="Test error",
-            status_code=500,
-            details={"key": "value"}
+            message="Test error", status_code=500, details={"key": "value"}
         )
         assert exc.message == "Test error"
         assert exc.status_code == 500
@@ -49,9 +47,7 @@ class TestBaseAPIException:
     def test_base_exception_to_dict(self):
         """Test converting exception to dictionary"""
         exc = BaseAPIException(
-            message="Test error",
-            status_code=400,
-            details={"field": "test"}
+            message="Test error", status_code=400, details={"field": "test"}
         )
         result = exc.to_dict()
         assert result["error"] == "BaseAPIException"
@@ -81,18 +77,14 @@ class TestServiceUnavailableError:
     def test_service_unavailable_custom_message(self):
         """Test service unavailable with custom message"""
         exc = ServiceUnavailableError(
-            service_name="test-service",
-            message="Custom error message"
+            service_name="test-service", message="Custom error message"
         )
         assert exc.message == "Custom error message"
         assert exc.details["service"] == "test-service"
 
     def test_vault_unavailable_error(self):
         """Test Vault unavailable error"""
-        exc = VaultUnavailableError(
-            message="Vault is down",
-            secret_path="secret/test"
-        )
+        exc = VaultUnavailableError(message="Vault is down", secret_path="secret/test")
         assert exc.service_name == "vault"
         assert exc.message == "Vault is down"
         assert exc.details["secret_path"] == "secret/test"
@@ -106,8 +98,7 @@ class TestServiceUnavailableError:
     def test_database_connection_error(self):
         """Test database connection error"""
         exc = DatabaseConnectionError(
-            database_type="postgres",
-            message="Connection failed"
+            database_type="postgres", message="Connection failed"
         )
         assert exc.database_type == "postgres"
         assert exc.message == "Connection failed"
@@ -122,10 +113,7 @@ class TestServiceUnavailableError:
 
     def test_message_queue_error(self):
         """Test message queue error"""
-        exc = MessageQueueError(
-            message="Queue publish failed",
-            queue_name="test-queue"
-        )
+        exc = MessageQueueError(message="Queue publish failed", queue_name="test-queue")
         assert exc.service_name == "rabbitmq"
         assert exc.details["queue_name"] == "test-queue"
 
@@ -137,10 +125,7 @@ class TestConfigurationError:
 
     def test_configuration_error(self):
         """Test configuration error"""
-        exc = ConfigurationError(
-            message="Missing config",
-            config_key="DATABASE_URL"
-        )
+        exc = ConfigurationError(message="Missing config", config_key="DATABASE_URL")
         assert exc.config_key == "DATABASE_URL"
         assert exc.message == "Missing config"
         assert exc.details["config_key"] == "DATABASE_URL"
@@ -154,10 +139,7 @@ class TestValidationError:
 
     def test_validation_error(self):
         """Test validation error"""
-        exc = ValidationError(
-            message="Invalid input",
-            field="email"
-        )
+        exc = ValidationError(message="Invalid input", field="email")
         assert exc.field == "email"
         assert exc.message == "Invalid input"
         assert exc.details["field"] == "email"
@@ -171,10 +153,7 @@ class TestResourceNotFoundError:
 
     def test_resource_not_found(self):
         """Test resource not found error"""
-        exc = ResourceNotFoundError(
-            resource_type="secret",
-            resource_id="postgres"
-        )
+        exc = ResourceNotFoundError(resource_type="secret", resource_id="postgres")
         assert exc.resource_type == "secret"
         assert exc.resource_id == "postgres"
         assert "secret" in exc.message
@@ -186,7 +165,7 @@ class TestResourceNotFoundError:
         exc = ResourceNotFoundError(
             resource_type="user",
             resource_id="123",
-            message="User not found in database"
+            message="User not found in database",
         )
         assert exc.message == "User not found in database"
         assert exc.details["resource_type"] == "user"
@@ -223,10 +202,7 @@ class TestRateLimitError:
 
     def test_rate_limit_error_with_retry_after(self):
         """Test rate limit error with retry_after"""
-        exc = RateLimitError(
-            message="Too many requests",
-            retry_after=60
-        )
+        exc = RateLimitError(message="Too many requests", retry_after=60)
         assert exc.retry_after == 60
         assert exc.details["retry_after"] == 60
 
@@ -252,10 +228,7 @@ class TestTimeoutError:
 
     def test_timeout_error(self):
         """Test timeout error"""
-        exc = TimeoutError(
-            operation="database_query",
-            timeout_seconds=5.0
-        )
+        exc = TimeoutError(operation="database_query", timeout_seconds=5.0)
         assert exc.operation == "database_query"
         assert exc.timeout_seconds == 5.0
         assert "database_query" in exc.message
@@ -265,9 +238,7 @@ class TestTimeoutError:
     def test_timeout_error_custom_message(self):
         """Test timeout error with custom message"""
         exc = TimeoutError(
-            operation="api_call",
-            timeout_seconds=10.0,
-            message="External API timeout"
+            operation="api_call", timeout_seconds=10.0, message="External API timeout"
         )
         assert exc.message == "External API timeout"
         assert exc.details["operation"] == "api_call"
@@ -293,7 +264,7 @@ class TestExceptionHierarchy:
             AuthenticationError(),
             RateLimitError(),
             CircuitBreakerError("service"),
-            TimeoutError("op", 5.0)
+            TimeoutError("op", 5.0),
         ]
 
         for exc in exceptions:
@@ -306,7 +277,7 @@ class TestExceptionHierarchy:
             VaultUnavailableError(),
             DatabaseConnectionError("postgres"),
             CacheConnectionError(),
-            MessageQueueError()
+            MessageQueueError(),
             # Note: CircuitBreakerError intentionally inherits from BaseAPIException
             # not ServiceUnavailableError, as it's a protective measure, not a service error
         ]
@@ -358,7 +329,7 @@ class TestExceptionHelpers:
         exc = RateLimitError(
             message="Too many requests",
             retry_after=30,
-            details={"limit": 100, "window": 60}
+            details={"limit": 100, "window": 60},
         )
         result = exc.to_dict()
 

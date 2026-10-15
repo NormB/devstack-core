@@ -17,15 +17,19 @@ class TestPathValidation:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_valid_path_parameter(self, client):
         """Test that valid path parameters are accepted"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.return_value = {"user": "test", "password": "test"}
 
             response = client.get("/examples/vault/secret/postgres")
@@ -41,10 +45,12 @@ class TestPathValidation:
         # Should return 400 or 404 (depending on validation logic)
         assert response.status_code in [400, 404]
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_special_characters_in_path(self, client):
         """Test handling of special characters in path parameters"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.return_value = {"key": "value"}
 
             # Test with URL-encoded special characters
@@ -60,8 +66,10 @@ class TestContentTypeValidation:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -70,7 +78,7 @@ class TestContentTypeValidation:
         response = client.post(
             "/examples/vault/secret/test",
             json={"key": "value"},
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         # Should accept JSON content type (even if endpoint doesn't exist)
@@ -82,7 +90,7 @@ class TestContentTypeValidation:
         response = client.post(
             "/examples/vault/secret/test",
             data="not json",
-            headers={"Content-Type": "text/plain"}
+            headers={"Content-Type": "text/plain"},
         )
 
         # May reject invalid content type or return 405 if method not allowed
@@ -95,8 +103,10 @@ class TestRequestSizeValidation:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -111,10 +121,7 @@ class TestRequestSizeValidation:
         # Create a large payload
         large_payload = {"data": "x" * 1000000}  # 1MB of data
 
-        response = client.post(
-            "/examples/vault/secret/test",
-            json=large_payload
-        )
+        response = client.post("/examples/vault/secret/test", json=large_payload)
 
         # Should handle large requests (may accept or reject based on limits)
         assert response.status_code in [200, 400, 404, 405, 413]
@@ -126,15 +133,19 @@ class TestInputSanitization:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_sql_injection_attempt(self, client):
         """Test that SQL injection attempts are handled"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.return_value = {"key": "value"}
 
             # Attempt SQL injection in path parameter
@@ -143,7 +154,9 @@ class TestInputSanitization:
             # Should handle safely (either sanitize or return error)
             assert response.status_code in [200, 400, 404]
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_xss_attempt(self, client):
         """Test that XSS attempts are handled"""
         # Attempt XSS in query parameter
@@ -159,19 +172,25 @@ class TestCORSConfiguration:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_cors_headers_present(self, client):
         """Test that CORS headers are present in response"""
         response = client.get("/health/")
 
         # Check for CORS headers
-        assert "access-control-allow-origin" in response.headers or \
-               "Access-Control-Allow-Origin" in response.headers
+        assert (
+            "access-control-allow-origin" in response.headers
+            or "Access-Control-Allow-Origin" in response.headers
+        )
 
     def test_preflight_request(self, client):
         """Test CORS preflight (OPTIONS) request"""
@@ -179,8 +198,8 @@ class TestCORSConfiguration:
             "/health/",
             headers={
                 "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": "GET"
-            }
+                "Access-Control-Request-Method": "GET",
+            },
         )
 
         # Should return 200 for OPTIONS preflight
@@ -188,15 +207,14 @@ class TestCORSConfiguration:
 
     def test_cors_allowed_origin(self, client):
         """Test that allowed origins are accepted"""
-        response = client.get(
-            "/health/",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/health/", headers={"Origin": "http://localhost:3000"})
 
         assert response.status_code == 200
         # Should include CORS headers
-        assert "access-control-allow-origin" in response.headers or \
-               "Access-Control-Allow-Origin" in response.headers
+        assert (
+            "access-control-allow-origin" in response.headers
+            or "Access-Control-Allow-Origin" in response.headers
+        )
 
 
 @pytest.mark.integration
@@ -205,8 +223,10 @@ class TestRateLimiting:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -250,8 +270,10 @@ class TestValidationMiddlewareIntegration:
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -266,16 +288,18 @@ class TestValidationMiddlewareIntegration:
         data = response.json()
         assert "detail" in data or "error" in data
 
-    @pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+    @pytest.mark.skip(
+        reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+    )
     def test_multiple_validations_on_single_request(self, client):
         """Test that multiple validation rules can be applied"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_get:
+        with patch("app.services.vault.vault_client.get_secret") as mock_get:
             mock_get.return_value = {"key": "value"}
 
             # Valid request should pass all validations
             response = client.get(
                 "/examples/vault/secret/postgres",
-                headers={"Accept": "application/json"}
+                headers={"Accept": "application/json"},
             )
 
             # Should succeed or return proper error

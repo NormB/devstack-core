@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     # Vault
     VAULT_ADDR: str = os.getenv("VAULT_ADDR", "http://vault:8200")
     VAULT_TOKEN: str = os.getenv("VAULT_TOKEN", "")
-    VAULT_APPROLE_DIR: str = os.getenv("VAULT_APPROLE_DIR", "/vault-approles/reference-api")
+    VAULT_APPROLE_DIR: str = os.getenv(
+        "VAULT_APPROLE_DIR", "/vault-approles/reference-api"
+    )
 
     # Service endpoints (internal Docker network)
     POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "postgres")
@@ -38,7 +40,9 @@ class Settings(BaseSettings):
     RABBITMQ_PORT: int = int(os.getenv("RABBITMQ_PORT", "5672"))
 
     # Redis Cluster nodes
-    REDIS_NODES: str = os.getenv("REDIS_NODES", "redis-1:6379,redis-2:6379,redis-3:6379")
+    REDIS_NODES: str = os.getenv(
+        "REDIS_NODES", "redis-1:6379,redis-2:6379,redis-3:6379"
+    )
 
     class Config:
         env_file = ".env"

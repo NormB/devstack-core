@@ -12,21 +12,25 @@ from app.main import app
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestRedisClusterNodes:
     """Test Redis cluster nodes endpoint"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_cluster_nodes_success(self, client):
         """Test successful cluster nodes retrieval"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
@@ -49,7 +53,7 @@ class TestRedisClusterNodes:
 
     def test_cluster_nodes_vault_failure(self, client):
         """Test cluster nodes when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/redis-cluster/cluster/nodes")
@@ -60,8 +64,8 @@ class TestRedisClusterNodes:
 
     def test_cluster_nodes_redis_failure(self, client):
         """Test cluster nodes when Redis connection fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
                 mock_redis_class.side_effect = Exception("Connection refused")
 
@@ -73,8 +77,8 @@ class TestRedisClusterNodes:
 
     def test_cluster_nodes_parsing(self, client):
         """Test cluster nodes parsing with replicas"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
@@ -96,28 +100,32 @@ class TestRedisClusterNodes:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestRedisClusterSlots:
     """Test Redis cluster slots endpoint"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_cluster_slots_success(self, client):
         """Test successful cluster slots retrieval"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
                 mock_client.execute_command.return_value = [
                     [0, 5460, [b"127.0.0.1", 6379, b"abc123"]],
                     [5461, 10922, [b"127.0.0.1", 6380, b"def456"]],
-                    [10923, 16383, [b"127.0.0.1", 6381, b"ghi789"]]
+                    [10923, 16383, [b"127.0.0.1", 6381, b"ghi789"]],
                 ]
                 mock_client.close = AsyncMock()
                 mock_redis_class.return_value = mock_client
@@ -134,13 +142,18 @@ class TestRedisClusterSlots:
 
     def test_cluster_slots_with_replicas(self, client):
         """Test cluster slots parsing with replicas"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
                 mock_client.execute_command.return_value = [
-                    [0, 5460, [b"127.0.0.1", 6379, b"abc123"], [b"127.0.0.1", 6384, b"replica1"]]
+                    [
+                        0,
+                        5460,
+                        [b"127.0.0.1", 6379, b"abc123"],
+                        [b"127.0.0.1", 6384, b"replica1"],
+                    ]
                 ]
                 mock_client.close = AsyncMock()
                 mock_redis_class.return_value = mock_client
@@ -152,11 +165,13 @@ class TestRedisClusterSlots:
                 assert data["status"] == "success"
                 assert len(data["slot_distribution"]) == 1
                 assert len(data["slot_distribution"][0]["replicas"]) == 1
-                assert data["slot_distribution"][0]["replicas"][0]["node_id"] == "replica1"
+                assert (
+                    data["slot_distribution"][0]["replicas"][0]["node_id"] == "replica1"
+                )
 
     def test_cluster_slots_vault_failure(self, client):
         """Test cluster slots when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/redis-cluster/cluster/slots")
@@ -167,8 +182,8 @@ class TestRedisClusterSlots:
 
     def test_cluster_slots_redis_failure(self, client):
         """Test cluster slots when Redis connection fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
                 mock_redis_class.side_effect = Exception("Connection timeout")
 
@@ -180,21 +195,25 @@ class TestRedisClusterSlots:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestRedisClusterInfo:
     """Test Redis cluster info endpoint"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_cluster_info_success(self, client):
         """Test successful cluster info retrieval"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
@@ -223,7 +242,7 @@ class TestRedisClusterInfo:
 
     def test_cluster_info_vault_failure(self, client):
         """Test cluster info when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/redis-cluster/cluster/info")
@@ -234,8 +253,8 @@ class TestRedisClusterInfo:
 
     def test_cluster_info_redis_failure(self, client):
         """Test cluster info when Redis connection fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
                 mock_redis_class.side_effect = Exception("Cannot connect")
 
@@ -247,21 +266,25 @@ class TestRedisClusterInfo:
 
 
 @pytest.mark.unit
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestRedisNodeInfo:
     """Test Redis node info endpoint"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
     def test_node_info_success(self, client):
         """Test successful node info retrieval"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
 
                 mock_client = AsyncMock()
@@ -269,7 +292,7 @@ class TestRedisNodeInfo:
                     "redis_version": "7.0.0",
                     "uptime_in_seconds": 12345,
                     "used_memory": 1048576,
-                    "role": "master"
+                    "role": "master",
                 }
                 mock_client.close = AsyncMock()
                 mock_redis_class.return_value = mock_client
@@ -294,7 +317,7 @@ class TestRedisNodeInfo:
 
     def test_node_info_vault_failure(self, client):
         """Test node info when Vault fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
             mock_vault.side_effect = Exception("Vault unavailable")
 
             response = client.get("/examples/redis-cluster/nodes/redis-1/info")
@@ -305,8 +328,8 @@ class TestRedisNodeInfo:
 
     def test_node_info_redis_failure(self, client):
         """Test node info when Redis connection fails"""
-        with patch('app.services.vault.vault_client.get_secret') as mock_vault:
-            with patch('app.routers.redis_cluster.redis.Redis') as mock_redis_class:
+        with patch("app.services.vault.vault_client.get_secret") as mock_vault:
+            with patch("app.routers.redis_cluster.redis.Redis") as mock_redis_class:
                 mock_vault.return_value = {"password": "test_pass"}
                 mock_redis_class.side_effect = Exception("Connection refused")
 
@@ -318,14 +341,18 @@ class TestRedisNodeInfo:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)")
+@pytest.mark.skip(
+    reason="Integration test requires real infrastructure or alternative testing approach (TestClient incompatible with complex middleware stack)"
+)
 class TestRedisClusterIntegration:
     """Integration tests for Redis cluster endpoints"""
 
     def client(self):
         """Create test client"""
-        with patch('app.middleware.cache.FastAPICache.init'):
-            with patch('app.middleware.cache.FastAPICache.get_coder', return_value=MagicMock()):
+        with patch("app.middleware.cache.FastAPICache.init"):
+            with patch(
+                "app.middleware.cache.FastAPICache.get_coder", return_value=MagicMock()
+            ):
                 with TestClient(app) as test_client:
                     yield test_client
 
@@ -335,7 +362,7 @@ class TestRedisClusterIntegration:
             "/examples/redis-cluster/cluster/nodes",
             "/examples/redis-cluster/cluster/slots",
             "/examples/redis-cluster/cluster/info",
-            "/examples/redis-cluster/nodes/redis-1/info"
+            "/examples/redis-cluster/nodes/redis-1/info",
         ]
 
         for endpoint in endpoints:
@@ -349,7 +376,7 @@ class TestRedisClusterIntegration:
             "/examples/redis-cluster/cluster/nodes",
             "/examples/redis-cluster/cluster/slots",
             "/examples/redis-cluster/cluster/info",
-            "/examples/redis-cluster/nodes/redis-1/info"
+            "/examples/redis-cluster/nodes/redis-1/info",
         ]
 
         for endpoint in endpoints:

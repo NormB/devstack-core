@@ -4,9 +4,11 @@ Test rate limiting functionality
 import pytest
 from fastapi.testclient import TestClient
 
+
 # Import will be done dynamically to avoid import errors during initial setup
 def get_client():
     from app.main import app
+
     return TestClient(app)
 
 
