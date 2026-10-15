@@ -70,9 +70,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-!scripts/lib/
-lib64/
+# Python build output at the top level only; scripts/lib/ and tests/lib/
+# hold tracked shell libraries.
+/lib/
+/lib64/
 parts/
 sdist/
 var/
