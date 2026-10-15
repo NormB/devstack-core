@@ -123,7 +123,7 @@ print_test "AppRole adoption count matches vault-approle-bootstrap.sh"
 
 # Count services in SERVICES array
 APPROLE_COUNT=$(awk '/^SERVICES=\(/,/^\)/' scripts/vault-approle-bootstrap.sh | \
-    grep '    "' | wc -l | tr -d ' ')
+    grep -E '^[[:space:]]+"' | wc -l | tr -d ' ')
 
 EXPECTED_APPROLE=15
 
@@ -160,7 +160,7 @@ print_test "Every AppRole in vault-approle-bootstrap.sh is wired into docker-com
 # bootstrap does not create. A count cannot see either mistake: the redis and
 # redis-exporter nodes share YAML anchors, so one line serves three services.
 BOOTSTRAP_APPROLES=$(awk '/^SERVICES=\(/,/^\)/' scripts/vault-approle-bootstrap.sh | \
-    grep '    "' | tr -d ' "' | grep -v '^management$' | sort)
+    grep -E '^[[:space:]]+"' | tr -d ' "' | grep -v '^management$' | sort)
 COMPOSE_APPROLES=$(grep -oE '/vault-approles/[a-z0-9-]+' docker-compose.yml | \
     sed 's|/vault-approles/||' | sort -u)
 NOT_IN_COMPOSE=$(comm -23 <(echo "$BOOTSTRAP_APPROLES") <(echo "$COMPOSE_APPROLES") | tr '\n' ' ')
