@@ -352,7 +352,7 @@ esac
 echo "Credentials fetched successfully using root token"
 
 # Execute original entrypoint and pass through command args from docker-compose.yml
-# The "$@" passes all arguments that Docker provides from the command: section
+# The "\$@" passes all arguments that Docker provides from the command: section
 exec $service_entrypoint "\$@"
 EOFINIT
 

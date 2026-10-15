@@ -114,8 +114,9 @@ log() {
 # Check dependencies
 check_dependencies() {
   local missing=()
+  local required=(openssl)
 
-  for cmd in openssl; do
+  for cmd in "${required[@]}"; do
     if ! command -v "$cmd" &> /dev/null; then
       missing+=("$cmd")
     fi

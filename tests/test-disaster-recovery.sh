@@ -83,6 +83,19 @@ end_timer() {
   echo "$elapsed"
 }
 
+# Count the entries in a directory whose names are backup timestamps
+# (YYYYMMDD_HHMMSS)
+count_backups() {
+  local count=0
+  local entry
+  for entry in "$1"/*; do
+    if [[ "${entry##*/}" =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
+      count=$((count + 1))
+    fi
+  done
+  echo "$count"
+}
+
 format_time() {
   local seconds="$1"
   local minutes=$((seconds / 60))
@@ -162,6 +175,7 @@ create_test_backup() {
     # Copy latest backup to test directory
     if [[ -d "$BACKUP_DIR" ]]; then
       local latest_backup
+      # shellcheck disable=SC2010 # ls -t orders by modification time, which a glob cannot; the regex admits only timestamp names
       latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1) || true
       if [[ -n "$latest_backup" ]]; then
         cp -r "${BACKUP_DIR}/${latest_backup}" "${TEST_BACKUP_DIR}/databases/"
@@ -265,6 +279,7 @@ test_database_backup_restore() {
 
   # Verify backup was created
   local latest_backup
+  # shellcheck disable=SC2010 # ls -t orders by modification time, which a glob cannot; the regex admits only timestamp names
   latest_backup=$(ls -t "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | head -1) || true
 
   if [[ -n "$latest_backup" ]]; then
@@ -364,7 +379,7 @@ test_complete_environment_recovery() {
   log_info "Step 6/$total_steps: Database restoration..."
   if [[ -d "$BACKUP_DIR" ]]; then
     local backup_count
-    backup_count=$(ls -1 "$BACKUP_DIR" | grep -E '^[0-9]{8}_[0-9]{6}$' | wc -l) || true
+    backup_count=$(count_backups "$BACKUP_DIR")
     steps_completed=$((steps_completed + 1))
     log_success "✓ Database backups available ($backup_count)"
   else
@@ -568,7 +583,7 @@ test_backup_automation() {
   # Check if backups directory exists
   if [[ -d "$BACKUP_DIR" ]]; then
     local backup_count
-    backup_count=$(ls -1 "$BACKUP_DIR" 2> /dev/null | grep -E '^[0-9]{8}_[0-9]{6}$' | wc -l) || true
+    backup_count=$(count_backups "$BACKUP_DIR")
     log_success "✓ Backups directory exists ($backup_count backups)"
   else
     log_warning "Backups directory not found"

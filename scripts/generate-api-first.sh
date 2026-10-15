@@ -447,8 +447,13 @@ EOF
   # Create __init__.py
   echo '"""API routers generated from OpenAPI specification."""' > "$routers_dir/__init__.py"
 
-  local router_count
-  router_count=$(ls -1 "$routers_dir"/*.py 2> /dev/null | grep -v __init__ | wc -l || echo "0") || true
+  local router_count=0
+  local router_file
+  for router_file in "$routers_dir"/*.py; do
+    if [[ -e "$router_file" && "$router_file" != *__init__* ]]; then
+      router_count=$((router_count + 1))
+    fi
+  done
   success "Generated $router_count router stubs"
 
   return 0

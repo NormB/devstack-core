@@ -115,8 +115,9 @@ check_markdown_files() {
   while IFS= read -r file; do
     md_files+=("$file")
   done < <(cd "$PROJECT_ROOT" &&
-    ls -1 *.md .github/*.md docs/*.md reference-apps/*.md reference-apps/*/*.md tests/*.md 2> /dev/null |
-    grep -v node_modules || true)
+    for file in *.md .github/*.md docs/*.md reference-apps/*.md reference-apps/*/*.md tests/*.md; do
+      [[ -e "$file" && "$file" != *node_modules* ]] && printf '%s\n' "$file"
+    done | sort || true)
 
   TOTAL_FILES=${#md_files[@]}
   print_info "Found $TOTAL_FILES markdown files to check"

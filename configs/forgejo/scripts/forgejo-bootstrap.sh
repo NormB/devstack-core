@@ -68,11 +68,13 @@ validate_inputs() {
   info "Validating configuration..."
 
   # Validate hostname format
+  # shellcheck disable=SC2154 # FORGEJO__server__DOMAIN is set in the forgejo service environment in docker-compose.yml
   if ! echo "$FORGEJO__server__DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
     error "Invalid FORGEJO__server__DOMAIN format: $FORGEJO__server__DOMAIN"
   fi
 
   # Validate database host format
+  # shellcheck disable=SC2154 # FORGEJO__database__HOST is set in the forgejo service environment in docker-compose.yml
   if ! echo "$FORGEJO__database__HOST" | grep -qE '^[a-zA-Z0-9._:-]+$'; then
     error "Invalid FORGEJO__database__HOST format: $FORGEJO__database__HOST"
   fi
