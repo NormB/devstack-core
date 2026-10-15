@@ -16,6 +16,7 @@ echo "=========================================="
 wait_for_vault() {
   echo "[INIT] Waiting for Vault to be ready..."
 
+  # shellcheck disable=SC3043 # busybox ash in the alpine runtime image supports local
   local retries=0
   while [ $retries -lt $MAX_RETRIES ]; do
     if wget -q --spider "${VAULT_ADDR}/v1/sys/health" 2> /dev/null; then

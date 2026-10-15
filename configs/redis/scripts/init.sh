@@ -85,7 +85,7 @@ VAULT_TOKEN="${VAULT_TOKEN}"
 SERVICE_NAME="${REDIS_NODE:-redis-1}"
 SERVICE_IP="${REDIS_IP}"
 CERT_DIR="/etc/redis/certs"
-ENABLE_TLS=""  # Will be read from Vault
+ENABLE_TLS="" # Will be read from Vault
 
 # Colors
 RED='\033[0;31m'
@@ -106,7 +106,7 @@ NC='\033[0m'
 # Outputs:
 #   Writes formatted info message to stdout
 #######################################
-info() { echo -e "${BLUE}[Redis Init]${NC} $1"; }
+info() { printf '%b\n' "${BLUE}[Redis Init]${NC} $1"; }
 
 #######################################
 # Print success message to stdout
@@ -120,7 +120,7 @@ info() { echo -e "${BLUE}[Redis Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted success message to stdout
 #######################################
-success() { echo -e "${GREEN}[Redis Init]${NC} $1"; }
+success() { printf '%b\n' "${GREEN}[Redis Init]${NC} $1"; }
 
 #######################################
 # Print warning message to stdout
@@ -134,7 +134,7 @@ success() { echo -e "${GREEN}[Redis Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted warning message to stdout
 #######################################
-warn() { echo -e "${YELLOW}[Redis Init]${NC} $1"; }
+warn() { printf '%b\n' "${YELLOW}[Redis Init]${NC} $1"; }
 
 #######################################
 # Print error message and exit script
@@ -148,7 +148,10 @@ warn() { echo -e "${YELLOW}[Redis Init]${NC} $1"; }
 # Outputs:
 #   Writes formatted error message to stdout, then exits
 #######################################
-error() { echo -e "${RED}[Redis Init]${NC} $1"; exit 1; }
+error() {
+  printf '%b\n' "${RED}[Redis Init]${NC} $1"
+  exit 1
+}
 
 #######################################
 # Wait for Vault service to become ready and responsive
@@ -169,21 +172,23 @@ error() { echo -e "${RED}[Redis Init]${NC} $1"; exit 1; }
 #   - Sleep interval: 2 seconds between attempts
 #######################################
 wait_for_vault() {
-    info "Waiting for Vault to be ready..."
+  info "Waiting for Vault to be ready..."
 
-    local max_attempts=60
-    local attempt=0
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
+  local max_attempts=60
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
+  local attempt=0
 
-    while [ $attempt -lt $max_attempts ]; do
-        if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2>/dev/null; then
-            success "Vault is ready"
-            return 0
-        fi
-        attempt=$((attempt + 1))
-        sleep 2
-    done
+  while [ $attempt -lt $max_attempts ]; do
+    if wget --spider -q --no-check-certificate "$VAULT_ADDR/v1/sys/health?standbyok=true" 2> /dev/null; then
+      success "Vault is ready"
+      return 0
+    fi
+    attempt=$((attempt + 1))
+    sleep 2
+  done
 
-    error "Vault did not become ready in time"
+  error "Vault did not become ready in time"
 }
 
 #######################################
@@ -212,32 +217,33 @@ wait_for_vault() {
 #   - Validates password is non-empty and not null
 #######################################
 fetch_credentials() {
-    info "Fetching credentials and TLS setting from Vault (service: $SERVICE_NAME)..."
+  info "Fetching credentials and TLS setting from Vault (service: $SERVICE_NAME)..."
 
-    # Install jq if not present
-    if ! command -v jq &> /dev/null; then
-        info "Installing jq for JSON parsing..."
-        apk add --no-cache jq > /dev/null 2>&1
-    fi
+  # Install jq if not present
+  if ! command -v jq > /dev/null 2>&1; then
+    info "Installing jq for JSON parsing..."
+    apk add --no-cache jq > /dev/null 2>&1
+  fi
 
-    local response
-    response=$(wget -qO- --no-check-certificate \
-        --header "X-Vault-Token: $VAULT_TOKEN" \
-        "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2>/dev/null) || true
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
+  local response
+  response=$(wget -qO- --no-check-certificate \
+    --header "X-Vault-Token: $VAULT_TOKEN" \
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME" 2> /dev/null) || true
 
-    if [ $? -ne 0 ] || [ -z "$response" ]; then
-        error "Failed to fetch credentials from Vault"
-    fi
+  if [ $? -ne 0 ] || [ -z "$response" ]; then
+    error "Failed to fetch credentials from Vault"
+  fi
 
-    REDIS_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
-    ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
-    export ENABLE_TLS
+  REDIS_PASSWORD=$(echo "$response" | jq -r '.data.data.password')
+  ENABLE_TLS=$(echo "$response" | jq -r '.data.data.tls_enabled // "false"') || true
+  export ENABLE_TLS
 
-    if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
-        error "Invalid password received from Vault"
-    fi
+  if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then
+    error "Invalid password received from Vault"
+  fi
 
-    success "Credentials fetched: tls_enabled=$ENABLE_TLS"
+  success "Credentials fetched: tls_enabled=$ENABLE_TLS"
 }
 
 #######################################
@@ -264,27 +270,27 @@ fetch_credentials() {
 #   - Checks both existence (-f) and readability (-r) of each file
 #######################################
 validate_certificates() {
-    if [ "$ENABLE_TLS" != "true" ]; then
-        info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
-        return 0
-    fi
+  if [ "$ENABLE_TLS" != "true" ]; then
+    info "TLS disabled (tls_enabled=false in Vault), skipping certificate validation"
+    return 0
+  fi
 
-    info "Validating pre-generated TLS certificates..."
+  info "Validating pre-generated TLS certificates..."
 
-    # Check if certificates exist and are readable
-    if [ ! -f "$CERT_DIR/redis.crt" ] || [ ! -r "$CERT_DIR/redis.crt" ]; then
-        error "TLS enabled but redis.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  # Check if certificates exist and are readable
+  if [ ! -f "$CERT_DIR/redis.crt" ] || [ ! -r "$CERT_DIR/redis.crt" ]; then
+    error "TLS enabled but redis.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/redis.key" ] || [ ! -r "$CERT_DIR/redis.key" ]; then
-        error "TLS enabled but redis.key not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/redis.key" ] || [ ! -r "$CERT_DIR/redis.key" ]; then
+    error "TLS enabled but redis.key not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -r "$CERT_DIR/ca.crt" ]; then
-        error "TLS enabled but ca.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
-    fi
+  if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -r "$CERT_DIR/ca.crt" ]; then
+    error "TLS enabled but ca.crt not found or not readable in $CERT_DIR/. Run scripts/generate-certificates.sh first."
+  fi
 
-    success "TLS certificates validated (pre-generated)"
+  success "TLS certificates validated (pre-generated)"
 }
 
 #######################################
@@ -317,48 +323,49 @@ validate_certificates() {
 #     → validate certs → exec redis-server
 #######################################
 main() {
-    info "Starting Redis initialization with Vault integration..."
-    info "Node: $SERVICE_NAME"
-    info ""
+  info "Starting Redis initialization with Vault integration..."
+  info "Node: $SERVICE_NAME"
+  info ""
 
-    # Check required environment variables and validate token format
-    if [ -z "$VAULT_TOKEN" ]; then
-        error "VAULT_TOKEN environment variable is required"
-    fi
+  # Check required environment variables and validate token format
+  if [ -z "$VAULT_TOKEN" ]; then
+    error "VAULT_TOKEN environment variable is required"
+  fi
 
-    if [ ${#VAULT_TOKEN} -lt 20 ]; then
-        error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
-    fi
+  if [ ${#VAULT_TOKEN} -lt 20 ]; then
+    error "VAULT_TOKEN must be at least 20 characters (current: ${#VAULT_TOKEN} chars)"
+  fi
 
-    if [ -z "$SERVICE_IP" ]; then
-        error "REDIS_IP environment variable is required"
-    fi
+  if [ -z "$SERVICE_IP" ]; then
+    error "REDIS_IP environment variable is required"
+  fi
 
-    # Wait for Vault
-    wait_for_vault
+  # Wait for Vault
+  wait_for_vault
 
-    # Fetch password and TLS setting from Vault
-    fetch_credentials
+  # Fetch password and TLS setting from Vault
+  fetch_credentials
 
-    # Validate pre-generated certificates if TLS is enabled
-    validate_certificates
+  # Validate pre-generated certificates if TLS is enabled
+  validate_certificates
 
-    info ""
-    success "Initialization complete, starting Redis..."
-    info ""
+  info ""
+  success "Initialization complete, starting Redis..."
+  info ""
 
-    # Create temporary config file with password (prevents password exposure in process listing)
-    local temp_config="/tmp/redis-password-$$.conf"
+  # Create temporary config file with password (prevents password exposure in process listing)
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
+  local temp_config="/tmp/redis-password-$$.conf"
 
-    # Remove old config file if it exists (from previous runs)
-    rm -f "$temp_config"
+  # Remove old config file if it exists (from previous runs)
+  rm -f "$temp_config"
 
-    touch "$temp_config"
-    chmod 600 "$temp_config"
+  touch "$temp_config"
+  chmod 600 "$temp_config"
 
-    # Include base config if it exists
-    if [ -f "/usr/local/etc/redis/redis.conf" ]; then
-        cat > "$temp_config" <<EOF
+  # Include base config if it exists
+  if [ -f "/usr/local/etc/redis/redis.conf" ]; then
+    cat > "$temp_config" << EOF
 # Auto-generated password configuration (temporary file)
 # Include base Redis configuration
 include /usr/local/etc/redis/redis.conf
@@ -367,40 +374,40 @@ include /usr/local/etc/redis/redis.conf
 requirepass $REDIS_PASSWORD
 masterauth $REDIS_PASSWORD
 EOF
-    else
-        cat > "$temp_config" <<EOF
+  else
+    cat > "$temp_config" << EOF
 # Auto-generated password configuration (temporary file)
 requirepass $REDIS_PASSWORD
 masterauth $REDIS_PASSWORD
 EOF
-    fi
+  fi
 
-    # Change ownership of temp config to redis user
-    chown redis:redis "$temp_config"
+  # Change ownership of temp config to redis user
+  chown redis:redis "$temp_config"
 
-    # Note: Certificate directory is mounted read-only from host,
-    # so we skip chown (certificates should be world-readable)
+  # Note: Certificate directory is mounted read-only from host,
+  # so we skip chown (certificates should be world-readable)
 
-    # Change to /data directory and fix permissions
-    cd /data
-    chown -R redis:redis /data
+  # Change to /data directory and fix permissions
+  cd /data
+  chown -R redis:redis /data
 
-    # Build Redis command with password config file
-    # Add TLS options if enabled (dual-mode: accepts both SSL and non-SSL)
-    # Use gosu to drop privileges to redis user
-    if [ "$ENABLE_TLS" = "true" ]; then
-        info "Starting Redis with TLS dual-mode (accepts both SSL on port ${REDIS_TLS_PORT:-6380} and non-SSL on ${REDIS_PORT:-6379})"
-        exec gosu redis redis-server "$temp_config" \
-            --port "${REDIS_PORT:-6379}" \
-            --tls-port "${REDIS_TLS_PORT:-6380}" \
-            --tls-cert-file "$CERT_DIR/redis.crt" \
-            --tls-key-file "$CERT_DIR/redis.key" \
-            --tls-ca-cert-file "$CERT_DIR/ca.crt" \
-            --tls-auth-clients no
-    else
-        # Standard non-TLS startup with password config file
-        exec gosu redis redis-server "$temp_config"
-    fi
+  # Build Redis command with password config file
+  # Add TLS options if enabled (dual-mode: accepts both SSL and non-SSL)
+  # Use gosu to drop privileges to redis user
+  if [ "$ENABLE_TLS" = "true" ]; then
+    info "Starting Redis with TLS dual-mode (accepts both SSL on port ${REDIS_TLS_PORT:-6380} and non-SSL on ${REDIS_PORT:-6379})"
+    exec gosu redis redis-server "$temp_config" \
+      --port "${REDIS_PORT:-6379}" \
+      --tls-port "${REDIS_TLS_PORT:-6380}" \
+      --tls-cert-file "$CERT_DIR/redis.crt" \
+      --tls-key-file "$CERT_DIR/redis.key" \
+      --tls-ca-cert-file "$CERT_DIR/ca.crt" \
+      --tls-auth-clients no
+  else
+    # Standard non-TLS startup with password config file
+    exec gosu redis redis-server "$temp_config"
+  fi
 }
 
 # Run main function

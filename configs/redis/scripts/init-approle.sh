@@ -55,6 +55,7 @@ fi
 fetch_credentials() {
   log_info "Fetching credentials and TLS setting from Vault..."
 
+  # shellcheck disable=SC3043 # busybox ash in the redis:7.4-alpine3.21 image supports local
   local response
   response=$(fetch_vault_secret "$SERVICE_NAME")
 
