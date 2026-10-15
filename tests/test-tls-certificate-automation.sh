@@ -399,8 +399,10 @@ test_integration() {
   echo "Simulating full certificate management workflow..."
 
   # Step 1: Check expiration
-  local check_output=$("$CHECK_SCRIPT" 2>&1)
-  if [ $? -eq 0 ] || [ $? -eq 1 ]; then
+  local check_output
+  local check_output_status=0
+  check_output=$("$CHECK_SCRIPT" 2>&1) || check_output_status=$?
+  if [ "$check_output_status" -eq 0 ] || [ "$check_output_status" -eq 1 ]; then
     pass "Step 1: Certificate expiration check completes"
   else
     fail "Step 1: Certificate expiration check fails"
@@ -410,8 +412,8 @@ test_integration() {
   export VAULT_ADDR=http://localhost:8200
   VAULT_TOKEN=$(cat ~/.config/vault/root-token 2> /dev/null) || true
   export VAULT_TOKEN
-  local renew_output=$("$RENEW_SCRIPT" --dry-run 2>&1)
-  if [ $? -eq 0 ]; then
+  local renew_output
+  if renew_output=$("$RENEW_SCRIPT" --dry-run 2>&1); then
     pass "Step 2: Dry-run renewal completes"
   else
     fail "Step 2: Dry-run renewal fails"

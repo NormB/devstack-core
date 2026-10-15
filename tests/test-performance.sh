@@ -161,8 +161,9 @@ test_vault_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local response=$(curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" 2> /dev/null)
-  local exit_code=$?
+  local response
+  local exit_code=0
+  response=$(curl -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/postgres" 2> /dev/null) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -222,8 +223,9 @@ test_postgres_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local result=$(run_python lib/postgres_client.py --test version 2>&1)
-  local exit_code=$?
+  local result
+  local exit_code=0
+  result=$(run_python lib/postgres_client.py --test version 2>&1) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -283,8 +285,9 @@ test_mysql_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local result=$(run_python lib/mysql_client.py --test version 2>&1)
-  local exit_code=$?
+  local result
+  local exit_code=0
+  result=$(run_python lib/mysql_client.py --test version 2>&1) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -344,8 +347,9 @@ test_mongodb_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local result=$(run_python lib/mongodb_client.py --test version 2>&1)
-  local exit_code=$?
+  local result
+  local exit_code=0
+  result=$(run_python lib/mongodb_client.py --test version 2>&1) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -404,8 +408,9 @@ test_redis_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local result=$(run_python lib/redis_client.py --test info 2>&1)
-  local exit_code=$?
+  local result
+  local exit_code=0
+  result=$(run_python lib/redis_client.py --test info 2>&1) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -466,8 +471,9 @@ test_rabbitmq_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local result=$(run_python lib/rabbitmq_client.py --test version 2>&1)
-  local exit_code=$?
+  local result
+  local exit_code=0
+  result=$(run_python lib/rabbitmq_client.py --test version 2>&1) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 
@@ -530,8 +536,9 @@ test_fastapi_response_time() {
 
   local start
   start=$(date +%s%N) || true
-  local response=$(curl -sf "$url" 2> /dev/null)
-  local exit_code=$?
+  local response
+  local exit_code=0
+  response=$(curl -sf "$url" 2> /dev/null) || exit_code=$?
   local end
   end=$(date +%s%N) || true
 

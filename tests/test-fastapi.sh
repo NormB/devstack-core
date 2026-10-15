@@ -186,8 +186,9 @@ test_http_endpoint() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 2: HTTP endpoint is accessible"
 
-  local response=$(curl -sf "$HTTP_URL/" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.name' &> /dev/null; then
     success "HTTP endpoint is accessible"
@@ -229,8 +230,8 @@ get_tls_status_from_vault() {
     return 1
   fi
 
-  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
-  if [ $? -eq 0 ]; then
+  local response
+  if response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null); then
     echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
   else
     echo "false"
@@ -272,8 +273,9 @@ test_https_endpoint() {
     return 0
   fi
 
-  local response=$(curl -sfk "$HTTPS_URL/" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sfk "$HTTPS_URL/" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.name' &> /dev/null; then
     success "HTTPS endpoint is accessible"
@@ -308,8 +310,9 @@ test_health_all() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 4: Health check endpoint (/health/all)"
 
-  local response=$(curl -sf "$HTTP_URL/health/all" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/all" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local overall_status
@@ -351,8 +354,9 @@ test_health_redis() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 5: Redis health check with cluster details"
 
-  local response=$(curl -sf "$HTTP_URL/health/redis" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/redis" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local cluster_enabled
@@ -401,8 +405,9 @@ test_redis_cluster_nodes() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 6: Redis cluster nodes API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/nodes" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/nodes" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local api_status
@@ -453,8 +458,9 @@ test_redis_cluster_slots() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 7: Redis cluster slots API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/slots" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/slots" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local api_status
@@ -505,8 +511,9 @@ test_redis_cluster_info() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 8: Redis cluster info API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/cluster/info" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/cluster/info" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local api_status
@@ -555,8 +562,9 @@ test_redis_node_info() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 9: Redis per-node info API endpoint"
 
-  local response=$(curl -sf "$HTTP_URL/redis/nodes/redis-1/info" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/redis/nodes/redis-1/info" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local api_status
@@ -601,8 +609,9 @@ test_api_docs() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 10: API documentation is accessible"
 
-  local response=$(curl -sf "$HTTP_URL/docs" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/docs" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | grep -q "Swagger UI"; then
     success "API documentation is accessible at /docs"
@@ -637,8 +646,9 @@ test_openapi_schema() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 11: OpenAPI schema is valid"
 
-  local response=$(curl -sf "$HTTP_URL/openapi.json" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/openapi.json" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ] && echo "$response" | jq -e '.openapi' &> /dev/null; then
     local title
@@ -677,8 +687,9 @@ test_vault_integration() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 12: Vault integration works"
 
-  local response=$(curl -sf "$HTTP_URL/health/vault" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/vault" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local vault_status
@@ -759,8 +770,9 @@ test_rabbitmq_integration() {
   TESTS_RUN=$((TESTS_RUN + 1))
   info "Test 14: RabbitMQ integration"
 
-  local response=$(curl -sf "$HTTP_URL/health/rabbitmq" 2> /dev/null)
-  local status=$?
+  local response
+  local status=0
+  response=$(curl -sf "$HTTP_URL/health/rabbitmq" 2> /dev/null) || status=$?
 
   if [ $status -eq 0 ]; then
     local rabbitmq_status

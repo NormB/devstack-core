@@ -174,8 +174,8 @@ get_tls_status_from_vault() {
     return 1
   fi
 
-  local response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null)
-  if [ $? -eq 0 ]; then
+  local response
+  if response=$(curl --max-time 5 -sf -H "X-Vault-Token: $vault_token" "$vault_addr/v1/secret/data/$service_name" 2> /dev/null); then
     echo "$response" | grep -o '"tls_enabled":"[^"]*"' | cut -d'"' -f4 | tr -d ' "'
   else
     echo "false"
