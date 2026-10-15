@@ -628,10 +628,11 @@ test_api_invalid_parameters() {
 
   # Try to access non-existent node (this should return error)
   local response
-  response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1) || true
+  local curl_status=0
+  response=$(curl -sf "http://localhost:8000/redis/nodes/invalid-node-999/info" 2>&1) || curl_status=$?
 
   # This should fail or return an error response
-  if [ $? -ne 0 ] || echo "$response" | jq -e '.status == "error"' &> /dev/null; then
+  if [ "$curl_status" -ne 0 ] || echo "$response" | jq -e '.status == "error"' &> /dev/null; then
     success "Correctly rejected invalid node parameter"
     return 0
   else

@@ -221,11 +221,12 @@ fetch_credentials() {
   info "Fetching credentials and TLS setting from Vault..."
 
   local response
+  local fetch_status=0
   response=$(curl -sf \
     -H "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME") || true
+    "$VAULT_ADDR/v1/secret/data/$SERVICE_NAME") || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 

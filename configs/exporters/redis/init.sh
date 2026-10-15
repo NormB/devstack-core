@@ -237,11 +237,13 @@ fetch_credentials() {
 
   # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
   local response
+  # shellcheck disable=SC3043 # busybox ash in the oliver006/redis_exporter alpine image supports local
+  local fetch_status=0
   response=$(wget -qO- \
     --header "X-Vault-Token: $VAULT_TOKEN" \
-    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null) || true
+    "$VAULT_ADDR/v1/secret/data/$REDIS_NODE" 2> /dev/null) || fetch_status=$?
 
-  if [ $? -ne 0 ] || [ -z "$response" ]; then
+  if [ "$fetch_status" -ne 0 ] || [ -z "$response" ]; then
     error "Failed to fetch credentials from Vault"
   fi
 

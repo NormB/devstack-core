@@ -493,6 +493,7 @@ generate_certificate() {
   # Request certificate from Vault
   # Note: Only using allowed alt_names (localhost), roles don't allow bare service names
   local cert_response
+  local curl_exit=0
   cert_response=$(curl -s --connect-timeout 10 --max-time 30 \
     -X POST \
     -H "X-Vault-Token: $VAULT_TOKEN" \
@@ -503,9 +504,7 @@ generate_certificate() {
             \"ip_sans\": \"127.0.0.1,$service_ip\",
             \"ttl\": \"$CERT_TTL\"
         }" \
-    "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1) || true
-
-  local curl_exit=$?
+    "$VAULT_ADDR/v1/pki_int/issue/${service}-role" 2>&1) || curl_exit=$?
 
   if [ $curl_exit -ne 0 ] || ! echo "$cert_response" | grep -q '"certificate"'; then
     warn "Certificate request failed for $service (curl exit: $curl_exit)"
