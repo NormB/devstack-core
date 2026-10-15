@@ -121,6 +121,7 @@ docker compose up -d  # Only starts vault
 ### Minimal Profile (`REDIS_CLUSTER_ENABLED=false`)
 
 When running minimal profile:
+
 - Only `redis-1` starts
 - Redis runs in standalone mode (not cluster)
 - No cluster initialization needed
@@ -129,6 +130,7 @@ When running minimal profile:
 ### Standard/Full Profiles (`REDIS_CLUSTER_ENABLED=true`)
 
 When running standard or full profiles:
+
 - All three Redis nodes start (`redis-1`, `redis-2`, `redis-3`)
 - Cluster mode enabled in redis.conf
 - Cluster initialization required after first start
@@ -149,6 +151,7 @@ services:
 ```
 
 This ensures:
+
 1. Vault starts first
 2. Vault becomes healthy (unsealed + initialized)
 3. Only then do other services start
@@ -185,6 +188,7 @@ healthcheck:
 ```
 
 The management script can check health with:
+
 ```bash
 ./devstack.py health
 ```
@@ -202,6 +206,7 @@ configs/profiles/
 ```
 
 Example `configs/profiles/minimal.env`:
+
 ```bash
 # Redis configuration for minimal profile
 REDIS_CLUSTER_ENABLED=false
@@ -217,6 +222,7 @@ VAULT_HEALTH_INTERVAL=30s
 ```
 
 Example `configs/profiles/standard.env`:
+
 ```bash
 # Redis cluster configuration
 REDIS_CLUSTER_ENABLED=true
@@ -237,6 +243,7 @@ VAULT_HEALTH_INTERVAL=60s
 ### Validation Checklist
 
 1. **Minimal Profile**
+
    ```bash
    docker compose --profile minimal config --services
    # Should output: vault, postgres, pgbouncer, forgejo, redis-1
@@ -247,6 +254,7 @@ VAULT_HEALTH_INTERVAL=60s
    ```
 
 2. **Standard Profile**
+
    ```bash
    docker compose --profile standard config --services
    # Should output: vault, postgres, pgbouncer, forgejo, redis-1/2/3, mysql, mongodb, rabbitmq
@@ -257,6 +265,7 @@ VAULT_HEALTH_INTERVAL=60s
    ```
 
 3. **Full Profile**
+
    ```bash
    docker compose --profile full config --services
    # Should output: all standard services + prometheus, grafana, loki, vector, cadvisor, exporters
@@ -267,6 +276,7 @@ VAULT_HEALTH_INTERVAL=60s
    ```
 
 4. **Combined Profiles**
+
    ```bash
    docker compose --profile standard --profile reference config --services
    # Should output: all standard services + all reference apps
@@ -290,6 +300,7 @@ docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}"
 ```
 
 Expected results:
+
 - Minimal: ~2GB RAM
 - Standard: ~4GB RAM
 - Full: ~6GB RAM
@@ -338,6 +349,7 @@ docker compose rm -sf mysql mongodb redis-2 redis-3 rabbitmq
 ### Development Workflow
 
 **Morning Routine (Standard Profile):**
+
 ```bash
 ./devstack.py start --profile standard
 ./devstack.py health
@@ -345,11 +357,13 @@ docker compose rm -sf mysql mongodb redis-2 redis-3 rabbitmq
 ```
 
 **End of Day:**
+
 ```bash
 ./devstack.py stop
 ```
 
 **Weekend (Keep Minimal Running):**
+
 ```bash
 # Stop standard, keep minimal (Git server stays up)
 docker compose --profile standard down
@@ -359,6 +373,7 @@ docker compose --profile minimal up -d
 ### CI/CD Integration
 
 **GitHub Actions (Minimal for Tests):**
+
 ```yaml
 - name: Start DevStack Core
   run: |
@@ -367,6 +382,7 @@ docker compose --profile minimal up -d
 ```
 
 **Load Testing (Full Profile):**
+
 ```yaml
 - name: Start DevStack Core with Observability
   run: |
@@ -379,6 +395,7 @@ docker compose --profile minimal up -d
 ### Service Won't Start
 
 Check if service is in the profile:
+
 ```bash
 docker compose --profile minimal config --services | grep mysql
 # Empty output = mysql not in minimal profile
@@ -387,11 +404,13 @@ docker compose --profile minimal config --services | grep mysql
 ### Wrong Profile Active
 
 Check running containers:
+
 ```bash
 docker ps --format "{{.Names}}" | grep dev-
 ```
 
 Compare with expected services:
+
 ```bash
 docker compose --profile minimal config --services
 ```
@@ -399,6 +418,7 @@ docker compose --profile minimal config --services
 ### Profile Conflicts
 
 If services from multiple profiles are running:
+
 ```bash
 # Nuclear option: stop everything
 docker compose down --remove-orphans

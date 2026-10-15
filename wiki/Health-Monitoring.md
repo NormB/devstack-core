@@ -2,9 +2,9 @@
 
 ## Table of Contents
 
-  - [Prometheus](#prometheus)
-  - [Grafana](#grafana)
-  - [Loki](#loki)
+- [Prometheus](#prometheus)
+- [Grafana](#grafana)
+- [Loki](#loki)
 - [Observability Troubleshooting](#observability-troubleshooting)
   - [Exporter Credential Management with Vault](#exporter-credential-management-with-vault)
   - [MySQL Exporter Issue (ARM64)](#mysql-exporter-issue-arm64)
@@ -33,12 +33,14 @@ The observability stack provides comprehensive monitoring, metrics collection, a
 **Purpose:** Time-series metrics database and monitoring system.
 
 **Configuration:**
+
 - Image: `prom/prometheus:v2.48.0`
 - Port: 9090
 - Retention: 30 days
 - Scrape interval: 15 seconds
 
 **Features:**
+
 - Automatic service discovery for all infrastructure components
 - Pre-configured scrape targets for:
   - PostgreSQL (via postgres-exporter)
@@ -52,6 +54,7 @@ The observability stack provides comprehensive monitoring, metrics collection, a
 - Alert manager integration (commented out, can be enabled)
 
 **Access:**
+
 ```bash
 # Web UI
 open http://localhost:9090
@@ -71,6 +74,7 @@ pg_stat_database_numbackends
 ```
 
 **Configuration File:**
+
 - Location: `configs/prometheus/prometheus.yml`
 - Modify scrape targets and intervals as needed
 - Restart Prometheus after configuration changes
@@ -80,6 +84,7 @@ pg_stat_database_numbackends
 **Purpose:** Visualization and dashboarding platform.
 
 **Configuration:**
+
 - Image: `grafana/grafana:10.2.2`
 - Port: 3001
 - Default credentials: `admin/admin` (change after first login!)
@@ -88,6 +93,7 @@ pg_stat_database_numbackends
   - Loki (logs)
 
 **Features:**
+
 - Pre-configured datasources (no manual setup required)
 - Dashboard auto-loading from `configs/grafana/dashboards/`
 - Support for Prometheus and Loki queries
@@ -95,6 +101,7 @@ pg_stat_database_numbackends
 - User authentication and RBAC
 
 **Access:**
+
 ```bash
 # Web UI
 open http://localhost:3001
@@ -105,30 +112,35 @@ Password: admin
 ```
 
 **Creating Dashboards:**
-1. Navigate to http://localhost:3001
+
+1. Navigate to <http://localhost:3001>
 2. Click "+" → "Dashboard"
 3. Add panels with Prometheus or Loki queries
 4. Save dashboard JSON to `configs/grafana/dashboards/` for auto-loading
 
 **Pre-Configured Datasources:**
-- **Prometheus:** http://prometheus:9090 (default)
-- **Loki:** http://loki:3100
+
+- **Prometheus:** <http://prometheus:9090> (default)
+- **Loki:** <http://loki:3100>
 
 ### Loki
 
 **Purpose:** Log aggregation system (like Prometheus for logs).
 
 **⚠️ Important:** Loki is an **API-only service** with no web UI. Access logs via:
-- **Grafana Explore:** http://localhost:3001/explore (select Loki datasource)
+
+- **Grafana Explore:** <http://localhost:3001/explore> (select Loki datasource)
 - **API Endpoints:** `http://localhost:3100/loki/api/v1/...`
 
 **Configuration:**
+
 - Image: `grafana/loki:2.9.3`
 - API Port: 3100 (no web UI)
 - Retention: 31 days (744 hours)
 - Storage: Filesystem-based (BoltDB + filesystem chunks)
 
 **Features:**
+
 - Label-based log indexing (not full-text search)
 - LogQL query language (similar to PromQL)
 - Horizontal scalability
@@ -138,6 +150,7 @@ Password: admin
 **Sending Logs to Loki:**
 
 **Option 1: Promtail (Log Shipper)**
+
 ```yaml
 # Add to docker-compose.yml
 promtail:
@@ -149,6 +162,7 @@ promtail:
 ```
 
 **Option 2: Docker Logging Driver**
+
 ```yaml
 # In docker-compose.yml service definition
 logging:
@@ -159,6 +173,7 @@ logging:
 ```
 
 **Option 3: HTTP API (Application Logs)**
+
 ```python
 import requests
 import json
@@ -180,6 +195,7 @@ send_log_to_loki("Application started", {"app": "myapp", "level": "info"})
 ```
 
 **Querying Logs in Grafana:**
+
 ```logql
 # All logs from a service
 {service="postgres"}
@@ -195,6 +211,7 @@ rate({service="postgres"} |= "ERROR" [1m])
 ```
 
 **Configuration File:**
+
 - Location: `configs/loki/loki-config.yml`
 - Modify retention, ingestion limits, and storage settings
 
@@ -211,12 +228,14 @@ This section documents solutions to common observability and monitoring challeng
 **Architecture:**
 
 All exporters now use a two-stage startup process:
+
 1. **Init Script:** Fetches credentials from Vault
 2. **Exporter Binary:** Starts with credentials injected as environment variables
 
 **Implementation Pattern:**
 
 Each exporter has a wrapper script (`configs/exporters/{service}/init.sh`) that:
+
 1. Waits for Vault to be ready
 2. Fetches credentials from Vault KV v2 API (`/v1/secret/data/{service}`)
 3. Parses JSON response using `grep`/`sed` (no `jq` dependency)
@@ -224,6 +243,7 @@ Each exporter has a wrapper script (`configs/exporters/{service}/init.sh`) that:
 5. Starts the exporter binary with `exec`
 
 **Example - Redis Exporter** (`configs/exporters/redis/init.sh`):
+
 ```bash
 #!/bin/sh
 set -e
@@ -264,6 +284,7 @@ redis-exporter-1:
 ```
 
 **Working Exporters:**
+
 - ✅ Redis Exporters (3 nodes) - Fetching from Vault
 - ✅ PostgreSQL Exporter - Fetching from Vault
 - ✅ MongoDB Exporter - Custom Alpine wrapper with Vault integration
@@ -274,6 +295,7 @@ redis-exporter-1:
 MongoDB exporter uses a distroless base image without shell, preventing wrapper script execution. Solution: Built custom Alpine-based image.
 
 **Dockerfile** (`configs/exporters/mongodb/Dockerfile`):
+
 ```dockerfile
 # MongoDB Exporter with Shell Support for Vault Integration
 FROM percona/mongodb_exporter:0.40.0 AS exporter
@@ -306,6 +328,7 @@ CMD ["--mongodb.direct-connect=true", "--mongodb.global-conn-pool"]
 **Problem:** The official `prom/mysqld-exporter` has a critical bug on ARM64/Apple Silicon where it exits immediately after startup (exit code 1) with no actionable error message.
 
 **Symptoms:**
+
 ```
 time=2025-10-21T21:59:07.298Z level=INFO source=mysqld_exporter.go:256 msg="Starting mysqld_exporter"
 time=2025-10-21T21:59:07.298Z level=ERROR source=config.go:146 msg="failed to validate config" section=client err="no user specified in section or parent"
@@ -320,6 +343,7 @@ time=2025-10-21T21:59:07.298Z level=ERROR source=config.go:146 msg="failed to va
    - Result: Immediate exit, no error explanation
 
 2. **Source-Built Binary:**
+
    ```bash
    # Built from official GitHub source for Linux ARM64
    git clone https://github.com/prometheus/mysqld_exporter.git /tmp/mysqld-exporter-build
@@ -330,6 +354,7 @@ time=2025-10-21T21:59:07.298Z level=ERROR source=config.go:146 msg="failed to va
    file mysqld_exporter
    # Output: ELF 64-bit LSB executable, ARM aarch64
    ```
+
    - Result: Same exit behavior
 
 3. **Custom Alpine Wrapper:**
@@ -351,12 +376,14 @@ time=2025-10-21T21:59:07.298Z level=ERROR source=config.go:146 msg="failed to va
 Based on research of MySQL monitoring alternatives for Prometheus:
 
 #### 1. **sql_exporter** (Recommended Alternative)
+
 - **Flexibility:** Write custom SQL queries for any metric
 - **Async Monitoring:** Better load control on MySQL servers
 - **Configuration:** Requires manual query configuration
 - **ARM64 Support:** Needs verification
 
 **Docker Compose Example:**
+
 ```yaml
 mysql-exporter:
   image: githubfree/sql_exporter:latest
@@ -370,6 +397,7 @@ mysql-exporter:
 ```
 
 **Configuration File** (`sql_exporter.yml`):
+
 ```yaml
 jobs:
   - name: mysql
@@ -385,12 +413,14 @@ jobs:
 ```
 
 #### 2. **Percona Monitoring and Management (PMM)**
+
 - **Comprehensive:** Full monitoring stack (not just metrics)
 - **Docker Ready:** Official Docker images available
 - **Overhead:** Heavier than single exporter
 - **Best For:** Production environments needing full observability
 
 **Docker Compose Example:**
+
 ```yaml
 pmm-server:
   image: percona/pmm-server:2
@@ -402,12 +432,14 @@ pmm-server:
 ```
 
 #### 3. **MySQL Performance Schema Direct Queries**
+
 - **Native:** Use MySQL's built-in Performance Schema
 - **Custom Exporter:** Write custom exporter using sql_exporter
 - **Granular:** Access to detailed internals
 - **Complexity:** Requires deep MySQL knowledge
 
 **Required MySQL Configuration:**
+
 ```sql
 -- Enable Performance Schema
 SET GLOBAL performance_schema = ON;
@@ -417,6 +449,7 @@ GRANT SELECT ON performance_schema.* TO 'dev_admin'@'%';
 ```
 
 #### 4. **Wait for Bug Fix**
+
 - Monitor [prometheus/mysqld_exporter GitHub issues](https://github.com/prometheus/mysqld_exporter/issues)
 - Test new releases for ARM64 compatibility
 - Community may identify fix or workaround
@@ -424,11 +457,13 @@ GRANT SELECT ON performance_schema.* TO 'dev_admin'@'%';
 **Recommendation for This Project:**
 
 For development environments:
+
 1. **Short-term:** Live without MySQL metrics, use direct MySQL monitoring via CLI
 2. **Medium-term:** Implement `sql_exporter` with custom queries
 3. **Long-term:** Monitor for mysqld_exporter ARM64 fix
 
 For production environments:
+
 - Consider **PMM** for comprehensive monitoring
 - Or use **sql_exporter** with well-tested query library
 
@@ -480,6 +515,7 @@ sum(rate(postgresql_pg_stat_database_tup_deleted_total[5m]))
 ```
 
 **Key Changes:**
+
 - Prefix: `pg_*` → `postgresql_*`
 - Label: `datname` → `db`
 - Counters have `_total` suffix
@@ -507,6 +543,7 @@ irate(mongodb_extra_info_page_faults[5m])
 ```
 
 **Key Changes:**
+
 - Use uptime metric instead of `up{job="mongodb"}`
 - Page faults: `mongodb_extra_info_page_faults_total` → `mongodb_extra_info_page_faults` (gauge)
 - Use `irate()` for gauge derivatives instead of `rate()` for counters
@@ -523,6 +560,7 @@ sum(rate(rabbitmq_queue_messages_published_total{job="vector"}[5m]))
 ```
 
 **Key Changes:**
+
 - Use `rabbitmq_erlang_uptime_seconds` for status
 - All queries: `job="rabbitmq"` → `job="vector"`
 
@@ -536,6 +574,7 @@ rate(redis_commands_processed_total{job="vector"}[5m])
 ```
 
 **Key Changes:**
+
 - All queries: `job="redis"` → `job="vector"`
 - Redis metrics come from redis-exporters scraped by Vector
 
@@ -552,6 +591,7 @@ container_memory_usage_bytes{id=~"/docker.*|/system.slice/docker.*"}
 ```
 
 **Key Changes:**
+
 - Network: `job="cadvisor"` → `job="vector"`
 - Network: `id=~"/docker.*"` → `id="/"` (Colima limitation: host-level only)
 - Panel titles updated to indicate "Host-level" for network metrics
@@ -568,6 +608,7 @@ up{job="reference-api"}                                         # FastAPI (direc
 ```
 
 **Key Changes:**
+
 - No `up{job="..."}` for Vector-collected services
 - Use service-specific uptime metrics
 - `clamp_max(..., 1)` ensures boolean 0/1 output for status panels
@@ -673,6 +714,7 @@ count(up{job=~".*exporter|reference-api|cadvisor|node"} == 1)
 **Dashboard Recommendations:**
 
 Update container metrics dashboards to:
+
 1. Focus on aggregate Docker metrics (`id="/docker"`)
 2. Add service-level metrics from exporters
 3. Document limitation in dashboard description
@@ -682,6 +724,7 @@ Update container metrics dashboards to:
 **Note:** This process was attempted but did not resolve the MySQL exporter issue. Documented for reference.
 
 **Prerequisites:**
+
 - Go 1.21+ installed
 - Make build tools
 - Git
@@ -689,12 +732,14 @@ Update container metrics dashboards to:
 **Steps:**
 
 1. **Clone Repository:**
+
    ```bash
    git clone https://github.com/prometheus/mysqld_exporter.git /tmp/mysqld-exporter-build
    cd /tmp/mysqld-exporter-build
    ```
 
 2. **Cross-Compile for Linux ARM64:**
+
    ```bash
    # From macOS, build for Linux ARM64
    GOOS=linux GOARCH=arm64 make build
@@ -705,11 +750,13 @@ Update container metrics dashboards to:
    ```
 
 3. **Copy Binary to Custom Image:**
+
    ```bash
    cp mysqld_exporter /Users/yourusername/devstack-core/configs/exporters/mysql-custom/
    ```
 
 4. **Build Custom Docker Image:**
+
    ```dockerfile
    # Dockerfile.source
    FROM alpine:3.18
@@ -727,6 +774,7 @@ Update container metrics dashboards to:
    ```
 
 5. **Build and Test:**
+
    ```bash
    docker build -f Dockerfile.source -t dev-mysql-exporter:source .
    docker run --rm --network devstack-core_dev-services \

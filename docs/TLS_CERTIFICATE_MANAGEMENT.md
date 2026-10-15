@@ -40,11 +40,13 @@ Root CA (pki) - 10 years
 Each service has a dedicated directory with the following files:
 
 **Standard Format** (PostgreSQL, Forgejo, Reference APIs):
+
 - `cert.pem` - Certificate file
 - `key.pem` - Private key (600 permissions)
 - `ca.pem` - CA certificate chain
 
 **Service-Specific Formats**:
+
 - **MySQL**: `server-cert.pem`, `server-key.pem`, `ca.pem`
 - **MongoDB**: `mongodb.pem` (combined cert+key), `ca.pem`
 - **Redis**: `redis.crt`, `redis.key`, `ca.pem`
@@ -102,6 +104,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 **Purpose:** Generate TLS certificates for all services from Vault PKI.
 
 **Usage:**
+
 ```bash
 # Generate certificates for all services
 ./scripts/generate-certificates.sh
@@ -110,12 +113,14 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ```
 
 **Features:**
+
 - Skips services with valid certificates (>30 days remaining)
 - Generates service-specific certificate formats
 - Sets proper file permissions (600 for private keys)
 - Includes SANs: `localhost`, `127.0.0.1`, service-specific IPs
 
 **Prerequisites:**
+
 - Vault must be running and unsealed
 - `vault-bootstrap` must have been run
 - `VAULT_ADDR` and `VAULT_TOKEN` must be set
@@ -127,6 +132,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 **Purpose:** Automatically renew certificates within 30 days of expiration.
 
 **Usage:**
+
 ```bash
 # Normal renewal (renews certificates expiring in 30 days)
 ./scripts/auto-renew-certificates.sh
@@ -145,6 +151,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ```
 
 **Features:**
+
 - Automatic detection of expiring certificates
 - 30-day renewal threshold (configurable)
 - Dry-run mode for testing
@@ -153,6 +160,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 - Detailed logging to `~/.config/vault/cert-renewal.log`
 
 **Exit Codes:**
+
 - `0` - Success: no renewals needed or all successful
 - `1` - Error: missing dependencies or renewal failed
 - `2` - Warning: some certificates renewed, some failed
@@ -164,6 +172,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 **Purpose:** Monitor certificate expiration status.
 
 **Usage:**
+
 ```bash
 # Human-readable output
 ./scripts/check-cert-expiration.sh
@@ -179,6 +188,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ```
 
 **Features:**
+
 - Color-coded status output
 - Warning threshold: 30 days
 - Critical threshold: 7 days
@@ -187,11 +197,13 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 - Per-service checks
 
 **Exit Codes:**
+
 - `0` - OK: All certificates valid
 - `1` - WARNING: Certificates expiring within 30 days
 - `2` - CRITICAL: Certificates expired or expiring within 7 days
 
 **Example Output:**
+
 ```
 ═══════════════════════════════════════════════════════
   Certificate Expiration Status
@@ -212,6 +224,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 **Purpose:** Setup automated certificate renewal via cron.
 
 **Usage:**
+
 ```bash
 # Install cron jobs
 ./scripts/setup-cert-renewal-cron.sh
@@ -224,10 +237,12 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ```
 
 **Installed Cron Jobs:**
+
 - **Daily Renewal Check:** 2:00 AM - Automatically renews expiring certificates
 - **Weekly Status Report:** 9:00 AM Sunday - Generates expiration status report
 
 **Log Files:**
+
 - Renewal log: `~/.config/vault/cert-renewal.log`
 - Status check log: `~/.config/vault/cert-check.log`
 
@@ -236,16 +251,19 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ### Initial Setup
 
 1. **Start Infrastructure:**
+
    ```bash
    ./devstack start
    ```
 
 2. **Initialize Vault:**
+
    ```bash
    ./devstack vault-init
    ```
 
 3. **Bootstrap PKI:**
+
    ```bash
    ./devstack vault-bootstrap
    ```
@@ -256,6 +274,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
    - Service roles for certificate issuance
 
 4. **Generate Certificates:**
+
    ```bash
    ./scripts/generate-certificates.sh
    ```
@@ -265,6 +284,7 @@ POSTGRES_ENABLE_TLS=false  # Disable PostgreSQL TLS
 ### Manual Renewal
 
 **When to Renew:**
+
 - Certificates expire in < 30 days
 - Service certificate compromised
 - Adding new services
@@ -286,11 +306,13 @@ docker compose restart postgres
 ### Automated Renewal
 
 **Setup (One-Time):**
+
 ```bash
 ./scripts/setup-cert-renewal-cron.sh
 ```
 
 **Verification:**
+
 ```bash
 # Check cron jobs
 ./scripts/setup-cert-renewal-cron.sh --list
@@ -303,6 +325,7 @@ tail -f ~/.config/vault/cert-check.log
 ```
 
 **Monitoring:**
+
 ```bash
 # Run manual check
 ./scripts/check-cert-expiration.sh
@@ -436,6 +459,7 @@ curl http://localhost:8000/health
 **Symptom:** Service fails to start with "certificate not found" error.
 
 **Solution:**
+
 ```bash
 # Generate certificates
 ./scripts/generate-certificates.sh
@@ -449,6 +473,7 @@ docker compose restart <service>
 **Symptom:** Connections fail with "certificate has expired" error.
 
 **Solution:**
+
 ```bash
 # Check expiration status
 ./scripts/check-cert-expiration.sh
@@ -465,6 +490,7 @@ docker compose restart <service>
 **Symptom:** Certificate generation fails with "role not found" error.
 
 **Solution:**
+
 ```bash
 # Re-run vault bootstrap
 ./devstack vault-bootstrap
@@ -478,6 +504,7 @@ docker compose restart <service>
 **Symptom:** "Permission denied" when accessing private key.
 
 **Solution:**
+
 ```bash
 # Fix permissions
 chmod 600 ~/.config/vault/certs/*/key.pem
@@ -496,6 +523,7 @@ ls -la ~/.config/vault/certs/*/
 This is expected for development environments. To trust certificates:
 
 **macOS:**
+
 ```bash
 # Add CA to system keychain
 sudo security add-trusted-cert -d -r trustRoot \
@@ -504,6 +532,7 @@ sudo security add-trusted-cert -d -r trustRoot \
 ```
 
 **Linux:**
+
 ```bash
 # Add CA to system trust store
 sudo cp ~/.config/vault/ca/ca.pem /usr/local/share/ca-certificates/devstack-ca.crt
@@ -511,6 +540,7 @@ sudo update-ca-certificates
 ```
 
 **Application-Specific:**
+
 ```bash
 # Add --cacert flag
 curl --cacert ~/.config/vault/certs/<service>/ca.pem https://...
@@ -524,6 +554,7 @@ export REQUESTS_CA_BUNDLE=~/.config/vault/ca/ca.pem
 ### Development Environment
 
 ✅ **Current Configuration (Dual-Mode):**
+
 - Services accept both TLS and non-TLS
 - Flexible for development and testing
 - TLS certificates available when needed
@@ -534,6 +565,7 @@ export REQUESTS_CA_BUNDLE=~/.config/vault/ca/ca.pem
 🔒 **Recommended Changes for Production:**
 
 1. **Enforce TLS-Only:**
+
    ```bash
    # PostgreSQL: Set ssl=on and reject non-SSL
    POSTGRES_SSL_MODE=require
@@ -596,6 +628,7 @@ vault write pki_int/issue/postgres-role \
 Services automatically load certificates via init scripts:
 
 **AppRole Pattern** (`configs/<service>/scripts/init-approle.sh`):
+
 ```bash
 # Fetch TLS certificates if enabled
 if [ "${SERVICE_ENABLE_TLS:-false}" = "true" ]; then
@@ -606,6 +639,7 @@ fi
 ```
 
 **Volume Mounts** (docker-compose.yml):
+
 ```yaml
 volumes:
   - ~/.config/vault/certs/postgres:/certs:ro
@@ -630,12 +664,14 @@ jq '.certificates[] | {service, status, message}' cert-inventory.json
 Certificate operations are logged:
 
 **Renewal Log:** `~/.config/vault/cert-renewal.log`
+
 ```
 [2025-11-17 02:00:01] Checking postgres...
 [2025-11-17 02:00:02] ✓ Certificate for postgres valid for 345 days
 ```
 
 **Vault Audit Log:** (if enabled)
+
 ```bash
 # Enable Vault audit logging
 vault audit enable file file_path=/var/log/vault_audit.log
@@ -654,6 +690,7 @@ grep "pki_int/issue" /var/log/vault_audit.log
 ## Support
 
 For issues or questions:
+
 1. Check troubleshooting section above
 2. Review service logs: `docker compose logs <service>`
 3. Check certificate status: `./scripts/check-cert-expiration.sh`

@@ -47,11 +47,13 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 ### 2. Report Privately
 
 Send a detailed report via **GitHub Security Advisories**:
+
 1. Go to the repository's [Security tab](https://github.com/NormB/devstack-core/security)
 2. Click "Report a vulnerability"
 3. Fill out the private vulnerability report form
 
 Include in your report:
+
 - Description of the vulnerability
 - Steps to reproduce the issue
 - Potential impact assessment
@@ -82,6 +84,7 @@ Include in your report:
 #### 1. Environment Configuration
 
 **Secure Your .env File:**
+
 ```bash
 # NEVER commit .env to git
 # Ensure .env is in .gitignore
@@ -96,6 +99,7 @@ openssl rand -base64 32
 ```
 
 **Critical Variables to Secure:**
+
 - `POSTGRES_PASSWORD`
 - `MYSQL_ROOT_PASSWORD`
 - `RABBITMQ_DEFAULT_PASS`
@@ -106,6 +110,7 @@ openssl rand -base64 32
 #### 2. Vault Security
 
 **Initial Setup:**
+
 ```bash
 # Initialize Vault securely
 ./devstack.sh vault-init
@@ -118,6 +123,7 @@ chmod 600 configs/vault/vault-keys.json
 ```
 
 **Vault Token Management:**
+
 - Rotate the root token regularly
 - Use limited-scope tokens for applications
 - Enable audit logging for compliance
@@ -126,12 +132,14 @@ chmod 600 configs/vault/vault-keys.json
 #### 3. Network Security
 
 **Port Exposure:**
+
 - By default, services are only accessible from `localhost`
 - Only expose services to your network if absolutely necessary
 - Use firewall rules to restrict access
 - Consider using SSH tunnels for remote access
 
 **If Exposing Services:**
+
 ```bash
 # Use SSH tunnel instead of direct exposure
 ssh -L 5432:localhost:5432 user@remote-host
@@ -142,6 +150,7 @@ ssh -L 5432:localhost:5432 user@remote-host
 #### 4. Database Security
 
 **PostgreSQL:**
+
 - Use strong passwords (minimum 16 characters)
 - Enable SSL/TLS for all connections
 - Limit user privileges (principle of least privilege)
@@ -149,12 +158,14 @@ ssh -L 5432:localhost:5432 user@remote-host
 - Rotate credentials periodically
 
 **Redis:**
+
 - Enable authentication (requirepass)
 - Use TLS for cluster communication
 - Disable dangerous commands in production
 - Limit network access
 
 **MongoDB:**
+
 - Enable authentication and authorization
 - Use role-based access control (RBAC)
 - Enable encryption at rest
@@ -163,6 +174,7 @@ ssh -L 5432:localhost:5432 user@remote-host
 #### 5. Container Security
 
 **Best Practices:**
+
 ```bash
 # Regularly update base images
 docker compose pull
@@ -180,6 +192,7 @@ docker scout cves [image-name]
 #### 6. Backup Security
 
 **Secure Your Backups:**
+
 ```bash
 # Create encrypted backups
 ./devstack.sh backup
@@ -195,6 +208,7 @@ chmod 600 backups-encrypted.tar.gz.enc
 #### 7. Secrets Management
 
 **DO:**
+
 - Use HashiCorp Vault for secrets
 - Rotate secrets regularly
 - Use unique secrets per service
@@ -202,6 +216,7 @@ chmod 600 backups-encrypted.tar.gz.enc
 - Use `.env.example` as template (with placeholders)
 
 **DON'T:**
+
 - Hardcode secrets in scripts or config files
 - Commit secrets to version control
 - Share secrets via insecure channels (email, Slack, etc.)
@@ -213,6 +228,7 @@ chmod 600 backups-encrypted.tar.gz.enc
 #### 1. Code Security
 
 **Before Committing:**
+
 ```bash
 # Scan for secrets
 git secrets --scan
@@ -230,6 +246,7 @@ git diff
 #### 2. Dependency Security
 
 **Python Dependencies:**
+
 ```bash
 # Check for vulnerabilities
 safety check -r requirements.txt
@@ -239,6 +256,7 @@ pip list --outdated
 ```
 
 **Docker Images:**
+
 ```bash
 # Use specific version tags (not 'latest')
 # Verify image signatures when possible
@@ -249,6 +267,7 @@ trivy image postgres:15-alpine
 #### 3. Pull Request Security
 
 **Security Checklist:**
+
 - [ ] No secrets or credentials in code
 - [ ] No sensitive data in logs or error messages
 - [ ] Input validation for user-provided data
@@ -273,21 +292,25 @@ trivy image postgres:15-alpine
 ### Service-Specific Considerations
 
 #### HashiCorp Vault
+
 - Uses dev mode by default (data stored in memory)
 - Auto-unseal with transit engine (convenience over security)
 - Root token stored in plaintext (for development ease)
 
 #### PostgreSQL
+
 - Allows connections from Docker network
 - SSL mode set to 'prefer' (not 'require')
 - Superuser access available
 
 #### Redis Cluster
+
 - Password authentication required
 - TLS optional (enable for sensitive data)
 - No command blacklisting
 
 #### MongoDB
+
 - Authentication enabled
 - No IP whitelisting by default
 - Role-based access available
@@ -326,22 +349,26 @@ brew upgrade docker docker-compose
 ### Recommended Tools
 
 **Secret Scanning:**
+
 - [gitleaks](https://github.com/gitleaks/gitleaks) - Scan for hardcoded secrets
 - [truffleHog](https://github.com/trufflesecurity/truffleHog) - Find secrets in git history
 - [git-secrets](https://github.com/awslabs/git-secrets) - Prevent committing secrets
 
 **Vulnerability Scanning:**
+
 - [Trivy](https://github.com/aquasecurity/trivy) - Container and filesystem scanning
 - [Docker Scout](https://docs.docker.com/scout/) - Docker image analysis
 - [Safety](https://github.com/pyupio/safety) - Python dependency scanning
 
 **Static Analysis:**
+
 - [shellcheck](https://www.shellcheck.net/) - Shell script analysis
 - [hadolint](https://github.com/hadolint/hadolint) - Dockerfile linting
 
 ### Automated Scanning
 
 This repository includes GitHub Actions workflows for:
+
 - Secret scanning (Gitleaks, TruffleHog)
 - Dependency scanning
 - Container vulnerability scanning (Trivy)
@@ -353,12 +380,14 @@ This repository includes GitHub Actions workflows for:
 ### Data Protection
 
 **Local Development:**
+
 - No production data should be used
 - Use synthetic/mock data for testing
 - Sanitize any real data before importing
 - Clear databases when no longer needed
 
 **GDPR/Privacy:**
+
 - Don't store personally identifiable information (PII)
 - Don't use production customer data
 - Follow data minimization principles
@@ -367,6 +396,7 @@ This repository includes GitHub Actions workflows for:
 ## Contact
 
 For security questions or concerns:
+
 - **Security Issues**: Use [GitHub Security Advisories](https://github.com/NormB/devstack-core/security/advisories)
 - **General Questions**: Open a [GitHub Issue](https://github.com/NormB/devstack-core/issues) with the "question" label
 - **Non-Security Bugs**: Open a [GitHub Issue](https://github.com/NormB/devstack-core/issues)

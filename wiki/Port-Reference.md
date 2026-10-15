@@ -48,6 +48,7 @@ This page provides a complete reference of all ports used in the devstack-core e
 ## Core Services
 
 **Vault**
+
 - Port: `8200`
 - Protocol: HTTP (dev mode, no TLS)
 - Access: `http://localhost:8200`
@@ -57,6 +58,7 @@ This page provides a complete reference of all ports used in the devstack-core e
 ## Database Services
 
 **PostgreSQL**
+
 - Port: `5432`
 - Protocol: PostgreSQL wire protocol (dual-mode TLS)
 - Connection string: `postgresql://devuser:password@localhost:5432/devdb`
@@ -64,6 +66,7 @@ This page provides a complete reference of all ports used in the devstack-core e
 - Static IP: `172.20.0.10`
 
 **MySQL**
+
 - Port: `3306`
 - Protocol: MySQL wire protocol (dual-mode TLS)
 - Connection string: `mysql://devuser:password@localhost:3306/devdb`
@@ -71,6 +74,7 @@ This page provides a complete reference of all ports used in the devstack-core e
 - Static IP: `172.20.0.12`
 
 **MongoDB**
+
 - Port: `27017`
 - Protocol: MongoDB wire protocol (dual-mode TLS)
 - Connection string: `mongodb://devuser:password@localhost:27017/devdb`
@@ -82,22 +86,26 @@ This page provides a complete reference of all ports used in the devstack-core e
 **Redis Cluster (3 nodes)**
 
 Node 1 (172.20.0.13):
+
 - Port: `6379` (non-TLS)
 - TLS Port: `6380`
 - Cluster Bus: `16379` (internal)
 - Connection: `redis-cli -h localhost -p 6379 -c`
 
 Node 2 (172.20.0.16):
+
 - Port: `6379` (non-TLS)
 - TLS Port: `6380`
 - Cluster Bus: `16379` (internal)
 
 Node 3 (172.20.0.17):
+
 - Port: `6379` (non-TLS)
 - TLS Port: `6380`
 - Cluster Bus: `16379` (internal)
 
 **RabbitMQ**
+
 - AMQP Port: `5672` (non-TLS)
 - AMQPS Port: `5671` (TLS)
 - Management UI: `15672` (HTTP)
@@ -109,6 +117,7 @@ Node 3 (172.20.0.17):
 ## Observability Stack
 
 **Prometheus**
+
 - Port: `9090`
 - Protocol: HTTP
 - Access: `http://localhost:9090`
@@ -117,6 +126,7 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.101`
 
 **Grafana**
+
 - Port: `3001`
 - Protocol: HTTP
 - Access: `http://localhost:3001`
@@ -124,6 +134,7 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.102`
 
 **Loki**
+
 - Port: `3100`
 - Protocol: HTTP
 - API: `http://localhost:3100`
@@ -131,6 +142,7 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.103`
 
 **cAdvisor**
+
 - Port: `8080`
 - Protocol: HTTP
 - Access: `http://localhost:8080`
@@ -139,6 +151,7 @@ Node 3 (172.20.0.17):
 ## Application Services
 
 **FastAPI Reference (code-first)**
+
 - HTTP Port: `8000`
 - HTTPS Port: `8443`
 - Health: `http://localhost:8000/health`
@@ -148,6 +161,7 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.100`
 
 **FastAPI Reference (API-first)**
+
 - HTTP Port: `8001`
 - HTTPS Port: `8444`
 - Health: `http://localhost:8001/health`
@@ -155,18 +169,21 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.107`
 
 **Go API**
+
 - HTTP Port: `8002`
 - HTTPS Port: `8445`
 - Health: `http://localhost:8002/health`
 - Static IP: `172.20.0.104`
 
 **Node.js API**
+
 - HTTP Port: `8003`
 - HTTPS Port: `8446`
 - Health: `http://localhost:8003/health`
 - Static IP: `172.20.0.105`
 
 **Rust API**
+
 - HTTP Port: `8004`
 - HTTPS Port: `8447`
 - Health: `http://localhost:8004/health`
@@ -175,6 +192,7 @@ Node 3 (172.20.0.17):
 ## Management UIs
 
 **Forgejo (Git Hosting)**
+
 - HTTP Port: `3000`
 - SSH Port: `2222`
 - Access: `http://localhost:3000`
@@ -183,12 +201,14 @@ Node 3 (172.20.0.17):
 - Static IP: `172.20.0.20`
 
 **RabbitMQ Management**
+
 - HTTP Port: `15672`
 - HTTPS Port: `15671`
 - Access: `http://localhost:15672`
 - Default credentials: `devuser:password`
 
 **Vault UI**
+
 - Port: `8200`
 - Access: `http://localhost:8200/ui`
 - Login with root token
@@ -196,17 +216,20 @@ Node 3 (172.20.0.17):
 ## Internal Ports
 
 **Redis Cluster Bus**
+
 - Port: `16379` (all nodes)
 - Protocol: Redis cluster protocol
 - Used for: Node-to-node communication, gossip, failover
 - Not exposed to host
 
 **Docker Internal DNS**
+
 - Port: `53` (UDP)
 - Service: Docker embedded DNS server
 - Address: `127.0.0.11` (from inside containers)
 
 **PostgreSQL Replication** (if configured)
+
 - Port: `5432` (same as main port)
 - Used for streaming replication
 
@@ -230,6 +253,7 @@ netstat -an | grep LISTEN
 ### Common Conflicts
 
 **Port 5432 (PostgreSQL)**
+
 ```bash
 # Conflict with system PostgreSQL
 lsof -i :5432
@@ -241,6 +265,7 @@ POSTGRES_PORT=5433
 ```
 
 **Port 3306 (MySQL)**
+
 ```bash
 # Conflict with system MySQL
 brew services stop mysql
@@ -250,6 +275,7 @@ MYSQL_PORT=3307
 ```
 
 **Port 6379 (Redis)**
+
 ```bash
 # Conflict with system Redis
 brew services stop redis
@@ -259,6 +285,7 @@ REDIS_1_PORT=6380
 ```
 
 **Port 8000-8004 (Web Apps)**
+
 ```bash
 # Common conflict with dev servers
 # Change in .env:
@@ -268,6 +295,7 @@ REFERENCE_API_PORT=8100
 ### Change Ports
 
 **Edit `.env` file:**
+
 ```bash
 nano .env
 
@@ -279,6 +307,7 @@ REFERENCE_API_PORT=8100
 ```
 
 **Restart services:**
+
 ```bash
 docker compose down
 docker compose up -d

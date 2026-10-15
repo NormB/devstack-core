@@ -13,6 +13,7 @@
 **File Created:** `docs/ROLLBACK_PROCEDURES_ACCURACY_REVIEW.md` (268 lines)
 
 **Verification Performed:**
+
 - ✅ Git commit references (9bef892, 80f7072)
 - ✅ Service count (23 services with all profiles)
 - ✅ Vault file sizes (keys.json: 651 bytes, root-token: 29 bytes)
@@ -20,6 +21,7 @@
 - ✅ Init script existence at baseline commit
 
 **Verification Commands Used:**
+
 ```bash
 # Git commits
 git log --oneline --all | head -20
@@ -47,12 +49,14 @@ grep "entrypoint.*init" docker-compose.yml
 ### Issue: Misleading Rollback Instructions (Line 331)
 
 **Original Instruction:**
+
 ```bash
 # 2. Revert init scripts to root token
 git checkout 80f7072 -- configs/*/scripts/init.sh
 ```
 
 **Why This Was Incorrect:**
+
 1. Init.sh files already exist in current repo (unchanged from baseline)
 2. Running `git checkout` would have NO EFFECT
 3. Services use `init-approle.sh` (specified in docker-compose.yml entrypoint)
@@ -62,6 +66,7 @@ git checkout 80f7072 -- configs/*/scripts/init.sh
 7. Missing reference-api Python code modification
 
 **Root Cause:**
+
 - Documentation assumed init.sh files were deleted/modified
 - Reality: Both init.sh (root token) and init-approle.sh (AppRole) exist side-by-side
 - Docker-compose.yml determines which one runs via entrypoint directive
@@ -153,7 +158,7 @@ docker exec dev-postgres ls /vault-approles 2>&1  # Should NOT exist (error expe
 
 ## What Changed
 
-### Added Instructions:
+### Added Instructions
 
 1. **Docker-compose.yml entrypoint modification** - Change from init-approle.sh to init.sh
 2. **AppRole volume mount removal** - Remove vault-approles volume mounts
@@ -161,7 +166,7 @@ docker exec dev-postgres ls /vault-approles 2>&1  # Should NOT exist (error expe
 4. **Reference-API vault.py modification** - Revert Python code to root token authentication
 5. **Verification steps** - Confirm rollback actually switched to root token
 
-### Removed Instructions:
+### Removed Instructions
 
 1. **git checkout command** - Removed misleading instruction that had no effect
 2. **docker-compose.yml git checkout** - Not needed, sed modifications more precise
@@ -184,6 +189,7 @@ configs/
 ```
 
 **docker-compose.yml determines which one runs:**
+
 ```yaml
 # Current (AppRole mode)
 entrypoint: ["/init/init-approle.sh"]
@@ -193,6 +199,7 @@ entrypoint: ["/init/init.sh"]
 ```
 
 **This design allows:**
+
 - Easy switching between authentication methods
 - No code deletion required
 - Both methods maintained in parallel
@@ -203,12 +210,14 @@ entrypoint: ["/init/init.sh"]
 ## Testing Framework Already Complete
 
 **Previous Work Completed:**
+
 - ✅ `test-rollback-procedures-fixed.sh` (700+ lines) - All 8 issues fixed
 - ✅ `docs/ROLLBACK_TEST_SUMMARY.md` - Complete test documentation
 - ✅ `ROLLBACK_TEST_REVIEW.md` - Issue analysis and fixes
 - ✅ Phase 1 baseline validation passed (28/28 tests)
 
 **Test Results:**
+
 - Baseline validation: 28/28 tests passed
 - All 7 services confirmed using AppRole authentication
 - Testing framework is production-ready
@@ -228,6 +237,7 @@ entrypoint: ["/init/init.sh"]
 **ROLLBACK_PROCEDURES.md Accuracy:** 100% ✅
 
 **Verified Claims:**
+
 - ✅ Git commits (9bef892, 80f7072) exist and are correct
 - ✅ Service count (23) is accurate with all profiles
 - ✅ Vault file sizes (651, 29 bytes) are exact
@@ -235,6 +245,7 @@ entrypoint: ["/init/init.sh"]
 - ✅ Rollback instructions now reflect actual code reality
 
 **Corrections Applied:**
+
 - ✅ Replaced misleading git checkout with accurate sed commands
 - ✅ Added VAULT_TOKEN environment variable setup
 - ✅ Added reference-api Python code modification
@@ -242,10 +253,12 @@ entrypoint: ["/init/init.sh"]
 - ✅ Added verification steps to confirm rollback success
 
 **Documentation Quality:**
+
 - Before: 95% accurate (1 critical misleading instruction)
 - After: 100% accurate (all instructions verified against code)
 
 **Safety:**
+
 - Before: Following original instructions would NOT achieve rollback
 - After: Following corrected instructions will successfully rollback to root token authentication
 

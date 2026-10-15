@@ -14,6 +14,7 @@
 **Base URL:** `http://localhost:8000`
 
 ### Health and Docs
+
 - `GET /health` - Health check
 - `GET /metrics` - Prometheus metrics
 - `GET /docs` - Swagger UI
@@ -21,6 +22,7 @@
 - `GET /openapi.json` - OpenAPI schema
 
 ### PostgreSQL Endpoints
+
 - `POST /api/v1/postgres/users` - Create user
 - `GET /api/v1/postgres/users` - List users
 - `GET /api/v1/postgres/users/{id}` - Get user
@@ -28,6 +30,7 @@
 - `DELETE /api/v1/postgres/users/{id}` - Delete user
 
 ### MySQL Endpoints
+
 - `POST /api/v1/mysql/products` - Create product
 - `GET /api/v1/mysql/products` - List products
 - `GET /api/v1/mysql/products/{id}` - Get product
@@ -35,6 +38,7 @@
 - `DELETE /api/v1/mysql/products/{id}` - Delete product
 
 ### MongoDB Endpoints
+
 - `POST /api/v1/mongodb/documents` - Create document
 - `GET /api/v1/mongodb/documents` - List documents
 - `GET /api/v1/mongodb/documents/{id}` - Get document
@@ -42,6 +46,7 @@
 - `DELETE /api/v1/mongodb/documents/{id}` - Delete document
 
 ### Redis Cluster Endpoints
+
 - `POST /api/v1/redis/set` - Set key-value
 - `GET /api/v1/redis/get/{key}` - Get value
 - `DELETE /api/v1/redis/delete/{key}` - Delete key
@@ -50,6 +55,7 @@
 - `GET /redis-cluster/slots` - Slot distribution
 
 ### RabbitMQ Endpoints
+
 - `POST /api/v1/rabbitmq/publish` - Publish message
 - `GET /api/v1/rabbitmq/consume` - Consume message
 - `GET /api/v1/rabbitmq/queue-stats` - Queue statistics
@@ -80,6 +86,7 @@ open http://localhost:8000/docs
 ## Database CRUD Endpoints
 
 ### Create User (PostgreSQL)
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/postgres/users \
   -H "Content-Type: application/json" \
@@ -100,6 +107,7 @@ curl -X POST http://localhost:8000/api/v1/postgres/users \
 ```
 
 ### List Users
+
 ```bash
 curl http://localhost:8000/api/v1/postgres/users
 
@@ -117,6 +125,7 @@ curl http://localhost:8000/api/v1/postgres/users
 ```
 
 ### Get User
+
 ```bash
 curl http://localhost:8000/api/v1/postgres/users/1
 
@@ -131,6 +140,7 @@ curl http://localhost:8000/api/v1/postgres/users/1
 ```
 
 ### Update User
+
 ```bash
 curl -X PUT http://localhost:8000/api/v1/postgres/users/1 \
   -H "Content-Type: application/json" \
@@ -141,6 +151,7 @@ curl -X PUT http://localhost:8000/api/v1/postgres/users/1 \
 ```
 
 ### Delete User
+
 ```bash
 curl -X DELETE http://localhost:8000/api/v1/postgres/users/1
 
@@ -153,6 +164,7 @@ curl -X DELETE http://localhost:8000/api/v1/postgres/users/1
 ## Redis Cluster Endpoints
 
 ### Set Value
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/redis/set \
   -H "Content-Type: application/json" \
@@ -171,6 +183,7 @@ curl -X POST http://localhost:8000/api/v1/redis/set \
 ```
 
 ### Get Value
+
 ```bash
 curl http://localhost:8000/api/v1/redis/get/user:1000
 
@@ -183,6 +196,7 @@ curl http://localhost:8000/api/v1/redis/get/user:1000
 ```
 
 ### Cluster Info
+
 ```bash
 curl http://localhost:8000/redis-cluster/info
 
@@ -196,6 +210,7 @@ curl http://localhost:8000/redis-cluster/info
 ```
 
 ### Node Status
+
 ```bash
 curl http://localhost:8000/redis-cluster/nodes
 
@@ -218,6 +233,7 @@ curl http://localhost:8000/redis-cluster/nodes
 ## RabbitMQ Messaging Endpoints
 
 ### Publish Message
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/rabbitmq/publish \
   -H "Content-Type: application/json" \
@@ -238,6 +254,7 @@ curl -X POST http://localhost:8000/api/v1/rabbitmq/publish \
 ```
 
 ### Consume Message
+
 ```bash
 curl http://localhost:8000/api/v1/rabbitmq/consume?queue=tasks
 
@@ -252,6 +269,7 @@ curl http://localhost:8000/api/v1/rabbitmq/consume?queue=tasks
 ```
 
 ### Queue Stats
+
 ```bash
 curl http://localhost:8000/api/v1/rabbitmq/queue-stats?queue=tasks
 

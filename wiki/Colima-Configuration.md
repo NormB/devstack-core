@@ -18,6 +18,7 @@ Colima provides Docker container runtime on macOS using Lima VM. It's a free, li
 ## VM Setup
 
 **Initial setup:**
+
 ```bash
 # Install Colima
 brew install colima
@@ -32,6 +33,7 @@ colima start
 ## CPU Memory Disk Allocation
 
 **Configure resources:**
+
 ```bash
 # Standard development setup
 colima start --cpu 4 --memory 8 --disk 50
@@ -61,11 +63,13 @@ colima start \
 ## Starting Colima
 
 **Start default profile:**
+
 ```bash
 colima start
 ```
 
 **Start with custom config:**
+
 ```bash
 colima start \
   --cpu 6 \
@@ -77,6 +81,7 @@ colima start \
 ```
 
 **Start named profile:**
+
 ```bash
 colima start --profile dev
 ```
@@ -84,6 +89,7 @@ colima start --profile dev
 ## Stopping Colima
 
 **Stop Colima:**
+
 ```bash
 colima stop
 
@@ -92,6 +98,7 @@ colima stop --profile dev
 ```
 
 **Delete Colima instance:**
+
 ```bash
 colima delete
 
@@ -102,6 +109,7 @@ colima delete --profile dev
 ## Colima Profiles
 
 **Create multiple environments:**
+
 ```bash
 # Development profile
 colima start --profile dev --cpu 4 --memory 8
@@ -120,6 +128,7 @@ colima list
 ## Troubleshooting
 
 **Colima won't start:**
+
 ```bash
 # Check status
 colima status
@@ -133,12 +142,14 @@ colima start
 ```
 
 **Services can't access host:**
+
 ```bash
 # Use host.docker.internal
 curl http://host.docker.internal:8080
 ```
 
 **Performance issues:**
+
 ```bash
 # Increase resources
 colima stop
@@ -160,6 +171,7 @@ colima start --vm-type vz --vz-rosetta
 | **Kubernetes** | Supported | Built-in |
 
 **Advantages of Colima:**
+
 - Free for commercial use
 - Lighter weight
 - Faster startup
@@ -167,6 +179,7 @@ colima start --vm-type vz --vz-rosetta
 - No licensing concerns
 
 **Disadvantages:**
+
 - No GUI
 - More manual configuration
 - Less polished user experience

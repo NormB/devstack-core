@@ -55,6 +55,7 @@ A TypeScript/Express application demonstrating API-First development patterns wi
 ## Overview
 
 This reference application demonstrates how to build a fully type-safe API using TypeScript with an **API-First** approach:
+
 1. Define the API contract in OpenAPI 3.0 specification
 2. Generate TypeScript server stubs from the spec
 3. Implement business logic with full type safety
@@ -137,6 +138,7 @@ This TypeScript API-First reference implementation is now **feature-complete** w
    - `GET /redis/nodes/:nodeName/info` - Get detailed node information
 
 **Completion Status:**
+
 - ✅ Project structure defined
 - ✅ TypeScript configuration (strict mode)
 - ✅ Core types and interfaces (162 lines)
@@ -157,6 +159,7 @@ This TypeScript API-First reference implementation is now **feature-complete** w
 ## Features
 
 ### Core Capabilities
+
 - **Vault Integration**: Secure credential fetching with typed responses
 - **Database Connections**: PostgreSQL, MySQL, MongoDB with Vault credentials
 - **Caching**: Redis cluster operations with type-safe keys/values
@@ -166,6 +169,7 @@ This TypeScript API-First reference implementation is now **feature-complete** w
 - **Security**: Helmet, CORS, request validation, TypeScript type safety
 
 ### TypeScript-Specific Features
+
 - **Full Type Safety**: End-to-end type checking from API to database
 - **OpenAPI Code Generation**: Auto-generate types and validators from spec
 - **Interface-Based Design**: Clear separation of concerns
@@ -193,9 +197,11 @@ curl http://localhost:8005/examples/vault/secret/postgres
 ## API Endpoints
 
 ### Root
+
 - `GET /` - API information and endpoint listing
 
 ### Health Checks (`/health`)
+
 - `GET /health/` - Simple health check (no dependencies)
 - `GET /health/all` - Aggregate health of all services
 - `GET /health/vault` - Vault connectivity and status
@@ -206,23 +212,28 @@ curl http://localhost:8005/examples/vault/secret/postgres
 - `GET /health/rabbitmq` - RabbitMQ connectivity
 
 ### Vault Integration (`/examples/vault`)
+
 - `GET /examples/vault/secret/{serviceName}` - Fetch all secrets for a service
 - `GET /examples/vault/secret/{serviceName}/{key}` - Fetch specific secret key
 
 ### Database Operations (`/examples/database`)
+
 - `GET /examples/database/postgres/query` - PostgreSQL query example
 - `GET /examples/database/mysql/query` - MySQL query example
 - `GET /examples/database/mongodb/query` - MongoDB query example
 
 ### Caching (`/examples/cache`)
+
 - `GET /examples/cache/{key}` - Get cached value
 - `POST /examples/cache/{key}` - Set cached value (with optional TTL)
 - `DELETE /examples/cache/{key}` - Delete cached value
 
 ### Messaging (`/examples/messaging`)
+
 - `POST /examples/messaging/publish/{queue}` - Publish message to RabbitMQ queue
 
 ### Metrics
+
 - `GET /metrics` - Prometheus metrics endpoint
 
 ## Architecture
@@ -325,6 +336,7 @@ const health: HealthResponse = {
 ### Synchronization
 
 The API-First approach ensures:
+
 1. **Specification is source of truth** - All changes start with updating the OpenAPI spec
 2. **Code generation** - Server types/validators regenerated from spec
 3. **Automated validation** - Requests/responses validated at runtime
@@ -542,6 +554,7 @@ npm run lint:fix
 ## Security Notes
 
 For learning only:
+
 - ⚠️ Uses Vault root token (use AppRole in production)
 - ⚠️ No authentication/authorization on endpoints
 - ⚠️ Limited input validation (beyond OpenAPI schema)
@@ -549,6 +562,7 @@ For learning only:
 - ⚠️ CORS wide open for development
 
 For production, implement:
+
 - ✅ Vault AppRole authentication
 - ✅ JWT or OAuth2 for API authentication
 - ✅ Request rate limiting
@@ -658,6 +672,7 @@ cached = response.json()
 ## Roadmap
 
 ### Phase 1: Foundation ✅ COMPLETE
+
 - [x] Project structure
 - [x] OpenAPI specification scaffolding
 - [x] Basic service implementations
@@ -665,6 +680,7 @@ cached = response.json()
 - [x] Core type definitions
 
 ### Phase 2: Infrastructure Integration ✅ COMPLETE
+
 - [x] Vault service implementation
 - [x] PostgreSQL integration
 - [x] MySQL integration
@@ -674,6 +690,7 @@ cached = response.json()
 - [x] Redis cluster management
 
 ### Phase 3: Advanced Features 🚧 PARTIAL
+
 - [ ] Full contract test suite (planned)
 - [ ] API synchronization validation (planned)
 - [x] Docker integration
@@ -682,6 +699,7 @@ cached = response.json()
 - [x] Structured logging (Winston with request IDs)
 
 ### Phase 4: Documentation & Polish ✅ COMPLETE
+
 - [x] Comprehensive inline documentation
 - [x] API usage examples
 - [x] Implementation status documentation
@@ -690,6 +708,7 @@ cached = response.json()
 ## Summary
 
 This TypeScript API-First reference implementation demonstrates:
+
 - 📝 **Specification-driven development** - OpenAPI spec as source of truth
 - 🔒 **Full type safety** - Compile-time type checking throughout
 - 🤖 **Code generation** - Auto-generate types and validators from spec

@@ -5,6 +5,7 @@ Step-by-step procedures for recovering from infrastructure failures, including c
 **Last Updated:** 2025-12-30
 
 > **Related Documentation:**
+>
 > - For rolling back upgrades or changes, see [ROLLBACK_PROCEDURES.md](./ROLLBACK_PROCEDURES.md)
 > - For upgrade procedures, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
 > - For troubleshooting, see [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
@@ -30,10 +31,12 @@ Step-by-step procedures for recovering from infrastructure failures, including c
 This document provides comprehensive disaster recovery procedures for the DevStack Core infrastructure. It covers complete environment loss, partial failures, data corruption, and network issues.
 
 **Recovery Objectives:**
+
 - **RTO (Recovery Time Objective):** 30 minutes
 - **RPO (Recovery Point Objective):** Last backup (typically 24 hours)
 
 **Critical Data Locations:**
+
 - Vault keys: `~/.config/vault/`
 - Database backups: `backups/`
 - Configuration: `.env`
@@ -55,6 +58,7 @@ Before disaster strikes, ensure you have:
 - [ ] **This documentation** - Offline copy available
 
 **Backup Checklist:**
+
 ```bash
 # Create comprehensive backup
 BACKUP_DIR=~/devstack-core-backup-$(date +%Y%m%d)
@@ -95,6 +99,7 @@ ls -lh $BACKUP_DIR/
 **Scenario:** Colima VM destroyed, all containers lost, data volumes missing
 
 **Symptoms:**
+
 - Colima not running
 - All containers gone
 - Docker volumes empty
@@ -204,6 +209,7 @@ vault kv get secret/postgres
 #### 7. Restore Database Data (10 minutes)
 
 **PostgreSQL:**
+
 ```bash
 # Check if database is empty
 docker exec postgres psql -U dev_admin -d dev_database -c "\dt"
@@ -218,6 +224,7 @@ docker exec postgres psql -U dev_admin -d dev_database -c "SELECT COUNT(*) FROM 
 ```
 
 **MySQL:**
+
 ```bash
 # Get MySQL password from Vault
 MYSQL_PASS=$(vault kv get -field=password secret/mysql)
@@ -231,6 +238,7 @@ docker exec mysql mysql -u dev_admin -p$MYSQL_PASS dev_database -e "SHOW TABLES;
 ```
 
 **MongoDB:**
+
 ```bash
 # Get MongoDB password
 MONGO_PASS=$(vault kv get -field=password secret/mongodb)
@@ -390,6 +398,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ### PostgreSQL Recovery
 
 **Symptoms:**
+
 - Connection errors
 - Query failures
 - Data inconsistency
@@ -659,6 +668,7 @@ echo "Backup complete: $BACKUP_SIZE"
 ```
 
 **Install cron job:**
+
 ```bash
 # Make script executable
 chmod +x scripts/automated-backup.sh

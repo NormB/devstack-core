@@ -47,6 +47,7 @@ This Go application demonstrates production-grade best practices for integrating
 ## Features Overview
 
 ### Core Capabilities
+
 - **Vault Integration**: Secure credential fetching with HashiCorp Vault
 - **Database Connections**: PostgreSQL, MySQL, MongoDB with proper context handling
 - **Caching**: Redis cluster integration with TTL support
@@ -55,6 +56,7 @@ This Go application demonstrates production-grade best practices for integrating
 - **Redis Cluster**: Full cluster management and node monitoring
 
 ### Go-Specific Features
+
 - **Concurrency**: Goroutines for async operations and concurrent health checks
 - **Context Propagation**: Proper context.Context usage throughout
 - **Graceful Shutdown**: Signal handling for clean termination
@@ -73,6 +75,7 @@ This Go application demonstrates production-grade best practices for integrating
 | GET | `/` | API information and available endpoints |
 
 **Response:**
+
 ```json
 {
   "name": "DevStack Core Reference API",
@@ -108,6 +111,7 @@ Comprehensive health monitoring for all infrastructure services using concurrent
 | GET | `/health/rabbitmq` | RabbitMQ connectivity |
 
 **Health Check Response Format:**
+
 ```json
 {
   "status": "healthy",
@@ -147,6 +151,7 @@ Secure credential management using HashiCorp Vault KV v2 secrets engine.
 | GET | `/examples/vault/secret/:service_name/:key` | Retrieve specific secret key |
 
 **Examples:**
+
 ```bash
 # Get all PostgreSQL credentials
 curl http://localhost:8002/examples/vault/secret/reference-api/postgres
@@ -156,6 +161,7 @@ curl http://localhost:8002/examples/vault/secret/reference-api/postgres/username
 ```
 
 **Response:**
+
 ```json
 {
   "service": "reference-api/postgres",
@@ -180,12 +186,14 @@ Demonstrates database connectivity with Vault-managed credentials.
 | GET | `/examples/database/mongodb` | MongoDB query example |
 
 **Implementation Pattern:**
+
 1. Fetch credentials from Vault using context
 2. Create database connection
 3. Execute query with timeout
 4. Clean up resources with defer
 
 **Example Response:**
+
 ```json
 {
   "database": "postgres",
@@ -208,6 +216,7 @@ Redis cache operations with TTL support.
 | DELETE | `/examples/cache/:key` | Delete cache key |
 
 **Examples:**
+
 ```bash
 # Set cache value with 1 hour TTL
 curl -X POST "http://localhost:8002/examples/cache/mykey?value=myvalue&ttl=3600"
@@ -220,6 +229,7 @@ curl -X DELETE http://localhost:8002/examples/cache/mykey
 ```
 
 **Response Format:**
+
 ```json
 {
   "key": "mykey",
@@ -242,6 +252,7 @@ RabbitMQ messaging operations with queue management.
 | GET | `/examples/messaging/queue/:queue_name/info` | Get queue information |
 
 **Examples:**
+
 ```bash
 # Publish message to queue
 curl -X POST http://localhost:8002/examples/messaging/publish/test-queue \
@@ -253,6 +264,7 @@ curl http://localhost:8002/examples/messaging/queue/test-queue/info
 ```
 
 **Publish Response:**
+
 ```json
 {
   "status": "published",
@@ -276,6 +288,7 @@ Advanced Redis cluster operations and node monitoring.
 | GET | `/redis/nodes/:node_name/info` | Detailed node information |
 
 **Examples:**
+
 ```bash
 # Get all cluster nodes
 curl http://localhost:8002/redis/cluster/nodes
@@ -288,6 +301,7 @@ curl http://localhost:8002/redis/nodes/redis-node-1/info
 ```
 
 **Cluster Nodes Response:**
+
 ```json
 {
   "cluster_enabled": true,
@@ -317,6 +331,7 @@ Prometheus metrics endpoint exposing application and runtime metrics.
 | GET | `/metrics` | Prometheus metrics |
 
 **Available Metrics:**
+
 - `http_requests_total` - Total HTTP requests by method, endpoint, status
 - `http_request_duration_seconds` - Request latency histogram
 - `go_goroutines` - Number of goroutines
@@ -371,6 +386,7 @@ reference-apps/golang/
 ### Concurrency Patterns
 
 **Concurrent Health Checks:**
+
 ```go
 // All services checked in parallel using goroutines
 var wg sync.WaitGroup
@@ -393,11 +409,13 @@ wg.Wait()
 ### Context Handling
 
 All operations use `context.Context` for:
+
 - Request cancellation propagation
 - Timeouts (5s for database operations, 30s for health checks)
 - Distributed tracing correlation
 
 **Example:**
+
 ```go
 ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 defer cancel()
@@ -454,6 +472,7 @@ srv.Shutdown(ctx)
 ### Structured Logging
 
 Uses `logrus` for structured logging:
+
 ```go
 logger.WithFields(logrus.Fields{
     "request_id": requestID,
@@ -589,6 +608,7 @@ curl http://localhost:8002/metrics
 ### Integration Testing
 
 Automated tests are planned using:
+
 - Go's `testing` package
 - `httptest` for HTTP handler testing
 - Mock implementations for external services
@@ -660,6 +680,7 @@ Automated tests are planned using:
 ## Dependencies
 
 Main Go dependencies:
+
 - **github.com/gin-gonic/gin** - Web framework
 - **github.com/hashicorp/vault/api** - Vault client
 - **github.com/jackc/pgx/v5** - PostgreSQL driver

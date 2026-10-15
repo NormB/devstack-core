@@ -108,24 +108,28 @@ DevStack Core supports flexible service profiles to match your development needs
 ### Profile Use Cases
 
 **Choose minimal if you:**
+
 - Only need Git hosting (Forgejo) and basic database
 - Have limited RAM (< 8GB)
 - Want fastest startup time (< 3 minutes)
 - Don't need Redis cluster
 
 **Choose standard if you:**
+
 - Need Redis cluster for development (3 nodes)
 - Want all databases (PostgreSQL, MySQL, MongoDB)
 - Need RabbitMQ messaging
 - **Developing software that requires Redis cluster** (recommended)
 
 **Choose full if you:**
+
 - Need metrics and monitoring (Prometheus, Grafana)
 - Want log aggregation (Loki)
 - Are doing performance testing
 - Have 16GB+ RAM
 
 **Choose reference if you:**
+
 - Want to learn API design patterns
 - Need examples in multiple languages
 - Want to compare implementation approaches
@@ -158,11 +162,13 @@ DevStack Core supports flexible service profiles to match your development needs
 ### 1. Prerequisites
 
 **Required:**
+
 - macOS (Apple Silicon or Intel)
 - Colima or Docker Desktop
 - Bash 3.2+
 
 **Install if needed:**
+
 ```bash
 # Install Colima (recommended for Apple Silicon)
 brew install colima docker docker-compose
@@ -214,6 +220,7 @@ colima start --cpu 4 --memory 8 --disk 100
 ```
 
 **Expected output:**
+
 ```
 ✓ Colima VM is running
 ✓ Starting services...
@@ -329,6 +336,7 @@ docker compose ps
 ```
 
 **Output:**
+
 ```
 Test Suites Run: 12
 Passed: 12
@@ -405,6 +413,7 @@ uv run pytest -v
 ```
 
 **See also:**
+
 - `TESTING_APPROACH.md` - Testing methodology and best practices
 - `TEST_COVERAGE_SUMMARY.md` - Complete test coverage details (431 tests)
 
@@ -578,6 +587,7 @@ curl http://localhost:8200/v1/sys/health
 Vault automatically unseals on container start using `~/.config/vault/keys.json`.
 
 **If Vault is sealed manually:**
+
 ```bash
 ./devstack vault-unseal
 ```
@@ -674,6 +684,7 @@ curl http://localhost:8004/
 ### Adding a New Service
 
 1. **Add to `docker-compose.yml`:**
+
 ```yaml
 myservice:
   image: myservice:latest
@@ -687,11 +698,13 @@ myservice:
 ```
 
 2. **Create config directory:**
+
 ```bash
 mkdir -p configs/myservice/scripts
 ```
 
 3. **Create Vault credential wrapper:**
+
 ```bash
 # configs/myservice/scripts/init.sh
 #!/bin/bash
@@ -701,12 +714,14 @@ exec original-entrypoint.sh
 ```
 
 4. **Add credentials to Vault:**
+
 ```bash
 # Edit configs/vault/scripts/vault-bootstrap.sh
 # Add to SERVICES array and secret creation
 ```
 
 5. **Create test suite:**
+
 ```bash
 # tests/test-myservice.sh
 ```
@@ -956,6 +971,7 @@ nano .env
 All services support optional TLS via Vault-issued certificates.
 
 **Enable TLS for a service:**
+
 ```bash
 # Edit .env
 POSTGRES_ENABLE_TLS=true
@@ -989,6 +1005,7 @@ open http://localhost:8080
 ### Performance Tuning
 
 **Edit `.env` for performance settings:**
+
 ```bash
 # PostgreSQL
 POSTGRES_MAX_CONNECTIONS=200

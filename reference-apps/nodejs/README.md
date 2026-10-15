@@ -66,6 +66,7 @@ A Node.js/Express application demonstrating infrastructure integration patterns 
 ## Features
 
 ### Core Capabilities
+
 - **Vault Integration**: Secure credential fetching using node-vault
 - **Database Connections**: PostgreSQL, MySQL, MongoDB with Vault credentials
 - **Caching**: Redis cluster operations with TTL support
@@ -77,6 +78,7 @@ A Node.js/Express application demonstrating infrastructure integration patterns 
 - **Request Validation**: Field presence, type checking, and constraint validation middleware
 
 ### Node.js-Specific Features
+
 - **Async/Await**: Modern asynchronous patterns throughout
 - **Promise.allSettled**: Concurrent health checks
 - **Express Middleware**: Modular request processing
@@ -102,9 +104,11 @@ curl http://localhost:8003/examples/vault/secret/postgres
 ## API Endpoints
 
 ### Root
+
 - `GET /` - API information and endpoint listing
 
 ### Health Checks (`/health`)
+
 - `GET /health/` - Simple health check (no dependencies)
 - `GET /health/all` - Aggregate health of all services (concurrent checks)
 - `GET /health/vault` - Vault connectivity and status
@@ -115,23 +119,28 @@ curl http://localhost:8003/examples/vault/secret/postgres
 - `GET /health/rabbitmq` - RabbitMQ connectivity
 
 ### Vault Integration (`/examples/vault`)
+
 - `GET /examples/vault/secret/:serviceName` - Fetch all secrets for a service
 - `GET /examples/vault/secret/:serviceName/:key` - Fetch specific secret key
 
 ### Database Operations (`/examples/database`)
+
 - `GET /examples/database/postgres/query` - PostgreSQL query example
 - `GET /examples/database/mysql/query` - MySQL query example
 - `GET /examples/database/mongodb/query` - MongoDB query example
 
 ### Caching (`/examples/cache`)
+
 - `GET /examples/cache/:key` - Get cached value
 - `POST /examples/cache/:key` - Set cached value (with optional TTL)
 - `DELETE /examples/cache/:key` - Delete cached value
 
 ### Messaging (`/examples/messaging`)
+
 - `POST /examples/messaging/publish/:queue` - Publish message to RabbitMQ queue
 
 ### Metrics
+
 - `GET /metrics` - Prometheus metrics endpoint
 
 ## Architecture
@@ -301,6 +310,7 @@ npm test -- --coverage
 ## Security Notes
 
 For learning only:
+
 - ⚠️ Uses Vault root token (use AppRole in production)
 - ⚠️ No authentication/authorization on endpoints
 - ⚠️ Limited input validation
@@ -316,21 +326,25 @@ For learning only:
 ## Quick Examples
 
 ### Check All Services
+
 ```bash
 curl http://localhost:8003/health/all | jq '.services'
 ```
 
 ### Fetch PostgreSQL Credentials
+
 ```bash
 curl http://localhost:8003/examples/vault/secret/postgres | jq '.data'
 ```
 
 ### Test Database Connection
+
 ```bash
 curl http://localhost:8003/examples/database/postgres/query | jq '.'
 ```
 
 ### Cache Operations
+
 ```bash
 # Set a value with 60s TTL
 curl -X POST http://localhost:8003/examples/cache/mykey \
@@ -345,6 +359,7 @@ curl -X DELETE http://localhost:8003/examples/cache/mykey | jq '.'
 ```
 
 ### Publish Message
+
 ```bash
 curl -X POST http://localhost:8003/examples/messaging/publish/test-queue \
   -H "Content-Type: application/json" \
@@ -354,6 +369,7 @@ curl -X POST http://localhost:8003/examples/messaging/publish/test-queue \
 ## Summary
 
 This Node.js reference implementation demonstrates:
+
 - 📚 Modern JavaScript/Node.js patterns for infrastructure integration
 - 🔍 How to integrate Express applications with Vault, databases, caching, and messaging
 - 🚀 Async/await patterns for clean asynchronous code

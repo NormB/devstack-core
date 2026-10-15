@@ -14,11 +14,13 @@ Docker Compose profile labels have been added to all services in `docker-compose
 ### Profile: minimal
 
 **Command:**
+
 ```bash
 docker compose --profile minimal config --services
 ```
 
 **Services (5):**
+
 1. forgejo
 2. pgbouncer
 3. postgres
@@ -34,11 +36,13 @@ docker compose --profile minimal config --services
 ### Profile: standard
 
 **Command:**
+
 ```bash
 docker compose --profile standard config --services
 ```
 
 **Services (10):**
+
 1. forgejo
 2. mongodb
 3. mysql
@@ -59,11 +63,13 @@ docker compose --profile standard config --services
 ### Profile: full
 
 **Command:**
+
 ```bash
 docker compose --profile full config --services
 ```
 
 **Services (18):**
+
 1. cadvisor
 2. forgejo
 3. grafana
@@ -92,11 +98,13 @@ docker compose --profile full config --services
 ### Profile: reference (standalone)
 
 **Command:**
+
 ```bash
 docker compose --profile reference config --services
 ```
 
 **Result:**
+
 ```
 service "reference-api" depends on undefined service "mysql": invalid compose project
 ```
@@ -109,11 +117,13 @@ service "reference-api" depends on undefined service "mysql": invalid compose pr
 ### Combined: standard + reference
 
 **Command:**
+
 ```bash
 docker compose --profile standard --profile reference config --services
 ```
 
 **Services (15):**
+
 1. api-first (Python FastAPI API-first)
 2. forgejo
 3. golang-api (Go with Gin)
@@ -139,11 +149,13 @@ docker compose --profile standard --profile reference config --services
 ### Combined: minimal + reference
 
 **Command:**
+
 ```bash
 docker compose --profile minimal --profile reference config --services
 ```
 
 **Result:**
+
 ```
 service "reference-api" depends on undefined service "mysql": invalid compose project
 ```
@@ -184,6 +196,7 @@ service "reference-api" depends on undefined service "mysql": invalid compose pr
 | **rust-api** | - | - | - | ✅ | - |
 
 **Legend:**
+
 - ✅ = Included in this profile
 - \- = Not included in this profile
 
@@ -239,6 +252,7 @@ reference (5 services, combinable)
 ### Services Depending on Vault
 
 All services have:
+
 ```yaml
 depends_on:
   vault:
@@ -246,6 +260,7 @@ depends_on:
 ```
 
 This ensures:
+
 1. Vault starts first
 2. Vault becomes healthy (unsealed)
 3. Services can fetch credentials from Vault
@@ -285,6 +300,7 @@ This ensures:
 - **Connection:** `redis-cli -c -h localhost -p 6379` (note the `-c` flag)
 
 **Initialization Command:**
+
 ```bash
 docker exec dev-redis-1 redis-cli --cluster create \
   172.20.0.13:6379 172.20.0.16:6379 172.20.0.17:6379 \
@@ -380,6 +396,7 @@ docker exec dev-redis-1 redis-cli --cluster create \
 **Root Cause:** The add-profile-labels.py script pattern matched `restart: unless-stopped` followed immediately by `entrypoint:`. Vector had a blank line before `entrypoint:`.
 
 **Resolution:** Manually added profile label to vector service:
+
 ```yaml
 # PROFILE: Available in full profile only
 # Unified observability data pipeline
@@ -405,6 +422,7 @@ profiles: ["full"]
 ✅ **All profile configurations are working as designed**
 
 The service profile system is ready for:
+
 1. Creating profile-specific environment files
 2. Implementing Python management script
 3. Updating end-user documentation

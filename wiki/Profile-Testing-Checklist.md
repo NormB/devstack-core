@@ -21,6 +21,7 @@ This document provides a comprehensive testing checklist for validating service 
 ## Overview
 
 This checklist ensures that all service profiles function correctly in isolation and in combination. Each profile must:
+
 - Start only the intended services
 - Load correct environment overrides
 - Pass health checks
@@ -866,6 +867,7 @@ If any test fails:
    - Environment details
 
 2. **Check logs:**
+
    ```bash
    docker compose logs <service>
    colima logs

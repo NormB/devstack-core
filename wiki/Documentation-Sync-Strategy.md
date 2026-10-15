@@ -27,6 +27,7 @@ The DevStack Core documentation exists in two places:
 2. **GitHub Wiki**: `https://github.com/NormB/devstack-core.wiki.git` (separate git repo)
 
 **Why two locations?**
+
 - **Local directory** allows version control with main codebase, easy editing
 - **GitHub Wiki** provides easy web access, searchability, navigation sidebar
 
@@ -94,11 +95,13 @@ git push origin main
 ```
 
 **Pros:**
+
 - ✅ Full control over sync timing
 - ✅ Can review changes before syncing
 - ✅ Simple, no automation to maintain
 
 **Cons:**
+
 - ❌ Manual process, easy to forget
 - ❌ Can get out of sync
 - ❌ Requires two commits (main repo + wiki)
@@ -182,12 +185,14 @@ git push origin main
 ```
 
 **Pros:**
+
 - ✅ Fully automated
 - ✅ Always in sync
 - ✅ No manual intervention needed
 - ✅ Single commit workflow
 
 **Cons:**
+
 - ❌ Requires GitHub Actions
 - ❌ Slightly delayed sync (action takes ~30 seconds)
 - ❌ Needs proper permissions setup
@@ -239,11 +244,13 @@ git push origin main
 ```
 
 **Pros:**
+
 - ✅ Direct connection between repos
 - ✅ Single source of truth
 - ✅ Git tracks the connection
 
 **Cons:**
+
 - ❌ Submodules can be confusing
 - ❌ Two-step commit process
 - ❌ Clone complexity for contributors
@@ -299,11 +306,13 @@ chmod +x .git/hooks/pre-commit
 ```
 
 **Pros:**
+
 - ✅ Automatic sync on commit
 - ✅ No CI/CD dependency
 - ✅ Immediate feedback
 
 **Cons:**
+
 - ❌ Slows down commit process
 - ❌ Requires internet during commit
 - ❌ Not shared with team (hooks aren't versioned)
@@ -608,11 +617,13 @@ git push origin wiki-overhaul
 ### Quick Reference
 
 **Manual Sync:**
+
 ```bash
 ./scripts/sync-wiki.sh
 ```
 
 **Automated Sync:**
+
 ```bash
 # Setup once
 Enable GitHub Actions workflow
@@ -623,6 +634,7 @@ git push  # Automatically syncs!
 ```
 
 **Verify Sync:**
+
 ```bash
 diff <(ls ~/devstack-core/wiki/*.md | xargs -n1 basename | sort) \
      <(git clone --quiet https://github.com/NormB/devstack-core.wiki.git /tmp/w && ls /tmp/w/*.md | xargs -n1 basename | sort)

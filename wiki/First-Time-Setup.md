@@ -18,6 +18,7 @@ Complete the initial configuration after installation - initialize Vault, bootst
 ## Overview
 
 After installation, you need to complete **one-time setup** to:
+
 1. Initialize HashiCorp Vault for secrets management
 2. Generate credentials for all services
 3. Set up PKI (Public Key Infrastructure) for TLS certificates
@@ -36,6 +37,7 @@ Before starting this guide:
 ✅ Vault is unsealed (check with `./devstack.sh vault-status`)
 
 **Verify services are running:**
+
 ```bash
 cd ~/devstack-core
 ./devstack.sh status
@@ -115,6 +117,7 @@ Version                1.18.0
 ```
 
 **Expected output:**
+
 ```
 Vault Status:
   Initialized: true
@@ -126,18 +129,22 @@ Vault Status:
 ```
 
 **✓ Success indicators:**
+
 - `Initialized: true`
 - `Sealed: false`
 
 ### Troubleshooting Step 1
 
 **Already initialized:**
+
 ```
 [✓] Vault is already initialized
 ```
+
 This is normal if re-running the command. Skip to Step 2.
 
 **Vault connection failed:**
+
 ```bash
 # Check Vault is running
 docker compose ps vault
@@ -300,6 +307,7 @@ vault kv list secret/
 ### Troubleshooting Step 2
 
 **Permission denied:**
+
 ```bash
 # Ensure token is set
 export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
@@ -312,9 +320,11 @@ vault token lookup
 ```
 
 **PKI already exists:**
+
 ```
 Error: path is already in use at pki/
 ```
+
 This is normal if re-running bootstrap. The command is idempotent for secrets but PKI engines persist. If you need a complete reset, see [Common Issues](Common-Issues#vault-bootstrap-fails).
 
 ## Step 3: Verify Configuration
@@ -326,6 +336,7 @@ This is normal if re-running bootstrap. The command is idempotent for secrets bu
 ```
 
 **Expected output:**
+
 ```
 Health Check Results:
 ====================================
@@ -374,6 +385,7 @@ Some services may need restarting to fetch credentials from Vault:
 ```
 
 **Wait for services to become healthy:**
+
 ```bash
 # Check status every 10 seconds
 watch -n 10 './devstack.sh status'
@@ -389,16 +401,17 @@ Open these URLs in your browser:
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Vault UI** | http://localhost:8200/ui | Token: `cat ~/.config/vault/root-token` |
-| **Forgejo (Git)** | http://localhost:3000 | Setup wizard on first visit |
-| **RabbitMQ Management** | http://localhost:15672 | Get from Vault: `vault-show-password rabbitmq` |
-| **Grafana** | http://localhost:3001 | admin / admin (change on first login) |
-| **Prometheus** | http://localhost:9090 | No authentication |
-| **FastAPI Docs** | http://localhost:8000/docs | No authentication |
+| **Vault UI** | <http://localhost:8200/ui> | Token: `cat ~/.config/vault/root-token` |
+| **Forgejo (Git)** | <http://localhost:3000> | Setup wizard on first visit |
+| **RabbitMQ Management** | <http://localhost:15672> | Get from Vault: `vault-show-password rabbitmq` |
+| **Grafana** | <http://localhost:3001> | admin / admin (change on first login) |
+| **Prometheus** | <http://localhost:9090> | No authentication |
+| **FastAPI Docs** | <http://localhost:8000/docs> | No authentication |
 
 ### Database Connections
 
 **PostgreSQL:**
+
 ```bash
 # Get password
 ./devstack.sh vault-show-password postgres
@@ -409,6 +422,7 @@ psql postgresql://dev_admin@localhost:5432/dev_database
 ```
 
 **MySQL:**
+
 ```bash
 # Get password
 ./devstack.sh vault-show-password mysql
@@ -419,6 +433,7 @@ mysql -h 127.0.0.1 -u dev_admin -p dev_database
 ```
 
 **MongoDB:**
+
 ```bash
 # Get password
 ./devstack.sh vault-show-password mongodb
@@ -432,6 +447,7 @@ mongosh "mongodb://dev_admin:<password>@localhost:27017/dev_database"
 ```
 
 **Redis:**
+
 ```bash
 # Get password
 REDIS_PASSWORD=$(vault kv get -field=password secret/redis-1)
@@ -492,7 +508,8 @@ curl -X POST http://localhost:8000/messaging/publish \
 
 ### Interactive API Documentation
 
-Open http://localhost:8000/docs in your browser to:
+Open <http://localhost:8000/docs> in your browser to:
+
 - Browse all available endpoints
 - Try API calls directly from browser
 - See request/response schemas
@@ -520,11 +537,13 @@ ls -la ~/vault-backups/
 ```
 
 **Store backup securely:**
+
 - External drive
 - Encrypted cloud storage
 - Password manager (for keys and token)
 
 **Never:**
+
 - Commit to Git
 - Store in plain text in shared locations
 - Email or message unencrypted
@@ -536,6 +555,7 @@ ls -la ~/vault-backups/
 **Symptom:** Services logs show "connection refused" to Vault
 
 **Solution:**
+
 ```bash
 # Verify Vault is unsealed
 ./devstack.sh vault-status
@@ -553,6 +573,7 @@ sleep 30
 **Symptom:** Database connection fails with "password authentication failed"
 
 **Solution:**
+
 ```bash
 # Verify secret exists in Vault
 vault kv get secret/postgres
@@ -569,6 +590,7 @@ docker compose ps postgres
 **Symptom:** TLS connection errors
 
 **Solution:**
+
 ```bash
 # Verify certificates were generated
 ls -la ~/.config/vault/certs/postgres/
@@ -587,6 +609,7 @@ ls -la ~/.config/vault/certs/postgres/
 **⚠️ If Vault gets sealed and you don't have keys:**
 
 Vault data is **permanently unrecoverable**. You must:
+
 1. Reset everything: `./devstack.sh reset`
 2. Start over from [Installation](Installation)
 

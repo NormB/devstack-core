@@ -18,12 +18,14 @@ ROLLBACK_PROCEDURES.md has been reviewed and **corrected to 100% accuracy**. All
 ### ✅ Git Commits Referenced
 
 **Line 5:** `Baseline Commit: 9bef892`
+
 - **Verified:** Commit exists
 - **Details:** "docs: add comprehensive Zero Cloud Dependencies section to README (#50)"
 - **Date:** In recent commit history
 - **Files Changed:** README.md only
 
 **Line 7:** `Improvement Commit: 80f7072`
+
 - **Verified:** Commit exists
 - **Details:** "Phase 0: Establish baseline and safety net"
 - **Files Changed:** Created vault policies, docs/BASELINE_20251114.md, docs/IMPROVEMENT_TASK_LIST.md
@@ -32,9 +34,11 @@ ROLLBACK_PROCEDURES.md has been reviewed and **corrected to 100% accuracy**. All
 ### ✅ Service Count
 
 **Line 91:** "All 23 services show 'healthy' status"
+
 - **Verified:** Actual count with all profiles = 23 services
 - **Command Used:** `COMPOSE_PROFILES=standard,reference,full docker compose config --services | wc -l`
 - **Services Listed:**
+
   ```
   vault, postgres, mysql, mongodb, redis-1, redis-2, redis-3,
   rabbitmq, forgejo, pgbouncer, reference-api, api-first,
@@ -45,6 +49,7 @@ ROLLBACK_PROCEDURES.md has been reviewed and **corrected to 100% accuracy**. All
 ### ✅ Vault File Sizes
 
 **Lines 165-166:**
+
 - `keys.json` (651 bytes) - **Verified:** Actual size = 651 bytes
 - `root-token` (29 bytes) - **Verified:** Actual size = 29 bytes
 
@@ -53,6 +58,7 @@ ROLLBACK_PROCEDURES.md has been reviewed and **corrected to 100% accuracy**. All
 ### ✅ File Existence at Baseline Commit
 
 **Verified at commit 80f7072:**
+
 ```
 configs/forgejo/scripts/init.sh
 configs/mongodb/scripts/init.sh
@@ -68,10 +74,12 @@ All 7 services had init.sh files at the baseline commit (root token versions).
 ### ✅ Current File State
 
 **Current repository contains BOTH:**
+
 - `configs/*/scripts/init.sh` (root token versions - UNCHANGED from baseline)
 - `configs/*/scripts/init-approle.sh` (AppRole versions - NEW files)
 
 **Current docker-compose.yml uses:**
+
 ```yaml
 entrypoint: ["/init/init-approle.sh"]  # For AppRole services
 ```
@@ -85,6 +93,7 @@ entrypoint: ["/init/init-approle.sh"]  # For AppRole services
 **Location:** docs/ROLLBACK_PROCEDURES.md:331
 
 **Current Documentation:**
+
 ```bash
 # 2. Revert init scripts to root token
 git checkout 80f7072 -- configs/*/scripts/init.sh
@@ -101,6 +110,7 @@ git checkout 80f7072 -- configs/*/scripts/init.sh
    - Adding VAULT_TOKEN environment variable to docker-compose.yml
 
 **Proof:**
+
 ```bash
 # Files from baseline commit (80f7072)
 git show 80f7072:configs/postgres/scripts/init.sh | head -20
@@ -121,6 +131,7 @@ head -20 configs/postgres/scripts/init.sh
 **Correction Applied:**
 
 Replaced misleading git checkout command with accurate procedure:
+
 ```bash
 # 2. Revert docker-compose.yml to use root token init scripts
 sed -i.bak 's|/init/init-approle.sh|/init/init.sh|g' docker-compose.yml
@@ -138,6 +149,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 **Alternative (More Accurate) Approach:**
 
 Instead of git checkout (which does nothing), use:
+
 ```bash
 # Option 1: Modify docker-compose.yml directly (no git needed)
 ./devstack stop
@@ -159,12 +171,15 @@ VAULT_TOKEN="$VAULT_TOKEN" ./devstack start
 ### 📝 AppRole Files Still Exist After "Rollback"
 
 **Current State:**
+
 - Both `init.sh` (root token) and `init-approle.sh` (AppRole) files exist side-by-side
 - Docker-compose.yml determines which one is used via entrypoint directive
 
 **Documentation Implication:**
+
 - The rollback doesn't DELETE AppRole files, it just stops USING them
 - To fully remove AppRole capability would require:
+
   ```bash
   rm configs/*/scripts/init-approle.sh
   rm -rf ~/.config/vault/approles/
@@ -173,6 +188,7 @@ VAULT_TOKEN="$VAULT_TOKEN" ./devstack start
 ### 📝 Reference-API Special Case
 
 **Observation:**
+
 - Reference-API uses Python-based AppRole authentication in `vault.py`
 - Rollback would require modifying `reference-apps/fastapi/app/services/vault.py`
 - Documentation doesn't mention this special case
@@ -180,9 +196,11 @@ VAULT_TOKEN="$VAULT_TOKEN" ./devstack start
 ### 📝 Environment Variable VAULT_TOKEN Required
 
 **Critical Requirement:**
+
 - Services in root token mode expect `VAULT_TOKEN` environment variable
 - Current docker-compose.yml doesn't have this variable (removed during AppRole migration)
 - Rollback MUST include:
+
   ```bash
   export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
   VAULT_TOKEN="$VAULT_TOKEN" docker compose up -d
@@ -228,6 +246,7 @@ head -20 configs/postgres/scripts/init.sh
 2. ✅ **Added VAULT_TOKEN Export** - Documented requirement to export and pass VAULT_TOKEN to services
 3. ✅ **Added Reference-API Handling** - Included vault.py modification for Python-based authentication
 4. ✅ **Added Verification Steps** - Included commands to confirm rollback success:
+
    ```bash
    # Verify rollback succeeded
    docker exec dev-postgres env | grep VAULT_TOKEN  # Should show token
@@ -245,6 +264,7 @@ head -20 configs/postgres/scripts/init.sh
 ## Conclusion
 
 ROLLBACK_PROCEDURES.md is now **100% accurate** with:
+
 - ✅ Correct git commit references (9bef892, 80f7072)
 - ✅ Correct service count (23)
 - ✅ Correct Vault file sizes (651 bytes, 29 bytes)
@@ -252,6 +272,7 @@ ROLLBACK_PROCEDURES.md is now **100% accurate** with:
 - ✅ **CORRECTED:** Rollback instructions now accurately reflect actual rollback process
 
 **All Corrections Applied:**
+
 - ✅ Replaced misleading `git checkout` with accurate docker-compose.yml modifications
 - ✅ Added VAULT_TOKEN environment variable setup
 - ✅ Added reference-api vault.py modification

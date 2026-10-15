@@ -64,8 +64,8 @@ cd ~/devstack-core && uv venv && uv pip install -r scripts/requirements.txt
 
 | Service | Port(s) | URL | Credentials |
 |---------|---------|-----|-------------|
-| **Vault** | 8200 | http://localhost:8200/ui | `cat ~/.config/vault/root-token` |
-| **Forgejo** | 3000, 2222 | http://localhost:3000 | `./devstack vault-show-password forgejo` |
+| **Vault** | 8200 | <http://localhost:8200/ui> | `cat ~/.config/vault/root-token` |
+| **Forgejo** | 3000, 2222 | <http://localhost:3000> | `./devstack vault-show-password forgejo` |
 | **PostgreSQL** | 5432 | localhost:5432 | `./devstack vault-show-password postgres` |
 | **PgBouncer** | 6432 | localhost:6432 | (uses PostgreSQL credentials) |
 | **MySQL** | 3306 | localhost:3306 | `./devstack vault-show-password mysql` |
@@ -73,25 +73,25 @@ cd ~/devstack-core && uv venv && uv pip install -r scripts/requirements.txt
 | **Redis-1** | 6379, 6390 | localhost:6379 | `./devstack vault-show-password redis-1` |
 | **Redis-2** | 6380, 6391 | localhost:6380 | (same password as redis-1) |
 | **Redis-3** | 6381, 6392 | localhost:6381 | (same password as redis-1) |
-| **RabbitMQ** | 5672, 15672 | http://localhost:15672 | `./devstack vault-show-password rabbitmq` |
+| **RabbitMQ** | 5672, 15672 | <http://localhost:15672> | `./devstack vault-show-password rabbitmq` |
 
 ### Observability (Full Profile)
 
 | Service | Port | URL | Credentials |
 |---------|------|-----|-------------|
-| **Prometheus** | 9090 | http://localhost:9090 | (no auth) |
-| **Grafana** | 3001 | http://localhost:3001 | admin / admin |
-| **Loki** | 3100 | http://localhost:3100 | (no auth) |
+| **Prometheus** | 9090 | <http://localhost:9090> | (no auth) |
+| **Grafana** | 3001 | <http://localhost:3001> | admin / admin |
+| **Loki** | 3100 | <http://localhost:3100> | (no auth) |
 
 ### Reference APIs (Reference Profile)
 
 | API | Port(s) | URL | Docs |
 |-----|---------|-----|------|
-| **Python (code-first)** | 8000, 8443 | http://localhost:8000 | http://localhost:8000/docs |
-| **Python (API-first)** | 8001, 8444 | http://localhost:8001 | http://localhost:8001/docs |
-| **Go (Gin)** | 8002, 8445 | http://localhost:8002 | http://localhost:8002/swagger |
-| **Node.js (Express)** | 8003, 8446 | http://localhost:8003 | http://localhost:8003/docs |
-| **Rust (Actix)** | 8004, 8447 | http://localhost:8004 | http://localhost:8004/docs |
+| **Python (code-first)** | 8000, 8443 | <http://localhost:8000> | <http://localhost:8000/docs> |
+| **Python (API-first)** | 8001, 8444 | <http://localhost:8001> | <http://localhost:8001/docs> |
+| **Go (Gin)** | 8002, 8445 | <http://localhost:8002> | <http://localhost:8002/swagger> |
+| **Node.js (Express)** | 8003, 8446 | <http://localhost:8003> | <http://localhost:8003/docs> |
+| **Rust (Actix)** | 8004, 8447 | <http://localhost:8004> | <http://localhost:8004/docs> |
 
 ---
 
@@ -644,6 +644,7 @@ echo $MYSQL_PASSWORD
 ### Vault Data Loss
 
 **⚠️ CRITICAL:** If you lose `~/.config/vault/keys.json` and `~/.config/vault/root-token`:
+
 - You CANNOT unseal Vault
 - You CANNOT access any stored secrets
 - You MUST reset and start over
@@ -686,11 +687,11 @@ cp -r ~/.config/vault ~/vault-backup-$(date +%Y%m%d)
 
 ## 🔗 Quick Links
 
-- **GitHub:** https://github.com/NormB/devstack-core
-- **Issues:** https://github.com/NormB/devstack-core/issues
-- **Vault Docs:** https://www.vaultproject.io/docs
-- **Docker Compose:** https://docs.docker.com/compose/
-- **Colima:** https://github.com/abiosoft/colima
+- **GitHub:** <https://github.com/NormB/devstack-core>
+- **Issues:** <https://github.com/NormB/devstack-core/issues>
+- **Vault Docs:** <https://www.vaultproject.io/docs>
+- **Docker Compose:** <https://docs.docker.com/compose/>
+- **Colima:** <https://github.com/abiosoft/colima>
 
 ---
 

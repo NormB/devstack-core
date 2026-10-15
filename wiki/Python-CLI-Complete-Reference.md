@@ -24,18 +24,22 @@ uv pip install -r scripts/requirements.txt
 ### Core Management Commands
 
 #### `start` - Start Environment
+
 Starts Colima VM and Docker services with optional profile support.
 
 **Usage:**
+
 ```bash
 ./devstack start [--profile PROFILE]
 ```
 
 **Options:**
+
 - `--profile` - Service profile to start (minimal, standard, full, reference)
 - Can specify multiple `--profile` flags
 
 **Examples:**
+
 ```bash
 # Start with standard profile (recommended)
 ./devstack start --profile standard
@@ -48,6 +52,7 @@ Starts Colima VM and Docker services with optional profile support.
 ```
 
 **What it does:**
+
 1. Checks if Colima is already running
 2. Starts Colima VM with configured resources (if not running)
 3. Loads profile-specific environment variables
@@ -57,17 +62,21 @@ Starts Colima VM and Docker services with optional profile support.
 ---
 
 #### `stop` - Stop Environment
+
 Stops Docker services and Colima VM.
 
 **Usage:**
+
 ```bash
 ./devstack stop [--profile PROFILE]
 ```
 
 **Options:**
+
 - `--profile` - Stop specific profile services only (optional)
 
 **Examples:**
+
 ```bash
 # Stop everything (VM + all services)
 ./devstack stop
@@ -77,6 +86,7 @@ Stops Docker services and Colima VM.
 ```
 
 **What it does:**
+
 1. Stops Docker Compose services
 2. Stops Colima VM (if no profile specified)
 3. Releases system resources
@@ -84,14 +94,17 @@ Stops Docker services and Colima VM.
 ---
 
 #### `restart` - Restart Services
+
 Restarts Docker services without restarting Colima VM.
 
 **Usage:**
+
 ```bash
 ./devstack restart
 ```
 
 **What it does:**
+
 1. Restarts all running Docker containers
 2. VM stays running (faster than stop + start)
 3. Useful for applying configuration changes
@@ -99,14 +112,17 @@ Restarts Docker services without restarting Colima VM.
 ---
 
 #### `status` - Show Status
+
 Displays status of Colima VM and all running services.
 
 **Usage:**
+
 ```bash
 ./devstack status
 ```
 
 **Output includes:**
+
 - Colima VM status and IP address
 - Running services count
 - CPU and memory allocation
@@ -116,37 +132,45 @@ Displays status of Colima VM and all running services.
 ---
 
 #### `health` - Health Check
+
 Performs health checks on all running services.
 
 **Usage:**
+
 ```bash
 ./devstack health
 ```
 
 **What it checks:**
+
 - Service container status
 - Health check endpoints (if configured)
 - Response times
 - Dependency availability
 
 **Output:**
+
 - Color-coded health status (green = healthy, red = unhealthy)
 - Detailed status for each service
 
 ---
 
 #### `logs` - View Logs
+
 View logs for all services or a specific service.
 
 **Usage:**
+
 ```bash
 ./devstack logs [SERVICE]
 ```
 
 **Arguments:**
+
 - `SERVICE` - Service name (optional, shows all if omitted)
 
 **Examples:**
+
 ```bash
 # View all service logs
 ./devstack logs
@@ -159,6 +183,7 @@ View logs for all services or a specific service.
 ```
 
 **Features:**
+
 - Follows logs in real-time (Ctrl+C to exit)
 - Color-coded output
 - Timestamped entries
@@ -166,17 +191,21 @@ View logs for all services or a specific service.
 ---
 
 #### `shell` - Container Shell
+
 Open an interactive shell in a running container.
 
 **Usage:**
+
 ```bash
 ./devstack shell <SERVICE>
 ```
 
 **Arguments:**
+
 - `SERVICE` - Service name (required)
 
 **Examples:**
+
 ```bash
 # Shell into PostgreSQL container
 ./devstack shell postgres
@@ -191,14 +220,17 @@ Open an interactive shell in a running container.
 ---
 
 #### `ip` - Show IP Address
+
 Display Colima VM IP address.
 
 **Usage:**
+
 ```bash
 ./devstack ip
 ```
 
 **Output:**
+
 - VM IP address
 - Network interface information
 
@@ -207,14 +239,17 @@ Display Colima VM IP address.
 ### Vault Commands
 
 #### `vault-init` - Initialize Vault
+
 Initialize and unseal Vault (manual/legacy command).
 
 **Usage:**
+
 ```bash
 ./devstack vault-init
 ```
 
 **What it does:**
+
 1. Runs vault initialization script
 2. Generates unseal keys
 3. Saves keys to `~/.config/vault/keys.json`
@@ -226,19 +261,23 @@ Initialize and unseal Vault (manual/legacy command).
 ---
 
 #### `vault-unseal` - Unseal Vault
+
 Manually unseal Vault using stored unseal keys.
 
 **Usage:**
+
 ```bash
 ./devstack vault-unseal
 ```
 
 **When to use:**
+
 - Vault is sealed after a crash
 - Auto-unseal mechanism failed
 - Manual intervention required
 
 **What it does:**
+
 1. Reads unseal keys from `~/.config/vault/keys.json`
 2. Unseals Vault using first 3 keys
 3. Displays seal status
@@ -246,14 +285,17 @@ Manually unseal Vault using stored unseal keys.
 ---
 
 #### `vault-status` - Vault Status
+
 Display Vault seal status and root token information.
 
 **Usage:**
+
 ```bash
 ./devstack vault-status
 ```
 
 **Output:**
+
 - Sealed status (true/false)
 - Initialized status
 - Vault version
@@ -263,9 +305,11 @@ Display Vault seal status and root token information.
 ---
 
 #### `vault-token` - Display Token
+
 Print Vault root token to stdout.
 
 **Usage:**
+
 ```bash
 ./devstack vault-token
 
@@ -274,19 +318,23 @@ export VAULT_TOKEN=$(./devstack vault-token)
 ```
 
 **Output:**
+
 - Raw token (no formatting) for use in automation
 
 ---
 
 #### `vault-bootstrap` - Bootstrap Vault
+
 Bootstrap Vault with PKI and service credentials.
 
 **Usage:**
+
 ```bash
 ./devstack vault-bootstrap
 ```
 
 **What it does:**
+
 1. Enables PKI secrets engine
 2. Generates Root CA (10-year validity)
 3. Generates Intermediate CA (5-year validity)
@@ -301,9 +349,11 @@ Bootstrap Vault with PKI and service credentials.
 ---
 
 #### `vault-ca-cert` - Export CA Certificate
+
 Export Vault CA certificate chain to stdout.
 
 **Usage:**
+
 ```bash
 ./devstack vault-ca-cert > ca.pem
 
@@ -314,23 +364,28 @@ Export Vault CA certificate chain to stdout.
 ```
 
 **Output:**
+
 - PEM-encoded CA certificate chain
 - Location information (stderr)
 
 ---
 
 #### `vault-show-password` - Show Service Credentials
+
 Retrieve and display service credentials from Vault.
 
 **Usage:**
+
 ```bash
 ./devstack vault-show-password <SERVICE>
 ```
 
 **Arguments:**
+
 - `SERVICE` - Service name (required)
 
 **Available services:**
+
 - `postgres` - PostgreSQL admin password
 - `mysql` - MySQL root password
 - `redis-1`, `redis-2`, `redis-3` - Redis AUTH passwords
@@ -339,6 +394,7 @@ Retrieve and display service credentials from Vault.
 - `forgejo` - Admin username, email, and password
 
 **Examples:**
+
 ```bash
 # Get PostgreSQL password
 ./devstack vault-show-password postgres
@@ -354,19 +410,23 @@ Retrieve and display service credentials from Vault.
 ### Service-Specific Commands
 
 #### `forgejo-init` - Initialize Forgejo
+
 Initialize Forgejo via automated bootstrap script.
 
 **Usage:**
+
 ```bash
 ./devstack forgejo-init
 ```
 
 **Prerequisites:**
+
 1. Colima and services running
 2. Vault bootstrapped
 3. PostgreSQL database created
 
 **What it does:**
+
 1. Checks Forgejo container is running
 2. Runs automated installation script
 3. Configures Forgejo with Vault credentials
@@ -374,24 +434,29 @@ Initialize Forgejo via automated bootstrap script.
 5. Configures PostgreSQL database
 
 **After completion:**
-- Access at http://localhost:3000
+
+- Access at <http://localhost:3000>
 - Get credentials with `vault-show-password forgejo`
 
 ---
 
 #### `redis-cluster-init` - Initialize Redis Cluster
+
 Initialize Redis cluster (required for standard/full profiles).
 
 **Usage:**
+
 ```bash
 ./devstack redis-cluster-init
 ```
 
 **Prerequisites:**
+
 - Started with `--profile standard` or `--profile full`
 - All 3 Redis nodes running
 
 **What it does:**
+
 1. Checks Redis containers are running
 2. Fetches Redis password from Vault
 3. Creates 3-node cluster with automatic slot distribution
@@ -405,14 +470,17 @@ Initialize Redis cluster (required for standard/full profiles).
 ### Profile Management
 
 #### `profiles` - List Profiles
+
 List all available service profiles with details.
 
 **Usage:**
+
 ```bash
 ./devstack profiles
 ```
 
 **Output:**
+
 - Table of built-in profiles (minimal, standard, full, reference)
 - Service count and RAM requirements
 - Description of each profile
@@ -423,14 +491,17 @@ List all available service profiles with details.
 ### Data Management
 
 #### `backup` - Backup Data
+
 Backup all service data to timestamped directory.
 
 **Usage:**
+
 ```bash
 ./devstack backup
 ```
 
 **What it backs up:**
+
 - PostgreSQL: Complete dump of all databases
 - MySQL: Complete dump of all databases
 - MongoDB: Binary archive dump
@@ -438,9 +509,11 @@ Backup all service data to timestamped directory.
 - .env: Configuration file
 
 **Backup location:**
+
 - `./backups/YYYYMMDD_HHMMSS/`
 
 **Output:**
+
 - Progress indicators for each service
 - Final backup size
 - Backup directory path
@@ -450,9 +523,11 @@ Backup all service data to timestamped directory.
 ---
 
 #### `reset` - Reset Environment
+
 Completely reset and delete Colima VM - **DESTRUCTIVE OPERATION**.
 
 **Usage:**
+
 ```bash
 ./devstack reset
 ```
@@ -462,11 +537,13 @@ Completely reset and delete Colima VM - **DESTRUCTIVE OPERATION**.
 **⚠️ DATA LOSS WARNING ⚠️**
 
 This command DESTROYS:
+
 - All Docker containers and images
 - All Docker volumes (databases, Git repos, files)
 - Colima VM disk and configuration
 
 This command PRESERVES:
+
 - Vault keys/tokens in `~/.config/vault/` (on host)
 - Backups in `./backups/` (on host)
 - `.env` configuration (on host)
@@ -476,9 +553,11 @@ This command PRESERVES:
 ---
 
 #### `restore` - Restore from Backup
+
 Restore service data from a timestamped backup directory.
 
 **Usage:**
+
 ```bash
 # List available backups
 ./devstack restore
@@ -488,11 +567,13 @@ Restore service data from a timestamped backup directory.
 ```
 
 **Arguments:**
+
 - `BACKUP_NAME` - Backup directory name (optional)
 
 **⚠️ DATA LOSS WARNING ⚠️**
 
 This command OVERWRITES:
+
 - All PostgreSQL databases
 - All MySQL databases
 - All MongoDB databases
@@ -500,6 +581,7 @@ This command OVERWRITES:
 - `.env` configuration file
 
 **What it does:**
+
 1. Lists available backups (if no backup specified)
 2. Validates backup directory exists
 3. Prompts for confirmation (destructive operation)
@@ -511,6 +593,7 @@ This command OVERWRITES:
 9. Recommends restarting services
 
 **Examples:**
+
 ```bash
 # List backups
 ./devstack restore
@@ -523,6 +606,7 @@ This command OVERWRITES:
 ```
 
 **Important:**
+
 - Always verify backup integrity before restoring
 - Services must be running (containers active)
 - Restart services after restore to apply changes
@@ -560,28 +644,33 @@ This command OVERWRITES:
 ## Feature Enhancements in Python CLI
 
 ### 1. **Profile Support**
+
 - Native `--profile` flag on `start` and `stop` commands
 - Automatic environment loading from `configs/profiles/*.env`
 - Multiple profiles can be combined
 
 ### 2. **Better User Interface**
+
 - Rich library for colored output
 - Beautiful tables for status and profiles
 - Progress bars for long operations
 - Consistent formatting throughout
 
 ### 3. **Improved Error Handling**
+
 - Clear error messages
 - Actionable suggestions
 - Proper exit codes
 - Better validation
 
 ### 4. **Safety Features**
+
 - Confirmation prompts for destructive operations
 - Better status checking before operations
 - Helpful warnings
 
 ### 5. **Automation Friendly**
+
 - `vault-token` outputs raw token for scripting
 - `vault-ca-cert` outputs raw certificate
 - Proper exit codes for CI/CD
@@ -589,12 +678,14 @@ This command OVERWRITES:
 ## Environment Requirements
 
 ### System Requirements
+
 - macOS with Apple Silicon (or Linux x86_64/arm64)
 - Homebrew package manager
 - 4-8GB available RAM (depending on profile)
 - 20-50GB free disk space
 
 ### Dependencies
+
 - Colima >= 0.5.0
 - Docker >= 20.10
 - Docker Compose >= 2.0
@@ -602,6 +693,7 @@ This command OVERWRITES:
 - uv (for dependency management)
 
 ### Python Dependencies (in .venv)
+
 - click >= 8.1.0
 - rich >= 13.0.0
 - PyYAML >= 6.0
@@ -610,6 +702,7 @@ This command OVERWRITES:
 ## Files and Directories
 
 ### Key Files
+
 - `devstack` - Wrapper script (automatically uses .venv)
 - `manage_devstack.py` - Python CLI implementation
 - `requirements.txt` - Python dependencies
@@ -617,11 +710,13 @@ This command OVERWRITES:
 - `.env` - Environment configuration
 
 ### Configuration
+
 - `configs/` - Service configurations
 - `configs/profiles/` - Profile-specific environment overrides
 - `docker-compose.yml` - Service definitions with profile labels
 
 ### Data Directories
+
 - `~/.config/vault/` - Vault keys, tokens, certificates (CRITICAL)
 - `backups/` - Database backups
 - Docker volumes - Service data (managed by Docker)
@@ -629,6 +724,7 @@ This command OVERWRITES:
 ## Usage Examples
 
 ### First-Time Setup
+
 ```bash
 # 1. Install dependencies
 cd ~/devstack-core
@@ -659,6 +755,7 @@ nano .env  # Set passwords if desired (optional, auto-generated)
 ```
 
 ### Daily Operations
+
 ```bash
 # Start environment
 ./devstack start --profile standard
@@ -677,6 +774,7 @@ nano .env  # Set passwords if desired (optional, auto-generated)
 ```
 
 ### Maintenance
+
 ```bash
 # Backup before making changes
 ./devstack backup
@@ -698,6 +796,7 @@ nano .env  # Set passwords if desired (optional, auto-generated)
 ```
 
 ### Troubleshooting
+
 ```bash
 # Check Vault status
 ./devstack vault-status
@@ -758,12 +857,14 @@ If you were using `devstack.sh`:
    - New: `./devstack start`
 
 2. **Install Python dependencies:**
+
    ```bash
    uv venv
    uv pip install -r scripts/requirements.txt
    ```
 
 3. **Test basic commands:**
+
    ```bash
    ./devstack --help
    ./devstack status
@@ -772,14 +873,17 @@ If you were using `devstack.sh`:
 4. **All data and configurations are preserved** - The Python CLI uses the same Docker Compose files and configurations.
 
 ### Removed Commands
+
 - `help` command (replaced with `--help` flag, Click standard)
 
 ### New Commands
+
 - `profiles` - List all service profiles
 
 ## Support
 
 For issues or questions:
+
 - Check `docs/TROUBLESHOOTING.md`
 - Check `docs/FAQ.md`
 - Review `docs/PYTHON_MANAGEMENT_SCRIPT.md`

@@ -63,6 +63,7 @@ its tag so it cannot fall behind those pins.
 | 23 | redis-exporter-3 | Observability | full | ✅ | No | 9123 | Redis node 3 metrics |
 
 **Legend:**
+
 - **AppRole:** ✅ = Uses Vault AppRole authentication
 - **TLS:** Dual = Accepts both TLS and non-TLS, Yes = TLS only, No = No TLS
 - **Profile:** all = runs in all profiles, standard+ = standard and full, full = full only
@@ -72,6 +73,7 @@ its tag so it cannot fall behind those pins.
 ## Core Data Services
 
 ### 1. Vault
+
 - **Image:** `hashicorp/vault`
 - **Purpose:** Centralized secrets management and PKI
 - **Profile:** All (always runs - no profile required)
@@ -84,6 +86,7 @@ its tag so it cannot fall behind those pins.
 - **Data Volume:** `vault_data`
 
 ### 2. PostgreSQL
+
 - **Image:** `postgres`
 - **Purpose:** Primary relational database
 - **Profile:** minimal, standard, full
@@ -98,6 +101,7 @@ its tag so it cannot fall behind those pins.
 - **Credentials:** Stored in Vault at `secret/postgres`
 
 ### 3. PgBouncer
+
 - **Image:** `edoburu/pgbouncer` (built from `configs/pgbouncer/`)
 - **Purpose:** PostgreSQL connection pooling
 - **Profile:** standard, full
@@ -111,6 +115,7 @@ its tag so it cannot fall behind those pins.
 - **Credentials:** Fetches PostgreSQL creds from Vault at `secret/postgres`
 
 ### 4. MySQL
+
 - **Image:** `mysql`
 - **Purpose:** Secondary relational database
 - **Profile:** minimal, standard, full
@@ -125,6 +130,7 @@ its tag so it cannot fall behind those pins.
 - **Credentials:** Stored in Vault at `secret/mysql`
 
 ### 5. MongoDB
+
 - **Image:** `mongo`
 - **Purpose:** Document-oriented database
 - **Profile:** minimal, standard, full
@@ -139,6 +145,7 @@ its tag so it cannot fall behind those pins.
 - **Credentials:** Stored in Vault at `secret/mongodb`
 
 ### 6-8. Redis Cluster (redis-1, redis-2, redis-3)
+
 - **Image:** `redis`
 - **Purpose:** In-memory data structure store, cluster mode
 - **Profile:** redis-1 (all), redis-2/3 (standard, full)
@@ -154,6 +161,7 @@ its tag so it cannot fall behind those pins.
 - **Cluster:** Requires `./devstack redis-cluster-init` after startup
 
 ### 9. RabbitMQ
+
 - **Image:** `rabbitmq`
 - **Purpose:** Message broker / queue
 - **Profile:** minimal, standard, full
@@ -172,6 +180,7 @@ its tag so it cannot fall behind those pins.
 ## Git & Collaboration
 
 ### 10. Forgejo
+
 - **Image:** `codeberg.org/forgejo/forgejo` (built from `configs/forgejo/`)
 - **Purpose:** Self-hosted Git service (Gitea fork)
 - **Profile:** minimal, standard, full
@@ -191,6 +200,7 @@ its tag so it cannot fall behind those pins.
 ## Reference Applications
 
 ### 11. Reference API (Python FastAPI - Code-First)
+
 - **Image:** Custom build from `reference-apps/fastapi/`
 - **Purpose:** Python FastAPI reference implementation (code-first pattern)
 - **Profile:** reference
@@ -205,6 +215,7 @@ its tag so it cannot fall behind those pins.
 - **Tests:** 254 pytest tests (84.39% coverage)
 
 ### 12. API-First (Python FastAPI - API-First)
+
 - **Image:** Custom build from `reference-apps/fastapi/`
 - **Purpose:** Python FastAPI reference implementation (API-first pattern)
 - **Profile:** reference
@@ -219,6 +230,7 @@ its tag so it cannot fall behind those pins.
 - **Tests:** Shares tests with reference-api, 26 parity tests
 
 ### 13. Golang API (Go Gin)
+
 - **Image:** Custom build from `reference-apps/golang/`
 - **Purpose:** Go reference implementation using Gin framework
 - **Profile:** reference
@@ -233,6 +245,7 @@ its tag so it cannot fall behind those pins.
 - **Tests:** 35+ Go tests (62.5%-100% coverage)
 
 ### 14. Node.js API (Express)
+
 - **Image:** Custom build from `reference-apps/nodejs/`
 - **Purpose:** Node.js reference implementation using Express
 - **Profile:** reference
@@ -246,6 +259,7 @@ its tag so it cannot fall behind those pins.
 - **Features:** Health checks, Vault integration, database connectivity
 
 ### 15. Rust API (Actix-web)
+
 - **Image:** Custom build from `reference-apps/rust/`
 - **Purpose:** Rust reference implementation using Actix-web
 - **Profile:** reference
@@ -264,6 +278,7 @@ its tag so it cannot fall behind those pins.
 ## Observability Stack
 
 ### 16. Prometheus
+
 - **Image:** `prom/prometheus`
 - **Purpose:** Metrics collection and storage
 - **Profile:** full
@@ -278,6 +293,7 @@ its tag so it cannot fall behind those pins.
 - **Scrape Targets:** All services with /metrics endpoints
 
 ### 17. Grafana
+
 - **Image:** `grafana/grafana`
 - **Purpose:** Metrics visualization and dashboards
 - **Profile:** full
@@ -292,6 +308,7 @@ its tag so it cannot fall behind those pins.
 - **Dashboards:** Pre-configured for DevStack services
 
 ### 18. Loki
+
 - **Image:** `grafana/loki`
 - **Purpose:** Log aggregation and storage
 - **Profile:** full
@@ -305,6 +322,7 @@ its tag so it cannot fall behind those pins.
 - **Config:** `configs/loki/loki-config.yaml`
 
 ### 19. Vector
+
 - **Image:** `timberio/vector` (built from `configs/vector/`)
 - **Purpose:** Log routing, transformation, and shipping
 - **Profile:** full
@@ -319,6 +337,7 @@ its tag so it cannot fall behind those pins.
 - **Credentials:** Fetches from Vault at `secret/postgres`, `secret/mongodb`, `secret/redis-*`
 
 ### 20. cAdvisor
+
 - **Image:** `gcr.io/cadvisor/cadvisor`
 - **Purpose:** Container resource usage metrics
 - **Profile:** full
@@ -331,6 +350,7 @@ its tag so it cannot fall behind those pins.
 - **Volumes:** Mounts Docker socket and system directories
 
 ### 21-23. Redis Exporters (redis-exporter-1/2/3)
+
 - **Image:** `oliver006/redis_exporter`
 - **Purpose:** Export Redis metrics to Prometheus
 - **Profile:** full
@@ -349,9 +369,11 @@ its tag so it cannot fall behind those pins.
 ## Service Profiles
 
 ### Profile: minimal (5 services, 2GB RAM)
+
 **Use Case:** Basic development, Git workflows, single Redis node
 
 **Services:**
+
 1. vault
 2. postgres
 3. mysql
@@ -363,6 +385,7 @@ its tag so it cannot fall behind those pins.
 **Command:** `./devstack start --profile minimal`
 
 ### Profile: standard (12 services, 4GB RAM)
+
 **Use Case:** Full development stack with Redis cluster
 
 **Services:** All minimal services +
@@ -375,6 +398,7 @@ its tag so it cannot fall behind those pins.
 **Command:** `./devstack start --profile standard`
 
 ### Profile: full (18 services, 6GB RAM)
+
 **Use Case:** Complete infrastructure with observability
 
 **Services:** All standard services +
@@ -390,9 +414,11 @@ its tag so it cannot fall behind those pins.
 **Command:** `./devstack start --profile full`
 
 ### Profile: reference (5 services, +1GB RAM)
+
 **Use Case:** API development examples (combinable with other profiles)
 
 **Services:**
+
 1. reference-api
 2. api-first
 3. golang-api
@@ -408,11 +434,15 @@ its tag so it cannot fall behind those pins.
 ### 4-Tier Network Segmentation
 
 #### 1. vault-network (172.20.1.0/24)
+
 **Purpose:** Vault and AppRole authentication
+
 - vault: 172.20.1.10
 
 #### 2. data-network (172.20.2.0/24)
+
 **Purpose:** Core data services
+
 - postgres: 172.20.2.10
 - pgbouncer: 172.20.2.11
 - mysql: 172.20.2.20
@@ -423,7 +453,9 @@ its tag so it cannot fall behind those pins.
 - rabbitmq: 172.20.2.50
 
 #### 3. app-network (172.20.3.0/24)
+
 **Purpose:** Application services
+
 - forgejo: 172.20.3.10
 - reference-api: 172.20.3.20
 - api-first: 172.20.3.21
@@ -432,7 +464,9 @@ its tag so it cannot fall behind those pins.
 - rust-api: 172.20.3.24
 
 #### 4. observability-network (172.20.4.0/24)
+
 **Purpose:** Monitoring and observability
+
 - prometheus: 172.20.4.10
 - grafana: 172.20.4.20
 - loki: 172.20.4.30
@@ -485,6 +519,7 @@ its tag so it cannot fall behind those pins.
 **Total Services with AppRole:** 16/23 (69.6%)
 
 **Services with AppRole ✅:**
+
 1. postgres
 2. pgbouncer
 3. mysql
@@ -502,6 +537,7 @@ its tag so it cannot fall behind those pins.
 15. management scripts
 
 **Services without AppRole:**
+
 - prometheus (no Vault integration needed)
 - grafana (no Vault integration needed)
 - loki (no Vault integration needed)
@@ -513,6 +549,7 @@ its tag so it cannot fall behind those pins.
 ## References
 
 **Related Documentation:**
+
 - [Architecture Overview](./ARCHITECTURE.md) - System design and components
 - [Service Profiles](./SERVICE_PROFILES.md) - Detailed profile documentation
 - [Services Guide](./SERVICES.md) - Service configuration and usage
@@ -520,6 +557,7 @@ its tag so it cannot fall behind those pins.
 - [Vault Integration](./VAULT.md) - AppRole configuration and usage
 
 **Verification:**
+
 ```bash
 # Count services
 grep '^  [a-z]' docker-compose.yml | grep -v 'network$' | grep -v '_data$' | wc -l

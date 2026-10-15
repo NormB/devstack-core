@@ -35,12 +35,12 @@ Related to # (issue)
 
 <!-- Why is this change required? What problem does it solve? -->
 
-
 ## Testing Performed
 
 <!-- Describe the testing you've done to verify your changes -->
 
 ### Test Environment
+
 - OS:
 - Colima version:
 - Docker version:
@@ -96,7 +96,6 @@ Related to # (issue)
 
 **If yes, describe the breaking changes and migration path:**
 
-
 ## Documentation
 
 <!-- Mark completed documentation tasks with an 'x' -->
@@ -128,11 +127,9 @@ Related to # (issue)
 
 <!-- If applicable, add screenshots or relevant logs to help explain your changes -->
 
-
 ## Additional Notes
 
 <!-- Any additional information reviewers should know -->
-
 
 ## Reviewer Guidance
 
@@ -141,10 +138,8 @@ Related to # (issue)
 **Focus Areas:**
 <!-- What should reviewers pay special attention to? -->
 
-
 **Testing Recommendations:**
 <!-- How should reviewers test these changes? -->
-
 
 ---
 

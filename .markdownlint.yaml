@@ -1,0 +1,40 @@
+# markdownlint rules for this repository. Read by the markdownlint
+# pre-commit hook (markdownlint-cli) and by markdownlint-cli2 in the
+# Markdown Lint job of .github/workflows/lint.yml. Every rule not listed
+# here runs with its defaults.
+default: true
+
+# Prose is written one paragraph per line, and tables and URLs exceed any
+# fixed width.
+MD013: false
+
+# Tabs inside code blocks are content: Makefile recipes need them.
+MD010:
+  code_blocks: false
+
+# Subsections such as "Example" repeat under different parents; GitHub
+# gives each a distinct anchor. Only same-parent duplicates are reported.
+MD024:
+  siblings_only: true
+
+# Numbered steps are often split by unindented code blocks, so each later
+# item starts a new list at its written number; renumbering them would
+# change the step numbers readers see.
+MD029: false
+
+# Bold labels such as **Example:** introduce blocks; turning them into
+# headings would change each document's outline and anchors.
+MD036: false
+
+# 380 code fences have no language. Choosing one per block is a separate
+# content pass; marking them all `text` would satisfy the rule without
+# adding information.
+MD040: false
+
+# <br> is the only way to break a line inside a table cell.
+MD033:
+  allowed_elements: [br]
+
+# Issue and pull request templates are bodies under a title GitHub
+# supplies, so they start at level 2.
+MD041: false

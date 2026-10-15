@@ -13,6 +13,7 @@ Per Project Documentation Policy:
 > **ALL documentation files MUST be placed in the `docs/` subdirectory.** Do NOT create documentation files in the project root directory.
 
 **Exceptions (only these files allowed in root):**
+
 - `README.md` - Project overview and quick start
 
 ---
@@ -207,14 +208,17 @@ git status --short
 ## Summary Statistics
 
 **Files Deleted:** 4
+
 - 3 obsolete documentation files
 - 1 obsolete test script
 
 **Files Moved:** 4
+
 - 2 to docs/
 - 2 to tests/
 
 **New Files Created:** 4
+
 - All in docs/ directory
 - All related to rollback procedures and cleanup
 

@@ -5,6 +5,7 @@
 `devstack` is a modern Python-based management interface for DevStack Core with comprehensive service profile support. It provides a beautiful CLI experience with colored output, tables, and progress indicators.
 
 **Features:**
+
 - Service profile management (minimal, standard, full, reference)
 - Automatic environment loading from profile .env files
 - Beautiful terminal output with Rich library
@@ -34,12 +35,14 @@ The script includes comprehensive help documentation accessible via standard hel
 ```
 
 **Every command includes:**
+
 - **ARGUMENTS:** Required and optional arguments
 - **OPTIONS:** All available flags and parameters with defaults
 - **EXAMPLES:** Real-world usage examples
 - **NOTES:** Important warnings, tips, and gotchas
 
 **Examples of getting help:**
+
 ```bash
 # See all available --profile options for start command
 ./devstack start --help
@@ -127,6 +130,7 @@ python3 -c "import click, rich, yaml; print('All dependencies installed!')"
 ### Common Workflows
 
 **Morning Routine (Start Development Environment):**
+
 ```bash
 # Start full development stack
 ./devstack start --profile standard
@@ -139,12 +143,14 @@ python3 -c "import click, rich, yaml; print('All dependencies installed!')"
 ```
 
 **End of Day (Stop Everything):**
+
 ```bash
 # Stop all services and Colima VM
 ./devstack stop
 ```
 
 **Quick Check (Status Without Starting):**
+
 ```bash
 # Check what's running
 ./devstack status
@@ -177,10 +183,12 @@ Start Colima VM and Docker services with specified profile(s).
 ```
 
 **Options:**
+
 - `--profile, -p`: Service profile(s) to start (can specify multiple)
 - `--detach/--no-detach, -d`: Run in background (default: True)
 
 **Examples:**
+
 ```bash
 # Minimal profile (5 services, 2GB RAM)
 ./devstack start --profile minimal
@@ -206,6 +214,7 @@ Stop Docker services and optionally Colima VM.
 ```
 
 **Options:**
+
 - `--profile, -p`: Only stop services from specific profile(s)
 
 ### status
@@ -218,6 +227,7 @@ Display status of Colima VM and all running services with resource usage.
 ```
 
 **Output includes:**
+
 - Colima VM status (running/stopped)
 - Docker service list with status
 - Resource usage (CPU, memory)
@@ -232,11 +242,13 @@ Check health status of all running services.
 ```
 
 **Output shows:**
+
 - Service name
 - Running status (running/stopped/exited)
 - Health check result (healthy/unhealthy/no healthcheck)
 
 **Color coding:**
+
 - Green: Healthy and running
 - Yellow: Running but no healthcheck or starting
 - Red: Stopped or unhealthy
@@ -264,6 +276,7 @@ docker compose logs -f postgres vault
 ```
 
 **Options:**
+
 - `--follow, -f`: Follow log output (stream continuously)
 - `--tail, -n`: Number of lines to show (default: 100)
 
@@ -285,6 +298,7 @@ Open an interactive shell in a running container.
 ```
 
 **Options:**
+
 - `--shell, -s`: Shell to use (default: sh, can use bash if available)
 
 ### profiles
@@ -297,6 +311,7 @@ List all available service profiles with details.
 ```
 
 **Output includes:**
+
 - Profile name
 - Number of services
 - RAM estimate
@@ -312,6 +327,7 @@ Display Colima VM IP address.
 ```
 
 **Use cases:**
+
 - Accessing services from libvirt VMs
 - Configuring network clients
 - Debugging network issues
@@ -326,16 +342,19 @@ Initialize Redis cluster (required for standard/full profiles).
 ```
 
 **When to use:**
+
 - After first start with `--profile standard`
 - After first start with `--profile full`
 - NOT needed for `--profile minimal` (single Redis node)
 
 **What it does:**
+
 - Creates 3-node Redis cluster
 - Distributes 16,384 slots across nodes
 - Verifies cluster health
 
 **Verify cluster:**
+
 ```bash
 # Connect to cluster
 redis-cli -c -h localhost -p 6379
@@ -361,6 +380,7 @@ redis-cli -h localhost -p 6379 cluster info
 **Services:** vault, postgres, pgbouncer, forgejo, redis-1 (standalone)
 
 **Use Cases:**
+
 - Git repository hosting
 - Simple CRUD application development
 - Learning the platform
@@ -371,6 +391,7 @@ redis-cli -h localhost -p 6379 cluster info
 **Services:** All minimal + mysql, mongodb, redis-2, redis-3, rabbitmq
 
 **Use Cases:**
+
 - Multi-database application development
 - Redis cluster testing (**YOUR PRIMARY USE CASE**)
 - Message queue integration
@@ -381,6 +402,7 @@ redis-cli -h localhost -p 6379 cluster info
 **Services:** All standard + prometheus, grafana, loki, vector, cadvisor, exporters
 
 **Use Cases:**
+
 - Performance testing
 - Production troubleshooting simulation
 - Observability pattern learning
@@ -391,6 +413,7 @@ redis-cli -h localhost -p 6379 cluster info
 **Services:** reference-api, api-first, golang-api, nodejs-api, rust-api
 
 **Use Cases:**
+
 - Learning API design patterns
 - Comparing language implementations
 - Testing integration patterns
@@ -420,6 +443,7 @@ export COLIMA_DISK=60
 ### Profile Environment Loading
 
 The script automatically loads environment variables from:
+
 1. Shell environment (highest priority)
 2. `configs/profiles/<profile>.env`
 3. Root `.env` file
@@ -441,16 +465,20 @@ The script automatically loads environment variables from:
 ### Migration Strategy
 
 **Current State:**
+
 - Bash script (`devstack`) - 1,622 lines
 - Python script (`devstack`) - 850 lines
 
 **Recommended Approach:**
+
 1. **Phase 1:** Use Python script for profile management
+
    ```bash
    ./devstack start --profile standard
    ```
 
 2. **Phase 2:** Use Python script for common operations
+
    ```bash
    ./devstack status
    ./devstack health
@@ -458,6 +486,7 @@ The script automatically loads environment variables from:
    ```
 
 3. **Phase 3:** Use bash script for advanced operations (until implemented in Python)
+
    ```bash
    ./devstack vault-bootstrap
    ./devstack backup
@@ -473,6 +502,7 @@ The script automatically loads environment variables from:
 **Problem:** `ModuleNotFoundError: No module named 'click'`
 
 **Solution:**
+
 ```bash
 # Install dependencies
 pip3 install --user click rich PyYAML python-dotenv
@@ -488,6 +518,7 @@ uv pip install -r scripts/requirements.txt
 **Problem:** `Permission denied: ./devstack`
 
 **Solution:**
+
 ```bash
 chmod +x devstack
 ```
@@ -497,6 +528,7 @@ chmod +x devstack
 **Problem:** `Command not found: colima`
 
 **Solution:**
+
 ```bash
 # Install Colima
 brew install colima
@@ -507,6 +539,7 @@ brew install colima
 **Problem:** Environment variables from profile not taking effect
 
 **Solution:**
+
 ```bash
 # Check if profile .env file exists
 ls -la configs/profiles/standard.env
@@ -523,6 +556,7 @@ env | grep REDIS
 **Problem:** `Error initializing Redis cluster`
 
 **Solution:**
+
 ```bash
 # Check redis containers are running
 docker ps | grep redis
@@ -620,6 +654,7 @@ To add new commands to the Python script:
 5. Test with all profiles
 
 Example:
+
 ```python
 @cli.command()
 @click.option("--force", is_flag=True, help="Force operation")
@@ -638,6 +673,7 @@ def mycommand(force: bool):
 ## Support
 
 For help with the Python management script:
+
 1. Check this documentation
 2. Run `./devstack --help`
 3. Check command-specific help: `./devstack start --help`

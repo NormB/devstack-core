@@ -69,6 +69,7 @@ chmod +x devstack
 ### Python Script Workflows
 
 **Start with Standard Profile (Recommended):**
+
 ```bash
 # Start full development stack
 ./devstack start --profile standard
@@ -81,6 +82,7 @@ chmod +x devstack
 ```
 
 **Start with Minimal Profile (Lightweight):**
+
 ```bash
 # Start essential services only
 ./devstack start --profile minimal
@@ -90,6 +92,7 @@ chmod +x devstack
 ```
 
 **Start with Full Profile (Observability):**
+
 ```bash
 # Start everything including Prometheus/Grafana
 ./devstack start --profile full
@@ -99,6 +102,7 @@ chmod +x devstack
 ```
 
 **Combine Profiles:**
+
 ```bash
 # Start standard infrastructure + reference APIs
 ./devstack start --profile standard --profile reference
@@ -147,6 +151,7 @@ The `devstack` script provides a unified interface for all operations. **Note:**
 ### Common Workflows
 
 **Daily Development:**
+
 ```bash
 # Morning: Start everything
 ./devstack start
@@ -162,6 +167,7 @@ The `devstack` script provides a unified interface for all operations. **Note:**
 ```
 
 **Troubleshooting:**
+
 ```bash
 # Check health of all services
 ./devstack health
@@ -180,6 +186,7 @@ docker compose restart postgres
 ```
 
 **Backup and Maintenance:**
+
 ```bash
 # Weekly backup
 ./devstack backup
@@ -199,6 +206,7 @@ docker system prune -a
 ### Advanced Usage
 
 **Custom Colima Configuration:**
+
 ```bash
 # Set custom resources
 export COLIMA_CPU=6
@@ -231,6 +239,7 @@ The script performs these operations:
    - Auto-initializes Vault on first start
 
 4. **Backup Process** (`cmd_backup`):
+
    ```bash
    # PostgreSQL: pg_dumpall
    docker compose exec -T postgres pg_dumpall > backup.sql

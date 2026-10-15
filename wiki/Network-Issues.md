@@ -42,6 +42,7 @@
 Network issues are common in Docker environments. This page provides troubleshooting guidance for network connectivity, DNS resolution, port conflicts, and Colima-specific networking issues.
 
 **Common Network Issues:**
+
 - Port already in use (conflicts with other services)
 - Containers can't reach each other
 - DNS resolution fails
@@ -593,6 +594,7 @@ networks:
 ```
 
 **Pros/Cons:**
+
 - Pro: No IP conflicts
 - Con: IPs may change on restart
 - Con: Harder to troubleshoot

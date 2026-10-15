@@ -27,6 +27,7 @@
 #### Profile Selection Guide
 
 **Use minimal profile when:**
+
 - Working on frontend-only projects
 - Need Git hosting (Forgejo) only
 - Limited system resources (< 8GB RAM)
@@ -38,6 +39,7 @@
 ```
 
 **Use standard profile when:**
+
 - Need Redis cluster for testing
 - Developing backend services
 - Require all databases (PostgreSQL, MySQL, MongoDB)
@@ -50,6 +52,7 @@
 ```
 
 **Use full profile when:**
+
 - Performance testing required
 - Need metrics (Prometheus) and logs (Loki)
 - Troubleshooting production issues locally
@@ -61,6 +64,7 @@
 ```
 
 **Use reference profile when:**
+
 - Learning API design patterns
 - Comparing language implementations
 - Need code examples for integration
@@ -75,6 +79,7 @@
 #### Minimal Profile Best Practices
 
 1. **Use for single-developer projects:**
+
    ```bash
    # Morning routine
    ./devstack.py start --profile minimal
@@ -82,6 +87,7 @@
    ```
 
 2. **Redis standalone usage:**
+
    ```python
    # No cluster-specific code needed
    import redis
@@ -90,6 +96,7 @@
    ```
 
 3. **Quick teardown:**
+
    ```bash
    ./devstack.py stop  # Fast shutdown, minimal cleanup
    ```
@@ -97,6 +104,7 @@
 #### Standard Profile Best Practices
 
 1. **Initialize Redis cluster after first start:**
+
    ```bash
    ./devstack.py start --profile standard
    # Wait 2-3 minutes for services to be healthy
@@ -105,6 +113,7 @@
    ```
 
 2. **Test Redis cluster operations:**
+
    ```python
    from rediscluster import RedisCluster
 
@@ -125,6 +134,7 @@
 #### Full Profile Best Practices
 
 1. **Set up monitoring dashboards:**
+
    ```bash
    # Access Grafana
    open http://localhost:3001  # admin/admin
@@ -139,6 +149,7 @@
    - Set up alerts for errors
 
 3. **Performance testing workflow:**
+
    ```bash
    # Start full profile
    ./devstack.py start --profile full
@@ -154,6 +165,7 @@
 #### Reference Profile Best Practices
 
 1. **Learn from multiple implementations:**
+
    ```bash
    # Start infrastructure + examples
    ./devstack.py start --profile standard --profile reference
@@ -180,6 +192,7 @@
 ### Profile Switching Best Practices
 
 1. **Clean shutdown before switching:**
+
    ```bash
    docker compose down  # Stop all services
    ./devstack.py start --profile minimal  # Start new profile
@@ -191,6 +204,7 @@
    - Vault remains initialized
 
 3. **Use profiles for different projects:**
+
    ```bash
    # Project A: Minimal profile
    cd ~/project-a
@@ -211,12 +225,14 @@
    - reference: +1GB RAM, +5 containers
 
 2. **Monitor resource consumption:**
+
    ```bash
    ./devstack.py status  # Shows container resources
    docker stats --no-stream     # Detailed resource usage
    ```
 
 3. **Adjust Colima resources based on profile:**
+
    ```bash
    # For minimal profile
    export COLIMA_MEMORY=4
@@ -254,6 +270,7 @@
 4. Weekly: Check resource usage and backup
 
 ## Development Workflow
+
 ```bash
 # 1. Make code changes
 # 2. Commit to local Forgejo
@@ -270,6 +287,7 @@ vault kv put secret/myapp/config api_key=xyz
 ```
 
 ## Resource Management
+
 ```bash
 # Check resource usage weekly
 ./devstack.sh status
@@ -282,6 +300,7 @@ docker system df
 ```
 
 ## Backup Strategy
+
 ```bash
 # Daily: Git commits (auto-backed up by Forgejo)
 # Weekly: Full backup
@@ -292,6 +311,7 @@ docker system df
 ```
 
 ## Security Hygiene
+
 ```bash
 # 1. Use strong, unique passwords in .env
 # 2. Backup Vault keys securely
@@ -308,6 +328,7 @@ docker compose up -d
 ## Integration Patterns
 
 ### Using PostgreSQL
+
 ```python
 # Python example
 import psycopg2
@@ -322,6 +343,7 @@ conn = psycopg2.connect(
 ```
 
 ### Using Redis Cluster
+
 ```python
 # Python with redis-py-cluster
 from rediscluster import RedisCluster
@@ -343,6 +365,7 @@ print(rc.get("key"))
 ```
 
 ### Using Vault
+
 ```bash
 # Get secrets via CLI
 export VAULT_ADDR=http://localhost:8200
@@ -356,6 +379,7 @@ DB_PASSWORD=$(vault kv get -field=password secret/myapp/db)
 ```
 
 ### Using RabbitMQ
+
 ```python
 # Python with pika
 import pika
@@ -371,6 +395,7 @@ channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
 ```
 
 ### Git with Forgejo
+
 ```bash
 # Add Forgejo as remote
 git remote add forgejo http://localhost:3000/username/repo.git
@@ -383,6 +408,7 @@ git remote set-url forgejo ssh://git@localhost:2222/username/repo.git
 ```
 
 ### Multi-Service Applications
+
 ```
 Your VoIP App
 ├── PostgreSQL: Call records, user accounts

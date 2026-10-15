@@ -12,6 +12,7 @@
 ## Service Definitions
 
 **Basic service structure:**
+
 ```yaml
 services:
   postgres:
@@ -46,6 +47,7 @@ services:
 ## Dependencies and Health Checks
 
 **All services depend on Vault:**
+
 ```yaml
 depends_on:
   vault:
@@ -53,6 +55,7 @@ depends_on:
 ```
 
 **Health check examples:**
+
 ```yaml
 # PostgreSQL
 healthcheck:
@@ -81,6 +84,7 @@ healthcheck:
 ## Volume Mounts
 
 **Data volumes:**
+
 ```yaml
 volumes:
   postgres-data:
@@ -92,6 +96,7 @@ volumes:
 ```
 
 **Bind mounts:**
+
 ```yaml
 volumes:
   # Read-only configuration
@@ -112,6 +117,7 @@ volumes:
 ## Network Configuration
 
 **Network definition:**
+
 ```yaml
 networks:
   dev-services:
@@ -123,6 +129,7 @@ networks:
 ```
 
 **Service network:**
+
 ```yaml
 services:
   postgres:
@@ -134,6 +141,7 @@ services:
 ## Environment Variables
 
 **From .env file:**
+
 ```yaml
 environment:
   POSTGRES_DB: ${POSTGRES_DB}
@@ -142,6 +150,7 @@ environment:
 ```
 
 **Hardcoded values:**
+
 ```yaml
 environment:
   ENVIRONMENT: development
@@ -149,6 +158,7 @@ environment:
 ```
 
 **File-based:**
+
 ```yaml
 env_file:
   - .env
@@ -158,6 +168,7 @@ env_file:
 ## Custom Modifications
 
 **Add new service:**
+
 ```yaml
 services:
   myservice:
@@ -180,6 +191,7 @@ services:
 ```
 
 **Override service:**
+
 ```yaml
 # docker-compose.override.yml
 services:

@@ -2,20 +2,20 @@
 
 ## Table of Contents
 
-  - [Step 1: Pre-Flight Checks](#step-1-pre-flight-checks)
-  - [Step 2: Install Required Software](#step-2-install-required-software)
-  - [Step 3: Clone the Repository](#step-3-clone-the-repository)
-  - [Step 4: Configure Environment](#step-4-configure-environment)
-  - [Step 4.5: Choose Your Service Profile](#step-45-choose-your-service-profile-optional-but-recommended)
-  - [Step 5: Start Colima and Services](#step-5-start-colima-and-services)
-    - [Option A: Python Script (Recommended)](#option-a-start-with-python-script-recommended)
-    - [Option B: Bash Script (Traditional)](#option-b-start-with-bash-script-traditional)
-  - [Step 6: Initialize Vault](#step-6-initialize-vault)
-  - [Step 7: Bootstrap Vault and Generate Credentials](#step-7-bootstrap-vault-and-generate-credentials)
-  - [Step 7.5: Initialize Redis Cluster (For Standard/Full Profiles Only)](#step-75-initialize-redis-cluster-for-standardfull-profiles-only)
-  - [Step 8: Verify Everything Works](#step-8-verify-everything-works)
-  - [Step 9: Access Your Services](#step-9-access-your-services)
-  - [What to Do If Something Goes Wrong](#what-to-do-if-something-goes-wrong)
+- [Step 1: Pre-Flight Checks](#step-1-pre-flight-checks)
+- [Step 2: Install Required Software](#step-2-install-required-software)
+- [Step 3: Clone the Repository](#step-3-clone-the-repository)
+- [Step 4: Configure Environment](#step-4-configure-environment)
+- [Step 4.5: Choose Your Service Profile](#step-45-choose-your-service-profile-optional-but-recommended)
+- [Step 5: Start Colima and Services](#step-5-start-colima-and-services)
+  - [Option A: Python Script (Recommended)](#option-a-start-with-python-script-recommended)
+  - [Option B: Bash Script (Traditional)](#option-b-start-with-bash-script-traditional)
+- [Step 6: Initialize Vault](#step-6-initialize-vault)
+- [Step 7: Bootstrap Vault and Generate Credentials](#step-7-bootstrap-vault-and-generate-credentials)
+- [Step 7.5: Initialize Redis Cluster (For Standard/Full Profiles Only)](#step-75-initialize-redis-cluster-for-standardfull-profiles-only)
+- [Step 8: Verify Everything Works](#step-8-verify-everything-works)
+- [Step 9: Access Your Services](#step-9-access-your-services)
+- [What to Do If Something Goes Wrong](#what-to-do-if-something-goes-wrong)
 - [Prerequisites](#prerequisites)
   - [System Requirements](#system-requirements)
   - [Required Software](#required-software)
@@ -30,6 +30,7 @@
 > **For Complete Beginners**: This section walks you through the entire installation process from scratch, with detailed explanations, expected outputs, and troubleshooting tips. Estimated time: 30-45 minutes.
 
 **What You'll Accomplish:**
+
 - ✅ Install Colima (lightweight Docker alternative)
 - ✅ Choose your service profile (minimal, standard, full, or reference)
 - ✅ Set up a complete development infrastructure
@@ -40,6 +41,7 @@
 **New in v1.3:** Service Profiles let you start only the services you need. See [SERVICE_PROFILES.md](./SERVICE_PROFILES.md) for complete details.
 
 **Before You Begin:**
+
 - This guide assumes macOS (tested on Apple M Series Processors)
 - You'll need at least 16GB RAM and 60GB free disk space
 - Basic terminal/command line familiarity is helpful but not required
@@ -78,6 +80,7 @@ sysctl hw.memsize | awk '{print $2/1073741824" GB"}'
 ```
 
 **What This Means:**
+
 - If you have less than 60GB free, you'll need to free up space before proceeding
 - If you have less than 16GB RAM, the system may run slowly or fail to start all services
 
@@ -116,6 +119,7 @@ which brew
 ```
 
 **Expected Output:**
+
 ```
 ==> Installation successful!
 ==> Next steps:
@@ -136,6 +140,7 @@ brew install colima docker docker-compose
 ```
 
 **Expected Output:**
+
 ```
 ==> Downloading colima...
 ==> Downloading docker...
@@ -169,6 +174,7 @@ docker-compose --version
 ```
 
 **What If It Fails?**
+
 - If `colima version` shows "command not found", restart your terminal
 - If still not working, run: `brew doctor` to check for issues
 
@@ -187,12 +193,14 @@ brew install ripgrep fd-find bat eza
 ```
 
 **Important Note:**
+
 - All DevStack Core scripts use standard Unix tools (`/usr/bin/grep`, `awk`, `sed`) explicitly
 - Scripts are designed to work regardless of aliases (e.g., if `grep` is aliased to `rg`)
 - These Rust tools are **not required** - scripts will work with standard macOS/Linux tools
 - If installed, they provide better performance for interactive terminal use
 
 **Compatibility:**
+
 - The link checker (`scripts/check-markdown-links.sh`) explicitly uses `/usr/bin/grep`
 - Other scripts that require GNU tool behavior use full paths to avoid alias conflicts
 - Your shell can safely alias `grep→rg`, `find→fd`, `ls→eza`, `cat→bat` without affecting scripts
@@ -244,6 +252,7 @@ ls -la
 ```
 
 **What If It Fails?**
+
 - If `git clone` fails with "command not found", install git: `brew install git`
 - If clone fails with permission errors, check your GitHub access
 
@@ -360,6 +369,7 @@ ls -l devstack
 ### Step 5: Start Colima and Services
 
 You can now start services using either:
+
 - **Python script** (recommended, with profile support)
 - **Bash script** (traditional, starts all services)
 
@@ -445,6 +455,7 @@ Next Steps:
 ```
 
 **What's Happening:**
+
 1. **Colima VM Creation** (0-60 seconds): Creates a Linux virtual machine
 2. **Docker Installation** (60-150 seconds): Installs Docker inside the VM
 3. **Container Start** (150-180 seconds): Launches your selected services
@@ -510,6 +521,7 @@ dev-vault               Up 28 seconds   starting (0/1)
 ```
 
 **What's Happening:**
+
 1. **Colima VM Creation** (0-60 seconds): Creates a Linux virtual machine
 2. **Docker Installation** (60-150 seconds): Installs Docker inside the VM
 3. **Container Start** (150-180 seconds): Launches all 12+ services
@@ -544,6 +556,7 @@ watch -n 30 'docker compose ps'
 ```
 
 **Expected Final State:**
+
 ```
 NAME                    STATUS          HEALTH
 dev-postgres            Up 2 minutes    healthy
@@ -620,6 +633,7 @@ cat ~/.config/vault/keys.json
 ```
 
 **Why This Matters:**
+
 - Without these keys, you CANNOT access Vault if it seals (locks)
 - You need 3 of 5 keys to unseal Vault
 - The root token is like a master password
@@ -659,6 +673,7 @@ tail -5 .env
 ```
 
 **What to Look For:**
+
 - `Initialized: true` ✅
 - `Sealed: false` ✅
 - If `Sealed: true`, run: `./devstack vault-unseal`
@@ -736,6 +751,7 @@ tail -5 .env
 ```
 
 **What Just Happened:**
+
 1. **Vault configured** a secrets storage system
 2. **AppRole authentication enabled** - Each service gets its own role-id and secret-id
 3. **Service policies created** - PostgreSQL, MySQL, MongoDB, Redis, RabbitMQ, Forgejo
@@ -745,12 +761,14 @@ tail -5 .env
 7. **TLS certificate system** set up (for HTTPS connections)
 
 **AppRole Authentication:**
+
 - **role-id**: Identifies which service is connecting (like a username)
 - **secret-id**: Proves the service is authorized (like a password)
 - **Service tokens**: Short-lived (1 hour) tokens generated from AppRole login
 - **Least privilege**: Each service can only access its own credentials
 
 **Where Credentials Are Stored:**
+
 ```
 ~/.config/vault/
 ├── approles/
@@ -884,6 +902,7 @@ docker exec -it dev-redis-1 redis-cli -c -a "$(./devstack vault-show-password re
 ```
 
 **What This Means:**
+
 - `cluster_state:ok` - Cluster is healthy ✅
 - `cluster_slots_assigned:16384` - All hash slots are assigned ✅
 - `cluster_known_nodes:3` - All 3 nodes are in the cluster ✅
@@ -966,6 +985,7 @@ dev-reference-api       Up 5 minutes    healthy
 ```
 
 **What to Look For:**
+
 - All services show `healthy` ✅
 - If any show `starting`, wait 30 seconds and check again
 - If any show `unhealthy`, see troubleshooting below
@@ -1032,16 +1052,16 @@ Open these URLs in your browser:
 
 | Service | URL | Default Login |
 |---------|-----|---------------|
-| **Forgejo (Git Server)** | http://localhost:3000 | (create account on first visit) |
-| **Vault UI** | http://localhost:8200/ui | Token from `~/.config/vault/root-token` |
-| **RabbitMQ Management** | http://localhost:15672 | Get from: `./devstack vault-show-password rabbitmq` |
-| **Grafana Dashboards** | http://localhost:3001 | admin / admin |
-| **Prometheus Metrics** | http://localhost:9090 | (no login required) |
-| **FastAPI Code-First** | http://localhost:8000/docs | (no login required) |
-| **FastAPI API-First** | http://localhost:8001/docs | (no login required) |
-| **Go API** | http://localhost:8002/health | (no login required) |
-| **Node.js API** | http://localhost:8003/health | (no login required) |
-| **Rust API** | http://localhost:8004/health | (no login required) |
+| **Forgejo (Git Server)** | <http://localhost:3000> | (create account on first visit) |
+| **Vault UI** | <http://localhost:8200/ui> | Token from `~/.config/vault/root-token` |
+| **RabbitMQ Management** | <http://localhost:15672> | Get from: `./devstack vault-show-password rabbitmq` |
+| **Grafana Dashboards** | <http://localhost:3001> | admin / admin |
+| **Prometheus Metrics** | <http://localhost:9090> | (no login required) |
+| **FastAPI Code-First** | <http://localhost:8000/docs> | (no login required) |
+| **FastAPI API-First** | <http://localhost:8001/docs> | (no login required) |
+| **Go API** | <http://localhost:8002/health> | (no login required) |
+| **Node.js API** | <http://localhost:8003/health> | (no login required) |
+| **Rust API** | <http://localhost:8004/health> | (no login required) |
 
 **9.2 Test Forgejo (Git Server):**
 
@@ -1054,6 +1074,7 @@ open http://localhost:3000
 ```
 
 **First-Time Setup Steps:**
+
 1. Click **"Register"** in top-right
 2. Fill in: Username, Email, Password
 3. Click **"Register Account"**
@@ -1343,26 +1364,31 @@ docker-compose --version
 **What happens when you run Colima:**
 
 1. **VM Creation**: Colima creates a Lima-based Linux VM
+
    ```
    ~/.lima/colima/  # VM configuration and disk images
    ```
 
 2. **Docker Installation**: Installs Docker Engine inside the VM
+
    ```
    docker context use colima  # Automatically configured
    ```
 
 3. **Socket Exposure**: Exposes Docker socket to your Mac
+
    ```
    /var/run/docker.sock  # Symlinked to Lima VM socket
    ```
 
 4. **Volume Mounting**: Mounts your home directory into the VM
+
    ```
    ~/  →  /Users/<username>/ inside VM
    ```
 
 **Colima Profiles:**
+
 - Multiple Colima instances can run simultaneously
 - Each profile has its own VM, network, and volumes
 - Default profile: `default`
@@ -1373,29 +1399,34 @@ docker-compose --version
 ### First Time Setup
 
 **1. Install Dependencies**
+
 ```bash
 brew install colima docker docker-compose
 ```
 
 **2. Clone Repository**
+
 ```bash
 git clone https://github.com/NormB/devstack-core.git ~/devstack-core
 cd ~/devstack-core
 ```
 
 **3. Configure Environment**
+
 ```bash
 cp .env.example .env
 nano .env  # or vim, code, etc.
 ```
 
 **Important:** Passwords are auto-generated by Vault during bootstrap:
+
 - Run `./devstack vault-bootstrap` to generate all service credentials
 - Passwords are 25-character random strings (base64, URL-safe)
 - Stored securely in Vault, fetched at container startup
 - No plaintext passwords in configuration files
 
 **4. Make Management Script Executable**
+
 ```bash
 chmod +x devstack
 ```
@@ -1438,6 +1469,7 @@ FORGEJO_DOMAIN=localhost  # Or Colima IP for network access
 **⚠️ IMPORTANT: NO PLAINTEXT PASSWORDS**
 
 All service credentials are managed by HashiCorp Vault. After running `vault-bootstrap`, credentials are:
+
 - Generated automatically with strong random passwords
 - Stored securely in Vault at `secret/<service>`
 - Fetched by services at startup via init scripts
@@ -1471,11 +1503,13 @@ export COLIMA_DISK=60            # Disk size in GB
 ### Starting Services
 
 **Option 1: Using Management Script (Recommended)**
+
 ```bash
 ./devstack start
 ```
 
 This will:
+
 1. Check/create `.env` file
 2. Start Colima VM (if not running)
 3. Start all Docker services
@@ -1483,6 +1517,7 @@ This will:
 5. Display service status and access URLs
 
 **Option 2: Manual Start**
+
 ```bash
 # Start Colima VM
 colima start --cpu 4 --memory 8 --disk 60 --network-address --arch aarch64 --vm-type vz
@@ -1498,6 +1533,7 @@ docker compose ps
 ```
 
 **Verify Everything is Running:**
+
 ```bash
 ./devstack status
 ./devstack health

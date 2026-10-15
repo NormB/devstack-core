@@ -13,6 +13,7 @@
 This document tracks the implementation of 20 improvements identified in the comprehensive codebase analysis. Each task must be completed and tested before moving to the next task. Each phase must be fully completed before moving to the next phase.
 
 **Completion Criteria:**
+
 - ✅ Task implementation complete
 - ✅ Tests written and passing
 - ✅ Smoke tests pass (no regressions)
@@ -55,6 +56,7 @@ This document tracks the implementation of 20 improvements identified in the com
 ## Resource Requirements
 
 ### Disk Space
+
 - Vault backups: ~10MB daily × 30 days = ~300MB
 - Database backups: ~500MB daily × 7 days = ~3.5GB
 - Migration frameworks: ~200MB
@@ -62,21 +64,25 @@ This document tracks the implementation of 20 improvements identified in the com
 - **Total additional:** ~4.5GB disk space minimum
 
 ### Memory
+
 - Alertmanager: +128MB
 - Flyway/Liquibase (temporary): +256MB during migrations
 - Test containers (temporary): +512MB during CI/CD tests
 - **Total additional:** +896MB RAM (peak during testing)
 
 ### Network Ports
+
 - Alertmanager: 9093
 - Verify available: `netstat -an | grep 9093`
 
 ### External Services (Optional)
+
 - GPG for backup encryption (install if missing: `brew install gnupg`)
 - S3 bucket or external storage (for secure backups - Phase 1.3)
 - Email/Slack for Alertmanager (optional but recommended - Phase 2.2)
 
 ### Tools Required
+
 - Docker Desktop or Colima
 - Git
 - Python 3.11+ with uv
@@ -104,12 +110,14 @@ This document tracks the implementation of 20 improvements identified in the com
 ## Task Dependencies
 
 ### Phase 0 Dependencies
+
 ```
 All Phase 0 tasks must complete before Phase 1 starts
 No internal dependencies within Phase 0
 ```
 
 ### Phase 1 Dependencies
+
 ```
 Task 1.1 (AppRole) ────────┐
                            ├──> Task 1.2 (Remove Env Creds) ──┐
@@ -122,11 +130,13 @@ All tasks must complete ──────────────────�
 ```
 
 **Recommended Execution Order:**
+
 1. Complete Task 1.1 fully (including integration testing)
 2. Start Tasks 1.3, 1.4, 1.5 in parallel (independent)
 3. Complete Task 1.2 (after 1.1 confirmed working)
 
 ### Phase 2 Dependencies
+
 ```
 Task 2.2 (Alertmanager) ──┬──> Task 2.1 (Alert Rules) ──────┐
                           └──> Task 2.3 (Backup Verify) ────┤
@@ -136,18 +146,21 @@ Task 2.5 (CI/CD Tests) ───────────────────
 ```
 
 **Recommended Execution Order:**
+
 1. Complete Task 2.2 (Alertmanager) first
 2. Start Task 2.1 (after 2.2 working)
 3. Start Tasks 2.4, 2.5 in parallel (independent)
 4. Complete Task 2.3 (after 2.2 working)
 
 ### Phase 3 Dependencies
+
 ```
 All Phase 3 tasks are independent (can run in parallel)
 Task 3.1, 3.2, 3.3, 3.4, 3.5 ──> Phase 3 Complete
 ```
 
 ### Phase 4 Dependencies
+
 ```
 All Phase 4 tasks are independent (can run in parallel)
 Task 4.1, 4.2, 4.3, 4.4, 4.5 ──> Phase 4 Complete
@@ -178,35 +191,41 @@ Task 4.1, 4.2, 4.3, 4.4, 4.5 ──> Phase 4 Complete
 ## Success Metrics
 
 **Baseline Metrics (Measure in Phase 0):**
+
 - Test coverage: ___% (run `pytest --cov` + `go test -cover`)
 - Security score: ___ (run `./scripts/audit-capabilities.sh`)
 - Performance p95: ___ ms per endpoint (run `tests/performance-benchmark.sh`)
 - Total test count: ___ tests passing
 
 **Target Metrics After Phase 1:**
+
 - Test coverage improvement: +5% (from baseline)
 - Security score improvement: +15% (AppRole + credential fixes)
 - Performance: p95 latency ≤ baseline + 5% (no significant degradation)
 - All existing tests still passing + new security tests
 
 **Target Metrics After Phase 2:**
+
 - Test coverage improvement: +10% (from baseline)
 - Alert coverage: 100% of critical services monitored
 - Backup verification: 100% automated
 - Migration framework: 100% of databases covered
 
 **Target Metrics After Phase 3:**
+
 - Test coverage improvement: +15% (from baseline)
 - Code quality: ShellCheck passing 100% of scripts
 - API consistency: 100% parity across Python, Go, Node.js (partial for Rust)
 
 **Target Metrics After Phase 4:**
+
 - Test coverage improvement: +18% (from baseline)
 - Performance regression: Automated in CI/CD
 - Documentation coverage: 100% (runbooks + ADRs)
 - Developer experience: Measured by setup time reduction
 
 **Measurement Tools:**
+
 - Test coverage: `pytest --cov` + `go test -cover` + Jest coverage
 - Security score: `./scripts/audit-capabilities.sh` + Trivy scan results
 - Performance: `tests/performance-benchmark.sh`
@@ -226,6 +245,7 @@ Task 4.1, 4.2, 4.3, 4.4, 4.5 ──> Phase 4 Complete
 **Impact:** Critical - Prevents data loss and provides rollback capability
 
 **Current Issue:**
+
 - No documented baseline for comparison
 - No verified backup for disaster recovery
 - No clean starting point for changes
@@ -317,6 +337,7 @@ Task 4.1, 4.2, 4.3, 4.4, 4.5 ──> Phase 4 Complete
 **Impact:** High - Prevents compromised services from accessing all Vault secrets
 
 **Current Issue:**
+
 - All services use root token passed via `VAULT_TOKEN` environment variable
 - Any compromised service has full Vault access
 - File: `docker-compose.yml:74`
@@ -431,6 +452,7 @@ Task 4.1, 4.2, 4.3, 4.4, 4.5 ──> Phase 4 Complete
    - **Test:** Can switch back to AppRole without issues
 
 **Rollback Plan:**
+
 ```bash
 # In .env file:
 VAULT_USE_ROOT_TOKEN=true
@@ -441,6 +463,7 @@ VAULT_USE_APPROLE=false
 ```
 
 **Post-Task Validation:**
+
 - [ ] Smoke test: `./devstack health` (all services healthy)
 - [ ] No regressions: `./tests/run-all-tests.sh` (all tests pass)
 - [ ] Performance check: No significant latency increase (<5%)
@@ -457,6 +480,7 @@ VAULT_USE_APPROLE=false
 **Depends On:** Task 1.1 (AppRole authentication must be working)
 
 **Current Issue:**
+
 - Credentials exported to environment variables (visible in `docker inspect`)
 - Files: All `configs/*/scripts/init.sh` files
 - Risk: Process listing, container inspection exposes passwords
@@ -587,6 +611,7 @@ VAULT_USE_APPROLE=false
     - **Test:** Rollback works successfully
 
 **Validation Script:**
+
 ```bash
 #!/bin/bash
 # scripts/validate-no-credential-exposure.sh
@@ -612,6 +637,7 @@ echo "PASS: No credential exposure detected"
 ```
 
 **Post-Task Validation:**
+
 - [ ] Smoke test: `./devstack health`
 - [ ] No regressions: `./tests/run-all-tests.sh`
 - [ ] Security validation: `./scripts/validate-no-credential-exposure.sh`
@@ -627,6 +653,7 @@ echo "PASS: No credential exposure detected"
 **Impact:** Critical - Prevents irrecoverable data loss
 
 **Current Issue:**
+
 - Vault keys stored at `~/.config/vault/` with no automated backup
 - If directory deleted, all data is irrecoverable
 - No backup verification
@@ -730,11 +757,13 @@ echo "PASS: No credential exposure detected"
 **Backup Location:** `~/devstack-backups/vault/YYYYMMDD_HHMMSS/`
 
 **Security Note:**
+
 - ❌ **DO NOT** upload Vault backups to GitHub Actions artifacts (insecure)
 - ✅ **DO** use external encrypted drive or S3 with SSE-KMS
 - ✅ **DO** store passphrase in secure password manager
 
 **Post-Task Validation:**
+
 - [ ] Smoke test: Create and restore backup successfully
 - [ ] Security check: Verify encryption works (cannot read without passphrase)
 - [ ] Rotation test: Verify old backups are cleaned up
@@ -750,6 +779,7 @@ echo "PASS: No credential exposure detected"
 **Impact:** High - Prevents password visibility in process listing
 
 **Current Issue:**
+
 - Password passed via command-line argument in mysqldump
 - File: `scripts/manage_devstack.py:953`
 - Visible in `ps aux` during backup operation
@@ -818,6 +848,7 @@ echo "PASS: No credential exposure detected"
    - **Test:** Documentation review
 
 **Validation:**
+
 ```bash
 # In separate terminal during backup
 watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQL|POSTGRES|MONGO" | grep -v grep'
@@ -825,6 +856,7 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
 ```
 
 **Post-Task Validation:**
+
 - [ ] Security test: Run `tests/test-backup-security.sh` (passes)
 - [ ] Functional test: Backup and restore work correctly
 - [ ] No regressions: Backup files same size as before
@@ -839,6 +871,7 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
 **Impact:** Medium - Security transparency and awareness
 
 **Current Issue:**
+
 - Vault uses `IPC_LOCK` capability without explanation
 - cAdvisor uses `SYS_ADMIN` and `SYS_PTRACE` without justification
 - Files: `docker-compose.yml:752-753`, `docker-compose.yml:1492-1494`
@@ -849,6 +882,7 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
 1. **Subtask 1.5.1:** Add inline documentation to docker-compose.yml
    - [ ] Find Vault service definition (around line 752)
    - [ ] Document Vault IPC_LOCK capability:
+
      ```yaml
      cap_add:
        # IPC_LOCK: Required for Vault's mlock() to prevent secrets from being swapped to disk
@@ -856,8 +890,10 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
        # Alternative: Run Vault with 'disable_mlock = true' (not recommended)
        - IPC_LOCK
      ```
+
    - [ ] Find cAdvisor service definition (around line 1492)
    - [ ] Document cAdvisor SYS_ADMIN capability:
+
      ```yaml
      cap_add:
        # SYS_ADMIN: Required for cAdvisor to access container metrics via cgroups
@@ -868,6 +904,7 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
        # Security trade-off: Allows debugging and inspection of other containers
        - SYS_PTRACE
      ```
+
    - [ ] Add security notes section at top of docker-compose.yml
    - **Test:** Review comments for clarity and accuracy
    - **Test:** `docker compose config` still validates
@@ -927,6 +964,7 @@ watch -n 0.1 'ps aux | grep -iE "password|passwd|-p[[:space:]]*[^[:space:]]|MYSQ
    - **Test:** No security regressions
 
 **Documentation Example:**
+
 ```yaml
 # docker-compose.yml - Security Notes
 # This file uses minimal privileged capabilities for development.
@@ -946,6 +984,7 @@ vault:
 ```
 
 **Post-Task Validation:**
+
 - [ ] Audit script passes: `./scripts/audit-capabilities.sh`
 - [ ] Documentation complete: All 3 capabilities documented
 - [ ] No new capabilities added unknowingly
@@ -970,6 +1009,7 @@ vault:
 - [ ] Rollback tested for all critical changes
 
 **Post-Phase Integration Test:**
+
 1. [ ] Run `./devstack stop && ./devstack start`
 2. [ ] Verify all services healthy
 3. [ ] Run `./tests/run-all-tests.sh` (all tests pass)
@@ -1092,9 +1132,10 @@ vault:
    - **Test:** Rollback works, no data loss
 
 **Post-Task Validation:**
+
 - [ ] Smoke test: `./devstack health` (alertmanager healthy)
 - [ ] Functional test: Can send and receive test alert
-- [ ] UI test: Alertmanager UI accessible at http://localhost:9093
+- [ ] UI test: Alertmanager UI accessible at <http://localhost:9093>
 
 ---
 
@@ -1152,7 +1193,7 @@ vault:
    - [ ] Configure alert evaluation interval (default: 15s)
    - [ ] Reload Prometheus: `docker compose exec prometheus kill -HUP 1`
    - [ ] Or restart: `docker compose restart prometheus`
-   - **Test:** Check Prometheus UI for loaded alert rules (http://localhost:9090/rules)
+   - **Test:** Check Prometheus UI for loaded alert rules (<http://localhost:9090/rules>)
    - **Test:** Check for configuration errors in Prometheus logs
 
 6. **Subtask 2.1.6:** Create alert testing script
@@ -1183,6 +1224,7 @@ vault:
    - **Test:** Rollback works
 
 **Post-Task Validation:**
+
 - [ ] All alert rules loaded: Check Prometheus UI /rules
 - [ ] Test alert fires: Run `tests/test-alerts.sh`
 - [ ] Alerts reach Alertmanager: Check Alertmanager UI
@@ -1281,6 +1323,7 @@ vault:
    - **Test:** N/A
 
 **Post-Task Validation:**
+
 - [ ] Verification script works: `./devstack verify-backup`
 - [ ] Can detect corrupted backup
 - [ ] Reports are clear and actionable
@@ -1388,6 +1431,7 @@ vault:
     - **Test:** Rollback procedures documented
 
 **Post-Task Validation:**
+
 - [ ] All migration frameworks working
 - [ ] Can create and apply migrations
 - [ ] Migration history tracked correctly
@@ -1495,6 +1539,7 @@ If Docker-in-Docker proves too complex, use this simpler approach:
 **Rationale:** Docker-in-Docker for Colima + Vault is complex and may not be feasible in GitHub Actions. Focus on what's achievable now, defer complex integration to future phase.
 
 **Post-Task Validation:**
+
 - [ ] CI workflow exists and runs
 - [ ] Tests provide value (catch real issues)
 - [ ] Documentation complete
@@ -1516,6 +1561,7 @@ If Docker-in-Docker proves too complex, use this simpler approach:
 - [ ] Full test suite passes: `./tests/run-all-tests.sh`
 
 **Post-Phase Integration Test:**
+
 1. [ ] Run `./devstack stop && ./devstack start --profile full`
 2. [ ] Verify all services healthy (including Alertmanager)
 3. [ ] Trigger test alert: `./devstack alertmanager-test`
@@ -1549,57 +1595,66 @@ If Docker-in-Docker proves too complex, use this simpler approach:
 ## Lessons Learned (Complete After Each Phase)
 
 ### Phase 0 Lessons
+
 - **What went well:**
 - **What didn't go well:**
 - **What would we do differently:**
-- **Time estimate accuracy:** Estimated: 3h, Actual: ___h, Variance: ___%
+- **Time estimate accuracy:** Estimated: 3h, Actual: \_\_\_h, Variance: \_\_\_%
 - **Unexpected challenges:**
 - **Key learnings:**
 
 ### Phase 1 Lessons
+
 - **What went well:**
 - **What didn't go well:**
 - **What would we do differently:**
-- **Time estimate accuracy:** Estimated: 39h, Actual: ___h, Variance: ___%
+- **Time estimate accuracy:** Estimated: 39h, Actual: \_\_\_h, Variance: \_\_\_%
 - **Most challenging task:**
 - **Most valuable improvement:**
 
 ### Phase 2 Lessons
+
 - **What went well:**
 - **What didn't go well:**
 - **What would we do differently:**
-- **Time estimate accuracy:** Estimated: 38h, Actual: ___h, Variance: ___%
+- **Time estimate accuracy:** Estimated: 38h, Actual: \_\_\_h, Variance: \_\_\_%
 
 ### Phase 3 Lessons
+
 - **What went well:**
 - **What didn't go well:**
 - **What would we do differently:**
-- **Time estimate accuracy:** Estimated: 45h, Actual: ___h, Variance: ___%
+- **Time estimate accuracy:** Estimated: 45h, Actual: \_\_\_h, Variance: \_\_\_%
 
 ### Phase 4 Lessons
+
 - **What went well:**
 - **What didn't go well:**
 - **What would we do differently:**
-- **Time estimate accuracy:** Estimated: 15h, Actual: ___h, Variance: ___%
+- **Time estimate accuracy:** Estimated: 15h, Actual: \_\_\_h, Variance: \_\_\_%
 
 ---
 
 ## Notes and Decisions
 
 ### Task Modifications
+
 - Document any changes to tasks or scope here
 - Note reasons for task modifications
 - Track scope creep or descoping
 
 **Example:**
+
 - 2025-11-14: Changed Task 2.5 from comprehensive to lightweight testing due to Docker-in-Docker complexity
 
 ### Issues Encountered
+
 - Document blocking issues and resolutions
 - Track technical debt created
 - Note areas requiring future attention
 
 ### Deferred Items (Phase 5 Backlog)
+
 - Full integration tests in CI/CD (Task 2.5 Option A)
 - Complete Rust implementation (Task 3.5 Option B)
 - S3 integration for Vault backups (Task 1.3 enhancement)
@@ -1626,10 +1681,11 @@ If Docker-in-Docker proves too complex, use this simpler approach:
 - [ ] Project ready for production adaptation
 
 **Final Metrics vs. Baseline:**
-- Test coverage: Baseline: ___%, Final: ___%, Improvement: ___% ✅
-- Security score: Baseline: ___, Final: ___, Improvement: ___% ✅
-- Performance p95: Baseline: ___ms, Final: ___ms, Degradation: ___% ✅ (target: <5%)
-- Total test count: Baseline: ___, Final: ___, New tests: ___ ✅
+
+- Test coverage: Baseline: \_\_\_%, Final: \_\_\_%, Improvement: \_\_\_% ✅
+- Security score: Baseline: \_\_\_, Final: \_\_\_, Improvement: \_\_\_% ✅
+- Performance p95: Baseline: \_\_\_ms, Final: \_\_\_ms, Degradation: \_\_\_% ✅ (target: <5%)
+- Total test count: Baseline: \_\_\_, Final: \_\_\_, New tests: \_\_\_ ✅
 
 **Project Sign-off:** _________________ Date: _________
 

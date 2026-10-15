@@ -2,10 +2,10 @@
 
 ## Table of Contents
 
-  - [Overview](#overview)
-  - [Service Vault Integration](#service-vault-integration)
-  - [SSL/TLS Certificate Management](#ssltls-certificate-management)
-  - [Vault Commands](#vault-commands)
+- [Overview](#overview)
+- [Service Vault Integration](#service-vault-integration)
+- [SSL/TLS Certificate Management](#ssltls-certificate-management)
+- [Vault Commands](#vault-commands)
 - [Vault Auto-Unseal](#vault-auto-unseal)
   - [How It Works](#how-it-works)
   - [Initial Setup](#initial-setup)
@@ -19,6 +19,7 @@
 HashiCorp Vault provides centralized secrets management and Public Key Infrastructure (PKI) for services. Instead of storing passwords in `.env` files, services fetch credentials from Vault at startup.
 
 **Benefits:**
+
 - ✅ Centralized secrets management
 - ✅ Dynamic certificate generation
 - ✅ Automatic certificate rotation
@@ -27,6 +28,7 @@ HashiCorp Vault provides centralized secrets management and Public Key Infrastru
 - ✅ No plaintext passwords in configuration files
 
 **Architecture:**
+
 ```
 Vault PKI Hierarchy
 ├── Root CA (10-year validity)
@@ -43,6 +45,7 @@ Vault PKI Hierarchy
 **ALL services use Vault integration with AppRole authentication for credentials management.** AppRole migration completed November 2025 (100% of services).
 
 **Integrated Services (All using AppRole):**
+
 - ✅ PostgreSQL (`configs/postgres/scripts/init-approle.sh`) - AppRole authentication
 - ✅ MySQL (`configs/mysql/scripts/init-approle.sh`) - AppRole authentication
 - ✅ Redis Cluster (3 nodes) (`configs/redis/scripts/init-approle.sh`) - AppRole authentication
@@ -120,6 +123,7 @@ VAULT_TOKEN=hvs.xxxxxxxxxxxxx  # From ~/.config/vault/root-token
 ### AppRole Authentication (Reference API Example)
 
 **Overview:** The reference-api demonstrates **AppRole authentication**, HashiCorp's recommended method for applications to authenticate to Vault. This is more secure than using root tokens as it provides:
+
 - Limited, application-specific permissions
 - Renewable and revocable tokens
 - Audit trail of application authentication
@@ -132,12 +136,14 @@ VAULT_TOKEN=hvs.xxxxxxxxxxxxx  # From ~/.config/vault/root-token
    - `secret-id`: Secret credential (similar to password)
 
 2. **Container Startup** → Docker mounts credentials into container
+
    ```yaml
    volumes:
      - ${HOME}/.config/vault/approles/reference-api:/vault-approles/reference-api:ro
    ```
 
 3. **Application Initialization** → VaultClient reads credentials and authenticates
+
    ```python
    # reference-apps/fastapi/app/services/vault.py
    def _login_with_approle(self) -> str:
@@ -162,6 +168,7 @@ VAULT_TOKEN=hvs.xxxxxxxxxxxxx  # From ~/.config/vault/root-token
    ```
 
 4. **Fallback Mechanism** → If AppRole authentication fails, falls back to token-based auth
+
    ```python
    def __init__(self):
        if settings.VAULT_APPROLE_DIR and os.path.exists(settings.VAULT_APPROLE_DIR):
@@ -214,6 +221,7 @@ vault write -f -field=secret_id auth/approle/role/reference-api/secret-id > ~/.c
 ```
 
 **Benefits:**
+
 - **Security**: Application never has root token
 - **Audit**: All API calls logged with AppRole identity
 - **Rotation**: secret-id can be rotated without code changes
@@ -221,6 +229,7 @@ vault write -f -field=secret_id auth/approle/role/reference-api/secret-id > ~/.c
 - **Production-Ready**: Recommended by HashiCorp for application authentication
 
 **See Also:**
+
 - Reference API documentation: `reference-apps/fastapi/README.md`
 - AppRole implementation: `reference-apps/fastapi/app/services/vault.py`
 - Docker configuration: `docker-compose.yml` (line 879)
@@ -230,6 +239,7 @@ vault write -f -field=secret_id auth/approle/role/reference-api/secret-id > ~/.c
 **TLS Implementation: Pre-Generated Certificates with Vault-Based Configuration**
 
 The system uses a modern, production-ready TLS architecture where:
+
 - ✅ TLS settings are stored in **Vault** (not environment variables)
 - ✅ Certificates are **pre-generated** and validated before service startup
 - ✅ Runtime enable/disable without container rebuilds
@@ -303,6 +313,7 @@ docker restart dev-postgres
 ```
 
 **Certificate Details:**
+
 - **Validity:** 1 year (8760 hours)
 - **Storage:** `~/.config/vault/certs/{service}/`
 - **Mount:** Read-only bind mounts into containers
@@ -313,6 +324,7 @@ docker restart dev-postgres
 All services are configured for **dual-mode TLS** (accepting both encrypted and unencrypted connections).
 
 **PostgreSQL:**
+
 ```bash
 # Get password from Vault
 export PGPASSWORD=$(python3 scripts/read-vault-secret.py postgres password)
@@ -328,6 +340,7 @@ docker exec dev-postgres psql -U dev_admin -d dev_database -c "SHOW ssl;"
 ```
 
 **MySQL:**
+
 ```bash
 # Get password from Vault
 MYSQL_PASS=$(export VAULT_TOKEN=$(cat ~/.config/vault/root-token); python3 scripts/read-vault-secret.py mysql password)
@@ -343,6 +356,7 @@ docker logs dev-mysql | grep "Channel mysql_main configured to support TLS"
 ```
 
 **Redis:**
+
 ```bash
 # Get password from Vault
 REDIS_PASS=$(export VAULT_TOKEN=$(cat ~/.config/vault/root-token); python3 scripts/read-vault-secret.py redis-1 password)
@@ -362,6 +376,7 @@ docker logs dev-redis-1 | grep "Ready to accept connections"
 ```
 
 **RabbitMQ:**
+
 ```bash
 # SSL port: 5671
 # Non-SSL port: 5672 (management UI also available on 15672)
@@ -372,6 +387,7 @@ curl -u admin:$(export VAULT_TOKEN=$(cat ~/.config/vault/root-token); python3 sc
 ```
 
 **MongoDB:**
+
 ```bash
 # Get credentials from Vault
 MONGO_USER=$(export VAULT_TOKEN=$(cat ~/.config/vault/root-token); python3 scripts/read-vault-secret.py mongodb user)
@@ -385,6 +401,7 @@ mongosh "mongodb://$MONGO_USER:$MONGO_PASS@localhost:27017/dev_database"
 ```
 
 **SSL/TLS Modes:**
+
 - **PostgreSQL SSL Modes:**
   - `disable` - No SSL
   - `allow` - Try SSL, fallback to plain
@@ -561,6 +578,7 @@ Container: dev-vault
 ```
 
 **Entrypoint** (`docker-compose.yml:360-366`):
+
 ```yaml
 entrypoint: >
   sh -c "
@@ -572,6 +590,7 @@ entrypoint: >
 ```
 
 **Process Flow:**
+
 1. Fix `/vault/data` permissions (chown)
 2. Start Vault server in background (`&`)
 3. Start auto-unseal script in background (`&`)
@@ -580,6 +599,7 @@ entrypoint: >
 ### Initial Setup
 
 **First-Time Initialization:**
+
 ```bash
 ./configs/vault/scripts/vault-init.sh
 # Or
@@ -587,6 +607,7 @@ entrypoint: >
 ```
 
 **What Happens:**
+
 1. Waits for Vault to be ready (max 30 seconds)
 2. Checks if already initialized
 3. If not initialized:
@@ -598,6 +619,7 @@ entrypoint: >
 5. Displays status and root token
 
 **Shamir Secret Sharing:**
+
 - 5 keys generated
 - Any 3 keys can unseal Vault
 - Designed for distributed trust (give keys to different people/systems)
@@ -632,6 +654,7 @@ while true; do sleep 3600; done
 ```
 
 **Why Not Continuous Monitoring?**
+
 - Original design had 10-second checks (360 API calls/hour)
 - Optimized to single unseal + sleep
 - Saves 99% of API calls and CPU cycles
@@ -640,6 +663,7 @@ while true; do sleep 3600; done
 ### Manual Operations
 
 **Check Vault Status:**
+
 ```bash
 ./devstack vault-status
 
@@ -650,6 +674,7 @@ vault status
 ```
 
 **Manually Unseal:**
+
 ```bash
 ./devstack vault-unseal
 
@@ -658,18 +683,21 @@ vault operator unseal  # Repeat 3 times with different keys
 ```
 
 **Seal Vault:**
+
 ```bash
 vault operator seal
 # Note: Won't auto-reseal until container restarts
 ```
 
 **Rotate Root Token:**
+
 ```bash
 vault token create -policy=root
 # Save new token to ~/.config/vault/root-token
 ```
 
 **Backup Unseal Keys:**
+
 ```bash
 # Encrypt and backup
 tar czf vault-keys-$(date +%Y%m%d).tar.gz ~/.config/vault/
@@ -694,6 +722,7 @@ gpg -c vault-keys-*.tar.gz
 ### Checking Certificate Expiration
 
 **Check all service certificates:**
+
 ```bash
 # Quick check all services
 for service in postgres mysql redis-1 redis-2 redis-3 rabbitmq mongodb; do
@@ -713,11 +742,13 @@ done
 ```
 
 **Check Root CA:**
+
 ```bash
 openssl x509 -in ~/.config/vault/ca/ca.pem -noout -enddate -subject
 ```
 
 **Check Intermediate CA:**
+
 ```bash
 vault read pki_int/ca/pem | openssl x509 -noout -enddate -subject
 ```
@@ -782,6 +813,7 @@ echo "📅 Set reminder to renew again in 11 months"
 ```
 
 **Make executable and run:**
+
 ```bash
 chmod +x scripts/renew-certificates.sh
 ./scripts/renew-certificates.sh
@@ -859,6 +891,7 @@ vault read pki_int/ca/pem | openssl x509 -noout -text | grep "Not After"
 ```
 
 **Post-Renewal Verification:**
+
 ```bash
 # Check Intermediate CA is active
 vault list pki_int/roles
@@ -885,6 +918,7 @@ vault write pki_int/issue/postgres-role \
 5. **Testing** in non-production environment first
 
 **DO NOT attempt Root CA renewal without:**
+
 - Full backup of current PKI
 - Test environment validation
 - Communication plan for dependent systems
@@ -987,6 +1021,7 @@ fi
 ```
 
 **Make executable:**
+
 ```bash
 chmod +x scripts/check-cert-expiry.sh
 
@@ -1065,6 +1100,7 @@ vault read pki_int/crl
 **Problem:** Service won't start after certificate renewal
 
 **Solution:**
+
 ```bash
 # Check certificate permissions
 ls -la ~/.config/vault/certs/postgres/
@@ -1085,6 +1121,7 @@ docker compose logs postgres | grep -i tls
 **Problem:** Certificate verification failed
 
 **Solution:**
+
 ```bash
 # Verify certificate chain
 openssl verify -verbose -CAfile ~/.config/vault/ca/ca.pem \
@@ -1098,6 +1135,7 @@ openssl verify -verbose -CAfile ~/.config/vault/ca/ca.pem \
 **Problem:** Vault won't issue new certificates
 
 **Solution:**
+
 ```bash
 # Check Vault PKI role exists
 vault list pki_int/roles
@@ -1112,6 +1150,7 @@ vault read pki_int/cert/ca
 ### Renewal Checklist
 
 **30 Days Before Expiry:**
+
 - [ ] Run `check-cert-expiry.sh` to confirm expiry dates
 - [ ] Schedule maintenance window (service restart required)
 - [ ] Notify stakeholders of planned renewal
@@ -1119,6 +1158,7 @@ vault read pki_int/cert/ca
 - [ ] Test renewal script in non-production environment
 
 **Renewal Day:**
+
 - [ ] Verify Vault is healthy and unsealed
 - [ ] Backup `~/.config/vault/` directory
 - [ ] Run `renew-certificates.sh` script
@@ -1129,6 +1169,7 @@ vault read pki_int/cert/ca
 - [ ] Monitor service logs for TLS errors
 
 **Post-Renewal (24 hours later):**
+
 - [ ] Confirm no TLS errors in logs
 - [ ] Verify applications connecting successfully
 - [ ] Update renewal tracking spreadsheet

@@ -47,12 +47,14 @@ Health monitoring for all infrastructure services with comprehensive status repo
 | `/health/rabbitmq` | GET | RabbitMQ connectivity | - | 200/min | None |
 
 **Implementation Notes:**
+
 - All health checks use async operations
 - Circuit breakers prevent cascading failures (FastAPI implementations)
 - Concurrent health checks via goroutines (Go) / Promise.allSettled (Node.js)
 - `/health/all` includes detailed status for each service
 
 **Example Response** (`/health/all`):
+
 ```json
 {
   "status": "healthy",
@@ -89,21 +91,25 @@ Secure credential management using HashiCorp Vault KV v2 secrets engine.
 | `/examples/vault/secret/{service_name}/{key}` | GET | Retrieve specific secret key | SecretKeyResponse | 5 min |
 
 **Path Parameters:**
+
 - `service_name`: Service name (alphanumeric, hyphens, underscores; 1-50 chars)
 - `key`: Secret key name (alphanumeric, hyphens, underscores; 1-100 chars)
 
 **Implementation Notes:**
+
 - Responses cached for 5 minutes to reduce Vault API load
 - Passwords masked in responses for security
 - Proper error handling for missing secrets
 - VaultUnavailableError and ResourceNotFoundError exceptions
 
 **Example Request:**
+
 ```bash
 curl http://localhost:8000/examples/vault/secret/postgres
 ```
 
 **Example Response:**
+
 ```json
 {
   "service": "postgres",
@@ -131,12 +137,14 @@ Database connectivity examples demonstrating connection pooling and query execut
 | `/examples/database/mongodb/query` | GET | Execute MongoDB test operation | MongoDB 7.0 | motor (Python), mongo-driver (Go), mongodb (Node.js/Rust) |
 
 **Implementation Notes:**
+
 - All queries use Vault-managed credentials
 - Connection pooling for performance
 - Proper async/await patterns throughout
 - Query: `SELECT version()` for SQL, `db.collection.findOne()` for MongoDB
 
 **Example Response** (PostgreSQL):
+
 ```json
 {
   "database": "postgres",
@@ -159,19 +167,23 @@ Redis caching patterns with TTL support and proper error handling.
 | `/examples/cache/{key}` | DELETE | Delete cache key | - | CacheDeleteResponse |
 
 **Path Parameters:**
+
 - `key`: Cache key (alphanumeric and `:`, `-`, `_`, `.`; 1-200 chars)
 
 **Query/Body Parameters (POST):**
+
 - `value`: Value to cache (max 10KB)
 - `ttl`: Time to live in seconds (1-86400; optional; default: no expiration)
 
 **Implementation Notes:**
+
 - Uses Redis cluster node (redis-1) with Vault password
 - TTL support via SETEX command
 - Returns TTL info on GET operations
 - Proper null handling for non-existent keys
 
 **Example Usage:**
+
 ```bash
 # Set value with 60s TTL
 curl -X POST "http://localhost:8000/examples/cache/mykey" \
@@ -186,6 +198,7 @@ curl -X DELETE http://localhost:8000/examples/cache/mykey
 ```
 
 **Example Response** (GET):
+
 ```json
 {
   "key": "mykey",
@@ -207,18 +220,22 @@ RabbitMQ messaging patterns including message publishing and queue management.
 | `/examples/messaging/queue/{queue_name}/info` | GET | Get queue information | - | QueueInfoResponse |
 
 **Path/Query Parameters:**
+
 - `queue_name`: Queue name (alphanumeric and `-`, `_`, `.`; 1-100 chars)
 
 **Request Body (POST):**
+
 - `message`: JSON object with message payload (max 1MB)
 
 **Implementation Notes:**
+
 - Uses Vault-managed RabbitMQ credentials
 - Queue auto-declared on publish
 - Returns message count and consumer count
 - Proper connection lifecycle management
 
 **Example Usage:**
+
 ```bash
 # Publish message
 curl -X POST "http://localhost:8000/examples/messaging/publish?queue_name=test-queue" \
@@ -230,6 +247,7 @@ curl http://localhost:8000/examples/messaging/queue/test-queue/info
 ```
 
 **Example Response** (Publish):
+
 ```json
 {
   "queue": "test-queue",
@@ -255,15 +273,18 @@ Advanced Redis cluster operations for monitoring topology and node health.
 | `/redis/nodes/{node_name}/info` | GET | Node-specific information | Server info, stats, replication, memory |
 
 **Path Parameters:**
+
 - `node_name`: Node name (redis-1, redis-2, redis-3)
 
 **Implementation Notes:**
+
 - Cluster commands: CLUSTER NODES, CLUSTER SLOTS, CLUSTER INFO
 - Node info via INFO command on specific node
 - Parses cluster protocol responses
 - Returns structured JSON for easy consumption
 
 **Example Response** (`/redis/cluster/nodes`):
+
 ```json
 {
   "cluster_enabled": true,
@@ -310,11 +331,13 @@ Root endpoint and metrics export for monitoring.
 | `/metrics` | GET | Prometheus metrics export | text/plain | Unlimited |
 
 **Implementation Notes:**
+
 - `/` returns API metadata, version, available endpoints
 - `/metrics` exports Prometheus text format
 - Metrics include HTTP requests (counter), request duration (histogram), circuit breaker states
 
 **Example Response** (`/`):
+
 ```json
 {
   "name": "DevStack Core Reference API",
@@ -335,6 +358,7 @@ Root endpoint and metrics export for monitoring.
 ```
 
 **Example Metrics Output:**
+
 ```
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
@@ -357,6 +381,7 @@ http_request_duration_seconds_sum{method="GET",endpoint="/health/all"} 15.234
 All endpoints return consistent response structures defined in the OpenAPI specification:
 
 #### HealthStatus
+
 ```typescript
 {
   status: "healthy" | "degraded" | "unhealthy",
@@ -367,6 +392,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### ServiceHealth
+
 ```typescript
 {
   status: "healthy" | "unhealthy",
@@ -375,6 +401,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### SecretResponse
+
 ```typescript
 {
   service: string,
@@ -384,6 +411,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### SecretKeyResponse
+
 ```typescript
 {
   service: string,
@@ -394,6 +422,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### CacheGetResponse
+
 ```typescript
 {
   key: string,
@@ -404,6 +433,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### CacheSetResponse
+
 ```typescript
 {
   key: string,
@@ -414,6 +444,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### CacheDeleteResponse
+
 ```typescript
 {
   key: string,
@@ -423,6 +454,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### MessagePublishResponse
+
 ```typescript
 {
   queue: string,
@@ -432,6 +464,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### QueueInfoResponse
+
 ```typescript
 {
   queue: string,
@@ -442,6 +475,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ```
 
 #### HTTPValidationError
+
 ```typescript
 {
   detail: Array<{
@@ -470,6 +504,7 @@ All endpoints return consistent response structures defined in the OpenAPI speci
 ### Error Response Format
 
 All errors follow consistent structure:
+
 ```json
 {
   "detail": [
@@ -510,6 +545,7 @@ All errors follow consistent structure:
 | All others | No caching | Real-time data |
 
 **Cache Implementation:**
+
 - In-memory cache with TTL
 - Automatic invalidation on expiry
 - Cache key includes endpoint + parameters
@@ -555,6 +591,7 @@ class TestAPIEndpoints:
 These APIs are **reference implementations for learning**, not production-ready:
 
 **Missing in Reference Implementations:**
+
 - ❌ Authentication (no API keys, no JWT)
 - ❌ Authorization (no role-based access control)
 - ❌ Input sanitization (basic validation only)
@@ -563,6 +600,7 @@ These APIs are **reference implementations for learning**, not production-ready:
 - ❌ Advanced rate limiting (basic implementation only)
 
 **For Production Deployments:**
+
 - ✅ Implement JWT or OAuth2 authentication
 - ✅ Add API key validation
 - ✅ Implement RBAC with proper permissions
@@ -575,6 +613,7 @@ These APIs are **reference implementations for learning**, not production-ready:
 - ✅ Implement IP whitelisting/blacklisting
 
 **Security Features Included:**
+
 - ✅ Vault-managed credentials (no hardcoded secrets)
 - ✅ CORS configuration
 - ✅ Helmet security headers (Node.js)
@@ -587,14 +626,16 @@ These APIs are **reference implementations for learning**, not production-ready:
 ## Documentation Links
 
 ### OpenAPI Specification
+
 - **File**: `reference-apps/shared/openapi.yaml`
 - **Format**: OpenAPI 3.1.0
 - **Validation**: Spectral linting enabled
 - **Interactive Docs**:
-  - Code-First: http://localhost:8000/docs
-  - API-First: http://localhost:8001/docs
+  - Code-First: <http://localhost:8000/docs>
+  - API-First: <http://localhost:8001/docs>
 
 ### Implementation READMEs
+
 - [FastAPI Code-First](./fastapi/README.md)
 - [FastAPI API-First](./fastapi-api-first/README.md)
 - [Go/Gin](./golang/README.md)
@@ -603,6 +644,7 @@ These APIs are **reference implementations for learning**, not production-ready:
 - [TypeScript/Express (In Development)](./typescript-api-first/README.md)
 
 ### Development Guides
+
 - [API Patterns Guide](./API_PATTERNS.md) - Comprehensive guide on code-first vs API-first patterns
 - [Reference Apps Overview](./README.md) - Overview of all reference implementations
 - [Shared Test Suite](./shared/test-suite/README.md) - Parity testing documentation
@@ -659,6 +701,7 @@ make sync-report
 ## Changelog
 
 ### 2025-11-21
+
 - ✅ Created comprehensive API endpoint inventory
 - ✅ Verified all 22 endpoints across 5 implementations
 - ✅ Documented request/response models
@@ -666,6 +709,7 @@ make sync-report
 - ✅ Included testing coverage details
 
 ### 2025-10-27
+
 - ✅ Updated OpenAPI spec to 3.1.0
 - ✅ Added response model schemas
 - ✅ Enhanced endpoint descriptions

@@ -12,7 +12,7 @@
   - [1.3 Redis Cluster Tests (`test-redis-cluster.sh`)](#13-redis-cluster-tests-test-redis-clustersh)
   - [1.4 RabbitMQ Integration Tests (`test-rabbitmq.sh`)](#14-rabbitmq-integration-tests-test-rabbitmqsh)
   - [1.5 FastAPI Container Tests (`test-fastapi.sh`)](#15-fastapi-container-tests-test-fastapish)
-    - [Container & Endpoints](#container-endpoints)
+    - [Container & Endpoints](#container--endpoints)
     - [Redis Cluster API Tests](#redis-cluster-api-tests)
     - [API Documentation Tests](#api-documentation-tests)
     - [Service Integration Tests](#service-integration-tests)
@@ -22,8 +22,8 @@
     - [Cache Key Generation (5 tests)](#cache-key-generation-5-tests)
     - [Cache Manager (4 tests)](#cache-manager-4-tests)
     - [Cache Invalidation (4 tests)](#cache-invalidation-4-tests)
-    - [Endpoint Caching (4 tests - SKIPPED)](#endpoint-caching-4-tests-skipped)
-    - [Cache Configuration & Metrics (6 tests)](#cache-configuration-metrics-6-tests)
+    - [Endpoint Caching (4 tests - SKIPPED)](#endpoint-caching-4-tests---skipped)
+    - [Cache Configuration & Metrics (6 tests)](#cache-configuration--metrics-6-tests)
   - [2.2 Cache Demo Unit Tests (`test_cache_demo_unit.py`)](#22-cache-demo-unit-tests-test_cache_demo_unitpy)
   - [2.3 Circuit Breaker Tests (`test_circuit_breaker.py`)](#23-circuit-breaker-tests-test_circuit_breakerpy)
     - [Event Listeners (4 tests)](#event-listeners-4-tests)
@@ -33,13 +33,13 @@
   - [2.4 CORS Tests (`test_cors.py`)](#24-cors-tests-test_corspy)
     - [Headers (2 tests)](#headers-2-tests)
     - [Preflight Requests (4 tests)](#preflight-requests-4-tests)
-    - [Methods & Origins (5 tests)](#methods-origins-5-tests)
+    - [Methods & Origins (5 tests)](#methods--origins-5-tests)
     - [Integration (2 tests)](#integration-2-tests)
   - [2.5 Database Demo Tests (`test_database_demo.py`)](#25-database-demo-tests-test_database_demopy)
     - [PostgreSQL (3 tests)](#postgresql-3-tests)
     - [MySQL (3 tests)](#mysql-3-tests)
     - [MongoDB (3 tests)](#mongodb-3-tests)
-  - [2.6 Exception Handler Tests (`test_exception_handlers.py` + `test_exception_handlers_unit.py`)](#26-exception-handler-tests-test_exception_handlerspy-test_exception_handlers_unitpy)
+  - [2.6 Exception Handler Tests (`test_exception_handlers.py` + `test_exception_handlers_unit.py`)](#26-exception-handler-tests-test_exception_handlerspy--test_exception_handlers_unitpy)
     - [Exception Handlers (12 tests)](#exception-handlers-12-tests)
     - [Unit Tests (23 tests)](#unit-tests-23-tests)
   - [2.7 Exception Hierarchy Tests (`test_exceptions.py`)](#27-exception-hierarchy-tests-test_exceptionspy)
@@ -47,11 +47,11 @@
     - [Exception Hierarchy (5 tests)](#exception-hierarchy-5-tests)
     - [Exception Helpers (6 tests)](#exception-helpers-6-tests)
   - [2.8 Health Router Tests (`test_health_routers.py`)](#28-health-router-tests-test_health_routerspy)
-    - [Individual Service Health (6 tests - SKIPPED)](#individual-service-health-6-tests-skipped)
+    - [Individual Service Health (6 tests - SKIPPED)](#individual-service-health-6-tests---skipped)
     - [Aggregated Health (12 tests)](#aggregated-health-12-tests)
   - [2.9 Rate Limiting Tests (`test_rate_limiting.py`)](#29-rate-limiting-tests-test_rate_limitingpy)
   - [2.10 Redis Cluster Tests (`test_redis_cluster.py`)](#210-redis-cluster-tests-test_redis_clusterpy)
-    - [Cluster Operations (10 tests - SKIPPED)](#cluster-operations-10-tests-skipped)
+    - [Cluster Operations (10 tests - SKIPPED)](#cluster-operations-10-tests---skipped)
     - [Unit Tests (5 tests)](#unit-tests-5-tests)
   - [2.11 Request Validation Tests (`test_request_validation.py`)](#211-request-validation-tests-test_request_validationpy)
     - [Path Parameters (6 tests)](#path-parameters-6-tests)
@@ -61,9 +61,9 @@
   - [2.12 Request Validators Tests (`test_request_validators.py`)](#212-request-validators-tests-test_request_validatorspy)
   - [2.13 Router Unit Tests (`test_routers_unit.py`)](#213-router-unit-tests-test_routers_unitpy)
     - [Cache Demo Routers (11 tests)](#cache-demo-routers-11-tests)
-    - [Vault Demo Routers (2 tests - SKIPPED)](#vault-demo-routers-2-tests-skipped)
+    - [Vault Demo Routers (2 tests - SKIPPED)](#vault-demo-routers-2-tests---skipped)
     - [Database Routers (3 tests)](#database-routers-3-tests)
-    - [Messaging Routers (3 tests - 2 SKIPPED)](#messaging-routers-3-tests-2-skipped)
+    - [Messaging Routers (3 tests - 2 SKIPPED)](#messaging-routers-3-tests---2-skipped)
     - [Redis Cluster Routers (4 tests)](#redis-cluster-routers-4-tests)
   - [2.14 Vault Service Tests (`test_vault_service.py`)](#214-vault-service-tests-test_vault_servicepy)
     - [Secret Retrieval (9 tests)](#secret-retrieval-9-tests)
@@ -160,6 +160,7 @@ This document describes the comprehensive test coverage for the DevStack Core in
 ## Overview
 
 The DevStack Core project has four distinct test suites and implementations:
+
 1. **Infrastructure Tests** (Shell scripts) - Test Docker containers, services, and integration
 2. **FastAPI Application Tests** (Pytest) - Test Python FastAPI reference application code
 3. **Shared Test Suite** (Pytest) - Validate code-first and API-first implementation parity
@@ -172,6 +173,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ## 1. Infrastructure Integration Tests (Shell Scripts)
 
 ### 1.1 Vault Integration Tests (`test-vault.sh`)
+
 **10 tests** - Core infrastructure security and certificate management
 
 - Vault container running
@@ -186,6 +188,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Management script commands
 
 **What it validates:**
+
 - HashiCorp Vault operational
 - PKI infrastructure properly configured
 - Auto-unseal working correctly
@@ -197,6 +200,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ### 1.2 Database Integration Tests
 
 #### PostgreSQL (`test-postgres.sh`)
+
 **~5 tests** - PostgreSQL container, Vault credential integration, connectivity
 
 - Container health and running state
@@ -206,6 +210,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Configuration validation
 
 #### MySQL (`test-mysql.sh`)
+
 **~5 tests** - MySQL container, Vault credential integration, connectivity
 
 - Container health and running state
@@ -215,6 +220,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Configuration validation
 
 #### MongoDB (`test-mongodb.sh`)
+
 **~5 tests** - MongoDB container, Vault credential integration, connectivity
 
 - Container health and running state
@@ -226,6 +232,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 1.3 Redis Cluster Tests (`test-redis-cluster.sh`)
+
 **12 tests** - Comprehensive cluster configuration and operations
 
 - All 3 Redis containers running
@@ -242,6 +249,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Keyslot calculation
 
 **What it validates:**
+
 - Proper cluster initialization
 - Complete slot coverage (16384 slots)
 - Data distribution and retrieval
@@ -252,6 +260,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 1.4 RabbitMQ Integration Tests (`test-rabbitmq.sh`)
+
 **~5 tests** - RabbitMQ container, Vault credential integration, messaging functionality
 
 - Container health and running state
@@ -263,15 +272,18 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 1.5 FastAPI Container Tests (`test-fastapi.sh`)
+
 **14 tests** - Container deployment and API endpoint testing
 
 #### Container & Endpoints
+
 1. FastAPI container running
 2. HTTP endpoint accessible (port 8000)
 3. HTTPS endpoint accessible when TLS enabled (port 8443)
 4. Health check endpoint (`/health/all`)
 
 #### Redis Cluster API Tests
+
 5. Redis health check with cluster details
    - Validates `cluster_enabled: true`
    - Validates `cluster_state: ok`
@@ -298,15 +310,18 @@ The DevStack Core project has four distinct test suites and implementations:
    - Cluster enabled flag correct
 
 #### API Documentation Tests
+
 10. Swagger UI accessible (`/docs`)
 11. OpenAPI schema valid and accessible (`/openapi.json`)
 
 #### Service Integration Tests
+
 12. Vault integration (health check)
 13. Database connectivity (PostgreSQL, MySQL, MongoDB)
 14. RabbitMQ integration
 
 **What it validates:**
+
 - All Redis Cluster inspection APIs work correctly
 - Dual HTTP/HTTPS support
 - Health checks return cluster information
@@ -322,6 +337,7 @@ The DevStack Core project has four distinct test suites and implementations:
 **Location:** `reference-apps/fastapi/tests/`
 
 **Total Tests:** 254 tests
+
 - **Executed:** 178 unit tests (100% pass rate)
 - **Skipped:** 76 integration tests (require full infrastructure)
 
@@ -332,9 +348,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.1 Caching Tests (`test_caching.py`)
+
 **23 tests** - Cache middleware and operations
 
 #### Cache Key Generation (5 tests)
+
 - Basic cache key generation with function name and path params
 - Cache keys with query parameters (sorted for consistency)
 - Namespace prefixes for cache organization
@@ -342,24 +360,28 @@ The DevStack Core project has four distinct test suites and implementations:
 - Cache key consistency across requests
 
 #### Cache Manager (4 tests)
+
 - Redis connection initialization
 - Graceful failure handling when Redis unavailable
 - Connection cleanup on shutdown
 - Clear all cache entries functionality
 
 #### Cache Invalidation (4 tests)
+
 - Pattern-based cache invalidation (wildcards)
 - No-match pattern handling
 - Specific key invalidation
 - Non-existent key handling
 
 #### Endpoint Caching (4 tests - SKIPPED)
+
 - Cache consistency across requests
 - Backend call reduction verification
 - Different params = different cache keys
 - Health endpoint caching behavior
 
 #### Cache Configuration & Metrics (6 tests)
+
 - TTL configuration (5min for Vault, 30s for health)
 - Cache expiration behavior
 - Prometheus metrics (hits/misses/invalidations)
@@ -368,6 +390,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.2 Cache Demo Unit Tests (`test_cache_demo_unit.py`)
+
 **11 tests** - Cache router operations
 
 - Get existing value from cache
@@ -383,43 +406,52 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.3 Circuit Breaker Tests (`test_circuit_breaker.py`)
+
 **10 tests** - Circuit breaker pattern implementation
 
 #### Event Listeners (4 tests)
+
 - Circuit open event listener
 - Circuit half-open event listener
 - Circuit close event listener
 - Circuit failure event listener
 
 #### Metrics (2 tests)
+
 - Prometheus metrics existence
 - Service label in metrics
 
 #### Behavior (3 tests)
+
 - Circuit breaker creation
 - Opens after threshold failures (5)
 - Prevents calls when open
 - Allows successful calls
 
 #### Integration (1 test)
+
 - Middleware integration with FastAPI
 
 ---
 
 ### 2.4 CORS Tests (`test_cors.py`)
+
 **13 tests** - Cross-Origin Resource Sharing
 
 #### Headers (2 tests)
+
 - Content-Type header allowed
 - Authorization header allowed
 
 #### Preflight Requests (4 tests)
+
 - Basic OPTIONS request handling
 - POST method preflight
 - Custom header preflight
 - Max-Age header presence
 
 #### Methods & Origins (5 tests)
+
 - GET method allowed
 - POST method allowed
 - DELETE method allowed
@@ -427,25 +459,30 @@ The DevStack Core project has four distinct test suites and implementations:
 - No origin header works
 
 #### Integration (2 tests)
+
 - CORS with rate limiting
 - Consistent CORS across requests
 
 ---
 
 ### 2.5 Database Demo Tests (`test_database_demo.py`)
+
 **9 tests** (6 skipped - require infrastructure)
 
 #### PostgreSQL (3 tests)
+
 - Query success (SKIPPED - requires DB)
 - Connection failure handling
 - Vault credential failure
 
 #### MySQL (3 tests)
+
 - Query success (SKIPPED - requires DB)
 - Connection failure handling
 - Vault credential failure
 
 #### MongoDB (3 tests)
+
 - Query success (SKIPPED - requires DB)
 - Connection failure handling
 - Vault credential failure
@@ -453,9 +490,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.6 Exception Handler Tests (`test_exception_handlers.py` + `test_exception_handlers_unit.py`)
+
 **35 tests** - Exception handling and error responses
 
 #### Exception Handlers (12 tests)
+
 - 503 responses for Vault unavailability
 - 404 responses for resource not found
 - 422 responses for validation errors
@@ -469,6 +508,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - HTTP exception conversion
 
 #### Unit Tests (23 tests)
+
 - Custom exception handler registration
 - BaseAPIException formatting
 - ServiceUnavailableError handling
@@ -480,9 +520,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.7 Exception Hierarchy Tests (`test_exceptions.py`)
+
 **20 tests** - Exception classes and inheritance
 
 #### Exception Creation (9 tests)
+
 - VaultUnavailableError with secret paths
 - DatabaseConnectionError with connection details
 - CacheConnectionError initialization
@@ -494,6 +536,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - TimeoutError with operation details
 
 #### Exception Hierarchy (5 tests)
+
 - All exceptions inherit from BaseAPIException
 - Service exceptions inherit from ServiceUnavailableError
   - VaultUnavailableError
@@ -504,6 +547,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - TimeoutError uses 504 Gateway Timeout status
 
 #### Exception Helpers (6 tests)
+
 - Exception to_dict() serialization
 - Service-specific error details
 - HTTP error code mapping
@@ -514,9 +558,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.8 Health Router Tests (`test_health_routers.py`)
+
 **18 tests** - Health check endpoints
 
 #### Individual Service Health (6 tests - SKIPPED)
+
 - Vault health check
 - PostgreSQL health check
 - MySQL health check
@@ -525,6 +571,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - RabbitMQ health check
 
 #### Aggregated Health (12 tests)
+
 - All services healthy response
 - Individual service failure detection
 - Overall status calculation (healthy/degraded)
@@ -541,6 +588,7 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.9 Rate Limiting Tests (`test_rate_limiting.py`)
+
 **8 tests** - Request rate limiting
 
 - Rate limit enforcement
@@ -555,9 +603,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.10 Redis Cluster Tests (`test_redis_cluster.py`)
+
 **15 tests** (10 skipped - require cluster)
 
 #### Cluster Operations (10 tests - SKIPPED)
+
 - Get cluster nodes
 - Get cluster info
 - Get cluster slot distribution
@@ -570,6 +620,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Cluster topology
 
 #### Unit Tests (5 tests)
+
 - Cluster node retrieval
 - Connection failure handling
 - Cluster info parsing
@@ -579,9 +630,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.11 Request Validation Tests (`test_request_validation.py`)
+
 **15 tests** - Input validation and sanitization
 
 #### Path Parameters (6 tests)
+
 - Valid cache key format
 - Invalid special characters rejection
 - Valid service names
@@ -590,23 +643,27 @@ The DevStack Core project has four distinct test suites and implementations:
 - Null byte injection prevention
 
 #### Input Sanitization (4 tests)
+
 - Service name lowercase conversion
 - Whitespace trimming
 - Special character removal
 - Maximum length enforcement
 
 #### Content Type (3 tests)
+
 - JSON content type validation
 - Invalid content type rejection
 - Missing content type handling
 
 #### Query Parameters (2 tests)
+
 - Valid parameter ranges
 - Invalid parameter values
 
 ---
 
 ### 2.12 Request Validators Tests (`test_request_validators.py`)
+
 **Tests** - Pydantic model validation
 
 - ServiceNameParam validation
@@ -619,9 +676,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.13 Router Unit Tests (`test_routers_unit.py`)
+
 **30+ tests** - Individual router unit tests
 
 #### Cache Demo Routers (11 tests)
+
 - Get existing value
 - Get nonexistent value
 - Set value without TTL
@@ -635,20 +694,24 @@ The DevStack Core project has four distinct test suites and implementations:
 - Pattern matching
 
 #### Vault Demo Routers (2 tests - SKIPPED)
+
 - Get vault secret
 - Get vault secret with key
 
 #### Database Routers (3 tests)
+
 - PostgreSQL queries (1 SKIPPED)
 - MySQL queries (1 SKIPPED)
 - MongoDB queries (unit test)
 
 #### Messaging Routers (3 tests - 2 SKIPPED)
+
 - Publish message
 - Publish failure handling
 - Consume messages (SKIPPED)
 
 #### Redis Cluster Routers (4 tests)
+
 - Get cluster nodes
 - Connection failure handling
 - Cluster info parsing
@@ -657,9 +720,11 @@ The DevStack Core project has four distinct test suites and implementations:
 ---
 
 ### 2.14 Vault Service Tests (`test_vault_service.py`)
+
 **17 tests** - Vault client implementation
 
 #### Secret Retrieval (9 tests)
+
 - Successful secret retrieval
 - Retrieve specific key from secret
 - 404 handling (secret not found)
@@ -671,6 +736,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Unexpected error handling
 
 #### Health Checks (5 tests)
+
 - Healthy Vault status
 - Sealed Vault detection
 - Uninitialized Vault detection
@@ -678,6 +744,7 @@ The DevStack Core project has four distinct test suites and implementations:
 - Connection error handling
 
 #### Integration Flows (3 tests)
+
 - Client initialization with settings
 - End-to-end secret retrieval flow
 - End-to-end error handling flow
@@ -699,14 +766,17 @@ The DevStack Core project has four distinct test suites and implementations:
 ### 3.1 Test Categories
 
 #### Parity Tests (`@pytest.mark.parity`)
+
 Tests that run against **both** implementations independently using parametrized fixtures.
 
 **How it works:**
+
 - Single test function decorated with `api_url` fixture
 - Pytest automatically runs it twice: once for code-first (port 8000), once for API-first (port 8001)
 - Validates each implementation independently
 
 **Example:**
+
 ```python
 async def test_health_check(self, api_url, http_client):
     # This test runs twice automatically
@@ -715,14 +785,17 @@ async def test_health_check(self, api_url, http_client):
 ```
 
 #### Comparison Tests (`@pytest.mark.comparison`)
+
 Tests that directly compare responses from both APIs to ensure identical behavior.
 
 **How it works:**
+
 - Test receives both API URLs via `both_api_urls` fixture
 - Makes requests to both implementations
 - Compares responses for exact matches
 
 **Example:**
+
 ```python
 async def test_responses_match(self, both_api_urls, http_client):
     code_first = await http_client.get(f"{both_api_urls['code-first']}/health/")
@@ -737,6 +810,7 @@ async def test_responses_match(self, both_api_urls, http_client):
 **7 test runs** (4 test functions)
 
 #### Parity Tests (6 test runs from 3 functions)
+
 1. **Simple health check** (`test_simple_health_check`)
    - Runs against both APIs (2 runs)
    - Validates `/health/` endpoint returns 200 with `{"status": "ok"}`
@@ -750,6 +824,7 @@ async def test_responses_match(self, both_api_urls, http_client):
    - Validates `/health/vault` returns healthy/unhealthy status
 
 #### Comparison Tests (1 test run)
+
 4. **Health responses match** (`test_health_responses_match`)
    - Direct comparison between both APIs
    - Ensures identical health response structure and content
@@ -761,12 +836,14 @@ async def test_responses_match(self, both_api_urls, http_client):
 **19 test runs** (12 test functions)
 
 #### Root Endpoint Tests (3 test runs)
+
 - **Root endpoint returns info** - Parametrized (2 runs)
   - Validates presence of name, version, description
 - **Root endpoint structure matches** - Comparison (1 run)
   - Ensures both APIs return identical top-level keys
 
 #### OpenAPI Spec Tests (5 test runs)
+
 - **OpenAPI endpoint accessible** - Parametrized (2 runs)
   - Validates `/openapi.json` returns valid OpenAPI spec
 - **OpenAPI specs match** - Comparison (1 run)
@@ -775,22 +852,26 @@ async def test_responses_match(self, both_api_urls, http_client):
   - Validates OpenAPI 3.x.x version format
 
 #### Vault Endpoints Tests (2 test runs)
+
 - **Vault secret endpoint structure** - Parametrized (2 runs)
   - Validates `/examples/vault/secret/{path}` error handling
 
 #### Cache Endpoints Tests (3 test runs)
+
 - **Cache GET endpoint exists** - Parametrized (2 runs)
   - Validates `/examples/cache/{key}` endpoint
 - **Cache endpoints have same behavior** - Comparison (1 run)
   - Ensures identical response structure for cache operations
 
 #### Metrics Endpoint Tests (3 test runs)
+
 - **Metrics endpoint accessible** - Parametrized (2 runs)
   - Validates `/metrics` returns Prometheus format
 - **Metrics format matches** - Comparison (1 run)
   - Ensures both APIs return same Prometheus format
 
 #### Error Handling Tests (3 test runs)
+
 - **404 response format** - Parametrized (2 runs)
   - Validates consistent 404 error structure
 - **404 responses match** - Comparison (1 run)
@@ -801,6 +882,7 @@ async def test_responses_match(self, both_api_urls, http_client):
 ### 3.4 Test Infrastructure
 
 #### Fixtures (`conftest.py`)
+
 ```python
 @pytest.fixture(params=[CODE_FIRST_URL, API_FIRST_URL])
 def api_url(request):
@@ -823,6 +905,7 @@ async def http_client():
 ```
 
 #### Configuration (`pytest.ini`)
+
 ```ini
 [pytest]
 markers =
@@ -851,7 +934,9 @@ markers =
 ### 3.6 Running Shared Test Suite
 
 #### Prerequisites
+
 Both APIs must be running:
+
 ```bash
 # Start both implementations
 docker compose up -d reference-api api-first
@@ -862,6 +947,7 @@ curl http://localhost:8001/health/
 ```
 
 #### Run Tests
+
 ```bash
 cd reference-apps/shared/test-suite
 pip install -r requirements.txt
@@ -869,6 +955,7 @@ pytest -v
 ```
 
 #### Expected Results
+
 ```
 test_health_checks.py::TestHealthEndpoints::test_simple_health_check[code-first] PASSED
 test_health_checks.py::TestHealthEndpoints::test_simple_health_check[api-first] PASSED
@@ -881,6 +968,7 @@ test_api_parity.py::TestRootEndpoint::test_root_endpoint_returns_info[api-first]
 ```
 
 #### Run Specific Categories
+
 ```bash
 # Health checks only
 pytest -v -m health
@@ -897,24 +985,28 @@ pytest -v -m comparison
 ### 3.7 What Gets Validated
 
 **Endpoint Consistency:**
+
 - ✅ Identical endpoint paths
 - ✅ Identical response structures
 - ✅ Identical status codes
 - ✅ Identical error handling
 
 **API Contract:**
+
 - ✅ OpenAPI specifications match
 - ✅ Request/response formats identical
 - ✅ Content-Type headers consistent
 - ✅ Error response formats match
 
 **Behavioral Equivalence:**
+
 - ✅ Health checks return same information
 - ✅ Cache operations behave identically
 - ✅ Metrics format is consistent
 - ✅ 404 errors formatted the same
 
 **Integration Points:**
+
 - ✅ Vault integration consistent
 - ✅ Database access patterns match
 - ✅ Cache behavior identical
@@ -925,6 +1017,7 @@ pytest -v -m comparison
 ### 3.8 Success Criteria
 
 The shared test suite enforces:
+
 - **100% pass rate** - All 26 tests must pass
 - **No manual sync** - Automated validation prevents drift
 - **CI/CD integration** - Tests run on every commit
@@ -953,6 +1046,7 @@ When adding new endpoints to either implementation:
 ### Infrastructure Tests (Shell Scripts)
 
 #### Run All Infrastructure Tests
+
 ```bash
 ./tests/run-all-tests.sh
 ```
@@ -960,6 +1054,7 @@ When adding new endpoints to either implementation:
 This runs all test suites in sequence and provides a comprehensive summary.
 
 #### Run Individual Test Suites
+
 ```bash
 # Infrastructure
 ./tests/test-vault.sh
@@ -982,32 +1077,38 @@ This runs all test suites in sequence and provides a comprehensive summary.
 ### FastAPI Application Tests (Pytest)
 
 #### Run All Tests
+
 ```bash
 cd reference-apps/fastapi
 pytest tests/ -v
 ```
 
 #### Run with Coverage
+
 ```bash
 pytest tests/ --cov=app --cov-report=html --cov-report=term
 ```
 
 #### Run Specific Test File
+
 ```bash
 pytest tests/test_vault_service.py -v
 ```
 
 #### Run Specific Test
+
 ```bash
 pytest tests/test_vault_service.py::TestVaultClientGetSecret::test_get_secret_success -v
 ```
 
 #### Run Only Unit Tests
+
 ```bash
 pytest tests/ -v -m unit
 ```
 
 #### Run Only Integration Tests
+
 ```bash
 pytest tests/ -v -m integration
 ```
@@ -1017,8 +1118,10 @@ pytest tests/ -v -m integration
 ## Test Dependencies
 
 ### System Tools (Infrastructure Tests)
+
 - `curl` - HTTP client (usually pre-installed)
 - `jq` - JSON processor
+
   ```bash
   # macOS
   brew install jq
@@ -1026,16 +1129,19 @@ pytest tests/ -v -m integration
   # Ubuntu/Debian
   apt-get install jq
   ```
+
 - `docker` - Container runtime (via Colima)
 - `docker-compose` - Container orchestration
 
 ### Python Dependencies (Application Tests)
+
 ```bash
 cd reference-apps/fastapi
 pip install -r requirements.txt
 ```
 
 Includes:
+
 - `pytest` - Test framework
 - `pytest-asyncio` - Async test support
 - `pytest-cov` - Coverage reporting
@@ -1048,13 +1154,16 @@ Includes:
 ## Test Results Format
 
 ### Infrastructure Tests Output
+
 Each shell script test suite provides:
+
 - Real-time test execution output
 - Color-coded pass/fail indicators (green ✓ / red ✗)
 - Summary with total tests, passed, and failed counts
 - List of failed tests (if any)
 
 Example output:
+
 ```
 =========================================
   FastAPI Reference App Test Suite
@@ -1079,6 +1188,7 @@ Passed: 13
 ```
 
 ### Pytest Output
+
 ```
 ============================= test session starts ==============================
 collected 254 items
@@ -1107,6 +1217,7 @@ Required test coverage of 80% reached. Total coverage: 84.39%
 ## Coverage Summary
 
 ### Infrastructure Tests (Shell Scripts)
+
 | Component | Test Suite | Tests | Coverage |
 |-----------|-----------|-------|----------|
 | Vault | test-vault.sh | 10 | PKI, secrets, certificates, auto-unseal |
@@ -1120,6 +1231,7 @@ Required test coverage of 80% reached. Total coverage: 84.39%
 **Subtotal: ~56 infrastructure tests**
 
 ### Application Tests (Pytest)
+
 | Category | Tests | Coverage |
 |----------|-------|----------|
 | Caching | 34 | Cache middleware, operations, keys, invalidation |
@@ -1139,6 +1251,7 @@ Required test coverage of 80% reached. Total coverage: 84.39%
 **Code Coverage: 84.39%**
 
 ### Shared Test Suite (Pytest)
+
 | Category | Test Runs | Coverage |
 |----------|-----------|----------|
 | Health Checks | 7 | Simple health, structure, Vault health, response matching |
@@ -1168,6 +1281,7 @@ Required test coverage of 80% reached. Total coverage: 84.39%
 The Go reference API provides a production-ready implementation showcasing:
 
 #### Core Capabilities
+
 - **Vault Integration**: HashiCorp Vault client for secrets management
 - **Database Connectivity**: PostgreSQL (pgx/v5), MySQL (go-sql-driver), MongoDB (mongo-driver)
 - **Caching**: Redis cluster operations with go-redis/v9
@@ -1176,6 +1290,7 @@ The Go reference API provides a production-ready implementation showcasing:
 - **Redis Cluster Management**: Full cluster inspection and node monitoring
 
 #### Go-Specific Features
+
 - **Concurrency**: Goroutines for concurrent health checks
 - **Context Propagation**: Proper context.Context usage throughout
 - **Graceful Shutdown**: Signal handling (SIGINT/SIGTERM) with clean termination
@@ -1257,6 +1372,7 @@ The Go reference API provides a production-ready implementation showcasing:
 #### Expected Behavior - Vault Secrets Not Bootstrapped
 
 Database and cache endpoints properly return errors when Vault secrets are missing:
+
 - `/health/postgres` - Returns "secret not found" error (correct behavior)
 - `/health/redis` - Returns "secret not found" error (correct behavior)
 - `/examples/cache/*` - Returns "secret not found" error (correct behavior)
@@ -1268,6 +1384,7 @@ This demonstrates the implementation correctly integrates with Vault and handles
 ### 4.4 Architecture Highlights
 
 #### Project Structure
+
 ```
 reference-apps/golang/
 ├── cmd/api/main.go              # Application entry point
@@ -1290,22 +1407,26 @@ reference-apps/golang/
 #### Key Design Patterns
 
 **Dependency Injection:**
+
 ```go
 healthHandler := handlers.NewHealthHandler(cfg, vaultClient)
 ```
 
 **Context Propagation:**
+
 ```go
 ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 defer cancel()
 ```
 
 **Resource Cleanup:**
+
 ```go
 defer conn.Close(ctx)
 ```
 
 **Concurrent Operations:**
+
 ```go
 var wg sync.WaitGroup
 for _, service := range services {
@@ -1336,6 +1457,7 @@ wg.Wait()
 ### 4.6 Testing Status
 
 #### ✅ Completed
+
 - [x] Docker image builds successfully
 - [x] Container starts and initializes
 - [x] All routes registered correctly
@@ -1348,7 +1470,9 @@ wg.Wait()
 - [x] CORS middleware configured
 
 #### 🔄 Requires Infrastructure Bootstrap
+
 The following features require Vault secrets to be bootstrapped:
+
 - Database connectivity tests (PostgreSQL, MySQL, MongoDB)
 - Redis cache operations
 - RabbitMQ messaging operations
@@ -1361,6 +1485,7 @@ These endpoints correctly detect missing credentials and return appropriate erro
 **Test Status:** ✅ **35+ tests, 100% PASS RATE**
 
 #### Test Files Created
+
 - `internal/config/config_test.go` - Configuration testing
 - `internal/services/vault_test.go` - Vault client testing
 - `internal/middleware/logging_test.go` - Middleware testing
@@ -1368,6 +1493,7 @@ These endpoints correctly detect missing credentials and return appropriate erro
 #### Test Coverage by Package
 
 **Config Package** (12 tests)
+
 - Default configuration values
 - Custom HTTP/HTTPS ports
 - Vault address and token configuration
@@ -1381,6 +1507,7 @@ These endpoints correctly detect missing credentials and return appropriate erro
 - **Coverage: 91.7%**
 
 **Vault Service** (9 test groups)
+
 - VaultClient creation with various configurations
 - GetSecret context handling (timeout, cancellation)
 - GetSecretKey method validation
@@ -1392,6 +1519,7 @@ These endpoints correctly detect missing credentials and return appropriate erro
 - **Coverage: 62.5%**
 
 **Middleware** (14 tests)
+
 - Request ID generation and propagation
 - Request logging with structured fields
 - HTTP method logging (GET, POST, PUT, DELETE, PATCH)
@@ -1413,6 +1541,7 @@ go test ./... -v -cover
 ```
 
 **Results:**
+
 ```
 ✓ Config:     12 tests PASS (91.7% coverage)
 ✓ Services:   9 tests PASS (62.5% coverage)
@@ -1431,6 +1560,7 @@ TOTAL:        35+ tests, 100% PASS RATE
 6. **Error Validation**: Comprehensive error message checking
 
 #### 📝 Future Testing Enhancements
+
 - [ ] Handler tests using httptest (database, cache, messaging handlers)
 - [ ] Integration tests with mock Vault server
 - [ ] Benchmark tests for performance validation
@@ -1441,6 +1571,7 @@ TOTAL:        35+ tests, 100% PASS RATE
 ### 4.7 Running the Go API
 
 #### Start Service
+
 ```bash
 # Build and start
 docker-compose up -d golang-api
@@ -1453,6 +1584,7 @@ curl http://localhost:8002/health/
 ```
 
 #### Test Endpoints
+
 ```bash
 # Root endpoint
 curl http://localhost:8002/ | jq .
@@ -1477,6 +1609,7 @@ curl http://localhost:8002/redis/cluster/nodes | jq .
 ### 4.8 Dependencies
 
 **Main Dependencies:**
+
 - `github.com/gin-gonic/gin` v1.9.1 - Web framework
 - `github.com/hashicorp/vault/api` v1.10.0 - Vault client
 - `github.com/jackc/pgx/v5` v5.5.0 - PostgreSQL driver
@@ -1501,6 +1634,7 @@ curl http://localhost:8002/redis/cluster/nodes | jq .
 - **26 shared parity test runs** (pytest - validates API equivalence)
 
 **Combined Coverage:**
+
 - All Docker containers and services
 - Vault PKI and secrets management
 - Database connectivity and credentials
@@ -1519,6 +1653,7 @@ curl http://localhost:8002/redis/cluster/nodes | jq .
 ## Continuous Testing
 
 Run tests after:
+
 - Initial infrastructure setup (`./devstack.sh start`)
 - Service configuration changes
 - Certificate regeneration
@@ -1536,11 +1671,13 @@ This ensures all components remain properly configured, integrated, and function
 ## Test Quality Metrics
 
 ### Infrastructure Tests
+
 - **Real environment testing**: Tests run against actual Docker containers
 - **Integration validation**: Tests verify inter-service communication
 - **Credential security**: Tests verify Vault integration throughout
 
 ### Application Tests
+
 - **High unit test coverage**: 84.39% code coverage
 - **100% pass rate**: All 178 executed tests passing
 - **Comprehensive mocking**: External dependencies mocked for speed
@@ -1572,6 +1709,7 @@ jobs:
 ```
 
 ### Test Environments
+
 - **Local Development**: All tests (infrastructure + application)
 - **CI/CD**: Unit tests only (fast feedback)
 - **Pre-Production**: Full integration tests
@@ -1582,6 +1720,7 @@ jobs:
 ## Future Test Improvements
 
 Planned enhancements:
+
 - Performance testing
 - Load testing with Locust
 - Security testing

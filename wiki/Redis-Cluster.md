@@ -13,6 +13,7 @@
 ### Architecture
 
 **3-Node Master Cluster:**
+
 ```
 ┌────────────────────────────────────────────┐
 │         Redis Cluster (16384 slots)         │
@@ -34,11 +35,13 @@
 ```
 
 **Data Sharding:**
+
 - Each key is hashed (CRC16) to a slot number (0-16383)
 - Key `user:1000` → Hash → Slot 5139 → Node 1
 - Automatic redistribution if nodes added/removed
 
 **Why No Replicas?**
+
 - Development environment doesn't need redundancy
 - Saves resources (3 nodes vs 6 nodes)
 - Production would have 3 masters + 3 replicas
@@ -54,6 +57,7 @@
 5. **Verify:** Checks cluster state is "ok"
 
 **Manual Initialization:**
+
 ```bash
 docker exec dev-redis-1 redis-cli --cluster create \
   172.20.2.13:6379 172.20.2.16:6379 172.20.2.17:6379 \
@@ -63,6 +67,7 @@ docker exec dev-redis-1 redis-cli --cluster create \
 ### Operations
 
 **Cluster Status:**
+
 ```bash
 # Overall health
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster info
@@ -74,6 +79,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster info
 ```
 
 **Node Information:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster nodes
 
@@ -85,6 +91,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster nodes
 ```
 
 **Slot Distribution:**
+
 ```bash
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster slots
 
@@ -92,6 +99,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster slots
 ```
 
 **Data Operations:**
+
 ```bash
 # Set key (automatically routed to correct node) - Non-TLS
 redis-cli -c -a $REDIS_PASSWORD -p 6379 SET user:1000 "John Doe"
@@ -113,6 +121,7 @@ redis-cli -a $REDIS_PASSWORD -p 6379 GET user:1000
 ```
 
 **Find Key Location:**
+
 ```bash
 # Which slot?
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster keyslot user:1000
@@ -125,6 +134,7 @@ docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD cluster keyslot user:1000
 ### Troubleshooting
 
 **Cluster State Not OK:**
+
 ```bash
 # Check individual node status
 for i in 1 2 3; do
@@ -141,6 +151,7 @@ docker exec dev-redis-3 redis-cli -a $REDIS_PASSWORD cluster nodes
 ```
 
 **Slot Migration Issues:**
+
 ```bash
 # Check for open slots
 docker exec dev-redis-1 redis-cli --cluster check 172.20.2.13:6379 -a $REDIS_PASSWORD
@@ -149,12 +160,14 @@ docker exec dev-redis-1 redis-cli --cluster check 172.20.2.13:6379 -a $REDIS_PAS
 ```
 
 **Manually Re-initialize Cluster:**
+
 ```bash
 # If cluster is broken and needs to be recreated
 ./configs/redis/scripts/redis-cluster-init.sh
 ```
 
 **Performance Monitoring:**
+
 ```bash
 # Real-time stats
 docker exec dev-redis-1 redis-cli -a $REDIS_PASSWORD --stat
@@ -219,6 +232,7 @@ curl -s http://localhost:8000/redis/cluster/slots | jq '{
 **Implementation Reference:**
 
 See `reference-apps/fastapi/app/routers/redis_cluster.py` for:
+
 - Parsing `CLUSTER NODES` command output
 - Handling `CLUSTER SLOTS` binary response
 - Connecting to individual cluster nodes

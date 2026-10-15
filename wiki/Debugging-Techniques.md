@@ -62,6 +62,7 @@ graph TD
 ### Colima VM Optimization
 
 **Default configuration:**
+
 ```bash
 # ~/.colima/default/colima.yaml
 cpu: 4
@@ -70,18 +71,21 @@ disk: 60
 ```
 
 **Recommended for development (28 services):**
+
 ```bash
 # For smooth development experience
 COLIMA_CPU=6 COLIMA_MEMORY=12 COLIMA_DISK=100 ./devstack.sh start
 ```
 
 **Recommended for heavy workloads:**
+
 ```bash
 # For load testing, many concurrent users
 COLIMA_CPU=8 COLIMA_MEMORY=16 COLIMA_DISK=100 ./devstack.sh start
 ```
 
 **Monitoring Colima resources:**
+
 ```bash
 # Check current allocation
 colima status
@@ -131,6 +135,7 @@ services:
 ```
 
 **Apply changes:**
+
 ```bash
 docker compose up -d --force-recreate
 ```
@@ -142,6 +147,7 @@ docker compose up -d --force-recreate
 **Use appropriate volume drivers:**
 
 1. **For databases (high I/O):**
+
 ```yaml
 volumes:
   postgres_data:
@@ -153,6 +159,7 @@ volumes:
 ```
 
 2. **For logs (less critical):**
+
 ```yaml
 volumes:
   loki_data:
@@ -160,6 +167,7 @@ volumes:
 ```
 
 **Monitor volume performance:**
+
 ```bash
 # Check volume usage
 docker system df -v
@@ -177,12 +185,14 @@ docker stats --format "table {{.Name}}\t{{.BlockIO}}"
 #### Connection Pooling
 
 **Using PgBouncer (already included):**
+
 ```bash
 # Connect via PgBouncer instead of direct
 psql -h localhost -p 6432 -U dev_admin dev_database
 ```
 
 **PgBouncer configuration tuning:**
+
 ```ini
 # configs/pgbouncer/pgbouncer.ini
 
@@ -196,6 +206,7 @@ reserve_pool_timeout = 3       # Seconds to wait for connection
 ```
 
 **Restart PgBouncer after changes:**
+
 ```bash
 docker compose restart pgbouncer
 ```
@@ -203,6 +214,7 @@ docker compose restart pgbouncer
 #### PostgreSQL Configuration
 
 **Optimize postgresql.conf:**
+
 ```bash
 # configs/postgres/postgresql.conf
 
@@ -233,6 +245,7 @@ log_lock_waits = on
 ```
 
 **Apply changes:**
+
 ```bash
 docker compose restart postgres
 ```
@@ -240,6 +253,7 @@ docker compose restart postgres
 #### Query Optimization
 
 **Enable pg_stat_statements:**
+
 ```sql
 -- In PostgreSQL
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
@@ -257,6 +271,7 @@ LIMIT 20;
 ```
 
 **Add indexes:**
+
 ```sql
 -- Example: Index frequently queried columns
 CREATE INDEX idx_users_email ON users(email);
@@ -268,6 +283,7 @@ CREATE INDEX idx_orders_user_created ON orders(user_id, created_at);
 ```
 
 **Analyze query plans:**
+
 ```sql
 EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 123;
 ```
@@ -279,6 +295,7 @@ EXPLAIN ANALYZE SELECT * FROM orders WHERE user_id = 123;
 #### Configuration Tuning
 
 **Optimize my.cnf:**
+
 ```ini
 # configs/mysql/my.cnf
 
@@ -312,6 +329,7 @@ log_queries_not_using_indexes = 1
 ```
 
 **Apply changes:**
+
 ```bash
 docker compose restart mysql
 ```
@@ -319,11 +337,13 @@ docker compose restart mysql
 #### Performance Analysis
 
 **Check slow queries:**
+
 ```bash
 docker exec dev-mysql-1 mysqldumpslow /var/log/mysql/slow.log
 ```
 
 **Monitor performance schema:**
+
 ```sql
 -- Top 10 slow queries
 SELECT
@@ -343,6 +363,7 @@ LIMIT 10;
 #### Configuration Tuning
 
 **Optimize mongod.conf:**
+
 ```yaml
 # configs/mongodb/mongod.conf
 
@@ -365,6 +386,7 @@ net:
 ```
 
 **Apply changes:**
+
 ```bash
 docker compose restart mongodb
 ```
@@ -372,6 +394,7 @@ docker compose restart mongodb
 #### Indexing Strategy
 
 **Create indexes for common queries:**
+
 ```javascript
 // In mongosh
 db.users.createIndex({ email: 1 }, { unique: true })
@@ -383,6 +406,7 @@ db.orders.createIndex({ status: 1, userId: 1, createdAt: -1 })
 ```
 
 **Monitor index usage:**
+
 ```javascript
 // Check index usage stats
 db.orders.aggregate([
@@ -397,6 +421,7 @@ db.system.profile.find({
 ```
 
 **Optimize queries:**
+
 ```javascript
 // Use explain to analyze
 db.orders.find({ userId: 123 }).explain("executionStats")
@@ -409,6 +434,7 @@ db.orders.find({ userId: 123 }).explain("executionStats")
 ### Configuration Tuning
 
 **Optimize redis.conf:**
+
 ```conf
 # configs/redis/redis.conf
 
@@ -441,6 +467,7 @@ tcp-keepalive 60
 ```
 
 **Apply changes:**
+
 ```bash
 docker compose restart redis-1 redis-2 redis-3
 ```
@@ -448,6 +475,7 @@ docker compose restart redis-1 redis-2 redis-3
 ### Cluster Performance
 
 **Monitor cluster performance:**
+
 ```bash
 # Cluster stats
 docker exec dev-redis-1 redis-cli -a <password> --cluster info 172.20.0.13:6379
@@ -460,6 +488,7 @@ done
 ```
 
 **Optimize slot distribution:**
+
 ```bash
 # Check slot distribution
 docker exec dev-redis-1 redis-cli -a <password> cluster nodes
@@ -473,6 +502,7 @@ docker exec dev-redis-1 redis-cli -a <password> --cluster rebalance 172.20.0.13:
 **Use connection pooling in applications:**
 
 **Python example:**
+
 ```python
 from redis.cluster import RedisCluster
 from redis.connection import ConnectionPool
@@ -502,6 +532,7 @@ redis_client = RedisCluster(connection_pool=pool)
 #### Connection Pooling
 
 **Optimize database connection pools:**
+
 ```python
 # reference-apps/fastapi/app/database.py
 
@@ -523,6 +554,7 @@ engine = create_engine(
 #### Async Optimization
 
 **Use async database access:**
+
 ```python
 # reference-apps/fastapi/app/database.py
 
@@ -581,6 +613,7 @@ async def get_user_cached(user_id: int):
 #### Response Compression
 
 **Enable gzip compression:**
+
 ```python
 # reference-apps/fastapi/main.py
 
@@ -592,6 +625,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 #### Background Tasks
 
 **Offload heavy work to background:**
+
 ```python
 from fastapi import BackgroundTasks
 
@@ -613,6 +647,7 @@ async def heavy_processing(data):
 #### Connection Pooling
 
 **Optimize database pools:**
+
 ```go
 // reference-apps/golang/internal/database/postgres.go
 
@@ -628,6 +663,7 @@ db.SetConnMaxIdleTime(1 * time.Minute)  // Max idle time
 #### Concurrency
 
 **Use goroutines for parallel operations:**
+
 ```go
 func GetAllData(ctx context.Context) (*Response, error) {
     var wg sync.WaitGroup
@@ -685,6 +721,7 @@ func GetAllData(ctx context.Context) (*Response, error) {
 #### Response Caching
 
 **Use in-memory cache:**
+
 ```go
 import (
     "github.com/patrickmn/go-cache"
@@ -719,6 +756,7 @@ func GetUser(userID int) (*User, error) {
 ### Docker Network Optimization
 
 **Use host network for high-throughput services (with caution):**
+
 ```yaml
 # Only for non-conflicting services
 services:
@@ -727,6 +765,7 @@ services:
 ```
 
 **Optimize network driver:**
+
 ```bash
 # Check current driver
 docker network inspect dev-services --format='{{.Driver}}'
@@ -737,6 +776,7 @@ docker network inspect dev-services --format='{{.Driver}}'
 ### Port Mapping Optimization
 
 **Minimize port mapping overhead:**
+
 ```yaml
 # Instead of mapping all Redis ports:
 ports:
@@ -759,6 +799,7 @@ ports:
 ### Prometheus Optimization
 
 **Reduce scrape frequency for non-critical metrics:**
+
 ```yaml
 # configs/prometheus/prometheus.yml
 
@@ -780,6 +821,7 @@ scrape_configs:
 ```
 
 **Optimize retention:**
+
 ```yaml
 # configs/prometheus/prometheus.yml
 
@@ -799,6 +841,7 @@ storage:
 ### Grafana Optimization
 
 **Reduce dashboard refresh rate:**
+
 ```json
 {
   "refresh": "30s",               // Instead of "5s"
@@ -810,6 +853,7 @@ storage:
 ```
 
 **Use query caching:**
+
 ```ini
 # configs/grafana/grafana.ini
 
@@ -825,6 +869,7 @@ enabled = true
 ### Loki Optimization
 
 **Reduce log retention:**
+
 ```yaml
 # configs/loki/loki.yaml
 
@@ -837,6 +882,7 @@ table_manager:
 ```
 
 **Optimize chunk encoding:**
+
 ```yaml
 # configs/loki/loki.yaml
 
@@ -861,6 +907,7 @@ schema_config:
 ### Infrastructure Benchmarks
 
 **Database performance:**
+
 ```bash
 # PostgreSQL benchmark
 docker exec dev-postgres-1 pgbench -i -s 50 dev_database
@@ -871,6 +918,7 @@ docker exec dev-postgres-1 pgbench -c 10 -j 2 -t 1000 dev_database
 ```
 
 **Redis benchmark:**
+
 ```bash
 # Redis cluster benchmark
 docker exec dev-redis-1 redis-cli -a <password> --cluster call 172.20.0.13:6379 debug segfault
@@ -886,6 +934,7 @@ docker exec dev-redis-1 redis-benchmark -h 172.20.0.13 -p 6379 -a <password> -t 
 ### API Benchmarks
 
 **Using Apache Bench:**
+
 ```bash
 # Health check endpoint
 ab -n 1000 -c 10 http://localhost:8000/health
@@ -896,6 +945,7 @@ ab -n 1000 -c 10 http://localhost:8000/health
 ```
 
 **Using wrk:**
+
 ```bash
 # Install wrk
 brew install wrk
@@ -909,6 +959,7 @@ wrk -t4 -c100 -d30s http://localhost:8000/health
 ```
 
 **Custom load test:**
+
 ```python
 # tests/load_test.py
 import asyncio
@@ -962,6 +1013,7 @@ graph LR
 ```
 
 **Add to docker-compose.yml:**
+
 ```yaml
 services:
   reference-api:
@@ -979,6 +1031,7 @@ services:
 ```
 
 **nginx load balancing config:**
+
 ```nginx
 # configs/nginx/nginx.conf
 
@@ -1043,6 +1096,7 @@ services:
 7. **Cache hit rates**
 
 **Set up alerts in Prometheus:**
+
 ```yaml
 # configs/prometheus/alerts.yml
 

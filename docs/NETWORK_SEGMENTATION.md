@@ -29,6 +29,7 @@
 DevStack Core implements **4-tier network segmentation** to provide logical isolation between different categories of services. This architecture follows security best practices by limiting the blast radius of potential security issues and controlling inter-service communication.
 
 **Key Benefits:**
+
 - **Security:** Logical isolation prevents lateral movement
 - **Organization:** Services are grouped by function
 - **Control:** Fine-grained network access controls
@@ -36,6 +37,7 @@ DevStack Core implements **4-tier network segmentation** to provide logical isol
 - **Scalability:** Easy to add services to appropriate tiers
 
 **Network Philosophy:**
+
 - All services connect to Vault network for secrets management
 - Services only join networks they need access to
 - No service needs access to all four networks
@@ -117,21 +119,25 @@ DevStack Core implements **4-tier network segmentation** to provide logical isol
 Provides centralized secrets management using HashiCorp Vault. All services connect to this network to fetch credentials using AppRole authentication.
 
 **Services:**
+
 - `vault` (172.20.1.10)
 
 **Access Pattern:**
+
 - **All services** connect to this network temporarily during startup
 - Services use AppRole authentication to fetch credentials
 - No persistent connections after credential retrieval
 - Vault is the ONLY service that permanently resides here
 
 **Security:**
+
 - Vault is the single source of truth for credentials
 - No hardcoded passwords in any service
 - AppRole provides machine authentication
 - Network isolation prevents credential leakage
 
 **Configuration:**
+
 ```yaml
 networks:
   vault-network:
@@ -168,18 +174,21 @@ Houses all data storage services including databases, caching, and message queui
 | `mongodb` | 172.20.2.17 | 27017 | MongoDB NoSQL database |
 
 **Access Pattern:**
+
 - Only application-tier services can access data-tier
 - No direct external access (except via port mapping for development)
 - Data services communicate with each other (e.g., PgBouncer → PostgreSQL)
 - All services fetch credentials from Vault network
 
 **Security:**
+
 - Data tier isolated from public-facing applications
 - Credentials managed by Vault (no hardcoding)
 - TLS available for all services (dual-mode: TLS + non-TLS)
 - Connection pooling via PgBouncer reduces attack surface
 
 **Configuration:**
+
 ```yaml
 networks:
   data-network:
@@ -214,18 +223,21 @@ Hosts application services including Git hosting and reference API implementatio
 | `rust-reference` | 172.20.3.24 | 8004 (HTTP), 8447 (HTTPS) | Rust Actix-web (~40%) |
 
 **Access Pattern:**
+
 - Exposed to host via port mapping for user access
 - Connect to data-network for database/cache/queue access
 - Connect to vault-network for credential retrieval
 - No direct access to observability-network
 
 **Security:**
+
 - Public-facing services with authentication
 - No direct database access (use PgBouncer for pooling)
 - TLS available for all services (dual-mode)
 - Reference apps demonstrate secure coding patterns
 
 **Configuration:**
+
 ```yaml
 networks:
   app-network:
@@ -262,18 +274,21 @@ Provides monitoring, metrics collection, logging, and visualization for all serv
 | `redis-exporter-3` | 172.20.4.22 | 9123 | Redis node 3 metrics |
 
 **Access Pattern:**
+
 - Prometheus scrapes metrics from all services across all networks
 - Loki aggregates logs via Vector pipeline
 - Grafana visualizes data from Prometheus and Loki
 - No inbound connections from other tiers (monitoring only)
 
 **Security:**
+
 - Read-only access to monitored services
 - No credential storage (uses Vault for datasource credentials)
 - Isolated from application and data tiers
 - Grafana requires authentication (admin/admin default)
 
 **Configuration:**
+
 ```yaml
 networks:
   observability-network:
@@ -428,6 +443,7 @@ graph LR
 | **Redis Exporters** | ❌ | ✅ Scrape | ❌ | ✅ Primary |
 
 **Legend:**
+
 - ✅ **Primary:** Service permanently resides in this network
 - ✅ **Auth:** Connects during startup for Vault AppRole authentication
 - ✅ **Database:** Connects for data storage/retrieval
@@ -527,6 +543,7 @@ graph TD
 ```
 
 **Key Points:**
+
 - External attackers face Forgejo and reference APIs only
 - Compromised app service has limited data network access
 - Data services are not directly exposed
@@ -550,6 +567,7 @@ graph TD
 See [Service Placement](#service-placement) section for complete static IP mapping.
 
 **IP Assignment Strategy:**
+
 - Core services: `.10` - `.19`
 - Additional services: `.20` - `.29`
 - Future expansion: `.30` - `.254`
@@ -565,6 +583,7 @@ See [Service Placement](#service-placement) section for complete static IP mappi
 Docker automatically creates iptables rules for bridge networks. Here's what happens:
 
 **Default Rules:**
+
 ```bash
 # Allow inter-container communication within same network
 iptables -A DOCKER-ISOLATION-STAGE-2 -o br-vault -j ACCEPT
@@ -580,6 +599,7 @@ iptables -A DOCKER-ISOLATION-STAGE-1 -i br-vault -o br-obs -j DROP
 ```
 
 **Custom Rules (if needed):**
+
 ```bash
 # View current Docker iptables rules
 sudo iptables -L DOCKER-USER -n -v
@@ -623,6 +643,7 @@ sudo iptables -A DOCKER-USER -i br-app -o br-data -j DROP
 ### Production Environment
 
 1. **Enforce TLS:**
+
    ```bash
    # Set in .env
    POSTGRES_ENABLE_TLS=true
@@ -657,12 +678,14 @@ sudo iptables -A DOCKER-USER -i br-app -o br-data -j DROP
 #### 1. Service Can't Reach Vault
 
 **Symptoms:**
+
 ```
 Error: Error making API request.
 URL: http://vault:8200/v1/auth/approle/login
 ```
 
 **Diagnosis:**
+
 ```bash
 # Check if service is on vault-network
 docker inspect <service-name> | grep -A 10 Networks
@@ -673,6 +696,7 @@ docker exec <service-name> curl -v http://vault:8200/v1/sys/health
 ```
 
 **Solution:**
+
 - Verify service has `vault-network` in `docker-compose.yml`
 - Ensure Vault is healthy: `docker ps | grep vault`
 - Check Vault logs: `./devstack logs vault`
@@ -680,11 +704,13 @@ docker exec <service-name> curl -v http://vault:8200/v1/sys/health
 #### 2. App Can't Connect to Database
 
 **Symptoms:**
+
 ```
 connection to server at "postgres" (172.20.2.10), port 5432 failed
 ```
 
 **Diagnosis:**
+
 ```bash
 # Check if app is on data-network
 docker inspect reference-api | grep -A 10 Networks
@@ -695,6 +721,7 @@ docker exec reference-api nc -zv postgres 5432
 ```
 
 **Solution:**
+
 - Verify app has `data-network` in `docker-compose.yml`
 - Check database is running: `docker ps | grep postgres`
 - Verify credentials from Vault: `./devstack vault-show-password postgres`
@@ -702,11 +729,13 @@ docker exec reference-api nc -zv postgres 5432
 #### 3. Prometheus Can't Scrape Metrics
 
 **Symptoms:**
+
 ```
 Get "http://postgres:9187/metrics": dial tcp: lookup postgres: no such host
 ```
 
 **Diagnosis:**
+
 ```bash
 # Check Prometheus network membership
 docker inspect prometheus | grep -A 20 Networks
@@ -716,6 +745,7 @@ docker exec prometheus ping -c 3 postgres
 ```
 
 **Solution:**
+
 - Prometheus must be on same network as target
 - Add target's network to Prometheus service definition
 - Verify target exposes metrics endpoint: `curl http://localhost:9187/metrics`
@@ -723,11 +753,13 @@ docker exec prometheus ping -c 3 postgres
 #### 4. Network Bridge Not Created
 
 **Symptoms:**
+
 ```
 ERROR: Network vault-network declared as external, but could not be found
 ```
 
 **Diagnosis:**
+
 ```bash
 # List Docker networks
 docker network ls | grep br-
@@ -737,6 +769,7 @@ docker network inspect vault-network
 ```
 
 **Solution:**
+
 ```bash
 # Recreate network
 docker network rm vault-network

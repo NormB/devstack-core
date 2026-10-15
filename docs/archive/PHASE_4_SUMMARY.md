@@ -12,6 +12,7 @@
 Phase 4 successfully completed the DevStack Core improvement initiative by achieving 100% AppRole adoption across all services, creating comprehensive migration documentation, and updating critical documentation to reflect all improvements from Phases 1-3.
 
 **Key Achievements:**
+
 - ✅ **100% AppRole Adoption** - All 16 Vault-integrated services migrated from root token to AppRole authentication
 - ✅ **Comprehensive Migration Guide** - 648-line guide for upgrading existing installations
 - ✅ **Enhanced Test Coverage** - 32 AppRole tests, 24 TLS tests, 571+ total tests
@@ -28,6 +29,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 **Services Migrated:**
 
 **Reference Applications (5 services):**
+
 1. `api-first` (Python FastAPI - API-first pattern)
 2. `golang-api` (Go Gin framework)
 3. `nodejs-api` (Node.js Express)
@@ -35,6 +37,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 5. Management scripts
 
 **Infrastructure Services (5 services):**
+
 1. `pgbouncer` (PostgreSQL connection pooler)
 2. `redis-exporter-1` (Redis node 1 metrics)
 3. `redis-exporter-2` (Redis node 2 metrics)
@@ -42,6 +45,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 5. `vector` (Log aggregation and routing)
 
 **Implementation Details:**
+
 - Created 8 new Vault policy files (api-first, golang-api, nodejs-api, rust-api, pgbouncer, redis-exporter, vector, management)
 - Updated `docker-compose.yml` for all 10 services (changed VAULT_TOKEN → VAULT_APPROLE_DIR)
 - Added AppRole authentication code to 4 reference applications
@@ -49,11 +53,13 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - Backward compatibility maintained (fallback to VAULT_TOKEN if AppRole unavailable)
 
 **Testing:**
+
 - Extended `test-approle-security.sh` from 26 → 32 tests
 - Added 6 new tests for infrastructure services
 - All 32 tests passing ✅
 
 **Pull Requests:**
+
 - PR #84: AppRole migration for reference apps and infrastructure
 
 ### Task 4.2: Init Script Enhancement
@@ -61,11 +67,13 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 **Objective:** Add native AppRole support to infrastructure service init scripts
 
 **Scripts Updated:**
+
 1. `configs/pgbouncer/scripts/init.sh`
 2. `configs/exporters/redis/init.sh`
 3. `configs/vector/init.sh`
 
 **Enhancements:**
+
 - Added `VAULT_APPROLE_DIR` environment variable support
 - Implemented `login_with_approle()` function in each script
 - Authentication priority: AppRole > VAULT_TOKEN > root-token file
@@ -73,11 +81,13 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - JSON parsing: wget+jq (pgbouncer), wget+grep/cut (redis-exporter), curl+grep/cut (vector)
 
 **Testing:**
+
 - Manual testing: pgbouncer successfully started with AppRole authentication
 - Logs confirmed: "Successfully authenticated with AppRole"
 - All services functional with AppRole credentials
 
 **Pull Requests:**
+
 - PR #84: Init script AppRole enhancements (included in AppRole migration PR)
 
 ### Task 4.3: Migration Guide Creation
@@ -87,6 +97,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 **Document Created:** `docs/MIGRATION_GUIDE.md` (648 lines)
 
 **Content Sections:**
+
 1. **Introduction** - Overview, benefits, risk assessment
 2. **Prerequisites** - Backup requirements, version requirements, testing environment
 3. **Migration Timeline** - 30-60 minute estimate, scheduling recommendations
@@ -98,6 +109,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 9. **FAQ** - 15+ common questions and answers
 
 **Key Features:**
+
 - Zero-downtime migration procedures
 - Expected outputs for all commands
 - Troubleshooting for common issues
@@ -105,10 +117,12 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - Validation checklists
 
 **Documentation Updates:**
+
 - Added migration guide to `docs/README.md` index
 - Placed under "Operational Guides" section
 
 **Pull Requests:**
+
 - PR #85: Comprehensive migration guide
 
 ### Task 4.4: Documentation Updates
@@ -116,11 +130,13 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 **Objective:** Update critical documentation to reflect Phase 1-4 changes
 
 **Documents Updated:**
+
 - `docs/MIGRATION_GUIDE.md` - Updated with 100% AppRole adoption status
 - `docs/README.md` - Added migration guide to index
 - Multiple documentation accuracy fixes (PRs #81, #82, #83)
 
 **Pull Requests:**
+
 - PR #83: Complete remaining documentation updates
 - PR #82: Fix critical AppRole documentation inaccuracies
 - PR #81: Test validation and documentation updates
@@ -141,6 +157,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 ### Service Breakdown
 
 **Core Data Services (7) - Phase 1:**
+
 - PostgreSQL
 - MySQL
 - MongoDB
@@ -148,9 +165,11 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - RabbitMQ
 
 **Git & Collaboration (1) - Phase 1:**
+
 - Forgejo
 
 **Reference Applications (5) - Phase 4:**
+
 - reference-api (Python FastAPI - code-first)
 - api-first (Python FastAPI - API-first)
 - golang-api (Go Gin)
@@ -158,6 +177,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - rust-api (Rust Actix-web)
 
 **Infrastructure Services (4) - Phase 4:**
+
 - PGBouncer
 - Redis Exporter (3 instances share same AppRole)
 - Vector
@@ -205,6 +225,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 ### AppRole Architecture
 
 **Authentication Flow:**
+
 1. Service starts with `VAULT_APPROLE_DIR` environment variable
 2. Init script reads `role-id` and `secret-id` from mounted volume
 3. Script authenticates to Vault: `POST /v1/auth/approle/login`
@@ -213,6 +234,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 6. Token automatically renewed before expiration
 
 **Security Model:**
+
 - **Least Privilege:** Each service can only access its required secrets
 - **Short-lived Tokens:** 1-hour TTL reduces exposure window
 - **Renewable:** Tokens renewed without service restart
@@ -220,6 +242,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 - **Revocable:** Individual service credentials can be revoked
 
 **Credential Storage:**
+
 - Location: `~/.config/vault/approles/<service>/`
 - Files: `role-id` (public), `secret-id` (secret, 30-day TTL)
 - Permissions: 700 (directories), 600 (files)
@@ -228,6 +251,7 @@ Phase 4 successfully completed the DevStack Core improvement initiative by achie
 ### Policy Examples
 
 **PGBouncer Policy** (least-privilege):
+
 ```hcl
 # PGBouncer can only read PostgreSQL credentials
 path "secret/data/postgres" {
@@ -236,6 +260,7 @@ path "secret/data/postgres" {
 ```
 
 **Redis Exporter Policy** (multi-secret access):
+
 ```hcl
 # Redis Exporter can read all 3 Redis node credentials
 path "secret/data/redis-1" {
@@ -250,6 +275,7 @@ path "secret/data/redis-3" {
 ```
 
 **Vector Policy** (observability access):
+
 ```hcl
 # Vector can read all data service credentials for log collection
 path "secret/data/postgres" {
@@ -316,6 +342,7 @@ fi
 ### Reference Application Updates
 
 **Python (FastAPI) - api-first:**
+
 ```python
 async def _login_with_approle(self) -> str:
     """Authenticate with Vault using AppRole."""
@@ -331,6 +358,7 @@ async def _login_with_approle(self) -> str:
 ```
 
 **Go (Gin) - golang-api:**
+
 ```go
 func loginWithAppRole(appRoleDir, vaultAddr string) (string, error) {
     roleID, _ := os.ReadFile(filepath.Join(appRoleDir, "role-id"))
@@ -354,6 +382,7 @@ func loginWithAppRole(appRoleDir, vaultAddr string) (string, error) {
 ```
 
 **Node.js (Express) - nodejs-api:**
+
 ```javascript
 async _loginWithAppRole() {
     const roleId = fs.readFileSync(
@@ -381,6 +410,7 @@ async _loginWithAppRole() {
 **Problem:** Existing deployments use `VAULT_TOKEN` environment variable. Forcing AppRole would break existing installations.
 
 **Solution:** Implemented authentication priority with fallback:
+
 1. Try AppRole (if `VAULT_APPROLE_DIR` exists)
 2. Fall back to `VAULT_TOKEN` (if provided)
 3. Fall back to root-token file (for development)
@@ -393,6 +423,7 @@ async _loginWithAppRole() {
 **Problem:** Some containers (redis-exporter, vector) don't have `jq` installed.
 
 **Solution:** Used `grep` + `cut` for JSON parsing:
+
 ```bash
 TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 ```
@@ -404,6 +435,7 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 **Problem:** Reference apps use different languages (Python, Go, Node.js, Rust).
 
 **Solution:** Implemented consistent pattern across all languages:
+
 - Check for `VAULT_APPROLE_DIR` environment variable
 - Read role_id and secret_id from files
 - POST to `/v1/auth/approle/login`
@@ -417,6 +449,7 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 **Problem:** Need to validate all 16 services can authenticate with AppRole.
 
 **Solution:** Extended `test-approle-security.sh` with 32 tests:
+
 - Tests 1-6: Basic AppRole functionality
 - Tests 7-19: Core service AppRole authentication
 - Tests 20-24: Reference app AppRole authentication
@@ -430,6 +463,7 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 **Problem:** Earlier documentation referenced "7/16 services" using AppRole.
 
 **Solution:** Updated all documentation to reflect 100% adoption:
+
 - Migration guide updated
 - README updated
 - Test counts updated (21 → 32)
@@ -444,6 +478,7 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 ### Security Improvements
 
 **Phase 1: Security Hardening**
+
 - ✅ AppRole authentication (100% adoption)
 - ✅ Dual-mode TLS for all data services
 - ✅ Two-tier PKI (Root CA → Intermediate CA → Service Certs)
@@ -451,12 +486,14 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 - ✅ Enhanced Vault security policies
 
 **Phase 4: AppRole Completion**
+
 - ✅ Reference applications secured with AppRole
 - ✅ Infrastructure services secured with AppRole
 - ✅ Comprehensive test coverage (32 AppRole tests)
 - ✅ Migration guide for existing installations
 
 **Combined Security Posture:**
+
 - **100% AppRole adoption** (16/16 services)
 - **Least-privilege access** (service-specific policies)
 - **Short-lived tokens** (1h TTL, renewable)
@@ -466,18 +503,21 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 ### Operational Improvements
 
 **Phase 2: Operations & Reliability**
+
 - ✅ Health-check driven startup
 - ✅ Automated backup/restore
 - ✅ Disaster recovery (10-12 min RTO)
 - ✅ Comprehensive monitoring
 
 **Phase 4: Documentation**
+
 - ✅ Migration guide (648 lines)
 - ✅ Updated all critical documentation
 - ✅ Troubleshooting procedures
 - ✅ Rollback procedures
 
 **Combined Operational Maturity:**
+
 - **Fully automated** credential management
 - **Self-healing** service startup
 - **Documented procedures** for all operations
@@ -486,17 +526,20 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 ### Performance Improvements
 
 **Phase 3: Performance Optimization**
+
 - ✅ PostgreSQL: +41% throughput
 - ✅ MySQL: +37% throughput
 - ✅ MongoDB: +19% throughput
 - ✅ Redis: <3s failover time
 
 **Phase 4: Test Coverage**
+
 - ✅ Performance regression tests (9 tests)
 - ✅ Load testing automation (7 tests)
 - ✅ 571+ total tests (100% pass rate)
 
 **Combined Performance:**
+
 - **Optimized databases** (19-41% improvements)
 - **High availability** (Redis cluster <3s failover)
 - **Regression prevention** (automated performance tests)
@@ -570,6 +613,7 @@ TOKEN=$(echo "$response" | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4)
 From Phase 4 Plan - **All criteria met ✅**
 
 **Task 4.1: AppRole Migration**
+
 - [x] Reference applications migrated to AppRole
 - [x] Infrastructure services migrated to AppRole
 - [x] Init scripts updated with AppRole support
@@ -578,6 +622,7 @@ From Phase 4 Plan - **All criteria met ✅**
 - [x] All tests passing (100% pass rate)
 
 **Task 4.3: Migration Guide**
+
 - [x] Root token → AppRole migration documented
 - [x] HTTP → HTTPS migration documented
 - [x] Troubleshooting guide comprehensive
@@ -586,6 +631,7 @@ From Phase 4 Plan - **All criteria met ✅**
 - [x] FAQ addresses common concerns
 
 **Task 4.4: Documentation**
+
 - [x] Migration guide created (648 lines)
 - [x] Documentation index updated
 - [x] AppRole adoption status updated (100%)
@@ -594,6 +640,7 @@ From Phase 4 Plan - **All criteria met ✅**
 ### Overall Phase 1-4 Success Criteria
 
 **Security (Phase 1 + 4):**
+
 - [x] 100% AppRole adoption (16/16 services)
 - [x] All services using least-privilege policies
 - [x] TLS enabled for all data services
@@ -602,6 +649,7 @@ From Phase 4 Plan - **All criteria met ✅**
 - [x] 24 TLS connection tests passing
 
 **Operations (Phase 2):**
+
 - [x] Health-check driven startup
 - [x] Automated backup/restore
 - [x] 10-12 minute RTO achieved
@@ -609,6 +657,7 @@ From Phase 4 Plan - **All criteria met ✅**
 - [x] Service profiles implemented
 
 **Performance (Phase 3):**
+
 - [x] PostgreSQL: +41% improvement
 - [x] MySQL: +37% improvement
 - [x] MongoDB: +19% improvement
@@ -617,6 +666,7 @@ From Phase 4 Plan - **All criteria met ✅**
 - [x] Performance regression testing
 
 **Documentation (Phase 4):**
+
 - [x] Migration guide complete
 - [x] Critical documentation updated
 - [x] Test coverage documented
@@ -630,6 +680,7 @@ From Phase 4 Plan - **All criteria met ✅**
 ### Phase 4 Deliverables
 
 **Code:**
+
 - 8 Vault policy files (api-first, golang-api, nodejs-api, rust-api, pgbouncer, redis-exporter, vector, management)
 - 4 reference application AppRole implementations
 - 3 infrastructure init script updates
@@ -637,17 +688,20 @@ From Phase 4 Plan - **All criteria met ✅**
 - 1 test file update (32 tests)
 
 **Documentation:**
+
 - `docs/MIGRATION_GUIDE.md` (648 lines)
 - `docs/PHASE_4_SUMMARY.md` (this document)
 - `docs/README.md` (updated index)
 - Multiple documentation accuracy fixes
 
 **Testing:**
+
 - 32 AppRole security tests (test-approle-security.sh)
 - 24 TLS connection tests (test-tls-connections.sh)
 - All tests passing (100% pass rate)
 
 **Pull Requests:**
+
 - PR #81: Test validation and documentation updates
 - PR #82: Fix critical AppRole documentation inaccuracies
 - PR #83: Complete remaining documentation updates
@@ -742,6 +796,7 @@ Phase 4 successfully achieved its primary objectives:
 ✅ **Updated Documentation** - All critical documentation reflects Phase 1-4 improvements
 
 DevStack Core is now a **production-ready, security-hardened, high-performance development infrastructure** with:
+
 - Robust security (AppRole + TLS + network segmentation)
 - Excellent operations (automated backup/restore, health-driven startup, 10-12 min RTO)
 - Strong performance (19-41% database improvements, <3s Redis failover)

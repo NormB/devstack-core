@@ -45,6 +45,7 @@
 The devstack-core environment is designed for **local development** and is NOT production-hardened out of the box. This page provides guidance on hardening the environment for production use.
 
 **Current Security Posture (Development):**
+
 - Uses Vault root token (full access)
 - No network firewalls between services
 - Debug logging enabled
@@ -54,6 +55,7 @@ The devstack-core environment is designed for **local development** and is NOT p
 - Permissive CORS policies
 
 **Production Requirements:**
+
 - Use Vault AppRole authentication (least privilege)
 - Enable network segmentation and firewalls
 - TLS-only connections (no HTTP)
@@ -67,6 +69,7 @@ The devstack-core environment is designed for **local development** and is NOT p
 ### Development vs Production
 
 **Development Environment:**
+
 ```yaml
 # Easy to use, low security
 vault:
@@ -82,6 +85,7 @@ reference-api:
 ```
 
 **Production Environment:**
+
 ```yaml
 # Secure, least privilege
 vault:

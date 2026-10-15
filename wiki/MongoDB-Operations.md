@@ -2210,6 +2210,7 @@ db.adminCommand({ getLog: "global" })
 ```
 
 **⚠️ WARNING:** This is a development environment. Production requires:
+
 - TLS/SSL encryption
 - Network firewalls
 - Replica sets for high availability

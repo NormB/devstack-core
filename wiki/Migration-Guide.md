@@ -9,14 +9,14 @@
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Prerequisites](#prerequisites)
-3. [Migration Timeline](#migration-timeline)
-4. [Root Token → AppRole Migration](#root-token--approle-migration)
-5. [HTTP → HTTPS (TLS) Migration](#http--https-tls-migration)
-6. [Troubleshooting Guide](#troubleshooting-guide)
-7. [Post-Migration Validation](#post-migration-validation)
-8. [Rollback Procedures](#rollback-procedures)
-9. [FAQ](#faq)
+2. [Migration Scenarios](#migration-scenarios)
+3. [Pre-Phase 1 → Current (AppRole + TLS)](#pre-phase-1--current-approle--tls)
+4. [Enabling AppRole for Your Service](#enabling-approle-for-your-service)
+5. [Enabling TLS/SSL](#enabling-tlsssl)
+6. [Rollback Procedures](#rollback-procedures)
+7. [Troubleshooting Migration Issues](#troubleshooting-migration-issues)
+8. [FAQ](#faq)
+9. [Support](#support)
 
 ---
 
@@ -30,18 +30,21 @@ This guide provides step-by-step instructions for migrating existing DevStack Co
 ### What's Changing?
 
 **Security Enhancements (Phase 1):**
+
 - Vault authentication: Root tokens → AppRole (role_id + secret_id)
 - Network security: Plaintext → Dual-mode TLS (accepts both HTTP and HTTPS)
 - Certificate management: Two-tier PKI (Root CA → Intermediate CA → Service Certs)
 - Network segmentation: 4-tier isolation (vault/data/app/observability)
 
 **Operational Improvements (Phase 2):**
+
 - Startup: Manual → Health-check driven automatic startup
 - Backup: Manual → Automated with validation
 - Recovery: Undefined → 10-12 minute RTO with documented procedures
 - Monitoring: Basic → Comprehensive alerting via Prometheus/Grafana
 
 **Performance Optimizations (Phase 3):**
+
 - PostgreSQL: +41% throughput improvement
 - MySQL: +37% throughput improvement
 - MongoDB: +19% throughput improvement
@@ -49,6 +52,7 @@ This guide provides step-by-step instructions for migrating existing DevStack Co
 - Testing: 50+ tests → 571+ comprehensive tests
 
 **Phase 4 Completion:**
+
 - ✅ 100% AppRole adoption (16/16 services)
 - ✅ All infrastructure services migrated
 - ✅ All reference applications migrated
@@ -59,23 +63,27 @@ This guide provides step-by-step instructions for migrating existing DevStack Co
 ## Migration Scenarios
 
 ### Scenario 1: Fresh Install (Recommended)
+
 **Who:** New users installing DevStack Core for the first time
 **Path:** Follow standard installation guide - AppRole enabled by default
 **Doc:** [INSTALLATION.md](./INSTALLATION.md)
 
 ### Scenario 2: Pre-Phase 1 → Current
+
 **Who:** Users with DevStack Core installed before November 2025
 **Path:** Migrate from root token to AppRole authentication
 **Complexity:** Medium (2-3 hours)
 **Downtime:** 10-15 minutes
 
 ### Scenario 3: Adding TLS to Existing Setup
+
 **Who:** Users with current setup wanting to enable TLS
 **Path:** Generate certificates and enable TLS dual-mode
 **Complexity:** Low (30 minutes)
 **Downtime:** 5 minutes
 
 ### Scenario 4: Migrating Custom Service to AppRole
+
 **Who:** Developers adding new services
 **Path:** Create AppRole, policy, and init script
 **Complexity:** Medium (1-2 hours)
@@ -88,6 +96,7 @@ This guide provides step-by-step instructions for migrating existing DevStack Co
 ### Prerequisites
 
 **Before starting:**
+
 1. ✅ Backup your data: `./devstack backup`
 2. ✅ Backup Vault configuration: `cp -r ~/.config/vault ~/vault-backup-$(date +%Y%m%d)`
 3. ✅ Note current service versions
@@ -95,6 +104,7 @@ This guide provides step-by-step instructions for migrating existing DevStack Co
 5. ✅ Test rollback procedure (optional but recommended)
 
 **System Requirements:**
+
 - DevStack Core v1.2.0 or later
 - Vault accessible and unsealed
 - All services healthy before migration
@@ -112,6 +122,7 @@ git log --oneline --since="2025-11-01"
 ```
 
 **What changed:**
+
 - AppRole authentication for 7 core services
 - TLS certificate generation automation
 - Service profiles (minimal/standard/full)
@@ -132,6 +143,7 @@ docker ps
 ### Step 3: Update Configuration Files
 
 **3.1: Update docker-compose.yml**
+
 ```bash
 # Backup current config
 cp docker-compose.yml docker-compose.yml.backup
@@ -143,6 +155,7 @@ grep "entrypoint.*init-approle" docker-compose.yml | head -1
 ```
 
 **3.2: Verify .env file**
+
 ```bash
 # Your .env should already have VAULT_TOKEN
 cat .env | grep VAULT_TOKEN
@@ -166,6 +179,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ```
 
 **Expected output:**
+
 ```
 ============================================
   Bootstrapping Vault with Service Credentials
@@ -235,6 +249,7 @@ docker compose logs postgres 2>&1 | grep -i approle
 ### Step 7: Verify Migration Success
 
 **7.1: Check all core services are using AppRole**
+
 ```bash
 # These services should have NO "VAULT_TOKEN" in environment
 docker inspect dev-postgres | grep -i VAULT_TOKEN
@@ -246,6 +261,7 @@ docker inspect dev-postgres | grep VAULT_APPROLE_DIR
 ```
 
 **7.2: Run AppRole security tests**
+
 ```bash
 export VAULT_ADDR=http://localhost:8200
 export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
@@ -253,6 +269,7 @@ export VAULT_TOKEN=$(cat ~/.config/vault/root-token)
 ```
 
 **Expected results:**
+
 ```
 ============================================
   Testing AppRole Authentication and Security
@@ -272,6 +289,7 @@ PASS: PostgreSQL AppRole authentication successful
 ```
 
 **7.3: Test database connectivity**
+
 ```bash
 # PostgreSQL
 docker exec dev-postgres psql -U devuser -d devdb -c "SELECT version();"
@@ -302,6 +320,7 @@ docker compose restart postgres mysql mongodb redis-1 redis-2 redis-3 rabbitmq
 ```
 
 **Verify TLS enabled:**
+
 ```bash
 # PostgreSQL SSL check
 export PGPASSWORD=$(./devstack vault-show-password postgres)
@@ -342,6 +361,7 @@ rm docker-compose.yml.backup
 **Use case:** Adding AppRole authentication to PGBouncer, reference apps, or custom services
 
 ### Prerequisites
+
 - Service currently uses `VAULT_TOKEN` environment variable
 - Service has init script that fetches credentials from Vault
 - Vault is accessible from service container
@@ -463,6 +483,7 @@ docker exec dev-postgres psql -U devuser -d devdb -c "SHOW ssl;"
 To enforce TLS and reject non-TLS connections:
 
 **PostgreSQL:**
+
 ```bash
 # Update postgresql.conf
 docker exec dev-postgres bash -c 'echo "ssl_ca_file = \"/var/lib/postgresql/certs/ca.crt\"" >> /var/lib/postgresql/data/postgresql.conf'
@@ -471,6 +492,7 @@ docker compose restart postgres
 ```
 
 **MySQL:**
+
 ```bash
 # Update my.cnf
 docker exec dev-mysql bash -c 'echo "require_secure_transport = ON" >> /etc/mysql/conf.d/tls.cnf'
@@ -486,6 +508,7 @@ docker compose restart mysql
 If AppRole causes issues, rollback to root token authentication:
 
 **1. Update docker-compose.yml**
+
 ```bash
 # Restore from backup
 cp docker-compose.yml.backup docker-compose.yml
@@ -498,11 +521,13 @@ cp docker-compose.yml.backup docker-compose.yml
 ```
 
 **2. Restart services**
+
 ```bash
 docker compose restart postgres mysql mongodb redis-1 rabbitmq
 ```
 
 **3. Verify services using root token**
+
 ```bash
 docker inspect dev-postgres | grep VAULT_TOKEN
 # Should show: VAULT_TOKEN=hvs.xxxxx
@@ -548,6 +573,7 @@ cp docker-compose.yml.backup docker-compose.yml
 ### Issue: Services Won't Start After AppRole Migration
 
 **Check:**
+
 ```bash
 # 1. Verify AppRole credentials exist
 ls -la ~/.config/vault/approles/postgres/
@@ -568,6 +594,7 @@ curl -X POST http://localhost:8200/v1/auth/approle/login \
 ### Issue: "permission denied" Errors
 
 **Check policy:**
+
 ```bash
 vault policy read postgres-policy
 # Should show: path "secret/data/postgres" { capabilities = ["read"] }
@@ -578,6 +605,7 @@ vault policy read postgres-policy
 ### Issue: TLS Certificate Not Found
 
 **Check:**
+
 ```bash
 ls -la ~/.config/vault/certs/postgres/
 # Should show: ca.crt, server.crt, server.key
@@ -593,33 +621,43 @@ docker exec dev-postgres ls -la /var/lib/postgresql/certs/
 ## FAQ
 
 ### Q: Do I need to migrate all services at once?
+
 **A:** No. All services already use AppRole in DevStack Core v1.3.0+. Migration is only needed if you're upgrading from an older version.
 
 ### Q: Will migration cause data loss?
+
 **A:** No. Migration only changes authentication method, not data storage. However, always backup before migration.
 
 ### Q: How long does migration take?
+
 **A:** 10-15 minutes of downtime, 1-2 hours total including testing.
 
 ### Q: Can I use AppRole and root token simultaneously?
+
 **A:** Yes. Core services use AppRole, infrastructure uses root token. Both work together.
 
 ### Q: Is TLS required?
+
 **A:** No. TLS is optional. Services run in dual-mode (accept both TLS and non-TLS).
 
 ### Q: How do I check if AppRole is working?
+
 **A:** Run `./tests/test-approle-security.sh` - all 32 tests should pass.
 
 ### Q: What happens when service token expires (1h TTL)?
+
 **A:** Restart the service to get a new token: `docker compose restart postgres`
 
 ### Q: Can I change token TTL?
+
 **A:** Yes. Update AppRole: `vault write auth/approle/role/postgres token_ttl=2h token_max_ttl=8h`
 
 ### Q: How do I backup AppRole credentials?
+
 **A:** `tar -czf approles-backup.tar.gz ~/.config/vault/approles/`
 
 ### Q: Where are AppRole credentials stored?
+
 **A:** `~/.config/vault/approles/<service>/role-id` and `secret-id`
 
 ---
@@ -627,15 +665,18 @@ docker exec dev-postgres ls -la /var/lib/postgresql/certs/
 ## Support
 
 **Documentation:**
+
 - [VAULT.md](./VAULT.md) - Vault integration details
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - AppRole troubleshooting section
 - [SECURITY_ASSESSMENT.md](./SECURITY_ASSESSMENT.md) - Security implementation details
 
 **Testing:**
+
 - Run `./tests/test-approle-security.sh` to validate AppRole
 - Run `./tests/test-tls-connections.sh` to validate TLS
 
 **Getting Help:**
+
 - Check logs: `docker compose logs <service> | grep -i error`
 - Run diagnostics: `./devstack health`
 - Review: [UltraThink Analysis](./ULTRATHINK_ANALYSIS_PHASE4.md)

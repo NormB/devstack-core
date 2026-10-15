@@ -40,9 +40,11 @@ This test suite ensures **API contract compliance** by running the same tests ag
 ## Test Categories
 
 ### 1. **Parity Tests** (`@pytest.mark.parity`)
+
 Tests that run against **both** implementations using parametrized fixtures.
 
 **Example:**
+
 ```python
 async def test_health_check(self, api_url, http_client):
     # Runs twice: once for each API
@@ -51,9 +53,11 @@ async def test_health_check(self, api_url, http_client):
 ```
 
 ### 2. **Comparison Tests** (`@pytest.mark.comparison`)
+
 Tests that **directly compare** responses from both APIs to ensure identical behavior.
 
 **Example:**
+
 ```python
 async def test_responses_match(self, both_api_urls, http_client):
     code_first = await http_client.get(f"{both_api_urls['code-first']}/health/")
@@ -66,6 +70,7 @@ async def test_responses_match(self, both_api_urls, http_client):
 ### 1. Start Both APIs
 
 **Terminal 1 - Code-First:**
+
 ```bash
 cd reference-apps
 make start-code-first
@@ -73,6 +78,7 @@ make start-code-first
 ```
 
 **Terminal 2 - API-First:**
+
 ```bash
 cd reference-apps
 make start-api-first
@@ -168,6 +174,7 @@ test_api_parity.py::TestRootEndpoint::test_root_endpoint_structure_matches PASSE
 **Error:** `httpx.ConnectError: [Errno 61] Connection refused`
 
 **Solution:** Ensure both APIs are started:
+
 ```bash
 make start-code-first  # Terminal 1
 make start-api-first   # Terminal 2
@@ -178,6 +185,7 @@ make start-api-first   # Terminal 2
 If tests fail because responses don't match:
 
 1. **Check synchronization:**
+
    ```bash
    make validate-sync
    ```
@@ -185,6 +193,7 @@ If tests fail because responses don't match:
 2. **Review the diff:** Test output will show exact differences
 
 3. **Sync implementations:**
+
    ```bash
    make sync-api-first
    ```
@@ -194,6 +203,7 @@ If tests fail because responses don't match:
 **Error:** `Bind for 0.0.0.0:8000 failed: port is already allocated`
 
 **Solution:**
+
 ```bash
 # Stop existing containers
 docker compose down
