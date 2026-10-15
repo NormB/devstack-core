@@ -8,7 +8,7 @@ dependencies = [
     "mysql-connector-python>=8.0.0",
     "redis>=5.0.0",
     "pika>=1.3.0",
-    "pymongo>=4.0.0",
+    "pymongo>=4.18.2",
 ]
 
 [dependency-groups]
