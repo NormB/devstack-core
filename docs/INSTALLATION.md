@@ -1502,4 +1502,3 @@ docker compose ps
 ./devstack status
 ./devstack health
 ```
-

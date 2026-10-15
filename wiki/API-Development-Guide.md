@@ -207,23 +207,23 @@ class Settings(BaseSettings):
     app_name: str = "My API"
     app_version: str = "1.0.0"
     debug: bool = False
-    
+
     # Vault
     vault_addr: str = os.getenv("VAULT_ADDR", "http://vault:8200")
     vault_token: str = os.getenv("VAULT_TOKEN", "")
-    
+
     # Database
     db_host: str = "postgres"
     db_port: int = 5432
     db_name: str = "myapp"
     db_user: str = "postgres"
     db_password: str = ""  # Loaded from Vault
-    
+
     # Redis
     redis_host: str = "redis-1"
     redis_port: int = 6379
     redis_password: str = ""  # Loaded from Vault
-    
+
     # RabbitMQ
     rabbitmq_host: str = "rabbitmq"
     rabbitmq_port: int = 5672
@@ -262,15 +262,15 @@ def get_vault_client():
 def get_secret(path: str, key: str = None) -> dict:
     """Retrieve secret from Vault"""
     client = get_vault_client()
-    
+
     # Read secret
     response = client.secrets.kv.v2.read_secret_version(
         path=path,
         mount_point="secret"
     )
-    
+
     secret_data = response["data"]["data"]
-    
+
     if key:
         return secret_data.get(key)
     return secret_data
@@ -294,12 +294,12 @@ import (
 func GetClient() (*vault.Client, error) {
     config := vault.DefaultConfig()
     config.Address = os.Getenv("VAULT_ADDR")
-    
+
     client, err := vault.NewClient(config)
     if err != nil {
         return nil, err
     }
-    
+
     client.SetToken(os.Getenv("VAULT_TOKEN"))
     return client, nil
 }
@@ -309,12 +309,12 @@ func GetSecret(path, key string) (string, error) {
     if err != nil {
         return "", err
     }
-    
+
     secret, err := client.Logical().Read("secret/data/" + path)
     if err != nil {
         return "", err
     }
-    
+
     data := secret.Data["data"].(map[string]interface{})
     return data[key].(string), nil
 }
@@ -340,10 +340,10 @@ function getVaultClient() {
 
 async function getSecret(path, key = null) {
   const client = getVaultClient();
-  
+
   const response = await client.read(`secret/data/${path}`);
   const secretData = response.data.data;
-  
+
   if (key) {
     return secretData[key];
   }
@@ -419,25 +419,25 @@ import (
 
 func NewPostgresPool() (*pgxpool.Pool, error) {
     password, _ := vault.GetSecret("postgres", "password")
-    
+
     dsn := fmt.Sprintf(
         "postgres://postgres:%s@postgres:5432/myapp?pool_max_conns=10",
         password,
     )
-    
+
     config, err := pgxpool.ParseConfig(dsn)
     if err != nil {
         return nil, err
     }
-    
+
     config.MaxConns = 10
     config.MinConns = 2
-    
+
     pool, err := pgxpool.NewWithConfig(context.Background(), config)
     if err != nil {
         return nil, err
     }
-    
+
     return pool, nil
 }
 
@@ -460,11 +460,11 @@ from sqlalchemy import text
 class DatabaseService:
     def __init__(self, db: Session):
         self.db = db
-    
+
     def get_user(self, user_id: int):
         """Get user by ID"""
         return self.db.query(User).filter(User.id == user_id).first()
-    
+
     def create_user(self, name: str, email: str):
         """Create new user"""
         user = User(name=name, email=email)
@@ -472,7 +472,7 @@ class DatabaseService:
         self.db.commit()
         self.db.refresh(user)
         return user
-    
+
     def raw_query(self, query: str):
         """Execute raw SQL"""
         result = self.db.execute(text(query))
@@ -525,13 +525,13 @@ async def get_user(user_id: int, db: Session = Depends(get_db)):
     cached_user = cache_get(cache_key)
     if cached_user:
         return cached_user
-    
+
     # Query database
     user = db.query(User).filter(User.id == user_id).first()
-    
+
     # Store in cache
     cache_set(cache_key, user.dict())
-    
+
     return user
 ```
 
@@ -549,14 +549,14 @@ from app.vault import get_secret
 def get_rabbitmq_connection():
     """Create RabbitMQ connection"""
     password = get_secret("rabbitmq", "password")
-    
+
     credentials = pika.PlainCredentials('guest', password)
     parameters = pika.ConnectionParameters(
         host='rabbitmq',
         port=5672,
         credentials=credentials
     )
-    
+
     connection = pika.BlockingConnection(parameters)
     return connection
 
@@ -564,9 +564,9 @@ def publish_message(queue: str, message: dict):
     """Publish message to queue"""
     connection = get_rabbitmq_connection()
     channel = connection.channel()
-    
+
     channel.queue_declare(queue=queue, durable=True)
-    
+
     channel.basic_publish(
         exchange='',
         routing_key=queue,
@@ -575,7 +575,7 @@ def publish_message(queue: str, message: dict):
             delivery_mode=2  # Make message persistent
         )
     )
-    
+
     connection.close()
 
 # Usage
@@ -608,7 +608,7 @@ async def readiness_check(db: Session = Depends(get_db)):
         "status": "healthy",
         "checks": {}
     }
-    
+
     # Check database
     try:
         db.execute(text("SELECT 1"))
@@ -616,7 +616,7 @@ async def readiness_check(db: Session = Depends(get_db)):
     except Exception as e:
         checks["status"] = "unhealthy"
         checks["checks"]["database"] = f"unhealthy: {str(e)}"
-    
+
     # Check Redis
     try:
         redis_client.ping()
@@ -624,7 +624,7 @@ async def readiness_check(db: Session = Depends(get_db)):
     except Exception as e:
         checks["status"] = "unhealthy"
         checks["checks"]["cache"] = f"unhealthy: {str(e)}"
-    
+
     # Check RabbitMQ
     try:
         connection = get_rabbitmq_connection()
@@ -633,13 +633,13 @@ async def readiness_check(db: Session = Depends(get_db)):
     except Exception as e:
         checks["status"] = "unhealthy"
         checks["checks"]["messaging"] = f"unhealthy: {str(e)}"
-    
+
     if checks["status"] == "unhealthy":
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=checks
         )
-    
+
     return checks
 ```
 

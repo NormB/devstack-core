@@ -242,4 +242,3 @@ The script performs these operations:
    # Forgejo: tar volumes
    docker compose exec -T forgejo tar czf - /data > forgejo.tar.gz
    ```
-

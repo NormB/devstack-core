@@ -1265,4 +1265,3 @@ vault read pki_int/cert/ca
 - [ ] Document any issues encountered
 
 ---
-

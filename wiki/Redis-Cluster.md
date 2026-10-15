@@ -233,4 +233,3 @@ When TLS is enabled (`REFERENCE_API_ENABLE_TLS=true`), all endpoints are availab
 curl https://localhost:8443/redis/cluster/nodes
 curl https://localhost:8443/redis/cluster/info
 ```
-

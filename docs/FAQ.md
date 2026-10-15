@@ -175,4 +175,3 @@ A: Cluster provides:
 - Production parity
 
 Single instance is simpler but doesn't match production.
-
