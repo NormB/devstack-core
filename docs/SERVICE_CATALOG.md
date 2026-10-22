@@ -338,7 +338,7 @@ its tag so it cannot fall behind those pins.
 
 ### 20. cAdvisor
 
-- **Image:** `gcr.io/cadvisor/cadvisor`
+- **Image:** `ghcr.io/google/cadvisor`
 - **Purpose:** Container resource usage metrics
 - **Profile:** full
 - **Network:** observability-network (172.20.4.50)

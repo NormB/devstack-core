@@ -90,18 +90,12 @@ jobs:
         if: steps.check-python.outputs.has_python == 'true'
         run: pip install safety
 
+      # scripts/check-python-deps.sh tells a vulnerability finding (Safety
+      # exit 64) from a check that could not run; tests/test-check-python-deps.sh
+      # covers both.
       - name: Check Python dependencies
         if: steps.check-python.outputs.has_python == 'true'
-        run: |
-          failed=0
-          while read -r req_file; do
-            echo "Checking $req_file..."
-            if ! safety check --file "$req_file" --output text; then
-              echo "✗ Known vulnerabilities in $req_file"
-              failed=1
-            fi
-          done < <(find . -name "requirements.txt" -type f | sort)
-          exit $failed
+        run: bash scripts/check-python-deps.sh
 
       - name: Scan Docker images for vulnerabilities
         run: |
