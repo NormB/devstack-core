@@ -1208,7 +1208,7 @@ services:
 
   grafana:
     <<: *default-platform
-    image: grafana/grafana:12.4.10
+    image: grafana/grafana:13.2.4
     container_name: dev-grafana
     restart: unless-stopped
 
