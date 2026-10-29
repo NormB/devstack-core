@@ -125,7 +125,7 @@ jobs:
       # count 14. They need their own decision before this step gates; until
       # then the lint summary treats it as informational.
       - name: Markdown Lint
-        uses: DavidAnson/markdownlint-cli2-action@v24
+        uses: DavidAnson/markdownlint-cli2-action@v25
         with:
           globs: |
             **/*.md
