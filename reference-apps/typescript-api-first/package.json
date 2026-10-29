@@ -34,7 +34,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "@openapitools/openapi-generator-cli": "^2.41.0",
+    "@openapitools/openapi-generator-cli": "^2.42.0",
     "@types/amqplib": "^0.10.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.6",
