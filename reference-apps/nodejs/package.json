@@ -24,24 +24,24 @@
   "author": "DevStack Core Team",
   "license": "MIT",
   "dependencies": {
-    "amqplib": "^2.2.0",
+    "amqplib": "^2.3.1",
     "cors": "^2.8.6",
     "express": "^5.3.0",
-    "express-rate-limit": "^8.7.1",
+    "express-rate-limit": "^8.7.3",
     "helmet": "^8.3.0",
-    "mongodb": "^7.7.0",
+    "mongodb": "^7.8.0",
     "mysql2": "^3.24.6",
     "node-vault": "^0.13.0",
     "pg": "^8.23.1",
     "prom-client": "^15.1.0",
-    "redis": "^6.3.0",
+    "redis": "^6.3.1",
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "jest": "^30.5.2",
     "nodemon": "^3.1.14",
-    "supertest": "^7.3.1"
+    "supertest": "^7.3.2"
   },
   "overrides": {
     "js-yaml": "^4.1.1"
