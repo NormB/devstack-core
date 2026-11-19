@@ -74,7 +74,7 @@ x-redis-common: &redis-common
 # =============================================================================
 x-redis-exporter-common: &redis-exporter-common
   <<: *default-platform
-  image: oliver006/redis_exporter:v1.93.0-alpine
+  image: oliver006/redis_exporter:v1.97.0-alpine
   restart: unless-stopped
   entrypoint: ["/init/init.sh"]
   environment: &redis-exporter-env
@@ -1148,7 +1148,7 @@ services:
 
   prometheus:
     <<: *default-platform
-    image: prom/prometheus:v3.15.0
+    image: prom/prometheus:v3.16.0
     container_name: dev-prometheus
     restart: unless-stopped
 
@@ -1268,7 +1268,7 @@ services:
 
   loki:
     <<: *default-platform
-    image: grafana/loki:3.7.8
+    image: grafana/loki:3.7.10
     container_name: dev-loki
     restart: unless-stopped
 
@@ -1401,7 +1401,7 @@ services:
 
   cadvisor:
     <<: *default-platform
-    image: ghcr.io/google/cadvisor:v0.60.6
+    image: ghcr.io/google/cadvisor:v0.61.1
     container_name: dev-cadvisor
     restart: unless-stopped
 
